@@ -2,6 +2,7 @@ import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "ty
 import { Classroom } from "./classroom.entity";
 import { Submission } from "./submission.entity";
 import { TaskSubmission } from "./task-submission.entity";
+import { Teacher } from "../../teachers/entities/teacher.entity";
 
 @Entity()
 export class Student {
@@ -13,6 +14,22 @@ export class Student {
 
   @Column({ nullable: true })
   orderNum?: number;
+
+  // Extended fields for manual registration
+  @Column({ nullable: true, unique: true })
+  iin?: string;
+
+  @Column({ nullable: true, type: "date" })
+  dateOfBirth?: Date;
+
+  @Column({ nullable: true })
+  parentName?: string;
+
+  @Column({ nullable: true })
+  parentContact?: string;
+
+  @ManyToOne(() => Teacher, { nullable: true, onDelete: "SET NULL" })
+  classTeacher?: Teacher;
 
   @ManyToOne(() => Classroom, (classroom) => classroom.students, { onDelete: "CASCADE" })
   classroom!: Classroom;

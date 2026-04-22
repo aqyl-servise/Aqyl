@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from "@nestjs/common";
+import { Controller, Get, Param, Patch, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -23,5 +23,23 @@ export class AdminController {
   @Get("teachers")
   getTeachers() {
     return this.service.getTeachersWithStats();
+  }
+
+  @Get("registrations")
+  @Roles("admin")
+  getPendingRegistrations() {
+    return this.service.getPendingRegistrations();
+  }
+
+  @Patch("registrations/:id/approve")
+  @Roles("admin")
+  approveRegistration(@Param("id") id: string) {
+    return this.service.approveRegistration(id);
+  }
+
+  @Patch("registrations/:id/reject")
+  @Roles("admin")
+  rejectRegistration(@Param("id") id: string) {
+    return this.service.rejectRegistration(id);
   }
 }

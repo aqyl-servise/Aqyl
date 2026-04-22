@@ -11,6 +11,8 @@ import { ProtocolsPanel } from "./protocols-panel";
 import { ClassHoursPanel } from "./class-hours-panel";
 import { UsersPanel } from "./users-panel";
 import { GiftedPanel } from "./gifted-panel";
+import { RegistrationsPanel } from "./registrations-panel";
+import { StudentsPanel } from "./students-panel";
 
 export function AdminApp({ token, user, language, setLanguage, onLogout }: {
   token: string; user: AuthUser; language: Language;
@@ -19,8 +21,9 @@ export function AdminApp({ token, user, language, setLanguage, onLogout }: {
   const [section, setSection] = useState("dashboard");
   const t = translations[language];
 
-  const academicNav = [
+  const baseNav = [
     { key: "dashboard", label: t.nav_dashboard, icon: "⊞" },
+    { key: "students", label: t.nav_students, icon: "👩‍🎓" },
     { key: "teachers", label: t.nav_teachers, icon: "👨‍🏫" },
     { key: "school-analytics", label: t.nav_school_analytics, icon: "📈" },
     { key: "open-lessons", label: t.nav_lessons, icon: "🎓" },
@@ -28,21 +31,27 @@ export function AdminApp({ token, user, language, setLanguage, onLogout }: {
     { key: "class-hours", label: t.nav_class_hours, icon: "🕐" },
     { key: "gifted", label: t.nav_gifted, icon: "⭐" },
   ];
-  const adminNav = user.role === "admin"
-    ? [...academicNav, { key: "users", label: t.nav_users, icon: "👥" }]
-    : academicNav;
+
+  const adminOnlyNav = [
+    { key: "users", label: t.nav_users, icon: "👥" },
+    { key: "registrations", label: t.nav_registrations, icon: "📬" },
+  ];
+
+  const navItems = user.role === "admin" ? [...baseNav, ...adminOnlyNav] : baseNav;
 
   return (
     <AppLayout user={user} token={token} language={language} setLanguage={setLanguage}
-      onLogout={onLogout} navItems={adminNav} activeSection={section} onNav={setSection}>
+      onLogout={onLogout} navItems={navItems} activeSection={section} onNav={setSection}>
       {section === "dashboard" && <AdminDashboard token={token} language={language} t={t} />}
+      {section === "students" && <StudentsPanel token={token} language={language} t={t} />}
       {section === "teachers" && <TeacherListPanel token={token} language={language} t={t} />}
       {section === "school-analytics" && <SchoolAnalyticsPanel token={token} language={language} t={t} />}
       {section === "open-lessons" && <OpenLessonsPanel token={token} language={language} t={t} isAdmin={true} />}
       {section === "protocols" && <ProtocolsPanel token={token} language={language} t={t} />}
       {section === "class-hours" && <ClassHoursPanel token={token} language={language} t={t} isAdmin={true} />}
-      {section === "users" && user.role === "admin" && <UsersPanel token={token} language={language} t={t} />}
       {section === "gifted" && <GiftedPanel token={token} language={language} t={t} />}
+      {section === "users" && user.role === "admin" && <UsersPanel token={token} language={language} t={t} />}
+      {section === "registrations" && user.role === "admin" && <RegistrationsPanel token={token} language={language} t={t} />}
     </AppLayout>
   );
 }

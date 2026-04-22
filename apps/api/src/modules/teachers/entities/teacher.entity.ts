@@ -3,6 +3,7 @@ import { Classroom } from "../../schools/entities/classroom.entity";
 import { GeneratedDocument } from "../../schools/entities/generated-document.entity";
 
 export type UserRole = "teacher" | "admin" | "principal" | "vice_principal" | "class_teacher" | "student";
+export type UserStatus = "pending" | "active" | "rejected";
 
 @Entity()
 export class Teacher {
@@ -23,6 +24,13 @@ export class Teacher {
 
   @Column({ default: "teacher" })
   role!: UserRole;
+
+  // "active" default ensures existing seeded rows stay active after schema sync
+  @Column({ default: "active" })
+  status!: UserStatus;
+
+  @Column({ nullable: true })
+  schoolName?: string;
 
   // Profile fields
   @Column({ nullable: true })

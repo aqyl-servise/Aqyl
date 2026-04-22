@@ -13,6 +13,34 @@ export type AuthUser = {
 
 export type LoginResponse = { accessToken: string; user: AuthUser };
 
+export type PendingUser = {
+  id: string;
+  fullName: string;
+  email: string;
+  role: string;
+  schoolName?: string;
+  createdAt: string;
+  status: "pending" | "active" | "rejected";
+};
+
+export type StudentRow = {
+  id: string;
+  fullName: string;
+  iin?: string;
+  dateOfBirth?: string;
+  parentName?: string;
+  parentContact?: string;
+  classroom: { id: string; name: string; grade: number };
+  classTeacher?: { id: string; fullName: string };
+};
+
+export type ClassroomOption = {
+  id: string;
+  name: string;
+  grade: number;
+  classTeacher?: { id: string; fullName: string };
+};
+
 async function request<T>(path: string, init?: RequestInit, token?: string): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
@@ -35,6 +63,8 @@ export const api = {
   // Auth
   login: (email: string, password: string) =>
     request<LoginResponse>("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
+  register: (data: { fullName: string; email: string; password: string; role: string; schoolName: string }) =>
+    request<{ message: string }>("/auth/register", { method: "POST", body: JSON.stringify(data) }),
   getMe: (token: string) => request<AuthUser>("/auth/me", undefined, token),
   updateProfile: (token: string, data: Record<string, unknown>) =>
     request<AuthUser>("/auth/profile", { method: "PATCH", body: JSON.stringify(data) }, token),
@@ -67,11 +97,19 @@ export const api = {
 
   // Admin
   getAdminOverview: (token: string) =>
-    request<{ teachers: number; classrooms: number; students: number; avgScore: number; documents: number; openLessons: number; protocols: number }>("/admin/overview", undefined, token),
+    request<{ teachers: number; classrooms: number; students: number; avgScore: number; documents: number; openLessons: number; protocols: number; pendingCount: number }>("/admin/overview", undefined, token),
   getAdminAnalytics: (token: string) =>
     request<Array<{ id: string; name: string; grade: number; subject: string; teacher: string; studentCount: number; avgScore: number }>>("/admin/analytics", undefined, token),
   getAdminTeachers: (token: string) =>
     request<Array<{ id: string; fullName: string; email: string; subject?: string; experience?: number; category?: string; classCount: number; studentCount: number; avgScore: number; docCount: number }>>("/admin/teachers", undefined, token),
+
+  // Registrations (admin only)
+  getPendingRegistrations: (token: string) =>
+    request<PendingUser[]>("/admin/registrations", undefined, token),
+  approveRegistration: (token: string, id: string) =>
+    request<PendingUser>(`/admin/registrations/${id}/approve`, { method: "PATCH" }, token),
+  rejectRegistration: (token: string, id: string) =>
+    request<PendingUser>(`/admin/registrations/${id}/reject`, { method: "PATCH" }, token),
 
   // Users
   getUsers: (token: string) => request<AuthUser[]>("/users", undefined, token),
@@ -79,6 +117,20 @@ export const api = {
     request<AuthUser>("/users", { method: "POST", body: JSON.stringify(data) }, token),
   updateUser: (token: string, id: string, data: Record<string, unknown>) =>
     request<AuthUser>(`/users/${id}`, { method: "PATCH", body: JSON.stringify(data) }, token),
+
+  // Students
+  getStudents: (token: string, classroomId?: string) =>
+    request<StudentRow[]>(`/students${classroomId ? `?classroomId=${classroomId}` : ""}`, undefined, token),
+  createStudent: (token: string, data: Record<string, unknown>) =>
+    request<StudentRow>("/students", { method: "POST", body: JSON.stringify(data) }, token),
+  updateStudent: (token: string, id: string, data: Record<string, unknown>) =>
+    request<StudentRow>(`/students/${id}`, { method: "PATCH", body: JSON.stringify(data) }, token),
+  deleteStudent: (token: string, id: string) =>
+    request<{ ok: boolean }>(`/students/${id}`, { method: "DELETE" }, token),
+  getClassroomsForDropdown: (token: string) =>
+    request<ClassroomOption[]>("/students/classrooms", undefined, token),
+  getClassTeachersForDropdown: (token: string) =>
+    request<Array<{ id: string; fullName: string }>>("/students/class-teachers", undefined, token),
 
   // Schedule
   getMySchedule: (token: string) =>

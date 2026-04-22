@@ -28,6 +28,7 @@ import { ClassHoursModule } from "./modules/class-hours/class-hours.module";
 import { FilesModule } from "./modules/files/files.module";
 import { AdminModule } from "./modules/admin/admin.module";
 import { GiftedModule } from "./modules/gifted/gifted.module";
+import { StudentsModule } from "./modules/students/students.module";
 import { GiftedPlan } from "./modules/schools/entities/gifted-plan.entity";
 import { GiftedStudent } from "./modules/schools/entities/gifted-student.entity";
 import { GiftedTeacherAssignment } from "./modules/schools/entities/gifted-teacher-assignment.entity";
@@ -67,6 +68,7 @@ import { SeedService } from "./seed.service";
     FilesModule,
     AdminModule,
     GiftedModule,
+    StudentsModule,
   ],
   providers: [SeedService],
 })

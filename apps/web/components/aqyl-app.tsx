@@ -7,12 +7,15 @@ import { TeacherApp } from "./teacher/teacher-app";
 import { AdminApp } from "./admin/admin-app";
 import { ClassTeacherApp } from "./class-teacher/class-teacher-app";
 
+type View = "login" | "register" | "success";
+
 export function AqylApp() {
   const [language, setLanguage] = useState<Language>("ru");
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<View>("login");
 
   const t = translations[language];
 
@@ -46,8 +49,47 @@ export function AqylApp() {
       setToken(res.accessToken);
       setUser(res.user);
       setLanguage((res.user.preferredLanguage as Language) || "ru");
-    } catch {
-      setError(t.loginTitle + " — ошибка входа. Проверьте email и пароль.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      try {
+        const body = JSON.parse(msg) as { message?: string };
+        if (body.message === "PENDING") { setError(t.accountPending); return; }
+        if (body.message === "REJECTED") { setError(t.accountRejected); return; }
+      } catch { /* not JSON */ }
+      setError("Ошибка входа. Проверьте email и пароль.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleRegister(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setBusy(true); setError(null);
+    const fd = new FormData(e.currentTarget);
+    const password = String(fd.get("password"));
+    const confirm = String(fd.get("confirmPassword"));
+    if (password !== confirm) {
+      setError(t.passwordMismatch);
+      setBusy(false);
+      return;
+    }
+    try {
+      await api.register({
+        fullName: String(fd.get("fullName")),
+        email: String(fd.get("email")),
+        password,
+        role: String(fd.get("role")),
+        schoolName: String(fd.get("schoolName")),
+      });
+      setView("success");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      try {
+        const body = JSON.parse(msg) as { message?: string };
+        setError(typeof body.message === "string" ? body.message : "Ошибка регистрации");
+      } catch {
+        setError("Ошибка регистрации");
+      }
     } finally {
       setBusy(false);
     }
@@ -59,7 +101,27 @@ export function AqylApp() {
   }
 
   if (!token || !user) {
-    return <LoginPage language={language} setLanguage={setLanguage} onLogin={handleLogin} busy={busy} error={error} t={t} />;
+    return (
+      <AuthShell language={language} setLanguage={setLanguage}>
+        {view === "login" && (
+          <LoginForm
+            t={t} busy={busy} error={error}
+            onSubmit={handleLogin}
+            onRegister={() => { setView("register"); setError(null); }}
+          />
+        )}
+        {view === "register" && (
+          <RegisterForm
+            t={t} busy={busy} error={error}
+            onSubmit={handleRegister}
+            onBack={() => { setView("login"); setError(null); }}
+          />
+        )}
+        {view === "success" && (
+          <SuccessView t={t} onBack={() => { setView("login"); setError(null); }} />
+        )}
+      </AuthShell>
+    );
   }
 
   const role = user.role;
@@ -74,7 +136,6 @@ export function AqylApp() {
     return <ClassTeacherApp token={token} user={user} language={language} setLanguage={setLanguage} onLogout={logout} />;
   }
 
-  // Fallback for unknown roles
   return (
     <div style={{ padding: 40, textAlign: "center" }}>
       <h2>Роль «{role}» пока не поддерживается в интерфейсе</h2>
@@ -83,19 +144,11 @@ export function AqylApp() {
   );
 }
 
-function LoginPage({ language, setLanguage, onLogin, busy, error, t }: {
-  language: Language; setLanguage: (l: Language) => void;
-  onLogin: (e: FormEvent<HTMLFormElement>) => void;
-  busy: boolean; error: string | null; t: Record<string, string>;
+/* ─── Shell wrapper (logo + lang switcher) ─────────────────────────── */
+function AuthShell({ language, setLanguage, children }: {
+  language: Language; setLanguage: (l: Language) => void; children: React.ReactNode;
 }) {
-  const demoAccounts = [
-    { role: "teacher", email: "teacher@aqyl.kz", pass: "aqyl123" },
-    { role: "admin", email: "admin@aqyl.kz", pass: "admin123" },
-    { role: "principal", email: "principal@aqyl.kz", pass: "principal123" },
-    { role: "vice_principal (уч.)", email: "vp.academic@aqyl.kz", pass: "vp123" },
-    { role: "vice_principal (восп.)", email: "vp.welfare@aqyl.kz", pass: "vp123" },
-    { role: "class_teacher", email: "ct1@aqyl.kz", pass: "ct123" },
-  ];
+  const t = translations[language];
   return (
     <main className="login-shell">
       <div className="login-bg" />
@@ -108,35 +161,138 @@ function LoginPage({ language, setLanguage, onLogin, busy, error, t }: {
           </div>
         </div>
         <div className="lang-row"><LangSwitcher language={language} onChange={setLanguage} /></div>
-        <h2 className="login-title">{t.loginTitle}</h2>
-        <form onSubmit={onLogin} className="login-form">
-          <div className="field">
-            <label className="field-label" htmlFor="email">{t.email}</label>
-            <input id="email" name="email" type="email" defaultValue="teacher@aqyl.kz" required className="input" />
-          </div>
-          <div className="field">
-            <label className="field-label" htmlFor="password">{t.password}</label>
-            <input id="password" name="password" type="password" defaultValue="aqyl123" required className="input" />
-          </div>
-          {error && <div className="alert alert-error"><span>⚠</span> {error}</div>}
-          <button className="btn btn-primary btn-full" type="submit" disabled={busy}>
-            {busy ? <span className="spinner" /> : t.signIn}
-          </button>
-        </form>
-        <div className="demo-accounts">
-          <p className="demo-accounts-title">Демо-аккаунты:</p>
-          {demoAccounts.map((a) => (
-            <div key={a.email} className="demo-account-row">
-              <span className="demo-role">{a.role}</span>
-              <span className="demo-creds">{a.email} / {a.pass}</span>
-            </div>
-          ))}
-        </div>
+        {children}
       </div>
     </main>
   );
 }
 
+/* ─── Login form ────────────────────────────────────────────────────── */
+function LoginForm({ t, busy, error, onSubmit, onRegister }: {
+  t: Record<string, string>; busy: boolean; error: string | null;
+  onSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  onRegister: () => void;
+}) {
+  const demoAccounts = [
+    { role: "teacher", email: "teacher@aqyl.kz", pass: "aqyl123" },
+    { role: "admin", email: "admin@aqyl.kz", pass: "admin123" },
+    { role: "principal", email: "principal@aqyl.kz", pass: "principal123" },
+    { role: "vice_principal", email: "vp.academic@aqyl.kz", pass: "vp123" },
+    { role: "class_teacher", email: "ct1@aqyl.kz", pass: "ct123" },
+  ];
+
+  return (
+    <>
+      <h2 className="login-title">{t.loginTitle}</h2>
+      <form onSubmit={onSubmit} className="login-form">
+        <div className="field">
+          <label className="field-label" htmlFor="email">{t.email}</label>
+          <input id="email" name="email" type="email" defaultValue="teacher@aqyl.kz" required className="input" />
+        </div>
+        <div className="field">
+          <label className="field-label" htmlFor="password">{t.password}</label>
+          <input id="password" name="password" type="password" defaultValue="aqyl123" required className="input" />
+        </div>
+        {error && <div className="alert alert-error"><span>⚠</span> {error}</div>}
+        <button className="btn btn-primary btn-full" type="submit" disabled={busy}>
+          {busy ? <span className="spinner" /> : t.signIn}
+        </button>
+      </form>
+      <button
+        className="btn btn-ghost btn-full"
+        style={{ marginTop: 8 }}
+        onClick={onRegister}
+      >
+        {t.register}
+      </button>
+      <div className="demo-accounts">
+        <p className="demo-accounts-title">Демо-аккаунты:</p>
+        {demoAccounts.map((a) => (
+          <div key={a.email} className="demo-account-row">
+            <span className="demo-role">{a.role}</span>
+            <span className="demo-creds">{a.email} / {a.pass}</span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+/* ─── Register form ─────────────────────────────────────────────────── */
+const REGISTER_ROLES = [
+  { value: "teacher", label: "Учитель / Мұғалім / Teacher" },
+  { value: "class_teacher", label: "Классный руководитель / Сынып жетекшісі" },
+  { value: "vice_principal", label: "Завуч / Меңгеруші / Vice Principal" },
+  { value: "principal", label: "Директор / Director" },
+  { value: "student", label: "Ученик / Оқушы / Student" },
+];
+
+function RegisterForm({ t, busy, error, onSubmit, onBack }: {
+  t: Record<string, string>; busy: boolean; error: string | null;
+  onSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  onBack: () => void;
+}) {
+  return (
+    <>
+      <h2 className="login-title">{t.registerTitle}</h2>
+      <form onSubmit={onSubmit} className="login-form">
+        <div className="field">
+          <label className="field-label">{t.fullNameLabel}</label>
+          <input name="fullName" type="text" required className="input" placeholder="Иванов Иван Иванович" />
+        </div>
+        <div className="field">
+          <label className="field-label">{t.email}</label>
+          <input name="email" type="email" required className="input" />
+        </div>
+        <div className="field">
+          <label className="field-label">{t.password}</label>
+          <input name="password" type="password" required className="input" minLength={6} />
+        </div>
+        <div className="field">
+          <label className="field-label">{t.confirmPassword}</label>
+          <input name="confirmPassword" type="password" required className="input" minLength={6} />
+        </div>
+        <div className="field">
+          <label className="field-label">{t.selectRole}</label>
+          <select name="role" required className="input" defaultValue="">
+            <option value="" disabled>{t.selectRole}</option>
+            {REGISTER_ROLES.map((r) => (
+              <option key={r.value} value={r.value}>{r.label}</option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label className="field-label">{t.schoolName}</label>
+          <input name="schoolName" type="text" required className="input" placeholder="НИШ Алматы" />
+        </div>
+        {error && <div className="alert alert-error"><span>⚠</span> {error}</div>}
+        <button className="btn btn-primary btn-full" type="submit" disabled={busy}>
+          {busy ? <span className="spinner" /> : t.submitRequest}
+        </button>
+      </form>
+      <button className="btn btn-ghost btn-full" style={{ marginTop: 8 }} onClick={onBack}>
+        ← {t.backToLogin}
+      </button>
+    </>
+  );
+}
+
+/* ─── Success screen ────────────────────────────────────────────────── */
+function SuccessView({ t, onBack }: { t: Record<string, string>; onBack: () => void }) {
+  return (
+    <div style={{ textAlign: "center", padding: "24px 0" }}>
+      <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+      <p style={{ fontSize: 15, lineHeight: 1.6, marginBottom: 24, color: "var(--text)" }}>
+        {t.pendingApproval}
+      </p>
+      <button className="btn btn-primary btn-full" onClick={onBack}>
+        ← {t.backToLogin}
+      </button>
+    </div>
+  );
+}
+
+/* ─── Lang switcher ─────────────────────────────────────────────────── */
 export function LangSwitcher({ language, onChange }: { language: Language; onChange: (l: Language) => void }) {
   return (
     <div className="lang-switcher">

@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Patch, Req, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Patch, Post, Req, UseGuards } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { LoginDto } from "./dto/login.dto";
+import { RegisterDto } from "./dto/register.dto";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { TeachersService } from "../teachers/teachers.service";
 
@@ -18,6 +19,11 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
+  @Post("register")
+  register(@Body() dto: RegisterDto) {
+    return this.authService.register(dto);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get("me")
   me(@Req() req: { user: AuthUser }) {
@@ -26,7 +32,10 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Patch("profile")
-  async updateProfile(@Req() req: { user: AuthUser }, @Body() body: Partial<{ phone: string; experience: number; category: string; university: string; courses: string; achievements: string; preferredLanguage: string }>) {
+  async updateProfile(
+    @Req() req: { user: AuthUser },
+    @Body() body: Partial<{ phone: string; experience: number; category: string; university: string; courses: string; achievements: string; preferredLanguage: string }>,
+  ) {
     return this.teachersService.updateProfile(req.user.id, body);
   }
 }

@@ -10,6 +10,7 @@ import { AnalyticsPanel } from "./analytics-panel";
 import { TeacherProfile } from "./teacher-profile";
 import { OpenLessonsPanel } from "./open-lessons-panel";
 import { AssignmentsPanel } from "./assignments-panel";
+import { StudentsPanel } from "../admin/students-panel";
 
 export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
   token: string; user: AuthUser; language: Language;
@@ -21,6 +22,7 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
   const nav = [
     { key: "dashboard", label: t.nav_dashboard, icon: "⊞" },
     { key: "profile", label: t.nav_profile, icon: "👤" },
+    { key: "students", label: t.nav_students, icon: "👩‍🎓" },
     { key: "ktp", label: t.nav_ktp, icon: "📝" },
     { key: "tasks", label: t.nav_tasks, icon: "✏️" },
     { key: "assignments", label: t.nav_assignments, icon: "📋" },
@@ -33,6 +35,7 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
       onLogout={onLogout} navItems={nav} activeSection={section} onNav={setSection}>
       {section === "dashboard" && <TeacherDashboard token={token} language={language} t={t} />}
       {section === "profile" && <TeacherProfile token={token} user={user} language={language} t={t} />}
+      {section === "students" && <StudentsPanel token={token} language={language} t={t} />}
       {section === "ktp" && <LessonGenerator token={token} language={language} t={t} />}
       {section === "tasks" && <TaskGenerator token={token} language={language} t={t} />}
       {section === "assignments" && <AssignmentsPanel token={token} language={language} t={t} />}

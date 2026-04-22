@@ -22,7 +22,7 @@ export class AdminService {
   ) {}
 
   async getOverview() {
-    const [teachers, classrooms, students, submissions, documents, openLessons, protocols] = await Promise.all([
+    const [teachers, classrooms, students, submissions, documents, openLessons, protocols, pendingCount] = await Promise.all([
       this.teacherRepo.count({ where: { role: "teacher" } }),
       this.classroomRepo.count(),
       this.studentRepo.count(),
@@ -30,13 +30,14 @@ export class AdminService {
       this.docRepo.count(),
       this.lessonRepo.count(),
       this.protocolRepo.count(),
+      this.teacherRepo.count({ where: { status: "pending" } }),
     ]);
 
     const avgScore = submissions.length
       ? Math.round(submissions.reduce((s, sub) => s + Number(sub.score) / Number(sub.maxScore), 0) / submissions.length * 100)
       : 0;
 
-    return { teachers, classrooms, students, avgScore, documents, openLessons, protocols };
+    return { teachers, classrooms, students, avgScore, documents, openLessons, protocols, pendingCount };
   }
 
   async getSchoolAnalytics() {
@@ -87,5 +88,22 @@ export class AdminService {
         docCount: t.generatedDocuments.length,
       };
     });
+  }
+
+  getPendingRegistrations() {
+    return this.teacherRepo.find({
+      where: { status: "pending" },
+      order: { createdAt: "DESC" },
+    });
+  }
+
+  async approveRegistration(id: string) {
+    await this.teacherRepo.update(id, { status: "active" });
+    return this.teacherRepo.findOne({ where: { id } });
+  }
+
+  async rejectRegistration(id: string) {
+    await this.teacherRepo.update(id, { status: "rejected" });
+    return this.teacherRepo.findOne({ where: { id } });
   }
 }
