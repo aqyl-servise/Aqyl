@@ -12,12 +12,6 @@ type StudentCard = Awaited<ReturnType<typeof api.getGiftedStudentCard>>;
 type AllStudent = Awaited<ReturnType<typeof api.searchAllStudents>>[number];
 
 const ACTIVE_TABS = ["work_plan", "students", "psychologist", "teachers"] as const;
-const STUB_TABS = ["attestation", "bbjm", "ktp", "quality", "open_lessons", "welfare", "pedcouncil", "household"] as const;
-const STUB_LABELS: Record<string, string> = {
-  attestation: "Аттестация", bbjm: "ББЖМ", ktp: "КТП/ҚМЖ",
-  quality: "Білім сапасы", open_lessons: "Открытые уроки", welfare: "Тәрбие жұмысы",
-  pedcouncil: "Педсовет", household: "Шаруа істері",
-};
 const CATEGORIES = ["test_tasks", "online_lessons", "completed_work", "monitoring"] as const;
 const CAT_LABELS: Record<string, string> = {
   test_tasks: "Тестовые задания", online_lessons: "Онлайн-уроки",
@@ -32,12 +26,6 @@ const DAY_LABELS = ["", "Пн", "Вт", "Ср", "Чт", "Пт"];
 
 export function GiftedPanel({ token, language, t }: { token: string; language: Language; t: Record<string, string> }) {
   const [tab, setTab] = useState<string>("teachers");
-  const [toast, setToast] = useState<string | null>(null);
-
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2500);
-  }
 
   const tabLabel: Record<string, string> = {
     work_plan: t.gifted_work_plan ?? "План работы",
@@ -50,19 +38,11 @@ export function GiftedPanel({ token, language, t }: { token: string; language: L
     <div className="page">
       <h1 className="page-title">⭐ {t.nav_gifted}</h1>
 
-      {toast && <div className="gifted-toast">{toast}</div>}
-
       {/* Tab bar */}
       <div className="gifted-tabs">
         {ACTIVE_TABS.map((key) => (
           <button key={key} className={`gifted-tab${tab === key ? " active" : ""}`} onClick={() => setTab(key)}>
             {tabLabel[key]}
-          </button>
-        ))}
-        <div className="gifted-tabs-divider" />
-        {STUB_TABS.map((key) => (
-          <button key={key} className="gifted-tab stub" onClick={() => showToast(`«${STUB_LABELS[key]}» — ${t.coming_soon ?? "В разработке"}`)}>
-            {STUB_LABELS[key]}
           </button>
         ))}
       </div>

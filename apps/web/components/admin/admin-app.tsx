@@ -30,6 +30,12 @@ export function AdminApp({ token, user, language, setLanguage, onLogout }: {
     { key: "protocols", label: t.nav_protocols, icon: "📋" },
     { key: "class-hours", label: t.nav_class_hours, icon: "🕐" },
     { key: "gifted", label: t.nav_gifted, icon: "⭐" },
+    { key: "education-quality", label: t.nav_education_quality, icon: "📊" },
+    { key: "welfare", label: t.nav_education, icon: "🌱" },
+    { key: "household", label: t.nav_household, icon: "🔧" },
+    { key: "bbjm", label: t.nav_bbjm, icon: "📑" },
+    { key: "ktp-plans", label: t.nav_ktp_plans, icon: "📝" },
+    { key: "attestation", label: t.nav_attestation, icon: "🏆" },
   ];
 
   const adminOnlyNav = [
@@ -50,6 +56,12 @@ export function AdminApp({ token, user, language, setLanguage, onLogout }: {
       {section === "protocols" && <ProtocolsPanel token={token} language={language} t={t} />}
       {section === "class-hours" && <ClassHoursPanel token={token} language={language} t={t} isAdmin={true} />}
       {section === "gifted" && <GiftedPanel token={token} language={language} t={t} />}
+      {section === "education-quality" && <div className="page"><h1 className="page-title">📊 {t.nav_education_quality}</h1><p className="empty-state">{t.coming_soon}</p></div>}
+      {section === "welfare" && <div className="page"><h1 className="page-title">🌱 {t.nav_education}</h1><p className="empty-state">{t.coming_soon}</p></div>}
+      {section === "household" && <div className="page"><h1 className="page-title">🔧 {t.nav_household}</h1><p className="empty-state">{t.coming_soon}</p></div>}
+      {section === "bbjm" && <div className="page"><h1 className="page-title">📑 {t.nav_bbjm}</h1><p className="empty-state">{t.coming_soon}</p></div>}
+      {section === "ktp-plans" && <div className="page"><h1 className="page-title">📝 {t.nav_ktp_plans}</h1><p className="empty-state">{t.coming_soon}</p></div>}
+      {section === "attestation" && <div className="page"><h1 className="page-title">🏆 {t.nav_attestation}</h1><p className="empty-state">{t.coming_soon}</p></div>}
       {section === "users" && user.role === "admin" && <UsersPanel token={token} language={language} t={t} />}
       {section === "registrations" && user.role === "admin" && <RegistrationsPanel token={token} language={language} t={t} />}
     </AppLayout>
