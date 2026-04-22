@@ -91,8 +91,10 @@ export class SeedService {
       [13,14,11,12,10,15], [19,18,18,17,18,19], [12,10,13,11,13,14],
     ];
     const mathStudents = allStudents.filter((_, i) => i < 12); // 1А + 5Б
-    for (const [si, student] of mathStudents.entries()) {
-      for (const [ti, topic] of topics.entries()) {
+    for (let si = 0; si < mathStudents.length; si++) {
+      const student = mathStudents[si];
+      for (let ti = 0; ti < topics.length; ti++) {
+        const topic = topics[ti];
         await this.submissionRepo.save(
           this.submissionRepo.create({
             student,
