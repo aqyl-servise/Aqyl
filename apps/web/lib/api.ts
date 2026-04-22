@@ -1,0 +1,182 @@
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+
+export type UserRole = "teacher" | "admin" | "principal" | "vice_principal" | "class_teacher" | "student";
+
+export type AuthUser = {
+  id: string;
+  fullName: string;
+  email: string;
+  preferredLanguage: string;
+  role: UserRole;
+  subject?: string | null;
+};
+
+export type LoginResponse = { accessToken: string; user: AuthUser };
+
+async function request<T>(path: string, init?: RequestInit, token?: string): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, {
+    ...init,
+    headers: {
+      ...(init?.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(init?.headers ?? {}),
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || "Request failed");
+  }
+  const ct = res.headers.get("content-type") ?? "";
+  if (ct.includes("application/pdf") || ct.includes("octet-stream")) return (await res.blob()) as T;
+  return res.json() as Promise<T>;
+}
+
+export const api = {
+  // Auth
+  login: (email: string, password: string) =>
+    request<LoginResponse>("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
+  getMe: (token: string) => request<AuthUser>("/auth/me", undefined, token),
+  updateProfile: (token: string, data: Record<string, unknown>) =>
+    request<AuthUser>("/auth/profile", { method: "PATCH", body: JSON.stringify(data) }, token),
+
+  // Dashboard (teacher)
+  getDashboard: (token: string) =>
+    request<{
+      summary: { totalClasses: number; totalStudents: number; averageScore: number; generatedDocuments: number };
+      classes: Array<{ id: string; name: string; grade: number; subject: string; studentCount: number }>;
+      topicPerformance: Array<{ topic: string; average: number }>;
+      strugglingStudents: Array<{ id: string; fullName: string; classroom: string; average: number }>;
+      recentDocuments: Array<{ id: string; title: string; type: string; createdAt: string }>;
+    }>("/dashboard", undefined, token),
+
+  // Generators
+  generateLessonPlan: (token: string, body: Record<string, unknown>) =>
+    request<Record<string, unknown>>("/generators/lesson-plan", { method: "POST", body: JSON.stringify(body) }, token),
+  generateTaskSet: (token: string, body: Record<string, unknown>) =>
+    request<Record<string, unknown>>("/generators/task-set", { method: "POST", body: JSON.stringify(body) }, token),
+
+  // Analytics
+  uploadAnalytics: (token: string, file: File) => {
+    const fd = new FormData(); fd.append("file", file);
+    return request<Record<string, unknown>>("/analytics/upload", { method: "POST", body: fd }, token);
+  },
+
+  // Exports
+  exportPdf: (token: string, body: Record<string, unknown>) =>
+    request<Blob>("/exports/pdf", { method: "POST", body: JSON.stringify(body) }, token),
+
+  // Admin
+  getAdminOverview: (token: string) =>
+    request<{ teachers: number; classrooms: number; students: number; avgScore: number; documents: number; openLessons: number; protocols: number }>("/admin/overview", undefined, token),
+  getAdminAnalytics: (token: string) =>
+    request<Array<{ id: string; name: string; grade: number; subject: string; teacher: string; studentCount: number; avgScore: number }>>("/admin/analytics", undefined, token),
+  getAdminTeachers: (token: string) =>
+    request<Array<{ id: string; fullName: string; email: string; subject?: string; experience?: number; category?: string; classCount: number; studentCount: number; avgScore: number; docCount: number }>>("/admin/teachers", undefined, token),
+
+  // Users
+  getUsers: (token: string) => request<AuthUser[]>("/users", undefined, token),
+  createUser: (token: string, data: Record<string, unknown>) =>
+    request<AuthUser>("/users", { method: "POST", body: JSON.stringify(data) }, token),
+  updateUser: (token: string, id: string, data: Record<string, unknown>) =>
+    request<AuthUser>(`/users/${id}`, { method: "PATCH", body: JSON.stringify(data) }, token),
+
+  // Schedule
+  getMySchedule: (token: string) =>
+    request<Array<{ id: string; dayOfWeek: number; period: number; subject: string; startTime?: string; endTime?: string; classroom: { id: string; name: string; grade: number } }>>("/schedule", undefined, token),
+  getAllSchedule: (token: string) => request<unknown[]>("/schedule/all", undefined, token),
+  getClassroomSchedule: (token: string, classroomId: string) =>
+    request<Array<{ id: string; dayOfWeek: number; period: number; subject: string; startTime?: string; endTime?: string; teacher?: { fullName: string } }>>(`/schedule/classroom/${classroomId}`, undefined, token),
+
+  // Assignments
+  getMyAssignments: (token: string) =>
+    request<Array<{ id: string; title: string; subject: string; dueDate?: string; maxScore: number; status: string; classroom: { id: string; name: string }; submissions: unknown[] }>>("/assignments", undefined, token),
+  getClassroomAssignments: (token: string, classroomId: string) =>
+    request<Array<{ id: string; title: string; subject: string; dueDate?: string; maxScore: number; teacher?: { fullName: string } }>>(`/assignments/classroom/${classroomId}`, undefined, token),
+  createAssignment: (token: string, data: Record<string, unknown>) =>
+    request<{ id: string }>("/assignments", { method: "POST", body: JSON.stringify(data) }, token),
+  updateAssignment: (token: string, id: string, data: Record<string, unknown>) =>
+    request<{ id: string }>(`/assignments/${id}`, { method: "PATCH", body: JSON.stringify(data) }, token),
+
+  // Open Lessons
+  getMyLessons: (token: string) =>
+    request<Array<{ id: string; title: string; subject: string; grade: number; date?: string; status: string; description?: string; directorComment?: string }>>("/lessons", undefined, token),
+  getAllLessons: (token: string) =>
+    request<Array<{ id: string; title: string; subject: string; grade: number; date?: string; status: string; teacher?: { fullName: string } }>>("/lessons/all", undefined, token),
+  createLesson: (token: string, data: Record<string, unknown>) =>
+    request<{ id: string }>("/lessons", { method: "POST", body: JSON.stringify(data) }, token),
+  updateLesson: (token: string, id: string, data: Record<string, unknown>) =>
+    request<{ id: string }>(`/lessons/${id}`, { method: "PATCH", body: JSON.stringify(data) }, token),
+
+  // Protocols
+  getProtocols: (token: string) =>
+    request<Array<{ id: string; title: string; type: string; date?: string; content?: string; createdBy?: { fullName: string } }>>("/protocols", undefined, token),
+  createProtocol: (token: string, data: Record<string, unknown>) =>
+    request<{ id: string }>("/protocols", { method: "POST", body: JSON.stringify(data) }, token),
+
+  // Class Hours
+  getMyClassHours: (token: string) =>
+    request<Array<{ id: string; title: string; topic: string; date?: string; duration?: number; notes?: string; classroom: { name: string } }>>("/class-hours", undefined, token),
+  getAllClassHours: (token: string) =>
+    request<Array<{ id: string; title: string; topic: string; date?: string; classTeacher?: { fullName: string }; classroom?: { name: string } }>>("/class-hours/all", undefined, token),
+  createClassHour: (token: string, data: Record<string, unknown>) =>
+    request<{ id: string }>("/class-hours", { method: "POST", body: JSON.stringify(data) }, token),
+
+  // Files
+  uploadFile: (token: string, file: File) => {
+    const fd = new FormData(); fd.append("file", file);
+    return request<{ id: string; filename: string; originalName: string; url: string }>("/files/upload", { method: "POST", body: fd }, token);
+  },
+
+  // Gifted
+  getGiftedPlans: (token: string, type?: string) =>
+    request<Array<{ id: string; type: string; title: string; fileUrl?: string; createdAt: string; uploadedBy?: { fullName: string } }>>(
+      `/gifted/plans${type ? `?type=${type}` : ""}`, undefined, token),
+  createGiftedPlan: (token: string, data: { type: string; title: string; fileUrl?: string }) =>
+    request<{ id: string }>("/gifted/plans", { method: "POST", body: JSON.stringify(data) }, token),
+  deleteGiftedPlan: (token: string, id: string) =>
+    request<{ ok: boolean }>(`/gifted/plans/${id}`, { method: "DELETE" }, token),
+
+  getGiftedStudents: (token: string, classroomId?: string) =>
+    request<Array<{ id: string; notes?: string; student: { id: string; fullName: string; classroom: { id: string; name: string; grade: number; classTeacher?: { fullName: string } } } }>>(
+      `/gifted/students${classroomId ? `?classroomId=${classroomId}` : ""}`, undefined, token),
+  markGifted: (token: string, studentId: string) =>
+    request<{ id: string }>("/gifted/students", { method: "POST", body: JSON.stringify({ studentId }) }, token),
+  removeGiftedStudent: (token: string, id: string) =>
+    request<{ ok: boolean }>(`/gifted/students/${id}`, { method: "DELETE" }, token),
+
+  searchAllStudents: (token: string, q?: string) =>
+    request<Array<{ id: string; fullName: string; classroom: { id: string; name: string; grade: number } }>>(
+      `/gifted/all-students${q ? `?q=${encodeURIComponent(q)}` : ""}`, undefined, token),
+
+  getGiftedTeachers: (token: string) =>
+    request<Array<{ id: string; fullName: string; subject?: string; experience?: number; category?: string; giftedCount: number; materialCount: number }>>(
+      "/gifted/teachers", undefined, token),
+  getGiftedTeacherStudents: (token: string, teacherId: string) =>
+    request<Array<{ id: string; student: { id: string; fullName: string; classroom: { id: string; name: string; grade: number; classTeacher?: { fullName: string } } } }>>(
+      `/gifted/teachers/${teacherId}/students`, undefined, token),
+  addGiftedAssignment: (token: string, teacherId: string, studentId: string) =>
+    request<{ id: string }>("/gifted/teacher-assignments", { method: "POST", body: JSON.stringify({ teacherId, studentId }) }, token),
+  removeGiftedAssignment: (token: string, id: string) =>
+    request<{ ok: boolean }>(`/gifted/teacher-assignments/${id}`, { method: "DELETE" }, token),
+
+  getGiftedMaterials: (token: string, teacherId: string, category?: string) =>
+    request<Array<{ id: string; category: string; title: string; fileUrl?: string; linkUrl?: string; createdAt: string }>>(
+      `/gifted/materials?teacherId=${teacherId}${category ? `&category=${category}` : ""}`, undefined, token),
+  addGiftedMaterial: (token: string, data: { teacherId: string; category: string; title: string; fileUrl?: string; linkUrl?: string }) =>
+    request<{ id: string }>("/gifted/materials", { method: "POST", body: JSON.stringify(data) }, token),
+  deleteGiftedMaterial: (token: string, id: string) =>
+    request<{ ok: boolean }>(`/gifted/materials/${id}`, { method: "DELETE" }, token),
+
+  getGiftedStudentCard: (token: string, studentId: string) =>
+    request<{
+      id: string; fullName: string;
+      classroom: { id: string; name: string; grade: number; classTeacher?: { fullName: string } | null };
+      schedule: Array<{ dayOfWeek: number; period: number; subject: string; startTime?: string; endTime?: string }>;
+      grades: Array<{ topic: string; score: number; maxScore: number; submittedAt: string }>;
+      achievements: Array<{ id: string; title: string; date?: string; level: string; subject?: string; place?: string }>;
+    }>(`/gifted/student-card/${studentId}`, undefined, token),
+  addGiftedAchievement: (token: string, data: { studentId: string; title: string; date?: string; level: string; subject?: string; place?: string }) =>
+    request<{ id: string }>("/gifted/achievements", { method: "POST", body: JSON.stringify(data) }, token),
+  deleteGiftedAchievement: (token: string, id: string) =>
+    request<{ ok: boolean }>(`/gifted/achievements/${id}`, { method: "DELETE" }, token),
+};
