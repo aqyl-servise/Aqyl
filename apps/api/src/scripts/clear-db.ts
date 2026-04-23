@@ -60,6 +60,7 @@ async function run() {
     "gifted_materials",
     "gifted_students",
     "gifted_plans",
+    "student_transfers",
     "task_submission",
     "submission",
     "class_hour",

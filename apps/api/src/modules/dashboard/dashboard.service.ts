@@ -28,7 +28,7 @@ export class DashboardService {
       order: { submittedAt: "DESC" },
     });
     const filteredSubmissions = submissions.filter(
-      (item) => item.student.classroom.teacher.id === teacherId,
+      (item) => item.student.classroom.teacher?.id === teacherId,
     );
 
     const generatedDocuments = await this.generatedDocumentRepository.find({

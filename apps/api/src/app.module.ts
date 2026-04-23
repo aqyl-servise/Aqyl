@@ -34,6 +34,8 @@ import { GiftedStudent } from "./modules/schools/entities/gifted-student.entity"
 import { GiftedTeacherAssignment } from "./modules/schools/entities/gifted-teacher-assignment.entity";
 import { GiftedMaterial } from "./modules/schools/entities/gifted-material.entity";
 import { GiftedAchievement } from "./modules/schools/entities/gifted-achievement.entity";
+import { StudentTransfer } from "./modules/schools/entities/student-transfer.entity";
+import { ClassroomsModule } from "./modules/classrooms/classrooms.module";
 import { SeedService } from "./seed.service";
 
 @Module({
@@ -52,6 +54,7 @@ import { SeedService } from "./seed.service";
       Teacher, Classroom, Student, Submission, GeneratedDocument,
       Schedule, Assignment, TaskSubmission, OpenLesson, Protocol, ClassHour, UploadedFile,
       GiftedPlan, GiftedStudent, GiftedTeacherAssignment, GiftedMaterial, GiftedAchievement,
+      StudentTransfer,
     ]),
     TeachersModule,
     AuthModule,
@@ -69,6 +72,7 @@ import { SeedService } from "./seed.service";
     AdminModule,
     GiftedModule,
     StudentsModule,
+    ClassroomsModule,
   ],
   providers: [SeedService],
 })

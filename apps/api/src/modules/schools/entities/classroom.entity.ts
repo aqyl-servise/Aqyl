@@ -15,11 +15,16 @@ export class Classroom {
   @Column()
   grade!: number;
 
-  @Column()
-  subject!: string;
+  // nullable so classrooms can exist without a subject teacher
+  @Column({ nullable: true })
+  subject?: string;
 
-  @ManyToOne(() => Teacher, (teacher) => teacher.classrooms, { onDelete: "CASCADE", nullable: true })
-  teacher!: Teacher;
+  @Column({ nullable: true })
+  academicYear?: string;
+
+  // SET NULL so classrooms are not destroyed when a teacher is removed
+  @ManyToOne(() => Teacher, (teacher) => teacher.classrooms, { onDelete: "SET NULL", nullable: true })
+  teacher?: Teacher;
 
   @ManyToOne(() => Teacher, { nullable: true, onDelete: "SET NULL" })
   classTeacher?: Teacher;

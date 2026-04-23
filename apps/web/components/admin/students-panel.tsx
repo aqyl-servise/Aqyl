@@ -27,6 +27,9 @@ export function StudentsPanel({ token, language, t, userRole }: {
   const [filterClassroom, setFilterClassroom] = useState("");
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<StudentRow | null>(null);
+  const [transferring, setTransferring] = useState<StudentRow | null>(null);
+  const [transferClassroomId, setTransferClassroomId] = useState("");
+  const [transferNote, setTransferNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -127,6 +130,20 @@ export function StudentsPanel({ token, language, t, userRole }: {
     setStudents((prev) => prev.filter((s) => s.id !== id));
   }
 
+  async function handleTransfer() {
+    if (!transferring || !transferClassroomId) return;
+    setBusy(true);
+    try {
+      await api.transferStudent(token, transferring.id, transferClassroomId, transferNote || undefined);
+      setStudents(await api.getStudents(token));
+      setTransferring(null);
+      setTransferClassroomId("");
+      setTransferNote("");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Ошибка");
+    } finally { setBusy(false); }
+  }
+
   return (
     <div className="page">
       <div className="page-header">
@@ -181,6 +198,39 @@ export function StudentsPanel({ token, language, t, userRole }: {
         </div>
       )}
 
+      {transferring && (
+        <div className="modal-overlay" onClick={() => setTransferring(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ marginBottom: 16 }}>{t.transferStudent}</h3>
+            <p className="muted" style={{ marginBottom: 12 }}>
+              <strong>{transferring.fullName}</strong> — {transferring.classroom.name}
+            </p>
+            <div className="field" style={{ marginBottom: 12 }}>
+              <label className="field-label">{t.selectTargetClass}</label>
+              <select className="input" value={transferClassroomId}
+                onChange={(e) => setTransferClassroomId(e.target.value)}>
+                <option value="">{t.selectTargetClass}</option>
+                {classrooms.filter((c) => c.id !== transferring.classroom.id).map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="field" style={{ marginBottom: 16 }}>
+              <label className="field-label">{t.transferNote}</label>
+              <input className="input" value={transferNote} onChange={(e) => setTransferNote(e.target.value)}
+                placeholder="Необязательно" />
+            </div>
+            <div className="form-row">
+              <button className="btn btn-primary" disabled={!transferClassroomId || busy}
+                onClick={handleTransfer}>
+                {busy ? <span className="spinner" /> : t.transferStudent}
+              </button>
+              <button className="btn btn-ghost" onClick={() => setTransferring(null)}>{t.cancel}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>
         <div className="muted" style={{ fontSize: 13, padding: "8px 16px" }}>
           {t.search}: {filtered.length} / {students.length}
@@ -215,6 +265,10 @@ export function StudentsPanel({ token, language, t, userRole }: {
                     <div style={{ display: "flex", gap: 4 }}>
                       <button className="btn btn-ghost btn-sm" onClick={() => { setEditing(s); setFormError(null); }}>
                         ✏️
+                      </button>
+                      <button className="btn btn-ghost btn-sm" title={t.transferStudent}
+                        onClick={() => { setTransferring(s); setTransferClassroomId(""); setTransferNote(""); }}>
+                        🔄
                       </button>
                       {canDelete && (
                         <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }}

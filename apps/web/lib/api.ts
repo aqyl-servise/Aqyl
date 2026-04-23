@@ -41,6 +41,23 @@ export type ClassroomOption = {
   classTeacher?: { id: string; fullName: string };
 };
 
+export type ClassroomItem = {
+  id: string;
+  name: string;
+  grade: number;
+  academicYear?: string;
+  classTeacher?: { id: string; fullName: string } | null;
+  studentCount: number;
+};
+
+export type TransferRecord = {
+  id: string;
+  fromClassroom?: { id: string; name: string } | null;
+  toClassroom?: { id: string; name: string } | null;
+  note?: string;
+  transferredAt: string;
+};
+
 async function request<T>(path: string, init?: RequestInit, token?: string): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
@@ -131,6 +148,24 @@ export const api = {
     request<ClassroomOption[]>("/students/classrooms", undefined, token),
   getClassTeachersForDropdown: (token: string) =>
     request<Array<{ id: string; fullName: string }>>("/students/class-teachers", undefined, token),
+  transferStudent: (token: string, studentId: string, classroomId: string, note?: string) =>
+    request<StudentRow>(`/students/${studentId}/transfer`, { method: "POST", body: JSON.stringify({ classroomId, note }) }, token),
+  getStudentTransfers: (token: string, studentId: string) =>
+    request<TransferRecord[]>(`/students/${studentId}/transfers`, undefined, token),
+
+  // Classrooms management
+  getClassrooms: (token: string) =>
+    request<ClassroomItem[]>("/classrooms", undefined, token),
+  createClassroom: (token: string, data: { name: string; academicYear?: string; classTeacherId?: string }) =>
+    request<ClassroomItem>("/classrooms", { method: "POST", body: JSON.stringify(data) }, token),
+  updateClassroom: (token: string, id: string, data: { name?: string; academicYear?: string; classTeacherId?: string }) =>
+    request<ClassroomItem>(`/classrooms/${id}`, { method: "PATCH", body: JSON.stringify(data) }, token),
+  deleteClassroom: (token: string, id: string) =>
+    request<{ ok: boolean }>(`/classrooms/${id}`, { method: "DELETE" }, token),
+  bulkTransferStudents: (token: string, fromId: string, toId: string) =>
+    request<{ transferred: number }>(`/classrooms/${fromId}/bulk-transfer`, { method: "POST", body: JSON.stringify({ toClassroomId: toId }) }, token),
+  getClassroomClassTeachers: (token: string) =>
+    request<Array<{ id: string; fullName: string }>>("/classrooms/class-teachers", undefined, token),
 
   // Schedule
   getMySchedule: (token: string) =>

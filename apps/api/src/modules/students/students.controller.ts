@@ -50,4 +50,19 @@ export class StudentsController {
   remove(@Param("id") id: string) {
     return this.service.remove(id);
   }
+
+  @Post(":id/transfer")
+  @Roles("admin", "principal", "vice_principal", "teacher")
+  transfer(
+    @Param("id") id: string,
+    @Body() body: { classroomId: string; note?: string },
+  ) {
+    return this.service.transfer(id, body.classroomId, body.note);
+  }
+
+  @Get(":id/transfers")
+  @Roles("admin", "principal", "vice_principal")
+  getTransferHistory(@Param("id") id: string) {
+    return this.service.getTransferHistory(id);
+  }
 }

@@ -1,9 +1,10 @@
-import { ConflictException, Injectable } from "@nestjs/common";
+import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Student } from "../schools/entities/student.entity";
 import { Classroom } from "../schools/entities/classroom.entity";
 import { Teacher } from "../teachers/entities/teacher.entity";
+import { StudentTransfer } from "../schools/entities/student-transfer.entity";
 
 export interface CreateStudentDto {
   fullName: string;
@@ -21,6 +22,7 @@ export class StudentsService {
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
     @InjectRepository(Classroom) private readonly classroomRepo: Repository<Classroom>,
     @InjectRepository(Teacher) private readonly teacherRepo: Repository<Teacher>,
+    @InjectRepository(StudentTransfer) private readonly transferRepo: Repository<StudentTransfer>,
   ) {}
 
   findAll(classroomId?: string) {
@@ -100,5 +102,33 @@ export class StudentsService {
   async remove(id: string) {
     await this.studentRepo.delete(id);
     return { ok: true };
+  }
+
+  async transfer(studentId: string, classroomId: string, note?: string) {
+    const student = await this.studentRepo.findOne({
+      where: { id: studentId },
+      relations: ["classroom"],
+    });
+    if (!student) throw new NotFoundException("Student not found");
+
+    await this.transferRepo.save(
+      this.transferRepo.create({
+        student: { id: studentId },
+        fromClassroom: student.classroom ? { id: student.classroom.id } : null,
+        toClassroom: { id: classroomId },
+        note: note || undefined,
+      }),
+    );
+
+    await this.studentRepo.update(studentId, { classroom: { id: classroomId } });
+    return this.studentRepo.findOne({ where: { id: studentId }, relations: ["classroom", "classTeacher"] });
+  }
+
+  getTransferHistory(studentId: string) {
+    return this.transferRepo.find({
+      where: { student: { id: studentId } },
+      relations: ["fromClassroom", "toClassroom"],
+      order: { transferredAt: "DESC" },
+    });
   }
 }
