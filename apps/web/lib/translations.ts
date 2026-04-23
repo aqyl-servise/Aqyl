@@ -5,7 +5,6 @@ const ru = {
   appName: "Aqyl", subtitle: "Цифровая школа",
   loginTitle: "Вход в систему", email: "Email", password: "Пароль",
   signIn: "Войти", logout: "Выйти",
-  demoHint: "Демо: teacher@aqyl.kz / aqyl123",
   // Registration
   register: "Зарегистрироваться", registerTitle: "Регистрация",
   fullNameLabel: "ФИО (полное)", confirmPassword: "Подтверждение пароля",
@@ -97,7 +96,6 @@ const kz: TranslationShape = {
   appName: "Aqyl", subtitle: "Цифрлы мектеп",
   loginTitle: "Жүйеге кіру", email: "Email", password: "Құпия сөз",
   signIn: "Кіру", logout: "Шығу",
-  demoHint: "Демо: teacher@aqyl.kz / aqyl123",
   register: "Тіркелу", registerTitle: "Тіркеу",
   fullNameLabel: "Толық аты-жөні", confirmPassword: "Құпия сөзді растау",
   schoolName: "Мектеп атауы", selectRole: "Рөлді таңдаңыз",
@@ -172,7 +170,6 @@ const en: TranslationShape = {
   appName: "Aqyl", subtitle: "Digital School",
   loginTitle: "Sign in", email: "Email", password: "Password",
   signIn: "Sign in", logout: "Sign out",
-  demoHint: "Demo: teacher@aqyl.kz / aqyl123",
   register: "Register", registerTitle: "Registration",
   fullNameLabel: "Full Name", confirmPassword: "Confirm Password",
   schoolName: "School Name", selectRole: "Select Role",

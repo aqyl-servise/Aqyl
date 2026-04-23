@@ -173,25 +173,17 @@ function LoginForm({ t, busy, error, onSubmit, onRegister }: {
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
   onRegister: () => void;
 }) {
-  const demoAccounts = [
-    { role: "teacher", email: "teacher@aqyl.kz", pass: "aqyl123" },
-    { role: "admin", email: "admin@aqyl.kz", pass: "admin123" },
-    { role: "principal", email: "principal@aqyl.kz", pass: "principal123" },
-    { role: "vice_principal", email: "vp.academic@aqyl.kz", pass: "vp123" },
-    { role: "class_teacher", email: "ct1@aqyl.kz", pass: "ct123" },
-  ];
-
   return (
     <>
       <h2 className="login-title">{t.loginTitle}</h2>
       <form onSubmit={onSubmit} className="login-form">
         <div className="field">
           <label className="field-label" htmlFor="email">{t.email}</label>
-          <input id="email" name="email" type="email" defaultValue="teacher@aqyl.kz" required className="input" />
+          <input id="email" name="email" type="email" required className="input" />
         </div>
         <div className="field">
           <label className="field-label" htmlFor="password">{t.password}</label>
-          <input id="password" name="password" type="password" defaultValue="aqyl123" required className="input" />
+          <input id="password" name="password" type="password" required className="input" />
         </div>
         {error && <div className="alert alert-error"><span>⚠</span> {error}</div>}
         <button className="btn btn-primary btn-full" type="submit" disabled={busy}>
@@ -205,15 +197,6 @@ function LoginForm({ t, busy, error, onSubmit, onRegister }: {
       >
         {t.register}
       </button>
-      <div className="demo-accounts">
-        <p className="demo-accounts-title">Демо-аккаунты:</p>
-        {demoAccounts.map((a) => (
-          <div key={a.email} className="demo-account-row">
-            <span className="demo-role">{a.role}</span>
-            <span className="demo-creds">{a.email} / {a.pass}</span>
-          </div>
-        ))}
-      </div>
     </>
   );
 }
