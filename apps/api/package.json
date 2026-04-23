@@ -7,7 +7,8 @@
     "start": "node dist/main.js",
     "start:prod": "node dist/main",
     "start:dev": "nest start --watch",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "clear:db": "ts-node --project tsconfig.json src/scripts/clear-db.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",
