@@ -17,8 +17,8 @@ type StudentRow = {
 type ClassroomOption = { id: string; name: string; grade: number; classTeacher?: { id: string; fullName: string } };
 type TeacherOption = { id: string; fullName: string };
 
-export function StudentsPanel({ token, language, t }: {
-  token: string; language: Language; t: Record<string, string>;
+export function StudentsPanel({ token, language, t, userRole }: {
+  token: string; language: Language; t: Record<string, string>; userRole?: string;
 }) {
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [classrooms, setClassrooms] = useState<ClassroomOption[]>([]);
@@ -29,6 +29,8 @@ export function StudentsPanel({ token, language, t }: {
   const [editing, setEditing] = useState<StudentRow | null>(null);
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  const canDelete = userRole === "admin" || userRole === "principal";
 
   useEffect(() => {
     Promise.all([
@@ -79,7 +81,12 @@ export function StudentsPanel({ token, language, t }: {
       setStudents(await api.getStudents(token));
       setAdding(false);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Error");
+      const raw = err instanceof Error ? err.message : "";
+      try {
+        const b = JSON.parse(raw) as { message?: string };
+        const msg = b.message === "IIN_EXISTS" ? t.iinExists : (typeof b.message === "string" ? b.message : raw || "Ошибка");
+        setFormError(msg);
+      } catch { setFormError(raw || "Ошибка"); }
     } finally { setBusy(false); }
   }
 
@@ -105,7 +112,12 @@ export function StudentsPanel({ token, language, t }: {
       setStudents(await api.getStudents(token));
       setEditing(null);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Error");
+      const raw = err instanceof Error ? err.message : "";
+      try {
+        const b = JSON.parse(raw) as { message?: string };
+        const msg = b.message === "IIN_EXISTS" ? t.iinExists : (typeof b.message === "string" ? b.message : raw || "Ошибка");
+        setFormError(msg);
+      } catch { setFormError(raw || "Ошибка"); }
     } finally { setBusy(false); }
   }
 
@@ -204,10 +216,12 @@ export function StudentsPanel({ token, language, t }: {
                       <button className="btn btn-ghost btn-sm" onClick={() => { setEditing(s); setFormError(null); }}>
                         ✏️
                       </button>
-                      <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }}
-                        onClick={() => handleDelete(s.id)}>
-                        🗑
-                      </button>
+                      {canDelete && (
+                        <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }}
+                          onClick={() => handleDelete(s.id)}>
+                          🗑
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

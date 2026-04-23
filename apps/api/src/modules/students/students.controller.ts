@@ -21,8 +21,11 @@ export class StudentsController {
   }
 
   @Get("classrooms")
-  getClassrooms() {
-    return this.service.getClassrooms();
+  getClassrooms(@Req() req: { user: ReqUser }) {
+    if (["admin", "principal", "vice_principal"].includes(req.user.role)) {
+      return this.service.getClassrooms();
+    }
+    return this.service.getTeacherClassrooms(req.user.id);
   }
 
   @Get("class-teachers")

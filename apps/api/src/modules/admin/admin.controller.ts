@@ -27,8 +27,8 @@ export class AdminController {
 
   @Get("registrations")
   @Roles("admin")
-  getPendingRegistrations() {
-    return this.service.getPendingRegistrations();
+  getRegistrations() {
+    return this.service.getRegistrations();
   }
 
   @Patch("registrations/:id/approve")

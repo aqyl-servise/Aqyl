@@ -49,7 +49,7 @@ export function AdminApp({ token, user, language, setLanguage, onLogout }: {
     <AppLayout user={user} token={token} language={language} setLanguage={setLanguage}
       onLogout={onLogout} navItems={navItems} activeSection={section} onNav={setSection}>
       {section === "dashboard" && <AdminDashboard token={token} language={language} t={t} />}
-      {section === "students" && <StudentsPanel token={token} language={language} t={t} />}
+      {section === "students" && <StudentsPanel token={token} language={language} t={t} userRole={user.role} />}
       {section === "teachers" && <TeacherListPanel token={token} language={language} t={t} />}
       {section === "school-analytics" && <SchoolAnalyticsPanel token={token} language={language} t={t} />}
       {section === "open-lessons" && <OpenLessonsPanel token={token} language={language} t={t} isAdmin={true} />}

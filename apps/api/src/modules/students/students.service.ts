@@ -48,6 +48,14 @@ export class StudentsService {
     });
   }
 
+  getTeacherClassrooms(teacherId: string) {
+    return this.classroomRepo.find({
+      where: { teacher: { id: teacherId } },
+      relations: ["classTeacher"],
+      order: { grade: "ASC", name: "ASC" },
+    });
+  }
+
   getClassTeachers() {
     return this.teacherRepo.find({
       where: { role: "class_teacher" },
@@ -58,7 +66,7 @@ export class StudentsService {
   async create(dto: CreateStudentDto) {
     if (dto.iin) {
       const existing = await this.studentRepo.findOne({ where: { iin: dto.iin } });
-      if (existing) throw new ConflictException("IIN already registered");
+      if (existing) throw new ConflictException("IIN_EXISTS");
     }
     const student = this.studentRepo.create({
       fullName: dto.fullName,
@@ -75,7 +83,7 @@ export class StudentsService {
   async update(id: string, dto: Partial<CreateStudentDto>) {
     if (dto.iin) {
       const existing = await this.studentRepo.findOne({ where: { iin: dto.iin } });
-      if (existing && existing.id !== id) throw new ConflictException("IIN already registered");
+      if (existing && existing.id !== id) throw new ConflictException("IIN_EXISTS");
     }
     await this.studentRepo.update(id, {
       ...(dto.fullName ? { fullName: dto.fullName } : {}),

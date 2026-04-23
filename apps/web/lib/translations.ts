@@ -76,6 +76,7 @@ const ru = {
   lastName: "Фамилия", firstName: "Имя", middleName: "Отчество",
   selectClass: "Выберите класс", addStudentTitle: "Добавить ученика",
   iinInvalid: "ИИН должен содержать ровно 12 цифр",
+  iinExists: "Ученик с таким ИИН уже существует",
   // Protocols
   protocolType_pedagogical: "Педагогический совет", protocolType_parent: "Родительское собрание",
   protocolType_educational: "Воспитательное", protocolType_other: "Прочее",
@@ -155,6 +156,7 @@ const kz: TranslationShape = {
   lastName: "Тегі", firstName: "Аты", middleName: "Әкесінің аты",
   selectClass: "Сыныпты таңдаңыз", addStudentTitle: "Оқушы қосу",
   iinInvalid: "ЖСН дәл 12 санды болуы керек",
+  iinExists: "Бұндай ЖСН бар оқушы тіркелген",
   protocolType_pedagogical: "Педагогикалық кеңес", protocolType_parent: "Ата-аналар жиналысы",
   protocolType_educational: "Тәрбиелік", protocolType_other: "Басқа",
   content: "Мазмұны", createProtocol: "Хаттама жасау",
@@ -229,6 +231,7 @@ const en: TranslationShape = {
   lastName: "Last Name", firstName: "First Name", middleName: "Middle Name",
   selectClass: "Select Class", addStudentTitle: "Add Student",
   iinInvalid: "IIN must be exactly 12 digits",
+  iinExists: "A student with this IIN already exists",
   protocolType_pedagogical: "Pedagogical council", protocolType_parent: "Parent meeting",
   protocolType_educational: "Educational", protocolType_other: "Other",
   content: "Content", createProtocol: "Create protocol",

@@ -90,9 +90,8 @@ export class AdminService {
     });
   }
 
-  getPendingRegistrations() {
+  getRegistrations() {
     return this.teacherRepo.find({
-      where: { status: "pending" },
       order: { createdAt: "DESC" },
     });
   }

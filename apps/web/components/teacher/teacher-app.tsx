@@ -35,7 +35,7 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
       onLogout={onLogout} navItems={nav} activeSection={section} onNav={setSection}>
       {section === "dashboard" && <TeacherDashboard token={token} language={language} t={t} />}
       {section === "profile" && <TeacherProfile token={token} user={user} language={language} t={t} />}
-      {section === "students" && <StudentsPanel token={token} language={language} t={t} />}
+      {section === "students" && <StudentsPanel token={token} language={language} t={t} userRole={user.role} />}
       {section === "ktp" && <LessonGenerator token={token} language={language} t={t} />}
       {section === "tasks" && <TaskGenerator token={token} language={language} t={t} />}
       {section === "assignments" && <AssignmentsPanel token={token} language={language} t={t} />}
