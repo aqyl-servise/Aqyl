@@ -28,6 +28,9 @@ export class Student {
   @Column({ nullable: true })
   parentContact?: string;
 
+  @Column({ nullable: true })
+  userId?: string; // FK to Teacher.id (auth account)
+
   @ManyToOne(() => Teacher, { nullable: true, onDelete: "SET NULL" })
   classTeacher?: Teacher;
 

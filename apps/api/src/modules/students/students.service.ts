@@ -82,7 +82,7 @@ export class StudentsService {
     return this.studentRepo.save(student);
   }
 
-  async update(id: string, dto: Partial<CreateStudentDto>) {
+  async update(id: string, dto: Partial<CreateStudentDto & { userId?: string | null }>) {
     if (dto.iin) {
       const existing = await this.studentRepo.findOne({ where: { iin: dto.iin } });
       if (existing && existing.id !== id) throw new ConflictException("IIN_EXISTS");
@@ -95,6 +95,7 @@ export class StudentsService {
       ...(dto.parentContact !== undefined ? { parentContact: dto.parentContact } : {}),
       ...(dto.classroomId ? { classroom: { id: dto.classroomId } } : {}),
       ...(dto.classTeacherId !== undefined ? { classTeacher: dto.classTeacherId ? { id: dto.classTeacherId } : undefined } : {}),
+      ...("userId" in dto ? { userId: dto.userId ?? undefined } : {}),
     });
     return this.studentRepo.findOne({ where: { id }, relations: ["classroom", "classTeacher"] });
   }

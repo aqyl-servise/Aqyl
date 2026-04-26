@@ -22,6 +22,9 @@ export class Schedule {
   @Column({ nullable: true })
   endTime?: string; // "09:15"
 
+  @Column({ nullable: true })
+  room?: string; // Physical room number, e.g. "201"
+
   @ManyToOne(() => Classroom, (c) => c.schedules, { onDelete: "CASCADE" })
   classroom!: Classroom;
 

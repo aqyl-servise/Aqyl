@@ -36,6 +36,7 @@ import { GiftedMaterial } from "./modules/schools/entities/gifted-material.entit
 import { GiftedAchievement } from "./modules/schools/entities/gifted-achievement.entity";
 import { StudentTransfer } from "./modules/schools/entities/student-transfer.entity";
 import { ClassroomsModule } from "./modules/classrooms/classrooms.module";
+import { StudentPortalModule } from "./modules/student-portal/student-portal.module";
 import { SeedService } from "./seed.service";
 
 @Module({
@@ -73,6 +74,7 @@ import { SeedService } from "./seed.service";
     GiftedModule,
     StudentsModule,
     ClassroomsModule,
+    StudentPortalModule,
   ],
   providers: [SeedService],
 })

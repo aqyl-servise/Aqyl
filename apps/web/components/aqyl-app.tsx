@@ -6,6 +6,7 @@ import { Language, translations } from "../lib/translations";
 import { TeacherApp } from "./teacher/teacher-app";
 import { AdminApp } from "./admin/admin-app";
 import { ClassTeacherApp } from "./class-teacher/class-teacher-app";
+import { StudentApp } from "./student/student-app";
 
 type View = "login" | "register" | "success";
 
@@ -134,6 +135,9 @@ export function AqylApp() {
   }
   if (role === "class_teacher") {
     return <ClassTeacherApp token={token} user={user} language={language} setLanguage={setLanguage} onLogout={logout} />;
+  }
+  if (role === "student") {
+    return <StudentApp token={token} user={user} language={language} setLanguage={setLanguage} onLogout={logout} />;
   }
 
   return (

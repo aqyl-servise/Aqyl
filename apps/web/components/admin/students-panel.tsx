@@ -10,9 +10,12 @@ type StudentRow = {
   dateOfBirth?: string;
   parentName?: string;
   parentContact?: string;
+  userId?: string;
   classroom: { id: string; name: string; grade: number };
   classTeacher?: { id: string; fullName: string };
 };
+
+type UserOption = { id: string; fullName: string; email: string; role: string };
 
 type ClassroomOption = { id: string; name: string; grade: number; classTeacher?: { id: string; fullName: string } };
 type TeacherOption = { id: string; fullName: string };
@@ -30,6 +33,9 @@ export function StudentsPanel({ token, language, t, userRole }: {
   const [transferring, setTransferring] = useState<StudentRow | null>(null);
   const [transferClassroomId, setTransferClassroomId] = useState("");
   const [transferNote, setTransferNote] = useState("");
+  const [linking, setLinking] = useState<StudentRow | null>(null);
+  const [linkUserId, setLinkUserId] = useState("");
+  const [studentUsers, setStudentUsers] = useState<UserOption[]>([]);
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -40,10 +46,12 @@ export function StudentsPanel({ token, language, t, userRole }: {
       api.getStudents(token),
       api.getClassroomsForDropdown(token),
       api.getClassTeachersForDropdown(token),
-    ]).then(([s, c, ct]) => {
-      setStudents(s);
+      api.getUsers(token),
+    ]).then(([s, c, ct, users]) => {
+      setStudents(s as StudentRow[]);
       setClassrooms(c);
       setClassTeachers(ct);
+      setStudentUsers((users as UserOption[]).filter((u) => u.role === "student"));
     }).catch(console.error);
   }, [token]);
 
@@ -128,6 +136,19 @@ export function StudentsPanel({ token, language, t, userRole }: {
     if (!confirm("Удалить ученика?")) return;
     await api.deleteStudent(token, id);
     setStudents((prev) => prev.filter((s) => s.id !== id));
+  }
+
+  async function handleLinkAccount() {
+    if (!linking) return;
+    setBusy(true);
+    try {
+      await api.updateStudent(token, linking.id, { userId: linkUserId || null });
+      setStudents(await api.getStudents(token) as StudentRow[]);
+      setLinking(null);
+      setLinkUserId("");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Ошибка");
+    } finally { setBusy(false); }
   }
 
   async function handleTransfer() {
@@ -231,6 +252,42 @@ export function StudentsPanel({ token, language, t, userRole }: {
         </div>
       )}
 
+      {linking && (
+        <div className="modal-overlay" onClick={() => setLinking(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ marginBottom: 8 }}>{t.link_account ?? "Привязать аккаунт"}</h3>
+            <p className="muted" style={{ marginBottom: 16, fontSize: 13 }}>
+              <strong>{linking.fullName}</strong>
+            </p>
+            <div className="field" style={{ marginBottom: 16 }}>
+              <label className="field-label">{t.select_user_account ?? "Выберите аккаунт ученика"}</label>
+              <select className="input" value={linkUserId} onChange={(e) => setLinkUserId(e.target.value)}>
+                <option value="">— Убрать привязку —</option>
+                {studentUsers.map((u) => (
+                  <option key={u.id} value={u.id}>{u.fullName} ({u.email})</option>
+                ))}
+              </select>
+              {studentUsers.length === 0 && (
+                <span className="muted" style={{ fontSize: 11, marginTop: 4, display: "block" }}>
+                  Нет пользователей с ролью «Ученик». Попросите ученика зарегистрироваться.
+                </span>
+              )}
+            </div>
+            {linking.userId && (
+              <p className="muted" style={{ fontSize: 12, marginBottom: 12 }}>
+                Текущий аккаунт ID: <code>{linking.userId}</code>
+              </p>
+            )}
+            <div className="form-row">
+              <button className="btn btn-primary" disabled={busy} onClick={handleLinkAccount}>
+                {busy ? <span className="spinner" /> : (t.save ?? "Сохранить")}
+              </button>
+              <button className="btn btn-ghost" onClick={() => setLinking(null)}>{t.cancel}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>
         <div className="muted" style={{ fontSize: 13, padding: "8px 16px" }}>
           {t.search}: {filtered.length} / {students.length}
@@ -269,6 +326,14 @@ export function StudentsPanel({ token, language, t, userRole }: {
                       <button className="btn btn-ghost btn-sm" title={t.transferStudent}
                         onClick={() => { setTransferring(s); setTransferClassroomId(""); setTransferNote(""); }}>
                         🔄
+                      </button>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        title={t.link_account ?? "Привязать аккаунт"}
+                        style={{ color: s.userId ? "var(--success, #28a745)" : undefined }}
+                        onClick={() => { setLinking(s); setLinkUserId(s.userId ?? ""); }}
+                      >
+                        🔗
                       </button>
                       {canDelete && (
                         <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }}

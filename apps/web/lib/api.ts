@@ -30,8 +30,58 @@ export type StudentRow = {
   dateOfBirth?: string;
   parentName?: string;
   parentContact?: string;
+  userId?: string;
   classroom: { id: string; name: string; grade: number };
   classTeacher?: { id: string; fullName: string };
+};
+
+export type ScheduleRow = {
+  id: string;
+  dayOfWeek: number;
+  period: number;
+  subject: string;
+  startTime?: string;
+  endTime?: string;
+  room?: string;
+  teacher?: { id: string; fullName: string };
+};
+
+export type AssignmentWithSubmission = {
+  id: string;
+  title: string;
+  description?: string;
+  subject: string;
+  dueDate?: string;
+  maxScore: number;
+  status: "active" | "closed";
+  createdAt: string;
+  teacher?: { id: string; fullName: string };
+  submission: {
+    id: string;
+    content?: string;
+    fileUrl?: string;
+    score?: number;
+    status: "pending" | "submitted" | "graded";
+    submittedAt?: string;
+  } | null;
+};
+
+export type GradeRow = {
+  id: string;
+  content?: string;
+  fileUrl?: string;
+  score?: number;
+  status: "pending" | "submitted" | "graded";
+  submittedAt?: string;
+  createdAt: string;
+  assignment: {
+    id: string;
+    title: string;
+    subject: string;
+    maxScore: number;
+    dueDate?: string;
+    teacher?: { id: string; fullName: string };
+  };
 };
 
 export type ClassroomOption = {
@@ -266,4 +316,19 @@ export const api = {
     request<{ id: string }>("/gifted/achievements", { method: "POST", body: JSON.stringify(data) }, token),
   deleteGiftedAchievement: (token: string, id: string) =>
     request<{ ok: boolean }>(`/gifted/achievements/${id}`, { method: "DELETE" }, token),
+
+  // Student portal
+  getStudentMe: (token: string) =>
+    request<StudentRow>("/student/me", undefined, token),
+  getStudentSchedule: (token: string) =>
+    request<ScheduleRow[]>("/student/schedule", undefined, token),
+  getStudentAssignments: (token: string) =>
+    request<AssignmentWithSubmission[]>("/student/assignments", undefined, token),
+  submitStudentAssignment: (token: string, assignmentId: string, data: { content?: string; fileUrl?: string }) =>
+    request<{ id: string; status: string }>(`/student/assignments/${assignmentId}/submit`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }, token),
+  getStudentGrades: (token: string) =>
+    request<GradeRow[]>("/student/grades", undefined, token),
 };
