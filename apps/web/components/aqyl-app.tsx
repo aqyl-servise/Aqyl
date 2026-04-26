@@ -176,7 +176,7 @@ function LoginForm({ t, busy, error, onSubmit, onRegister }: {
   return (
     <>
       <h2 className="login-title">{t.loginTitle}</h2>
-      <form onSubmit={onSubmit} className="login-form">
+      <form method="POST" onSubmit={onSubmit} className="login-form">
         <div className="field">
           <label className="field-label" htmlFor="email">{t.email}</label>
           <input id="email" name="email" type="email" required className="input" />
@@ -218,7 +218,7 @@ function RegisterForm({ t, busy, error, onSubmit, onBack }: {
   return (
     <>
       <h2 className="login-title">{t.registerTitle}</h2>
-      <form onSubmit={onSubmit} className="login-form">
+      <form method="POST" onSubmit={onSubmit} className="login-form">
         <div className="field">
           <label className="field-label">{t.fullNameLabel}</label>
           <input name="fullName" type="text" required className="input" placeholder="Иванов Иван Иванович" />

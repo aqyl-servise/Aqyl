@@ -40,7 +40,15 @@
       "Bash(cat apps/api/.env)",
       "Bash(cat apps/api/.env.local)",
       "Bash(node dist/main.js)",
-      "Bash(tasklist)"
+      "Bash(tasklist)",
+      "Bash(ssh -V)",
+      "Bash(sshpass --version)",
+      "Bash(python3 -c \"import paramiko; print\\('paramiko ok'\\)\")",
+      "Bash(python3 -c \"import subprocess; print\\('ok'\\)\")",
+      "Bash(python *)",
+      "Bash(cat C:\\\\\\\\Users\\\\\\\\MI\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\claude\\\\\\\\C--Users-MI-aqyl-teacher\\\\\\\\220b2cfe-d005-442a-892b-0cb0de36fc8e\\\\\\\\tasks\\\\\\\\bgz0tzph3.output)",
+      "Bash(pip install *)",
+      "Bash(/c/Users/MI/AppData/Local/Programs/Python/Python313/python *)"
     ]
   }
 }
