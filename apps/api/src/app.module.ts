@@ -35,6 +35,7 @@ import { GiftedTeacherAssignment } from "./modules/schools/entities/gifted-teach
 import { GiftedMaterial } from "./modules/schools/entities/gifted-material.entity";
 import { GiftedAchievement } from "./modules/schools/entities/gifted-achievement.entity";
 import { StudentTransfer } from "./modules/schools/entities/student-transfer.entity";
+import { PasswordReset } from "./modules/schools/entities/password-reset.entity";
 import { ClassroomsModule } from "./modules/classrooms/classrooms.module";
 import { StudentPortalModule } from "./modules/student-portal/student-portal.module";
 import { SeedService } from "./seed.service";
@@ -55,7 +56,7 @@ import { SeedService } from "./seed.service";
       Teacher, Classroom, Student, Submission, GeneratedDocument,
       Schedule, Assignment, TaskSubmission, OpenLesson, Protocol, ClassHour, UploadedFile,
       GiftedPlan, GiftedStudent, GiftedTeacherAssignment, GiftedMaterial, GiftedAchievement,
-      StudentTransfer,
+      StudentTransfer, PasswordReset,
     ]),
     TeachersModule,
     AuthModule,

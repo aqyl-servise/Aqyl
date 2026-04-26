@@ -90,19 +90,33 @@ export class AdminService {
     });
   }
 
-  getRegistrations() {
-    return this.teacherRepo.find({
-      order: { createdAt: "DESC" },
-    });
+  private serializeTeacher(t: Teacher) {
+    return {
+      id: t.id,
+      fullName: t.fullName,
+      email: t.email,
+      role: t.role,
+      status: t.status,
+      schoolName: t.schoolName,
+      preferredLanguage: t.preferredLanguage,
+      createdAt: t.createdAt,
+    };
+  }
+
+  async getRegistrations() {
+    const rows = await this.teacherRepo.find({ order: { createdAt: "DESC" } });
+    return rows.map((t) => this.serializeTeacher(t));
   }
 
   async approveRegistration(id: string) {
     await this.teacherRepo.update(id, { status: "active" });
-    return this.teacherRepo.findOne({ where: { id } });
+    const t = await this.teacherRepo.findOne({ where: { id } });
+    return t ? this.serializeTeacher(t) : null;
   }
 
   async rejectRegistration(id: string) {
     await this.teacherRepo.update(id, { status: "rejected" });
-    return this.teacherRepo.findOne({ where: { id } });
+    const t = await this.teacherRepo.findOne({ where: { id } });
+    return t ? this.serializeTeacher(t) : null;
   }
 }

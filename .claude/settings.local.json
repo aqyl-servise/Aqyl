@@ -48,7 +48,11 @@
       "Bash(python *)",
       "Bash(cat C:\\\\\\\\Users\\\\\\\\MI\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\claude\\\\\\\\C--Users-MI-aqyl-teacher\\\\\\\\220b2cfe-d005-442a-892b-0cb0de36fc8e\\\\\\\\tasks\\\\\\\\bgz0tzph3.output)",
       "Bash(pip install *)",
-      "Bash(/c/Users/MI/AppData/Local/Programs/Python/Python313/python *)"
+      "Bash(/c/Users/MI/AppData/Local/Programs/Python/Python313/python *)",
+      "Bash(ssh *)",
+      "Bash(npx --yes concurrently \"npm run dev:web\")",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(echo \"PID=$!\")"
     ]
   }
 }

@@ -8,7 +8,7 @@ import { AdminApp } from "./admin/admin-app";
 import { ClassTeacherApp } from "./class-teacher/class-teacher-app";
 import { StudentApp } from "./student/student-app";
 
-type View = "login" | "register" | "success";
+type View = "login" | "register" | "success" | "forgot";
 
 export function AqylApp() {
   const [language, setLanguage] = useState<Language>("ru");
@@ -109,6 +109,7 @@ export function AqylApp() {
             t={t} busy={busy} error={error}
             onSubmit={handleLogin}
             onRegister={() => { setView("register"); setError(null); }}
+            onForgot={() => { setView("forgot"); setError(null); }}
           />
         )}
         {view === "register" && (
@@ -120,6 +121,12 @@ export function AqylApp() {
         )}
         {view === "success" && (
           <SuccessView t={t} onBack={() => { setView("login"); setError(null); }} />
+        )}
+        {view === "forgot" && (
+          <ForgotPasswordView
+            t={t}
+            onBack={() => { setView("login"); setError(null); }}
+          />
         )}
       </AuthShell>
     );
@@ -172,15 +179,16 @@ function AuthShell({ language, setLanguage, children }: {
 }
 
 /* ─── Login form ────────────────────────────────────────────────────── */
-function LoginForm({ t, busy, error, onSubmit, onRegister }: {
+function LoginForm({ t, busy, error, onSubmit, onRegister, onForgot }: {
   t: Record<string, string>; busy: boolean; error: string | null;
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
   onRegister: () => void;
+  onForgot: () => void;
 }) {
   return (
     <>
       <h2 className="login-title">{t.loginTitle}</h2>
-      <form method="POST" onSubmit={onSubmit} className="login-form">
+      <form onSubmit={onSubmit} className="login-form">
         <div className="field">
           <label className="field-label" htmlFor="email">{t.email}</label>
           <input id="email" name="email" type="email" required className="input" />
@@ -192,6 +200,14 @@ function LoginForm({ t, busy, error, onSubmit, onRegister }: {
         {error && <div className="alert alert-error"><span>⚠</span> {error}</div>}
         <button className="btn btn-primary btn-full" type="submit" disabled={busy}>
           {busy ? <span className="spinner" /> : t.signIn}
+        </button>
+        <button
+          type="button"
+          className="btn btn-ghost btn-full btn-sm"
+          style={{ marginTop: 4, fontSize: 13, color: "var(--text-muted, #888)" }}
+          onClick={onForgot}
+        >
+          {t.forgotPassword}
         </button>
       </form>
       <button
@@ -222,7 +238,7 @@ function RegisterForm({ t, busy, error, onSubmit, onBack }: {
   return (
     <>
       <h2 className="login-title">{t.registerTitle}</h2>
-      <form method="POST" onSubmit={onSubmit} className="login-form">
+      <form onSubmit={onSubmit} className="login-form">
         <div className="field">
           <label className="field-label">{t.fullNameLabel}</label>
           <input name="fullName" type="text" required className="input" placeholder="Иванов Иван Иванович" />
@@ -276,6 +292,63 @@ function SuccessView({ t, onBack }: { t: Record<string, string>; onBack: () => v
         ← {t.backToLogin}
       </button>
     </div>
+  );
+}
+
+/* ─── Forgot password ───────────────────────────────────────────────── */
+function ForgotPasswordView({ t, onBack }: { t: Record<string, string>; onBack: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setBusy(true); setError(null);
+    const fd = new FormData(e.currentTarget);
+    try {
+      await api.forgotPassword(String(fd.get("email") ?? ""));
+      setSent(true);
+    } catch {
+      setError("Ошибка отправки. Попробуйте позже.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (sent) {
+    return (
+      <div style={{ textAlign: "center", padding: "24px 0" }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>📬</div>
+        <p style={{ fontSize: 15, lineHeight: 1.6, marginBottom: 24, color: "var(--text)" }}>
+          {t.forgotPasswordSent}
+        </p>
+        <button className="btn btn-primary btn-full" onClick={onBack}>
+          ← {t.backToLogin}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <h2 className="login-title">{t.forgotPasswordTitle}</h2>
+      <p className="muted" style={{ fontSize: 13, marginBottom: 16, textAlign: "center" }}>
+        {t.forgotPasswordHint}
+      </p>
+      <form method="POST" onSubmit={handleSubmit} className="login-form">
+        <div className="field">
+          <label className="field-label" htmlFor="fp-email">{t.email}</label>
+          <input id="fp-email" name="email" type="email" required className="input" />
+        </div>
+        {error && <div className="alert alert-error"><span>⚠</span> {error}</div>}
+        <button className="btn btn-primary btn-full" type="submit" disabled={busy}>
+          {busy ? <span className="spinner" /> : t.sendResetLink}
+        </button>
+      </form>
+      <button className="btn btn-ghost btn-full" style={{ marginTop: 8 }} onClick={onBack}>
+        ← {t.backToLogin}
+      </button>
+    </>
   );
 }
 
