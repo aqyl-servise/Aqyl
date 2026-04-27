@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Teacher } from "../teachers/entities/teacher.entity";
@@ -118,5 +118,33 @@ export class AdminService {
     await this.teacherRepo.update(id, { status: "rejected" });
     const t = await this.teacherRepo.findOne({ where: { id } });
     return t ? this.serializeTeacher(t) : null;
+  }
+
+  async deactivateUser(id: string, requesterId: string) {
+    if (id === requesterId) throw new ForbiddenException("Cannot deactivate your own account");
+    const user = await this.teacherRepo.findOne({ where: { id } });
+    if (!user) throw new NotFoundException("User not found");
+    await this.teacherRepo.update(id, { status: "inactive" });
+    return this.serializeTeacher({ ...user, status: "inactive" });
+  }
+
+  async activateUser(id: string) {
+    const user = await this.teacherRepo.findOne({ where: { id } });
+    if (!user) throw new NotFoundException("User not found");
+    await this.teacherRepo.update(id, { status: "active" });
+    return this.serializeTeacher({ ...user, status: "active" });
+  }
+
+  async deleteUser(id: string, requesterId: string, confirm: boolean) {
+    if (!confirm) throw new BadRequestException("Deletion requires confirm=true");
+    if (id === requesterId) throw new ForbiddenException("Cannot delete your own account");
+    const user = await this.teacherRepo.findOne({ where: { id } });
+    if (!user) throw new NotFoundException("User not found");
+    if (user.role === "admin") {
+      const adminCount = await this.teacherRepo.count({ where: { role: "admin" } });
+      if (adminCount <= 1) throw new ForbiddenException("Cannot delete the last admin account");
+    }
+    await this.teacherRepo.delete(id);
+    return { ok: true };
   }
 }

@@ -9,6 +9,7 @@ export type AuthUser = {
   preferredLanguage: string;
   role: UserRole;
   subject?: string | null;
+  status?: "pending" | "active" | "rejected" | "inactive";
 };
 
 export type LoginResponse = { accessToken: string; user: AuthUser };
@@ -188,6 +189,12 @@ export const api = {
     request<AuthUser>("/users", { method: "POST", body: JSON.stringify(data) }, token),
   updateUser: (token: string, id: string, data: Record<string, unknown>) =>
     request<AuthUser>(`/users/${id}`, { method: "PATCH", body: JSON.stringify(data) }, token),
+  deactivateUser: (token: string, id: string) =>
+    request<AuthUser>(`/admin/users/${id}/deactivate`, { method: "PATCH" }, token),
+  activateUser: (token: string, id: string) =>
+    request<AuthUser>(`/admin/users/${id}/activate`, { method: "PATCH" }, token),
+  deleteUser: (token: string, id: string) =>
+    request<{ ok: boolean }>(`/admin/users/${id}`, { method: "DELETE", body: JSON.stringify({ confirm: true }) }, token),
 
   // Students
   getStudents: (token: string, classroomId?: string) =>

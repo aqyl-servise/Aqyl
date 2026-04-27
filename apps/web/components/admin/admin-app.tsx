@@ -65,7 +65,7 @@ export function AdminApp({ token, user, language, setLanguage, onLogout }: {
       {section === "bbjm" && <div className="page"><h1 className="page-title">📑 {t.nav_bbjm}</h1><p className="empty-state">{t.coming_soon}</p></div>}
       {section === "ktp-plans" && <div className="page"><h1 className="page-title">📝 {t.nav_ktp_plans}</h1><p className="empty-state">{t.coming_soon}</p></div>}
       {section === "attestation" && <div className="page"><h1 className="page-title">🏆 {t.nav_attestation}</h1><p className="empty-state">{t.coming_soon}</p></div>}
-      {section === "users" && user.role === "admin" && <UsersPanel token={token} language={language} t={t} />}
+      {section === "users" && user.role === "admin" && <UsersPanel token={token} language={language} t={t} currentUserId={user.id} />}
       {section === "registrations" && user.role === "admin" && <RegistrationsPanel token={token} language={language} t={t} />}
     </AppLayout>
   );

@@ -31,6 +31,7 @@ export class AuthService {
 
     if (teacher.status === "pending") throw new ForbiddenException("PENDING");
     if (teacher.status === "rejected") throw new ForbiddenException("REJECTED");
+    if (teacher.status === "inactive") throw new ForbiddenException("INACTIVE");
 
     return {
       accessToken: await this.jwtService.signAsync({

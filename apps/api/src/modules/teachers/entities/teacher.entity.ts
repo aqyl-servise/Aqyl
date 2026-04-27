@@ -3,7 +3,7 @@ import { Classroom } from "../../schools/entities/classroom.entity";
 import { GeneratedDocument } from "../../schools/entities/generated-document.entity";
 
 export type UserRole = "teacher" | "admin" | "principal" | "vice_principal" | "class_teacher" | "student";
-export type UserStatus = "pending" | "active" | "rejected";
+export type UserStatus = "pending" | "active" | "rejected" | "inactive";
 
 @Entity()
 export class Teacher {

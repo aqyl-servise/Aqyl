@@ -9,17 +9,25 @@ const ROLE_LABELS: Record<UserRole, string> = {
   vice_principal: "Завуч", class_teacher: "Классный руководитель", student: "Ученик",
 };
 
-export function UsersPanel({ token, language, t }: { token: string; language: Language; t: Record<string, string> }) {
+type ConfirmModal =
+  | { kind: "deactivate"; user: AuthUser }
+  | { kind: "delete"; user: AuthUser };
+
+export function UsersPanel({ token, language, t, currentUserId }: {
+  token: string; language: Language; t: Record<string, string>; currentUserId: string;
+}) {
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<AuthUser | null>(null);
+  const [confirmModal, setConfirmModal] = useState<ConfirmModal | null>(null);
   const [busy, setBusy] = useState(false);
+  const [actionBusy, setActionBusy] = useState<string | null>(null);
 
-  useEffect(() => {
-    api.getUsers(token).then(setUsers).catch(console.error);
-  }, [token]);
+  const reload = () => api.getUsers(token).then(setUsers).catch(console.error);
+
+  useEffect(() => { reload(); }, [token]);
 
   const filtered = users.filter((u) => {
     const matchSearch = u.fullName.toLowerCase().includes(search.toLowerCase()) ||
@@ -40,7 +48,7 @@ export function UsersPanel({ token, language, t }: { token: string; language: La
         role: fd.get("role"),
         subject: fd.get("subject") || undefined,
       });
-      setUsers(await api.getUsers(token));
+      await reload();
       setAdding(false);
     } finally { setBusy(false); }
   }
@@ -56,10 +64,40 @@ export function UsersPanel({ token, language, t }: { token: string; language: La
         role: fd.get("role"),
         subject: fd.get("subject") || undefined,
       });
-      setUsers(await api.getUsers(token));
+      await reload();
       setEditing(null);
     } finally { setBusy(false); }
   }
+
+  async function handleConfirm() {
+    if (!confirmModal) return;
+    setActionBusy(confirmModal.user.id);
+    try {
+      if (confirmModal.kind === "deactivate") {
+        await api.deactivateUser(token, confirmModal.user.id);
+      } else {
+        await api.deleteUser(token, confirmModal.user.id);
+      }
+      await reload();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Ошибка");
+    } finally {
+      setActionBusy(null);
+      setConfirmModal(null);
+    }
+  }
+
+  async function handleActivate(user: AuthUser) {
+    setActionBusy(user.id);
+    try {
+      await api.activateUser(token, user.id);
+      await reload();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Ошибка");
+    } finally { setActionBusy(null); }
+  }
+
+  const isSelf = (u: AuthUser) => u.id === currentUserId;
 
   return (
     <div className="page">
@@ -128,6 +166,42 @@ export function UsersPanel({ token, language, t }: { token: string; language: La
         </div>
       )}
 
+      {confirmModal && (
+        <div className="modal-overlay" onClick={() => setConfirmModal(null)}>
+          <div className="modal-card" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
+            {confirmModal.kind === "deactivate" ? (
+              <>
+                <h3 style={{ marginBottom: 12, color: "#92400e" }}>⏸ Деактивировать аккаунт?</h3>
+                <p style={{ color: "#64748b", marginBottom: 20, lineHeight: 1.5 }}>
+                  Деактивировать аккаунт <strong>{confirmModal.user.fullName}</strong>?<br />
+                  Пользователь не сможет войти в систему.
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 style={{ marginBottom: 12, color: "#991b1b" }}>🗑 Удалить аккаунт?</h3>
+                <p style={{ color: "#64748b", marginBottom: 20, lineHeight: 1.5 }}>
+                  Вы уверены? Это действие необратимо.<br />
+                  Все данные пользователя <strong>{confirmModal.user.fullName}</strong> будут удалены.
+                </p>
+              </>
+            )}
+            <div className="form-row">
+              <button
+                className={`btn ${confirmModal.kind === "delete" ? "btn-danger" : "btn-warning"}`}
+                disabled={actionBusy === confirmModal.user.id}
+                onClick={handleConfirm}
+              >
+                {actionBusy === confirmModal.user.id
+                  ? <span className="spinner" />
+                  : confirmModal.kind === "delete" ? "Удалить" : "Деактивировать"}
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => setConfirmModal(null)}>{t.cancel}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="card">
         <div className="users-count muted" style={{ fontSize: 13, marginBottom: 4 }}>
           Показано: {filtered.length} из {users.length}
@@ -135,11 +209,11 @@ export function UsersPanel({ token, language, t }: { token: string; language: La
         {filtered.length === 0 ? <p className="empty-state">{t.noData}</p> : (
           <table className="data-table">
             <thead>
-              <tr><th>ФИО</th><th>Email</th><th>Предмет</th><th>Роль</th><th></th></tr>
+              <tr><th>ФИО</th><th>Email</th><th>Предмет</th><th>Роль</th><th>Статус</th><th></th></tr>
             </thead>
             <tbody>
               {filtered.map((u) => (
-                <tr key={u.id}>
+                <tr key={u.id} style={{ opacity: u.status === "inactive" ? 0.65 : 1 }}>
                   <td className="table-name">{u.fullName}</td>
                   <td className="muted">{u.email}</td>
                   <td>{u.subject ?? "—"}</td>
@@ -147,7 +221,50 @@ export function UsersPanel({ token, language, t }: { token: string; language: La
                     <span className={`role-chip role-${u.role}`}>{ROLE_LABELS[u.role]}</span>
                   </td>
                   <td>
-                    <button className="btn btn-ghost btn-sm" onClick={() => setEditing(u)}>Изменить</button>
+                    {u.status === "inactive" ? (
+                      <span className="status-chip status-inactive">Неактивен</span>
+                    ) : (
+                      <span className="status-chip status-active">Активен</span>
+                    )}
+                  </td>
+                  <td>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setEditing(u)}>Изменить</button>
+                      {!isSelf(u) && (
+                        <>
+                          {u.status === "inactive" ? (
+                            <button
+                              className="btn btn-sm"
+                              style={{ background: "#dcfce7", color: "#166534", border: "1px solid #bbf7d0" }}
+                              disabled={actionBusy === u.id}
+                              onClick={() => handleActivate(u)}
+                              title="Активировать"
+                            >
+                              {actionBusy === u.id ? <span className="spinner" /> : "▶ Активировать"}
+                            </button>
+                          ) : (
+                            <button
+                              className="btn btn-sm"
+                              style={{ background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a" }}
+                              disabled={actionBusy === u.id}
+                              onClick={() => setConfirmModal({ kind: "deactivate", user: u })}
+                              title="Деактивировать"
+                            >
+                              ⏸ Деактивировать
+                            </button>
+                          )}
+                          <button
+                            className="btn btn-sm"
+                            style={{ background: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" }}
+                            disabled={actionBusy === u.id}
+                            onClick={() => setConfirmModal({ kind: "delete", user: u })}
+                            title="Удалить"
+                          >
+                            🗑
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
