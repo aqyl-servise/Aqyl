@@ -1,4 +1,6 @@
 import { Module } from "@nestjs/common";
+import { APP_GUARD } from "@nestjs/core";
+import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AnalyticsModule } from "./modules/analytics/analytics.module";
@@ -43,13 +45,17 @@ import { SeedService } from "./seed.service";
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: [".env", ".env.local"] }),
+    ThrottlerModule.forRoot([
+      { name: "short", ttl: 1000, limit: 10 },
+      { name: "medium", ttl: 60_000, limit: 100 },
+    ]),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
         type: "postgres",
         url: cfg.get<string>("DATABASE_URL"),
         autoLoadEntities: true,
-        synchronize: true,
+        synchronize: process.env.NODE_ENV !== "production",
       }),
     }),
     TypeOrmModule.forFeature([
@@ -77,6 +83,9 @@ import { SeedService } from "./seed.service";
     ClassroomsModule,
     StudentPortalModule,
   ],
-  providers: [SeedService],
+  providers: [
+    SeedService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}

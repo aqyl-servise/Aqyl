@@ -73,6 +73,7 @@ export class MailService {
 </body>
 </html>`;
 
+    const maskedEmail = email.replace(/(.{2}).+(@.+)/, "$1***$2");
     try {
       await this.transporter.sendMail({
         from: this.from,
@@ -81,9 +82,9 @@ export class MailService {
         html,
         text: `Восстановление пароля\n\nДля сброса пароля перейдите по ссылке:\n${resetUrl}\n\nСсылка действительна 1 час.`,
       });
-      this.logger.log(`Password reset email sent to ${email}`);
+      this.logger.log(`Password reset email sent to ${maskedEmail}`);
     } catch (err) {
-      this.logger.error(`Failed to send password reset email to ${email}`, err);
+      this.logger.error(`Failed to send password reset email to ${maskedEmail}`, err);
       throw err;
     }
   }

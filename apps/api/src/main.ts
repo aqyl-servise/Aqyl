@@ -2,11 +2,14 @@ import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
 import { join } from "path";
+import helmet from "helmet";
 import { AppModule } from "./app.module";
 import { SeedService } from "./seed.service";
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  app.use(helmet());
 
   const allowedOrigins = (process.env.FRONTEND_URL ?? "http://localhost:3000")
     .split(",")
@@ -18,7 +21,6 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
 
-  // Serve uploaded files
   app.useStaticAssets(join(process.cwd(), "uploads"), { prefix: "/uploads" });
 
   const seedService = app.get(SeedService);

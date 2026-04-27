@@ -52,7 +52,9 @@
       "Bash(ssh *)",
       "Bash(npx --yes concurrently \"npm run dev:web\")",
       "Bash(echo \"EXIT:$?\")",
-      "Bash(echo \"PID=$!\")"
+      "Bash(echo \"PID=$!\")",
+      "Bash(npm audit *)",
+      "Bash(node *)"
     ]
   }
 }
