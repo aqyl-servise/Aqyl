@@ -147,7 +147,10 @@ export function UsersPanel({ token, language, t, currentUserId }: {
               <Field label={t.email} name="email" type="email" />
             </div>
             <div className="form-row">
-              <Field label={t.password} name="password" type="password" />
+              <div className="field">
+                <label className="field-label">{t.password}</label>
+                <PasswordInput name="password" required />
+              </div>
               <Field label={t.subject} name="subject" />
             </div>
             <div className="field">
