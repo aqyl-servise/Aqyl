@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { api, AuthUser } from "../lib/api";
 import { Language, translations } from "../lib/translations";
+import { PasswordInput } from "./ui/password-input";
 import { TeacherApp } from "./teacher/teacher-app";
 import { AdminApp } from "./admin/admin-app";
 import { ClassTeacherApp } from "./class-teacher/class-teacher-app";
@@ -195,7 +196,7 @@ function LoginForm({ t, busy, error, onSubmit, onRegister, onForgot }: {
         </div>
         <div className="field">
           <label className="field-label" htmlFor="password">{t.password}</label>
-          <input id="password" name="password" type="password" required className="input" />
+          <PasswordInput id="password" name="password" required />
         </div>
         {error && <div className="alert alert-error"><span>⚠</span> {error}</div>}
         <button className="btn btn-primary btn-full" type="submit" disabled={busy}>
@@ -249,11 +250,11 @@ function RegisterForm({ t, busy, error, onSubmit, onBack }: {
         </div>
         <div className="field">
           <label className="field-label">{t.password}</label>
-          <input name="password" type="password" required className="input" minLength={6} />
+          <PasswordInput name="password" required minLength={6} />
         </div>
         <div className="field">
           <label className="field-label">{t.confirmPassword}</label>
-          <input name="confirmPassword" type="password" required className="input" minLength={6} />
+          <PasswordInput name="confirmPassword" required minLength={6} />
         </div>
         <div className="field">
           <label className="field-label">{t.selectRole}</label>

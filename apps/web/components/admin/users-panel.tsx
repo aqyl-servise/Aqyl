@@ -2,6 +2,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { api, AuthUser, UserRole } from "../../lib/api";
 import { Language } from "../../lib/translations";
+import { PasswordInput } from "../ui/password-input";
 
 const ROLES: UserRole[] = ["teacher", "admin", "principal", "vice_principal", "class_teacher"];
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -330,8 +331,6 @@ function PasswordModal({ user, token, t, onClose, onSuccess }: {
 }) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showNew, setShowNew] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -357,44 +356,20 @@ function PasswordModal({ user, token, t, onClose, onSuccess }: {
         <form onSubmit={handleSubmit} className="form-stack">
           <div className="field">
             <label className="field-label">Новый пароль</label>
-            <div style={{ position: "relative" }}>
-              <input
-                className="input"
-                type={showNew ? "text" : "password"}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Минимум 6 символов"
-                style={{ paddingRight: 40 }}
-                autoFocus
-              />
-              <button
-                type="button"
-                onClick={() => setShowNew((v) => !v)}
-                style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#94a3b8" }}
-              >
-                {showNew ? "🙈" : "👁"}
-              </button>
-            </div>
+            <PasswordInput
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Минимум 6 символов"
+              autoFocus
+            />
           </div>
           <div className="field">
             <label className="field-label">Подтвердить пароль</label>
-            <div style={{ position: "relative" }}>
-              <input
-                className="input"
-                type={showConfirm ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Повторите пароль"
-                style={{ paddingRight: 40 }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirm((v) => !v)}
-                style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#94a3b8" }}
-              >
-                {showConfirm ? "🙈" : "👁"}
-              </button>
-            </div>
+            <PasswordInput
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Повторите пароль"
+            />
           </div>
           {error && <p style={{ color: "#dc2626", fontSize: 13, margin: 0 }}>{error}</p>}
           <div className="form-row">

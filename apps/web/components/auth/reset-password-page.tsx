@@ -2,6 +2,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "../../lib/api";
+import { PasswordInput } from "../ui/password-input";
 
 type Step = "form" | "success" | "invalid";
 
@@ -74,19 +75,11 @@ export function ResetPasswordPage() {
             <form method="POST" onSubmit={handleSubmit} className="login-form">
               <div className="field">
                 <label className="field-label" htmlFor="password">Новый пароль</label>
-                <input
-                  id="password" name="password" type="password"
-                  required minLength={6} className="input"
-                  placeholder="Минимум 6 символов"
-                />
+                <PasswordInput id="password" name="password" required minLength={6} placeholder="Минимум 6 символов" />
               </div>
               <div className="field">
                 <label className="field-label" htmlFor="confirm">Подтвердите пароль</label>
-                <input
-                  id="confirm" name="confirm" type="password"
-                  required minLength={6} className="input"
-                  placeholder="Повторите пароль"
-                />
+                <PasswordInput id="confirm" name="confirm" required minLength={6} placeholder="Повторите пароль" />
               </div>
               {error && (
                 <div className="alert alert-error"><span>⚠</span> {error}</div>

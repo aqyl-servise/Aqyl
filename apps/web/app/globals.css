@@ -1139,6 +1139,23 @@ h1, h2, h3, h4 { line-height: 1.3; letter-spacing: -0.02em; margin: 0; }
   border-color: #fbbf24;
 }
 
+/* ── Password eye toggle ─────────────────────────────── */
+.pwd-eye-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: #94a3b8;
+}
+.pwd-eye-btn:hover { color: #475569; }
+
 /* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 1100px) {
   .main-grid { grid-template-columns: 1fr; }
