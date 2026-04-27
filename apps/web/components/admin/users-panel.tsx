@@ -1,5 +1,5 @@
 "use client";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { api, AuthUser, UserRole } from "../../lib/api";
 import { Language } from "../../lib/translations";
 
@@ -22,8 +22,17 @@ export function UsersPanel({ token, language, t, currentUserId }: {
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<AuthUser | null>(null);
   const [confirmModal, setConfirmModal] = useState<ConfirmModal | null>(null);
+  const [passwordTarget, setPasswordTarget] = useState<AuthUser | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [busy, setBusy] = useState(false);
   const [actionBusy, setActionBusy] = useState<string | null>(null);
+
+  function showToast(msg: string) {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast(msg);
+    toastTimer.current = setTimeout(() => setToast(null), 3000);
+  }
 
   const reload = () => api.getUsers(token).then(setUsers).catch(console.error);
 
@@ -101,6 +110,16 @@ export function UsersPanel({ token, language, t, currentUserId }: {
 
   return (
     <div className="page">
+      {toast && (
+        <div style={{
+          position: "fixed", top: 24, right: 24, zIndex: 1000,
+          background: "#166534", color: "#fff", padding: "12px 20px",
+          borderRadius: 10, fontWeight: 600, fontSize: 14,
+          boxShadow: "0 4px 16px rgba(0,0,0,.18)", display: "flex", alignItems: "center", gap: 8,
+        }}>
+          ✓ {toast}
+        </div>
+      )}
       <div className="page-header">
         <h1 className="page-title">👥 {t.nav_users}</h1>
         <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ Добавить</button>
@@ -164,6 +183,16 @@ export function UsersPanel({ token, language, t, currentUserId }: {
             </form>
           </div>
         </div>
+      )}
+
+      {passwordTarget && (
+        <PasswordModal
+          user={passwordTarget}
+          token={token}
+          t={t}
+          onClose={() => setPasswordTarget(null)}
+          onSuccess={() => { setPasswordTarget(null); showToast("Пароль успешно изменён"); }}
+        />
       )}
 
       {confirmModal && (
@@ -231,6 +260,16 @@ export function UsersPanel({ token, language, t, currentUserId }: {
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       <button className="btn btn-ghost btn-sm" onClick={() => setEditing(u)}>Изменить</button>
                       {!isSelf(u) && (
+                        <button
+                          className="btn btn-sm"
+                          style={{ background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe" }}
+                          onClick={() => setPasswordTarget(u)}
+                          title="Сменить пароль"
+                        >
+                          🔑
+                        </button>
+                      )}
+                      {!isSelf(u) && (
                         <>
                           {u.status === "inactive" ? (
                             <button
@@ -281,6 +320,91 @@ function Field({ label, name, type, defaultValue }: { label: string; name: strin
     <div className="field">
       <label className="field-label">{label}</label>
       <input name={name} type={type ?? "text"} defaultValue={defaultValue} className="input" />
+    </div>
+  );
+}
+
+function PasswordModal({ user, token, t, onClose, onSuccess }: {
+  user: AuthUser; token: string; t: Record<string, string>;
+  onClose: () => void; onSuccess: () => void;
+}) {
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (newPassword.length < 6) { setError("Минимум 6 символов"); return; }
+    if (newPassword !== confirmPassword) { setError("Пароли не совпадают"); return; }
+    setBusy(true);
+    try {
+      await api.changeUserPassword(token, user.id, newPassword);
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Ошибка");
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" style={{ maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
+        <h3 style={{ marginBottom: 4 }}>🔑 Смена пароля</h3>
+        <p style={{ color: "#64748b", fontSize: 13, marginBottom: 20 }}>{user.fullName}</p>
+        <form onSubmit={handleSubmit} className="form-stack">
+          <div className="field">
+            <label className="field-label">Новый пароль</label>
+            <div style={{ position: "relative" }}>
+              <input
+                className="input"
+                type={showNew ? "text" : "password"}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Минимум 6 символов"
+                style={{ paddingRight: 40 }}
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={() => setShowNew((v) => !v)}
+                style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#94a3b8" }}
+              >
+                {showNew ? "🙈" : "👁"}
+              </button>
+            </div>
+          </div>
+          <div className="field">
+            <label className="field-label">Подтвердить пароль</label>
+            <div style={{ position: "relative" }}>
+              <input
+                className="input"
+                type={showConfirm ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Повторите пароль"
+                style={{ paddingRight: 40 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm((v) => !v)}
+                style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#94a3b8" }}
+              >
+                {showConfirm ? "🙈" : "👁"}
+              </button>
+            </div>
+          </div>
+          {error && <p style={{ color: "#dc2626", fontSize: 13, margin: 0 }}>{error}</p>}
+          <div className="form-row">
+            <button className="btn btn-primary" disabled={busy}>
+              {busy ? <span className="spinner" /> : t.save}
+            </button>
+            <button type="button" className="btn btn-ghost" onClick={onClose}>{t.cancel}</button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

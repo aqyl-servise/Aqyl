@@ -60,4 +60,10 @@ export class AdminController {
   deleteUser(@Param("id") id: string, @Body() body: { confirm: boolean }, @Req() req: { user: { id: string } }) {
     return this.service.deleteUser(id, req.user.id, body?.confirm === true);
   }
+
+  @Patch("users/:id/password")
+  @Roles("admin")
+  changeUserPassword(@Param("id") id: string, @Body() body: { newPassword: string }, @Req() req: { user: { id: string } }) {
+    return this.service.changeUserPassword(id, req.user.id, body?.newPassword ?? "");
+  }
 }

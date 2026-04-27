@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+import * as bcrypt from "bcryptjs";
 import { Repository } from "typeorm";
 import { Teacher } from "../teachers/entities/teacher.entity";
 import { Classroom } from "../schools/entities/classroom.entity";
@@ -145,6 +146,16 @@ export class AdminService {
       if (adminCount <= 1) throw new ForbiddenException("Cannot delete the last admin account");
     }
     await this.teacherRepo.delete(id);
+    return { ok: true };
+  }
+
+  async changeUserPassword(id: string, requesterId: string, newPassword: string) {
+    if (id === requesterId) throw new ForbiddenException("Use the profile page to change your own password");
+    if (!newPassword || newPassword.length < 6) throw new BadRequestException("Password must be at least 6 characters");
+    const user = await this.teacherRepo.findOne({ where: { id } });
+    if (!user) throw new NotFoundException("User not found");
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.teacherRepo.update(id, { passwordHash });
     return { ok: true };
   }
 }

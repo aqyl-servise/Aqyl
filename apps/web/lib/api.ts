@@ -195,6 +195,8 @@ export const api = {
     request<AuthUser>(`/admin/users/${id}/activate`, { method: "PATCH" }, token),
   deleteUser: (token: string, id: string) =>
     request<{ ok: boolean }>(`/admin/users/${id}`, { method: "DELETE", body: JSON.stringify({ confirm: true }) }, token),
+  changeUserPassword: (token: string, id: string, newPassword: string) =>
+    request<{ ok: boolean }>(`/admin/users/${id}/password`, { method: "PATCH", body: JSON.stringify({ newPassword }) }, token),
 
   // Students
   getStudents: (token: string, classroomId?: string) =>
