@@ -330,6 +330,14 @@ export const api = {
   deleteGiftedAchievement: (token: string, id: string) =>
     request<{ ok: boolean }>(`/gifted/achievements/${id}`, { method: "DELETE" }, token),
 
+  // AI Chat
+  aiChat: (token: string, body: { message: string; context?: string; pageContext?: string }) =>
+    request<{ reply: string }>("/ai/chat", { method: "POST", body: JSON.stringify(body) }, token),
+  aiGenerateAssignment: (token: string, body: { subject: string; grade: string; topic: string; type: string }) =>
+    request<{ content: string }>("/ai/generate-assignment", { method: "POST", body: JSON.stringify(body) }, token),
+  aiGenerateLessonPlan: (token: string, body: { subject: string; grade: string; topic: string; duration: number }) =>
+    request<{ content: string }>("/ai/generate-lesson-plan", { method: "POST", body: JSON.stringify(body) }, token),
+
   // Student portal
   getStudentMe: (token: string) =>
     request<StudentRow>("/student/me", undefined, token),

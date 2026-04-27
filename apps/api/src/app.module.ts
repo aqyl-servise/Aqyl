@@ -40,6 +40,7 @@ import { StudentTransfer } from "./modules/schools/entities/student-transfer.ent
 import { PasswordReset } from "./modules/schools/entities/password-reset.entity";
 import { ClassroomsModule } from "./modules/classrooms/classrooms.module";
 import { StudentPortalModule } from "./modules/student-portal/student-portal.module";
+import { AiModule } from "./modules/ai/ai.module";
 import { SeedService } from "./seed.service";
 
 @Module({
@@ -82,6 +83,7 @@ import { SeedService } from "./seed.service";
     StudentsModule,
     ClassroomsModule,
     StudentPortalModule,
+    AiModule,
   ],
   providers: [
     SeedService,

@@ -1,8 +1,9 @@
 "use client";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { AuthUser } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 import { LangSwitcher } from "../aqyl-app";
+import { AiChat, AiChatButton } from "../ai/ai-chat";
 
 type NavItem = { key: string; label: string; icon: string };
 
@@ -17,6 +18,7 @@ export function AppLayout({
 }) {
   const t = translations[language];
   const roleLabel = t[`role_${user.role}` as keyof typeof t] ?? user.role;
+  const [aiOpen, setAiOpen] = useState(false);
 
   return (
     <div className="al-root">
@@ -38,6 +40,14 @@ export function AppLayout({
                 <span>{item.label}</span>
               </button>
             ))}
+            {/* AI nav item — always at bottom of nav */}
+            <button
+              className={`al-nav-item al-nav-ai${aiOpen ? " active" : ""}`}
+              onClick={() => setAiOpen((v) => !v)}
+            >
+              <span className="al-nav-icon">✦</span>
+              <span>ИИ Помощник</span>
+            </button>
           </nav>
         </div>
         <div className="al-sidebar-bottom">
@@ -57,6 +67,12 @@ export function AppLayout({
       <main className="al-main">
         <div className="al-content">{children}</div>
       </main>
+
+      {/* AI floating button */}
+      <AiChatButton open={aiOpen} onClick={() => setAiOpen((v) => !v)} />
+
+      {/* AI chat panel */}
+      <AiChat token={token} currentSection={activeSection} open={aiOpen} onClose={() => setAiOpen(false)} />
     </div>
   );
 }
