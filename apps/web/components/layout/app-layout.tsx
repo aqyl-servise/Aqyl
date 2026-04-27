@@ -4,6 +4,7 @@ import { AuthUser } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 import { LangSwitcher } from "../aqyl-app";
 import { AiChat, AiChatButton } from "../ai/ai-chat";
+import { ThemeToggle } from "../ui/theme-toggle";
 
 type NavItem = { key: string; label: string; icon: string };
 
@@ -59,6 +60,7 @@ export function AppLayout({
             </div>
           </div>
           <LangSwitcher language={language} onChange={setLanguage} />
+          <ThemeToggle />
           <button className="btn btn-ghost btn-sm al-logout" onClick={onLogout}>{t.logout}</button>
         </div>
       </aside>

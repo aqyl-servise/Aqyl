@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { api, AuthUser } from "../lib/api";
 import { Language, translations } from "../lib/translations";
 import { PasswordInput } from "./ui/password-input";
+import { ThemeToggle } from "./ui/theme-toggle";
 import { TeacherApp } from "./teacher/teacher-app";
 import { AdminApp } from "./admin/admin-app";
 import { ClassTeacherApp } from "./class-teacher/class-teacher-app";
@@ -172,7 +173,10 @@ function AuthShell({ language, setLanguage, children }: {
             <p className="logo-sub">{t.subtitle}</p>
           </div>
         </div>
-        <div className="lang-row"><LangSwitcher language={language} onChange={setLanguage} /></div>
+        <div className="lang-row" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <LangSwitcher language={language} onChange={setLanguage} />
+          <ThemeToggle />
+        </div>
         {children}
       </div>
     </main>
