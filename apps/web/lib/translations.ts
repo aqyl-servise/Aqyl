@@ -180,6 +180,17 @@ const ru = {
   final_parent_name: "ФИО родителей",
   final_materials_btn: "Материалы", final_monitoring_btn: "Мониторинг",
   final_teacher_back: "К списку учителей",
+  san_tab_dashboard: "Дашборд", san_tab_classes: "По классам",
+  san_tab_students: "По ученикам", san_tab_ai: "ИИ-анализ", san_tab_docs: "Документы",
+  san_school_avg: "Средний балл по школе", san_submission_rate: "% выполнения заданий",
+  san_top_students: "Топ 5 лучших", san_bottom_students: "Зона риска",
+  san_by_class: "По классам", san_by_subject: "По предметам",
+  san_analyze_btn: "Проанализировать", san_analyzing: "Анализирую...",
+  san_ai_result: "Результат ИИ-анализа", san_ai_hint: "Нажмите кнопку чтобы получить анализ успеваемости от Claude AI",
+  san_docs_quality: "Качество знаний по предметам", san_docs_progress: "Успеваемость классов",
+  san_student_search: "Поиск ученика (ФИО или ИИН)", san_student_card: "Карточка ученика",
+  san_submitted: "Сдано", san_total_ass: "Всего заданий",
+  san_back_classes: "К списку классов",
 };
 
 type TranslationShape = typeof ru;
@@ -344,6 +355,17 @@ const kz: TranslationShape = {
   final_parent_name: "Ата-ана аты-жөні",
   final_materials_btn: "Материалдар", final_monitoring_btn: "Мониторинг",
   final_teacher_back: "Мұғалімдер тізіміне оралу",
+  san_tab_dashboard: "Бақылау тақтасы", san_tab_classes: "Сыныптар бойынша",
+  san_tab_students: "Оқушылар бойынша", san_tab_ai: "ЖИ-талдау", san_tab_docs: "Құжаттар",
+  san_school_avg: "Мектеп бойынша орташа балл", san_submission_rate: "Тапсырмаларды орындау %",
+  san_top_students: "Үздік 5 оқушы", san_bottom_students: "Тәуекел аймағы",
+  san_by_class: "Сыныптар бойынша", san_by_subject: "Пәндер бойынша",
+  san_analyze_btn: "Талдау", san_analyzing: "Талдауда...",
+  san_ai_result: "ЖИ-талдау нәтижесі", san_ai_hint: "Claude AI арқылы үлгерімді талдау нәтижесін алу үшін батырманы басыңыз",
+  san_docs_quality: "Пәндер бойынша білім сапасы", san_docs_progress: "Сыныптар үлгерімі",
+  san_student_search: "Оқушыны іздеу (аты-жөні немесе ЖСН)", san_student_card: "Оқушы картасы",
+  san_submitted: "Тапсырылды", san_total_ass: "Барлық тапсырма",
+  san_back_classes: "Сыныптар тізіміне",
 };
 
 const en: TranslationShape = {
@@ -506,6 +528,17 @@ const en: TranslationShape = {
   final_parent_name: "Parent name",
   final_materials_btn: "Materials", final_monitoring_btn: "Monitoring",
   final_teacher_back: "Back to teachers",
+  san_tab_dashboard: "Dashboard", san_tab_classes: "By Classes",
+  san_tab_students: "By Students", san_tab_ai: "AI Analysis", san_tab_docs: "Documents",
+  san_school_avg: "School average score", san_submission_rate: "Assignment completion %",
+  san_top_students: "Top 5 students", san_bottom_students: "At-risk students",
+  san_by_class: "By classes", san_by_subject: "By subjects",
+  san_analyze_btn: "Analyze", san_analyzing: "Analyzing...",
+  san_ai_result: "AI Analysis result", san_ai_hint: "Click the button to get a Claude AI analysis of school performance",
+  san_docs_quality: "Subject knowledge quality", san_docs_progress: "Class performance",
+  san_student_search: "Search student (name or IIN)", san_student_card: "Student card",
+  san_submitted: "Submitted", san_total_ass: "Total assignments",
+  san_back_classes: "Back to classes",
 };
 
 export const translations: Record<Language, TranslationShape> = { ru, kz, en };

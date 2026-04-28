@@ -162,6 +162,27 @@ export const api = {
     const fd = new FormData(); fd.append("file", file);
     return request<Record<string, unknown>>("/analytics/upload", { method: "POST", body: fd }, token);
   },
+  getSchoolStats: (token: string) =>
+    request<{
+      avgScore: number; totalStudents: number; totalClassrooms: number; submissionRate: number;
+      topStudents: Array<{ id: string; fullName: string; avg: number; classroom: string }>;
+      bottomStudents: Array<{ id: string; fullName: string; avg: number; classroom: string }>;
+      bySubject: Array<{ subject: string; avgScore: number }>;
+      byClass: Array<{ id: string; name: string; grade: number; avgScore: number; studentCount: number }>;
+    }>("/analytics/school", undefined, token),
+  getClassesStats: (token: string) =>
+    request<Array<{
+      id: string; name: string; grade: number; teacher: string; avgScore: number;
+      studentCount: number; submissionRate: number;
+      students: Array<{ id: string; fullName: string; iin?: string; avgScore: number; submitted: number; total: number }>;
+    }>>("/analytics/classes", undefined, token),
+  getStudentsStats: (token: string, q: string) =>
+    request<Array<{
+      id: string; fullName: string; iin?: string; classroom: string; overallAvg: number;
+      subjects: Array<{ subject: string; avgScore: number; topics: Array<{ topic: string; score: number; maxScore: number }> }>;
+    }>>(`/analytics/students?q=${encodeURIComponent(q)}`, undefined, token),
+  aiAnalyzeSchool: (token: string, data: Record<string, unknown>) =>
+    request<{ analysis: string }>("/analytics/ai-analyze", { method: "POST", body: JSON.stringify(data) }, token),
 
   // Exports
   exportPdf: (token: string, body: Record<string, unknown>) =>
