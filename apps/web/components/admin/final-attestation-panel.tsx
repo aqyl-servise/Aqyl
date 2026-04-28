@@ -218,8 +218,8 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
             <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
               <button
                 className="btn btn-outline btn-sm"
-                onClick={() => exportCsv(filtered, tab as number)}
-                disabled={filtered.length === 0}
+                onClick={() => exportCsv(search ? filtered : students, tab as number)}
+                disabled={loading || students.length === 0}
               >
                 📊 {t.final_export_excel}
               </button>
