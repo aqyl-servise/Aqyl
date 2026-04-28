@@ -42,6 +42,8 @@ import { PasswordReset } from "./modules/schools/entities/password-reset.entity"
 import { ClassroomsModule } from "./modules/classrooms/classrooms.module";
 import { StudentPortalModule } from "./modules/student-portal/student-portal.module";
 import { AiModule } from "./modules/ai/ai.module";
+import { AttestationModule } from "./modules/attestation/attestation.module";
+import { TeacherAttestation } from "./modules/schools/entities/teacher-attestation.entity";
 import { SeedService } from "./seed.service";
 
 @Module({
@@ -64,7 +66,7 @@ import { SeedService } from "./seed.service";
           Teacher, Classroom, Student, Submission, GeneratedDocument,
           Schedule, Assignment, TaskSubmission, OpenLesson, Protocol, ClassHour, UploadedFile,
           GiftedPlan, GiftedStudent, GiftedTeacherAssignment, GiftedMaterial, GiftedAchievement,
-          StudentTransfer, PasswordReset, FileFolder,
+          StudentTransfer, PasswordReset, FileFolder, TeacherAttestation,
         ],
       }),
     }),
@@ -72,7 +74,7 @@ import { SeedService } from "./seed.service";
       Teacher, Classroom, Student, Submission, GeneratedDocument,
       Schedule, Assignment, TaskSubmission, OpenLesson, Protocol, ClassHour, UploadedFile,
       GiftedPlan, GiftedStudent, GiftedTeacherAssignment, GiftedMaterial, GiftedAchievement,
-      StudentTransfer, PasswordReset, FileFolder,
+      StudentTransfer, PasswordReset, FileFolder, TeacherAttestation,
     ]),
     TeachersModule,
     AuthModule,
@@ -93,6 +95,7 @@ import { SeedService } from "./seed.service";
     ClassroomsModule,
     StudentPortalModule,
     AiModule,
+    AttestationModule,
   ],
   providers: [
     SeedService,

@@ -389,4 +389,13 @@ export const api = {
     }, token),
   getStudentGrades: (token: string) =>
     request<GradeRow[]>("/student/grades", undefined, token),
+
+  // Attestation
+  getAttestations: (token: string) =>
+    request<Array<{
+      teacher: { id: string; fullName: string; subject?: string; email: string; experience?: number };
+      attestation: { id: string; category?: string; categoryDate?: string; nextAttestationDate?: string; ozpResult?: string } | null;
+    }>>("/attestation", undefined, token),
+  updateAttestation: (token: string, teacherId: string, data: Record<string, unknown>) =>
+    request<{ id: string }>(`/attestation/${teacherId}`, { method: "PATCH", body: JSON.stringify(data) }, token),
 };

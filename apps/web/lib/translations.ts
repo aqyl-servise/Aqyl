@@ -161,6 +161,15 @@ const ru = {
   filter_new: "Новые",
   filter_submitted: "Отправлено",
   filter_graded: "Оценено",
+  attest_category: "Категория", attest_category_none: "Без категории",
+  attest_category_second: "Вторая категория", attest_category_first: "Первая категория",
+  attest_category_highest: "Высшая категория",
+  attest_category_date: "Дата присвоения", attest_next_date: "Следующая аттестация",
+  attest_ozp_result: "Результат ОЗП", attest_diploma: "Диплом",
+  attest_ozp_doc: "ОЗП документ", attest_courses: "Курсы ПК",
+  attest_protocols_doc: "Протоколы аттестации", attest_save: "Сохранить данные", attest_saved: "Сохранено",
+  attest_files: "Документы аттестации", attest_info: "Данные аттестации",
+  attest_back: "К списку",
 };
 
 type TranslationShape = typeof ru;
@@ -306,6 +315,15 @@ const kz: TranslationShape = {
   filter_new: "Жаңалары",
   filter_submitted: "Жіберілгендер",
   filter_graded: "Бағаланғандар",
+  attest_category: "Санат", attest_category_none: "Санатсыз",
+  attest_category_second: "Екінші санат", attest_category_first: "Бірінші санат",
+  attest_category_highest: "Жоғары санат",
+  attest_category_date: "Санат берілген күн", attest_next_date: "Келесі аттестация",
+  attest_ozp_result: "ОЗП нәтижесі", attest_diploma: "Диплом",
+  attest_ozp_doc: "ОЗП құжаты", attest_courses: "ПК курстары",
+  attest_protocols_doc: "Аттестация хаттамалары", attest_save: "Деректерді сақтау", attest_saved: "Сақталды",
+  attest_files: "Аттестация құжаттары", attest_info: "Аттестация деректері",
+  attest_back: "Тізімге оралу",
 };
 
 const en: TranslationShape = {
@@ -449,6 +467,15 @@ const en: TranslationShape = {
   filter_new: "New",
   filter_submitted: "Submitted",
   filter_graded: "Graded",
+  attest_category: "Category", attest_category_none: "No category",
+  attest_category_second: "Second category", attest_category_first: "First category",
+  attest_category_highest: "Highest category",
+  attest_category_date: "Category date", attest_next_date: "Next attestation",
+  attest_ozp_result: "OZP result", attest_diploma: "Diploma",
+  attest_ozp_doc: "OZP document", attest_courses: "CPD courses",
+  attest_protocols_doc: "Protocols", attest_save: "Save data", attest_saved: "Saved",
+  attest_files: "Attestation documents", attest_info: "Attestation data",
+  attest_back: "Back to list",
 };
 
 export const translations: Record<Language, TranslationShape> = { ru, kz, en };
