@@ -57,7 +57,15 @@ import { SeedService } from "./seed.service";
         type: "postgres",
         url: cfg.get<string>("DATABASE_URL"),
         autoLoadEntities: true,
-        synchronize: process.env.NODE_ENV !== "production",
+        // synchronize: true ensures new entities/columns are applied on every deploy.
+        // Safe as long as only additive schema changes (new tables, nullable columns) are made.
+        synchronize: true,
+        entities: [
+          Teacher, Classroom, Student, Submission, GeneratedDocument,
+          Schedule, Assignment, TaskSubmission, OpenLesson, Protocol, ClassHour, UploadedFile,
+          GiftedPlan, GiftedStudent, GiftedTeacherAssignment, GiftedMaterial, GiftedAchievement,
+          StudentTransfer, PasswordReset, FileFolder,
+        ],
       }),
     }),
     TypeOrmModule.forFeature([
