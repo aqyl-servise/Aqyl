@@ -37,7 +37,7 @@ const ru = {
   nav_users: "Пользователи", nav_registrations: "Заявки",
   nav_gifted: "Одарённые учащиеся",
   nav_education_quality: "Качество знаний", nav_household: "Хоз. работы",
-  nav_bbjm: "МОДО", nav_ktp_plans: "КТП/КМЖ", nav_attestation: "Аттестация",
+  nav_bbjm: "МОДО", nav_ktp_plans: "КТП/КСП", nav_attestation: "Аттестация",
   modo_order: "Приказ", modo_action_plan: "Іс-шара жоспары",
   modo_monitoring: "Мониторинг", modo_student_info: "Информация об учениках",
   modo_teacher_works: "Работы учителей", modo_corrections: "Работы над ошибками",
@@ -191,6 +191,14 @@ const ru = {
   san_student_search: "Поиск ученика (ФИО или ИИН)", san_student_card: "Карточка ученика",
   san_submitted: "Сдано", san_total_ass: "Всего заданий",
   san_back_classes: "К списку классов",
+  ktp_tab_ktp: "КТП (КТЖ)", ktp_tab_ksp: "КСП/ҚМЖ", ktp_tab_review: "Проверка",
+  ktp_select_grade: "Выберите класс для просмотра", ktp_grade_n: "класс",
+  ktp_back_grades: "← К классам",
+  ktp_status_unchecked: "Не проверено", ktp_status_reviewing: "На проверке",
+  ktp_status_approved: "Одобрено", ktp_status_revision: "Требует доработки",
+  ktp_comment_label: "Комментарий завуча", ktp_save_review: "Сохранить",
+  ktp_review_saved: "Сохранено", ktp_no_files: "Нет загруженных документов",
+  ktp_open_pdf: "Открыть", ktp_review_tab_hint: "Выберите класс для проверки документов",
 };
 
 type TranslationShape = typeof ru;
@@ -228,7 +236,7 @@ const kz: TranslationShape = {
   nav_users: "Пайдаланушылар", nav_registrations: "Өтінімдер",
   nav_gifted: "Дарынды оқушылармен жұмыс",
   nav_education_quality: "Білім сапасы", nav_household: "Шаруа істері",
-  nav_bbjm: "ББЖМ", nav_ktp_plans: "КТП/ҚМЖ", nav_attestation: "Аттестация",
+  nav_bbjm: "ББЖМ", nav_ktp_plans: "КТЖ/ҚМЖ", nav_attestation: "Аттестация",
   modo_order: "Бұйрық", modo_action_plan: "Іс-шара жоспары",
   modo_monitoring: "Мониторинг", modo_student_info: "Оқушылар туралы ақпарат",
   modo_teacher_works: "Мұғалімдер жұмысы", modo_corrections: "Қателер үстіндегі жұмыс",
@@ -366,6 +374,14 @@ const kz: TranslationShape = {
   san_student_search: "Оқушыны іздеу (аты-жөні немесе ЖСН)", san_student_card: "Оқушы картасы",
   san_submitted: "Тапсырылды", san_total_ass: "Барлық тапсырма",
   san_back_classes: "Сыныптар тізіміне",
+  ktp_tab_ktp: "КТЖ (КТП)", ktp_tab_ksp: "ҚМЖ/КСП", ktp_tab_review: "Тексеру",
+  ktp_select_grade: "Сыныпты таңдаңыз", ktp_grade_n: "сынып",
+  ktp_back_grades: "← Сыныптарға",
+  ktp_status_unchecked: "Тексерілмеген", ktp_status_reviewing: "Тексерілуде",
+  ktp_status_approved: "Мақұлданды", ktp_status_revision: "Өңдеу қажет",
+  ktp_comment_label: "Меңгеруші пікірі", ktp_save_review: "Сақтау",
+  ktp_review_saved: "Сақталды", ktp_no_files: "Жүктелген құжаттар жоқ",
+  ktp_open_pdf: "Ашу", ktp_review_tab_hint: "Құжаттарды тексеру үшін сыныпты таңдаңыз",
 };
 
 const en: TranslationShape = {
@@ -539,6 +555,14 @@ const en: TranslationShape = {
   san_student_search: "Search student (name or IIN)", san_student_card: "Student card",
   san_submitted: "Submitted", san_total_ass: "Total assignments",
   san_back_classes: "Back to classes",
+  ktp_tab_ktp: "Lesson Plans (KTP)", ktp_tab_ksp: "Short-term Plans (KSP)", ktp_tab_review: "Review",
+  ktp_select_grade: "Select a grade to view", ktp_grade_n: "grade",
+  ktp_back_grades: "← Back to grades",
+  ktp_status_unchecked: "Not reviewed", ktp_status_reviewing: "Under review",
+  ktp_status_approved: "Approved", ktp_status_revision: "Needs revision",
+  ktp_comment_label: "Vice-principal comment", ktp_save_review: "Save",
+  ktp_review_saved: "Saved", ktp_no_files: "No documents uploaded",
+  ktp_open_pdf: "Open", ktp_review_tab_hint: "Select a grade to review documents",
 };
 
 export const translations: Record<Language, TranslationShape> = { ru, kz, en };

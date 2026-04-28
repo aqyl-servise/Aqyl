@@ -17,6 +17,7 @@ import { ClassroomsPanel } from "./classrooms-panel";
 import { ModoPanel } from "./modo-panel";
 import { AttestationPanel } from "./attestation-panel";
 import { FinalAttestationPanel } from "./final-attestation-panel";
+import { KtpPanel } from "./ktp-panel";
 
 export function AdminApp({ token, user, language, setLanguage, onLogout }: {
   token: string; user: AuthUser; language: Language;
@@ -67,7 +68,7 @@ export function AdminApp({ token, user, language, setLanguage, onLogout }: {
       {section === "welfare" && <div className="page"><h1 className="page-title">🌱 {t.nav_education}</h1><p className="empty-state">{t.coming_soon}</p></div>}
       {section === "household" && <div className="page"><h1 className="page-title">🔧 {t.nav_household}</h1><p className="empty-state">{t.coming_soon}</p></div>}
       {section === "bbjm" && <ModoPanel token={token} language={language} userRole={user.role} />}
-      {section === "ktp-plans" && <div className="page"><h1 className="page-title">📝 {t.nav_ktp_plans}</h1><p className="empty-state">{t.coming_soon}</p></div>}
+      {section === "ktp-plans" && <KtpPanel token={token} language={language} userRole={user.role} />}
       {section === "attestation" && <AttestationPanel token={token} language={language} userRole={user.role} />}
       {section === "final-attestation" && <FinalAttestationPanel token={token} language={language} userRole={user.role} />}
       {section === "users" && user.role === "admin" && <UsersPanel token={token} language={language} t={t} currentUserId={user.id} />}

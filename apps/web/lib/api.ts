@@ -429,4 +429,14 @@ export const api = {
     request<{ id: string }>(`/final-attestation/students/${id}`, { method: "PATCH", body: JSON.stringify(data) }, token),
   deleteFinalStudent: (token: string, id: string) =>
     request<{ ok: boolean }>(`/final-attestation/students/${id}`, { method: "DELETE" }, token),
+
+  // KTP/KSP
+  getKtpFiles: (token: string, section: string) =>
+    request<Array<{
+      id: string; filename: string; originalName: string; mimetype: string; size: number; createdAt: string;
+      uploadedBy: { id: string; fullName: string } | null;
+      review: { status: string; comment?: string; reviewedBy: string | null; updatedAt: string } | null;
+    }>>(`/ktp/files?section=${encodeURIComponent(section)}`, undefined, token),
+  saveKtpReview: (token: string, fileId: string, data: { status: string; comment?: string }) =>
+    request<{ id: string }>(`/ktp/reviews/${fileId}`, { method: "PATCH", body: JSON.stringify(data) }, token),
 };
