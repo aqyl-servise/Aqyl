@@ -2,40 +2,25 @@ import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } f
 import { Teacher } from "../../teachers/entities/teacher.entity";
 
 @Entity()
-export class UploadedFile {
+export class FileFolder {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
   @Column()
-  filename!: string;
-
-  @Column()
-  originalName!: string;
-
-  @Column()
-  mimetype!: string;
-
-  @Column()
-  size!: number;
-
-  @Column()
-  path!: string;
+  name!: string;
 
   @Column({ nullable: true })
-  refType?: string;
-
-  @Column({ nullable: true })
-  refId?: string;
-
-  @Column({ nullable: true })
-  folderId?: string;
+  parentId?: string;
 
   @Column({ nullable: true })
   section?: string;
 
+  @Column({ nullable: true })
+  teacherRefId?: string;
+
   @CreateDateColumn()
   createdAt!: Date;
 
-  @ManyToOne(() => Teacher, { onDelete: "CASCADE" })
-  uploadedBy!: Teacher;
+  @ManyToOne(() => Teacher, { nullable: true, onDelete: "SET NULL" })
+  createdBy?: Teacher;
 }

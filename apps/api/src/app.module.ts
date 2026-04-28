@@ -19,6 +19,7 @@ import { OpenLesson } from "./modules/schools/entities/open-lesson.entity";
 import { Protocol } from "./modules/schools/entities/protocol.entity";
 import { ClassHour } from "./modules/schools/entities/class-hour.entity";
 import { UploadedFile } from "./modules/schools/entities/uploaded-file.entity";
+import { FileFolder } from "./modules/schools/entities/file-folder.entity";
 import { Teacher } from "./modules/teachers/entities/teacher.entity";
 import { TeachersModule } from "./modules/teachers/teachers.module";
 import { UsersModule } from "./modules/users/users.module";
@@ -63,7 +64,7 @@ import { SeedService } from "./seed.service";
       Teacher, Classroom, Student, Submission, GeneratedDocument,
       Schedule, Assignment, TaskSubmission, OpenLesson, Protocol, ClassHour, UploadedFile,
       GiftedPlan, GiftedStudent, GiftedTeacherAssignment, GiftedMaterial, GiftedAchievement,
-      StudentTransfer, PasswordReset,
+      StudentTransfer, PasswordReset, FileFolder,
     ]),
     TeachersModule,
     AuthModule,

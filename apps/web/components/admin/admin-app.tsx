@@ -7,7 +7,7 @@ import { AdminDashboard } from "./admin-dashboard";
 import { TeacherListPanel } from "./teacher-list-panel";
 import { SchoolAnalyticsPanel } from "./school-analytics-panel";
 import { OpenLessonsPanel } from "../teacher/open-lessons-panel";
-import { ProtocolsPanel } from "./protocols-panel";
+import { SchoolControlPanel } from "./school-control-panel";
 import { ClassHoursPanel } from "./class-hours-panel";
 import { UsersPanel } from "./users-panel";
 import { GiftedPanel } from "./gifted-panel";
@@ -29,7 +29,7 @@ export function AdminApp({ token, user, language, setLanguage, onLogout }: {
     { key: "teachers", label: t.nav_teachers, icon: "👨‍🏫" },
     { key: "school-analytics", label: t.nav_school_analytics, icon: "📈" },
     { key: "open-lessons", label: t.nav_lessons, icon: "🎓" },
-    { key: "protocols", label: t.nav_protocols, icon: "📋" },
+    { key: "school-control", label: t.nav_protocols, icon: "📋" },
     { key: "class-hours", label: t.nav_class_hours, icon: "🕐" },
     { key: "gifted", label: t.nav_gifted, icon: "⭐" },
     { key: "education-quality", label: t.nav_education_quality, icon: "📊" },
@@ -56,7 +56,7 @@ export function AdminApp({ token, user, language, setLanguage, onLogout }: {
       {section === "teachers" && <TeacherListPanel token={token} language={language} t={t} />}
       {section === "school-analytics" && <SchoolAnalyticsPanel token={token} language={language} t={t} />}
       {section === "open-lessons" && <OpenLessonsPanel token={token} language={language} t={t} isAdmin={true} />}
-      {section === "protocols" && <ProtocolsPanel token={token} language={language} t={t} />}
+      {section === "school-control" && <SchoolControlPanel token={token} language={language} userRole={user.role} />}
       {section === "class-hours" && <ClassHoursPanel token={token} language={language} t={t} isAdmin={true} />}
       {section === "gifted" && <GiftedPanel token={token} language={language} t={t} />}
       {section === "education-quality" && <div className="page"><h1 className="page-title">📊 {t.nav_education_quality}</h1><p className="empty-state">{t.coming_soon}</p></div>}

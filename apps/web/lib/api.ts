@@ -277,6 +277,43 @@ export const api = {
     return request<{ id: string; filename: string; originalName: string; url: string }>("/files/upload", { method: "POST", body: fd }, token);
   },
 
+  // File manager
+  uploadFileToFolder: (token: string, file: File, folderId?: string, section?: string) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    if (folderId) fd.append("folderId", folderId);
+    if (section) fd.append("section", section);
+    return request<{ id: string; filename: string; originalName: string; url: string }>("/files/upload", { method: "POST", body: fd }, token);
+  },
+  listFilesInFolder: (token: string, folderId: string | null | undefined, section?: string) => {
+    const q = new URLSearchParams();
+    if (folderId === null) q.set("folderId", "null");
+    else if (folderId) q.set("folderId", folderId);
+    if (section) q.set("section", section);
+    const qs = q.toString();
+    return request<Array<{ id: string; filename: string; originalName: string; mimetype: string; size: number; folderId?: string; section?: string; createdAt: string; uploadedBy?: { id: string; fullName: string } }>>(`/files${qs ? "?" + qs : ""}`, undefined, token);
+  },
+  deleteFile: (token: string, id: string) =>
+    request<{ ok: boolean }>(`/files/file/${id}`, { method: "DELETE" }, token),
+  createFolder: (token: string, data: { name: string; parentId?: string; section?: string; teacherRefId?: string }) =>
+    request<{ id: string; name: string; parentId?: string; section?: string; teacherRefId?: string; createdAt: string }>("/files/folder", { method: "POST", body: JSON.stringify(data) }, token),
+  listFolders: (token: string, params?: { parentId?: string; section?: string; teacherRefId?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.parentId) q.set("parentId", params.parentId);
+    if (params?.section) q.set("section", params.section);
+    if (params?.teacherRefId) q.set("teacherRefId", params.teacherRefId);
+    const qs = q.toString();
+    return request<Array<{ id: string; name: string; parentId?: string; section?: string; teacherRefId?: string; createdAt: string }>>(`/files/folders${qs ? "?" + qs : ""}`, undefined, token);
+  },
+  getFolderContents: (token: string, folderId: string) =>
+    request<{
+      folder: { id: string; name: string; parentId?: string; section?: string };
+      subfolders: Array<{ id: string; name: string; parentId?: string }>;
+      files: Array<{ id: string; filename: string; originalName: string; mimetype: string; size: number; createdAt: string; uploadedBy?: { id: string; fullName: string } }>;
+    }>(`/files/folder/${folderId}`, undefined, token),
+  deleteFolder: (token: string, id: string) =>
+    request<{ ok: boolean }>(`/files/folder/${id}`, { method: "DELETE" }, token),
+
   // Gifted
   getGiftedPlans: (token: string, type?: string) =>
     request<Array<{ id: string; type: string; title: string; fileUrl?: string; createdAt: string; uploadedBy?: { fullName: string } }>>(
