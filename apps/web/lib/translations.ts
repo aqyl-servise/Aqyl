@@ -170,6 +170,16 @@ const ru = {
   attest_protocols_doc: "Протоколы аттестации", attest_save: "Сохранить данные", attest_saved: "Сохранено",
   attest_files: "Документы аттестации", attest_info: "Данные аттестации",
   attest_back: "К списку",
+  nav_final_attestation: "Итоговая аттестация",
+  final_grade_9: "9 класс", final_grade_11: "11 класс",
+  final_teachers_db: "База данных учителей и заданий",
+  final_add_student: "Добавить ученика", final_edit_student: "Редактировать",
+  final_delete_student: "Удалить", final_confirm_delete: "Удалить ученика? Это действие нельзя отменить.",
+  final_export_excel: "Экспорт Excel",
+  final_subject: "Выбранный предмет", final_phone: "Телефон",
+  final_parent_name: "ФИО родителей",
+  final_materials_btn: "Материалы", final_monitoring_btn: "Мониторинг",
+  final_teacher_back: "К списку учителей",
 };
 
 type TranslationShape = typeof ru;
@@ -324,6 +334,16 @@ const kz: TranslationShape = {
   attest_protocols_doc: "Аттестация хаттамалары", attest_save: "Деректерді сақтау", attest_saved: "Сақталды",
   attest_files: "Аттестация құжаттары", attest_info: "Аттестация деректері",
   attest_back: "Тізімге оралу",
+  nav_final_attestation: "Қорытынды аттестация",
+  final_grade_9: "9 сынып", final_grade_11: "11 сынып",
+  final_teachers_db: "Мұғалімдер деректер қоры",
+  final_add_student: "Оқушы қосу", final_edit_student: "Өңдеу",
+  final_delete_student: "Жою", final_confirm_delete: "Оқушыны жою? Бұл әрекетті болдырмауға болмайды.",
+  final_export_excel: "Excel экспорты",
+  final_subject: "Таңдалған пән", final_phone: "Телефон",
+  final_parent_name: "Ата-ана аты-жөні",
+  final_materials_btn: "Материалдар", final_monitoring_btn: "Мониторинг",
+  final_teacher_back: "Мұғалімдер тізіміне оралу",
 };
 
 const en: TranslationShape = {
@@ -476,6 +496,16 @@ const en: TranslationShape = {
   attest_protocols_doc: "Protocols", attest_save: "Save data", attest_saved: "Saved",
   attest_files: "Attestation documents", attest_info: "Attestation data",
   attest_back: "Back to list",
+  nav_final_attestation: "Final Attestation",
+  final_grade_9: "Grade 9", final_grade_11: "Grade 11",
+  final_teachers_db: "Teacher & Task Database",
+  final_add_student: "Add student", final_edit_student: "Edit",
+  final_delete_student: "Delete", final_confirm_delete: "Delete student? This cannot be undone.",
+  final_export_excel: "Export Excel",
+  final_subject: "Chosen subject", final_phone: "Phone",
+  final_parent_name: "Parent name",
+  final_materials_btn: "Materials", final_monitoring_btn: "Monitoring",
+  final_teacher_back: "Back to teachers",
 };
 
 export const translations: Record<Language, TranslationShape> = { ru, kz, en };

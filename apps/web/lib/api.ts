@@ -398,4 +398,14 @@ export const api = {
     }>>("/attestation", undefined, token),
   updateAttestation: (token: string, teacherId: string, data: Record<string, unknown>) =>
     request<{ id: string }>(`/attestation/${teacherId}`, { method: "PATCH", body: JSON.stringify(data) }, token),
+
+  // Final Attestation
+  getFinalStudents: (token: string, grade: 9 | 11) =>
+    request<Array<{ id: string; grade: number; fullName: string; subject?: string; iin?: string; email?: string; phone?: string; parentName?: string; createdAt: string }>>(`/final-attestation/students?grade=${grade}`, undefined, token),
+  createFinalStudent: (token: string, data: Record<string, unknown>) =>
+    request<{ id: string }>("/final-attestation/students", { method: "POST", body: JSON.stringify(data) }, token),
+  updateFinalStudent: (token: string, id: string, data: Record<string, unknown>) =>
+    request<{ id: string }>(`/final-attestation/students/${id}`, { method: "PATCH", body: JSON.stringify(data) }, token),
+  deleteFinalStudent: (token: string, id: string) =>
+    request<{ ok: boolean }>(`/final-attestation/students/${id}`, { method: "DELETE" }, token),
 };
