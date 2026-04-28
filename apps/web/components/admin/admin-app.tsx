@@ -21,6 +21,8 @@ import { KtpPanel } from "./ktp-panel";
 import { PsychologistPanel } from "./psychologist-panel";
 import { SocialPedagoguePanel } from "./social-pedagogue-panel";
 import { SchoolInfoPanel } from "./school-info-panel";
+import { HouseholdPanel } from "./household-panel";
+import { WelfarePanel } from "./welfare-panel";
 
 export function AdminApp({ token, user, language, setLanguage, onLogout }: {
   token: string; user: AuthUser; language: Language;
@@ -71,8 +73,8 @@ export function AdminApp({ token, user, language, setLanguage, onLogout }: {
       {section === "class-hours" && <ClassHoursPanel token={token} language={language} t={t} isAdmin={true} />}
       {section === "gifted" && <GiftedPanel token={token} language={language} t={t} />}
       {section === "education-quality" && <div className="page"><h1 className="page-title">📊 {t.nav_education_quality}</h1><p className="empty-state">{t.coming_soon}</p></div>}
-      {section === "welfare" && <div className="page"><h1 className="page-title">🌱 {t.nav_education}</h1><p className="empty-state">{t.coming_soon}</p></div>}
-      {section === "household" && <div className="page"><h1 className="page-title">🔧 {t.nav_household}</h1><p className="empty-state">{t.coming_soon}</p></div>}
+      {section === "welfare" && <WelfarePanel token={token} language={language} userRole={user.role} />}
+      {section === "household" && <HouseholdPanel token={token} language={language} userRole={user.role} />}
       {section === "bbjm" && <ModoPanel token={token} language={language} userRole={user.role} />}
       {section === "ktp-plans" && <KtpPanel token={token} language={language} userRole={user.role} />}
       {section === "attestation" && <AttestationPanel token={token} language={language} userRole={user.role} />}

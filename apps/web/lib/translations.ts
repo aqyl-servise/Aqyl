@@ -207,6 +207,7 @@ const ru = {
   si_contingent: "Контингент (учеников)", si_completeness: "Комплектность школы",
   si_edit: "Редактировать", si_save: "Сохранить", si_saved: "Сохранено", si_cancel: "Отмена",
   si_empty_hint: "Нажмите «+ Папка» чтобы создать папку или загрузите файл",
+  tab_tarbiye: "Тәрбие", tab_law: "Құқық", tab_circle: "Үйірме",
 };
 
 type TranslationShape = typeof ru;
@@ -398,6 +399,7 @@ const kz: TranslationShape = {
   si_contingent: "Контингент (оқушылар)", si_completeness: "Мектептің толымдылығы",
   si_edit: "Өңдеу", si_save: "Сақтау", si_saved: "Сақталды", si_cancel: "Болдырмау",
   si_empty_hint: "«+ Папка» батырмасын басыңыз немесе файл жүктеңіз",
+  tab_tarbiye: "Тәрбие", tab_law: "Құқық", tab_circle: "Үйірме",
 };
 
 const en: TranslationShape = {
@@ -587,6 +589,7 @@ const en: TranslationShape = {
   si_contingent: "Contingent (students)", si_completeness: "School Completeness",
   si_edit: "Edit", si_save: "Save", si_saved: "Saved", si_cancel: "Cancel",
   si_empty_hint: "Click «+ Folder» to create a folder or upload a file",
+  tab_tarbiye: "Education", tab_law: "Law", tab_circle: "Clubs",
 };
 
 export const translations: Record<Language, TranslationShape> = { ru, kz, en };
