@@ -439,4 +439,10 @@ export const api = {
     }>>(`/ktp/files?section=${encodeURIComponent(section)}`, undefined, token),
   saveKtpReview: (token: string, fileId: string, data: { status: string; comment?: string }) =>
     request<{ id: string }>(`/ktp/reviews/${fileId}`, { method: "PATCH", body: JSON.stringify(data) }, token),
+
+  // School Info
+  getSchoolInfo: (token: string) =>
+    request<{ id: string; name?: string; address?: string; builtYear?: string; capacity?: string; contingent?: string; completeness?: string; updatedAt: string }>("/school/info", undefined, token),
+  updateSchoolInfo: (token: string, data: Record<string, string>) =>
+    request<{ id: string }>("/school/info", { method: "PATCH", body: JSON.stringify(data) }, token),
 };

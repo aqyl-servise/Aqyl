@@ -48,6 +48,8 @@ import { FinalAttestationModule } from "./modules/final-attestation/final-attest
 import { FinalAttestationStudent } from "./modules/schools/entities/final-attestation-student.entity";
 import { KtpModule } from "./modules/ktp/ktp.module";
 import { KtpReview } from "./modules/schools/entities/ktp-review.entity";
+import { SchoolInfoModule } from "./modules/school-info/school-info.module";
+import { SchoolInfo } from "./modules/schools/entities/school-info.entity";
 import { SeedService } from "./seed.service";
 
 @Module({
@@ -70,7 +72,7 @@ import { SeedService } from "./seed.service";
           Teacher, Classroom, Student, Submission, GeneratedDocument,
           Schedule, Assignment, TaskSubmission, OpenLesson, Protocol, ClassHour, UploadedFile,
           GiftedPlan, GiftedStudent, GiftedTeacherAssignment, GiftedMaterial, GiftedAchievement,
-          StudentTransfer, PasswordReset, FileFolder, TeacherAttestation, FinalAttestationStudent, KtpReview,
+          StudentTransfer, PasswordReset, FileFolder, TeacherAttestation, FinalAttestationStudent, KtpReview, SchoolInfo,
         ],
       }),
     }),
@@ -78,7 +80,7 @@ import { SeedService } from "./seed.service";
       Teacher, Classroom, Student, Submission, GeneratedDocument,
       Schedule, Assignment, TaskSubmission, OpenLesson, Protocol, ClassHour, UploadedFile,
       GiftedPlan, GiftedStudent, GiftedTeacherAssignment, GiftedMaterial, GiftedAchievement,
-      StudentTransfer, PasswordReset, FileFolder, TeacherAttestation, FinalAttestationStudent, KtpReview,
+      StudentTransfer, PasswordReset, FileFolder, TeacherAttestation, FinalAttestationStudent, KtpReview, SchoolInfo,
     ]),
     TeachersModule,
     AuthModule,
@@ -102,6 +104,7 @@ import { SeedService } from "./seed.service";
     AttestationModule,
     FinalAttestationModule,
     KtpModule,
+    SchoolInfoModule,
   ],
   providers: [
     SeedService,

@@ -18,6 +18,9 @@ import { ModoPanel } from "./modo-panel";
 import { AttestationPanel } from "./attestation-panel";
 import { FinalAttestationPanel } from "./final-attestation-panel";
 import { KtpPanel } from "./ktp-panel";
+import { PsychologistPanel } from "./psychologist-panel";
+import { SocialPedagoguePanel } from "./social-pedagogue-panel";
+import { SchoolInfoPanel } from "./school-info-panel";
 
 export function AdminApp({ token, user, language, setLanguage, onLogout }: {
   token: string; user: AuthUser; language: Language;
@@ -43,6 +46,9 @@ export function AdminApp({ token, user, language, setLanguage, onLogout }: {
     { key: "ktp-plans", label: t.nav_ktp_plans, icon: "📝" },
     { key: "attestation", label: t.nav_attestation, icon: "🏆" },
     { key: "final-attestation", label: t.nav_final_attestation, icon: "📝" },
+    { key: "psychologist", label: t.nav_psychologist, icon: "🧠" },
+    { key: "social-pedagogue", label: t.nav_social_pedagogue, icon: "🤝" },
+    { key: "school-info", label: t.nav_school_info, icon: "🏫" },
   ];
 
   const adminOnlyNav = [
@@ -71,6 +77,9 @@ export function AdminApp({ token, user, language, setLanguage, onLogout }: {
       {section === "ktp-plans" && <KtpPanel token={token} language={language} userRole={user.role} />}
       {section === "attestation" && <AttestationPanel token={token} language={language} userRole={user.role} />}
       {section === "final-attestation" && <FinalAttestationPanel token={token} language={language} userRole={user.role} />}
+      {section === "psychologist" && <PsychologistPanel token={token} language={language} userRole={user.role} />}
+      {section === "social-pedagogue" && <SocialPedagoguePanel token={token} language={language} userRole={user.role} />}
+      {section === "school-info" && <SchoolInfoPanel token={token} language={language} userRole={user.role} />}
       {section === "users" && user.role === "admin" && <UsersPanel token={token} language={language} t={t} currentUserId={user.id} />}
       {section === "registrations" && user.role === "admin" && <RegistrationsPanel token={token} language={language} t={t} />}
     </AppLayout>

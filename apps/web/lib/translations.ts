@@ -199,6 +199,14 @@ const ru = {
   ktp_comment_label: "Комментарий завуча", ktp_save_review: "Сохранить",
   ktp_review_saved: "Сохранено", ktp_no_files: "Нет загруженных документов",
   ktp_open_pdf: "Открыть", ktp_review_tab_hint: "Выберите класс для проверки документов",
+  nav_psychologist: "Психолог", nav_social_pedagogue: "Соц. педагог", nav_school_info: "Мектеп",
+  si_tab_license: "Лицензия школы", si_tab_med: "Мед. лицензия", si_tab_land: "Земельный акт",
+  si_tab_ses: "Заключение СЭС", si_tab_passport: "Тех. паспорт", si_tab_general: "Жалпы ақпарат",
+  si_school_name: "Наименование школы", si_address: "Адрес",
+  si_built_year: "Год сдачи в эксплуатацию", si_capacity: "Проектная мощность",
+  si_contingent: "Контингент (учеников)", si_completeness: "Комплектность школы",
+  si_edit: "Редактировать", si_save: "Сохранить", si_saved: "Сохранено", si_cancel: "Отмена",
+  si_empty_hint: "Нажмите «+ Папка» чтобы создать папку или загрузите файл",
 };
 
 type TranslationShape = typeof ru;
@@ -382,6 +390,14 @@ const kz: TranslationShape = {
   ktp_comment_label: "Меңгеруші пікірі", ktp_save_review: "Сақтау",
   ktp_review_saved: "Сақталды", ktp_no_files: "Жүктелген құжаттар жоқ",
   ktp_open_pdf: "Ашу", ktp_review_tab_hint: "Құжаттарды тексеру үшін сыныпты таңдаңыз",
+  nav_psychologist: "Мектеп психолог құжаттары", nav_social_pedagogue: "Әлеуметті педагог құжаттары", nav_school_info: "Мектеп",
+  si_tab_license: "Мектеп лицензиясы", si_tab_med: "Медициналық лицензия", si_tab_land: "Жер акті",
+  si_tab_ses: "СЭС қорытындысы", si_tab_passport: "Техникалық паспорт", si_tab_general: "Жалпы ақпарат",
+  si_school_name: "Мектептің атауы", si_address: "Мекенжай",
+  si_built_year: "Пайдалануға берілген жыл", si_capacity: "Жобалық қуат",
+  si_contingent: "Контингент (оқушылар)", si_completeness: "Мектептің толымдылығы",
+  si_edit: "Өңдеу", si_save: "Сақтау", si_saved: "Сақталды", si_cancel: "Болдырмау",
+  si_empty_hint: "«+ Папка» батырмасын басыңыз немесе файл жүктеңіз",
 };
 
 const en: TranslationShape = {
@@ -563,6 +579,14 @@ const en: TranslationShape = {
   ktp_comment_label: "Vice-principal comment", ktp_save_review: "Save",
   ktp_review_saved: "Saved", ktp_no_files: "No documents uploaded",
   ktp_open_pdf: "Open", ktp_review_tab_hint: "Select a grade to review documents",
+  nav_psychologist: "School Psychologist", nav_social_pedagogue: "Social Pedagogue", nav_school_info: "School",
+  si_tab_license: "School License", si_tab_med: "Medical License", si_tab_land: "Land Certificate",
+  si_tab_ses: "SES Conclusion", si_tab_passport: "Technical Passport", si_tab_general: "General Info",
+  si_school_name: "School Name", si_address: "Address",
+  si_built_year: "Year of Commissioning", si_capacity: "Designed Capacity",
+  si_contingent: "Contingent (students)", si_completeness: "School Completeness",
+  si_edit: "Edit", si_save: "Save", si_saved: "Saved", si_cancel: "Cancel",
+  si_empty_hint: "Click «+ Folder» to create a folder or upload a file",
 };
 
 export const translations: Record<Language, TranslationShape> = { ru, kz, en };
