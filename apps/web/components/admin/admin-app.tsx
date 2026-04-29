@@ -56,7 +56,6 @@ function AdminAppContent({ token, user, language, setLanguage, onLogout }: {
     { key: "school-control", label: t.nav_protocols, icon: "📋" },
     { key: "class-hours", label: t.nav_class_hours, icon: "🕐" },
     { key: "gifted", label: t.nav_gifted, icon: "⭐" },
-    { key: "education-quality", label: t.nav_education_quality, icon: "📊" },
     { key: "welfare", label: t.nav_education, icon: "🌱" },
     { key: "household", label: t.nav_household, icon: "🔧" },
     { key: "bbjm", label: t.nav_bbjm, icon: "📑" },
@@ -89,7 +88,6 @@ function AdminAppContent({ token, user, language, setLanguage, onLogout }: {
       {section === "school-control" && <SchoolControlPanel token={token} language={language} userRole={user.role} />}
       {section === "class-hours" && <ClassHoursPanel token={token} language={language} t={t} isAdmin={true} />}
       {section === "gifted" && <GiftedPanel token={token} language={language} t={t} />}
-      {section === "education-quality" && <div className="page"><h1 className="page-title">📊 {t.nav_education_quality}</h1><p className="empty-state">{t.coming_soon}</p></div>}
       {section === "welfare" && <WelfarePanel token={token} language={language} userRole={user.role} />}
       {section === "household" && <HouseholdPanel token={token} language={language} userRole={user.role} />}
       {section === "bbjm" && <ModoPanel token={token} language={language} userRole={user.role} />}
