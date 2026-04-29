@@ -18,6 +18,9 @@ export class FileFolder {
   @Column({ nullable: true })
   teacherRefId?: string;
 
+  @Column({ nullable: true })
+  schoolId?: string;
+
   @CreateDateColumn()
   createdAt!: Date;
 

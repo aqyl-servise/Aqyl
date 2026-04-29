@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import { Teacher } from "../teachers/entities/teacher.entity";
 import { TeachersService } from "../teachers/teachers.service";
 import { PasswordReset } from "../schools/entities/password-reset.entity";
+import { School } from "../schools/entities/school.entity";
 import { MailService } from "../mail/mail.service";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
@@ -20,10 +21,11 @@ export class AuthService {
     private readonly mailService: MailService,
     private readonly configService: ConfigService,
     @InjectRepository(PasswordReset) private readonly resetRepo: Repository<PasswordReset>,
+    @InjectRepository(School) private readonly schoolRepo: Repository<School>,
   ) {}
 
   async login(loginDto: LoginDto) {
-    const teacher = await this.teachersService.findByEmail(loginDto.email);
+    const teacher = await this.teachersService.findById_withSchool(loginDto.email);
     if (!teacher) throw new UnauthorizedException("Invalid credentials");
 
     const matches = await bcrypt.compare(loginDto.password, teacher.passwordHash);
@@ -38,6 +40,7 @@ export class AuthService {
         sub: teacher.id,
         email: teacher.email,
         role: teacher.role,
+        schoolId: teacher.schoolId ?? undefined,
       }),
       user: this.serialize(teacher),
     };
@@ -47,6 +50,12 @@ export class AuthService {
     const existing = await this.teachersService.findByEmail(dto.email);
     if (existing) throw new ConflictException("Email already registered");
 
+    let schoolId: string | undefined;
+    if (dto.schoolName) {
+      const school = await this.findOrCreateSchool(dto.schoolName);
+      schoolId = school.id;
+    }
+
     const passwordHash = await bcrypt.hash(dto.password, 10);
     await this.teachersService.create({
       fullName: dto.fullName,
@@ -54,6 +63,7 @@ export class AuthService {
       passwordHash,
       role: dto.role as Teacher["role"],
       schoolName: dto.schoolName,
+      schoolId,
       status: "pending",
     });
 
@@ -93,6 +103,12 @@ export class AuthService {
     await this.resetRepo.delete(record.id);
   }
 
+  private async findOrCreateSchool(name: string): Promise<School> {
+    const existing = await this.schoolRepo.findOne({ where: { name } });
+    if (existing) return existing;
+    return this.schoolRepo.save(this.schoolRepo.create({ name }));
+  }
+
   private serialize(teacher: Teacher) {
     return {
       id: teacher.id,
@@ -101,6 +117,8 @@ export class AuthService {
       preferredLanguage: teacher.preferredLanguage,
       role: teacher.role,
       subject: teacher.subject,
+      schoolId: teacher.schoolId ?? null,
+      schoolName: teacher.schoolName ?? null,
     };
   }
 }

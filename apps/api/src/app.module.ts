@@ -8,6 +8,7 @@ import { AuthModule } from "./modules/auth/auth.module";
 import { DashboardModule } from "./modules/dashboard/dashboard.module";
 import { ExportsModule } from "./modules/exports/exports.module";
 import { GeneratorsModule } from "./modules/generators/generators.module";
+import { School } from "./modules/schools/entities/school.entity";
 import { Classroom } from "./modules/schools/entities/classroom.entity";
 import { GeneratedDocument } from "./modules/schools/entities/generated-document.entity";
 import { Student } from "./modules/schools/entities/student.entity";
@@ -51,6 +52,7 @@ import { KtpReview } from "./modules/schools/entities/ktp-review.entity";
 import { SchoolInfoModule } from "./modules/school-info/school-info.module";
 import { SchoolInfo } from "./modules/schools/entities/school-info.entity";
 import { SeedService } from "./seed.service";
+import { SchoolsModule } from "./modules/schools/schools.module";
 
 @Module({
   imports: [
@@ -69,7 +71,7 @@ import { SeedService } from "./seed.service";
         // Safe as long as only additive schema changes (new tables, nullable columns) are made.
         synchronize: true,
         entities: [
-          Teacher, Classroom, Student, Submission, GeneratedDocument,
+          School, Teacher, Classroom, Student, Submission, GeneratedDocument,
           Schedule, Assignment, TaskSubmission, OpenLesson, Protocol, ClassHour, UploadedFile,
           GiftedPlan, GiftedStudent, GiftedTeacherAssignment, GiftedMaterial, GiftedAchievement,
           StudentTransfer, PasswordReset, FileFolder, TeacherAttestation, FinalAttestationStudent, KtpReview, SchoolInfo,
@@ -77,7 +79,7 @@ import { SeedService } from "./seed.service";
       }),
     }),
     TypeOrmModule.forFeature([
-      Teacher, Classroom, Student, Submission, GeneratedDocument,
+      School, Teacher, Classroom, Student, Submission, GeneratedDocument,
       Schedule, Assignment, TaskSubmission, OpenLesson, Protocol, ClassHour, UploadedFile,
       GiftedPlan, GiftedStudent, GiftedTeacherAssignment, GiftedMaterial, GiftedAchievement,
       StudentTransfer, PasswordReset, FileFolder, TeacherAttestation, FinalAttestationStudent, KtpReview, SchoolInfo,
@@ -105,6 +107,7 @@ import { SeedService } from "./seed.service";
     FinalAttestationModule,
     KtpModule,
     SchoolInfoModule,
+    SchoolsModule,
   ],
   providers: [
     SeedService,

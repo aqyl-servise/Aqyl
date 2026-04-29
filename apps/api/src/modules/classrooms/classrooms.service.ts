@@ -31,8 +31,10 @@ export class ClassroomsService {
     @InjectRepository(Teacher) private readonly teacherRepo: Repository<Teacher>,
   ) {}
 
-  async findAll() {
+  async findAll(schoolId?: string | null) {
+    const where = schoolId ? { schoolId } : {};
     const classrooms = await this.classroomRepo.find({
+      where,
       relations: ["classTeacher", "students"],
       order: { grade: "ASC", name: "ASC" },
     });
@@ -46,12 +48,14 @@ export class ClassroomsService {
     }));
   }
 
-  async create(dto: CreateClassroomDto) {
+  async create(dto: CreateClassroomDto, schoolId?: string | null) {
     const classroom = this.classroomRepo.create({
       name: dto.name.trim(),
       grade: gradeFromName(dto.name),
       academicYear: dto.academicYear?.trim() || currentAcademicYear(),
       classTeacher: dto.classTeacherId ? ({ id: dto.classTeacherId } as Teacher) : undefined,
+      schoolId: schoolId ?? undefined,
+      school: schoolId ? ({ id: schoolId } as never) : undefined,
     });
     const saved = await this.classroomRepo.save(classroom);
     return this.classroomRepo.findOne({ where: { id: saved.id }, relations: ["classTeacher"] });
@@ -94,10 +98,10 @@ export class ClassroomsService {
     return { transferred: students.length };
   }
 
-  getClassTeachers() {
-    return this.teacherRepo.find({
-      where: { role: "class_teacher" },
-      order: { fullName: "ASC" },
-    });
+  getClassTeachers(schoolId?: string | null) {
+    const where = schoolId
+      ? { role: "class_teacher" as const, schoolId }
+      : { role: "class_teacher" as const };
+    return this.teacherRepo.find({ where, order: { fullName: "ASC" } });
   }
 }

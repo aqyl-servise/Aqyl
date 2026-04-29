@@ -20,12 +20,14 @@ export class FinalAttestationService {
     private readonly repo: Repository<FinalAttestationStudent>,
   ) {}
 
-  findAll(grade: number) {
-    return this.repo.find({ where: { grade }, order: { fullName: "ASC" } });
+  findAll(grade: number, schoolId?: string | null) {
+    const where: Record<string, unknown> = { grade };
+    if (schoolId) where["schoolId"] = schoolId;
+    return this.repo.find({ where, order: { fullName: "ASC" } });
   }
 
-  create(dto: FinalStudentDto) {
-    return this.repo.save(this.repo.create(dto));
+  create(dto: FinalStudentDto, schoolId?: string | null) {
+    return this.repo.save(this.repo.create({ ...dto, schoolId: schoolId ?? undefined }));
   }
 
   async update(id: string, dto: Partial<FinalStudentDto>) {

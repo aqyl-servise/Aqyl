@@ -1,8 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { ClassroomsService, CreateClassroomDto } from "./classrooms.service";
+
+interface ReqUser { user: { id: string; role: string; schoolId?: string | null } }
 
 @Controller("classrooms")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -11,18 +13,18 @@ export class ClassroomsController {
   constructor(private readonly service: ClassroomsService) {}
 
   @Get()
-  findAll() {
-    return this.service.findAll();
+  findAll(@Req() req: ReqUser) {
+    return this.service.findAll(req.user.schoolId);
   }
 
   @Get("class-teachers")
-  getClassTeachers() {
-    return this.service.getClassTeachers();
+  getClassTeachers(@Req() req: ReqUser) {
+    return this.service.getClassTeachers(req.user.schoolId);
   }
 
   @Post()
-  create(@Body() dto: CreateClassroomDto) {
-    return this.service.create(dto);
+  create(@Req() req: ReqUser, @Body() dto: CreateClassroomDto) {
+    return this.service.create(dto, req.user.schoolId);
   }
 
   @Patch(":id")

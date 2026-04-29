@@ -10,18 +10,20 @@ export class SchoolInfoService {
     private readonly repo: Repository<SchoolInfo>,
   ) {}
 
-  async getInfo(): Promise<SchoolInfo> {
-    const existing = await this.repo.findOne({ where: {} });
+  async getInfo(schoolId?: string | null): Promise<SchoolInfo> {
+    const where = schoolId ? { schoolId } : {};
+    const existing = await this.repo.findOne({ where });
     if (existing) return existing;
-    return this.repo.save(this.repo.create({}));
+    return this.repo.save(this.repo.create({ schoolId: schoolId ?? undefined }));
   }
 
-  async updateInfo(data: Partial<SchoolInfo>): Promise<SchoolInfo> {
-    const existing = await this.repo.findOne({ where: {} });
+  async updateInfo(data: Partial<SchoolInfo>, schoolId?: string | null): Promise<SchoolInfo> {
+    const where = schoolId ? { schoolId } : {};
+    const existing = await this.repo.findOne({ where });
     if (existing) {
       Object.assign(existing, data);
       return this.repo.save(existing);
     }
-    return this.repo.save(this.repo.create(data));
+    return this.repo.save(this.repo.create({ ...data, schoolId: schoolId ?? undefined }));
   }
 }

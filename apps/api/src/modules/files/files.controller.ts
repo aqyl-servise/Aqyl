@@ -31,7 +31,7 @@ const ALLOWED_MIME_TYPES = new Set([
 
 const ADMIN_ROLES = new Set(["admin", "principal", "vice_principal"]);
 
-interface ReqUser { user: { id: string; role: string } }
+interface ReqUser { user: { id: string; role: string; schoolId?: string | null } }
 interface MulterFile { originalname: string; mimetype: string; size: number; filename: string; path: string }
 
 @Controller("files")
@@ -81,6 +81,7 @@ export class FilesController {
         section: section || undefined,
         refType: refType || undefined,
         refId: refId || undefined,
+        schoolId: req.user.schoolId ?? undefined,
         uploadedBy: { id: req.user.id } as never,
       }),
     );
@@ -102,6 +103,7 @@ export class FilesController {
         parentId: body.parentId || undefined,
         section: body.section || undefined,
         teacherRefId: body.teacherRefId || undefined,
+        schoolId: req.user.schoolId ?? undefined,
         createdBy: { id: req.user.id } as never,
       }),
     );
@@ -110,6 +112,7 @@ export class FilesController {
   @Get("folders")
   @UseGuards(JwtAuthGuard)
   async listFolders(
+    @Req() req: ReqUser,
     @Query("parentId") parentId?: string,
     @Query("section") section?: string,
     @Query("teacherRefId") teacherRefId?: string,
@@ -122,6 +125,7 @@ export class FilesController {
     }
     if (section) where["section"] = section;
     if (teacherRefId) where["teacherRefId"] = teacherRefId;
+    if (req.user.schoolId) where["schoolId"] = req.user.schoolId;
     return this.folderRepo.find({ where, order: { name: "ASC" } });
   }
 
@@ -163,7 +167,9 @@ export class FilesController {
       where["folderId"] = folderId;
     }
     if (section) where["section"] = section;
-    if (!ADMIN_ROLES.has(req.user.role)) {
+    if (req.user.schoolId) {
+      where["schoolId"] = req.user.schoolId;
+    } else if (!ADMIN_ROLES.has(req.user.role)) {
       where["uploadedBy"] = { id: req.user.id };
     }
     return this.fileRepo.find({ where, order: { createdAt: "DESC" }, relations: ["uploadedBy"] });

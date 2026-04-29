@@ -4,7 +4,7 @@ import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { LessonsService } from "./lessons.service";
 
-interface ReqUser { user: { id: string; role: string } }
+interface ReqUser { user: { id: string; role: string; schoolId?: string | null } }
 
 @Controller("lessons")
 @UseGuards(JwtAuthGuard)
@@ -19,8 +19,8 @@ export class LessonsController {
   @Get("all")
   @UseGuards(RolesGuard)
   @Roles("admin", "principal", "vice_principal")
-  getAll() {
-    return this.service.getAll();
+  getAll(@Req() req: ReqUser) {
+    return this.service.getAll(req.user.schoolId);
   }
 
   @Get(":id")
@@ -30,7 +30,7 @@ export class LessonsController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles("teacher", "admin")
+  @Roles("teacher", "admin", "class_teacher", "principal", "vice_principal")
   create(
     @Req() req: ReqUser,
     @Body() body: { title: string; subject: string; grade: number; date?: string; description?: string },
@@ -42,6 +42,7 @@ export class LessonsController {
       date: body.date ? new Date(body.date) : undefined,
       description: body.description,
       teacher: { id: req.user.id } as never,
+      schoolId: req.user.schoolId ?? undefined,
     });
   }
 
@@ -55,7 +56,7 @@ export class LessonsController {
 
   @Delete(":id")
   @UseGuards(RolesGuard)
-  @Roles("teacher", "admin")
+  @Roles("teacher", "admin", "class_teacher", "principal", "vice_principal")
   remove(@Param("id") id: string) {
     return this.service.remove(id);
   }

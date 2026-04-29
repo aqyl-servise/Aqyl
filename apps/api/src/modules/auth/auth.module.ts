@@ -6,6 +6,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { TeachersModule } from "../teachers/teachers.module";
 import { MailModule } from "../mail/mail.module";
 import { PasswordReset } from "../schools/entities/password-reset.entity";
+import { School } from "../schools/entities/school.entity";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { JwtStrategy } from "./strategies/jwt.strategy";
@@ -15,7 +16,7 @@ import { JwtStrategy } from "./strategies/jwt.strategy";
     TeachersModule,
     PassportModule,
     MailModule,
-    TypeOrmModule.forFeature([PasswordReset]),
+    TypeOrmModule.forFeature([PasswordReset, School]),
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({

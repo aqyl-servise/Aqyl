@@ -10,8 +10,9 @@ export class ProtocolsService {
     private readonly repo: Repository<Protocol>,
   ) {}
 
-  getAll() {
-    return this.repo.find({ relations: { createdBy: true }, order: { date: "DESC" } });
+  getAll(schoolId?: string | null) {
+    const where = schoolId ? { schoolId } : {};
+    return this.repo.find({ where, relations: { createdBy: true }, order: { date: "DESC" } });
   }
 
   findOne(id: string) {

@@ -1,8 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { FinalAttestationService, FinalStudentDto } from "./final-attestation.service";
+
+interface ReqUser { user: { schoolId?: string | null } }
 
 @Controller("final-attestation")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -11,13 +13,13 @@ export class FinalAttestationController {
   constructor(private readonly service: FinalAttestationService) {}
 
   @Get("students")
-  findAll(@Query("grade") grade: string) {
-    return this.service.findAll(Number(grade));
+  findAll(@Req() req: ReqUser, @Query("grade") grade: string) {
+    return this.service.findAll(Number(grade), req.user.schoolId);
   }
 
   @Post("students")
-  create(@Body() dto: FinalStudentDto) {
-    return this.service.create(dto);
+  create(@Req() req: ReqUser, @Body() dto: FinalStudentDto) {
+    return this.service.create(dto, req.user.schoolId);
   }
 
   @Patch("students/:id")

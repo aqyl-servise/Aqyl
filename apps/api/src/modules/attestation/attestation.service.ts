@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { In, Repository } from "typeorm";
 import { TeacherAttestation } from "../schools/entities/teacher-attestation.entity";
 import { Teacher } from "../teachers/entities/teacher.entity";
 
@@ -13,9 +13,15 @@ export class AttestationService {
     private readonly teacherRepo: Repository<Teacher>,
   ) {}
 
-  async findAll() {
+  async findAll(schoolId?: string | null) {
+    const baseWhere = { role: "teacher" as const };
+    const schoolWhere = schoolId ? { ...baseWhere, schoolId } : baseWhere;
+    const roles = ["teacher", "principal", "vice_principal", "class_teacher"] as const;
+
     const teachers = await this.teacherRepo.find({
-      where: [{ role: "teacher" }, { role: "principal" }, { role: "vice_principal" }, { role: "class_teacher" }],
+      where: schoolId
+        ? roles.map((role) => ({ role, schoolId }))
+        : roles.map((role) => ({ role })),
       order: { fullName: "ASC" },
     });
     const attestations = await this.repo.find({ relations: ["teacher"] });

@@ -1,6 +1,7 @@
-import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Classroom } from "../../schools/entities/classroom.entity";
 import { GeneratedDocument } from "../../schools/entities/generated-document.entity";
+import { School } from "../../schools/entities/school.entity";
 
 export type UserRole = "teacher" | "admin" | "principal" | "vice_principal" | "class_teacher" | "student";
 export type UserStatus = "pending" | "active" | "rejected" | "inactive";
@@ -31,6 +32,12 @@ export class Teacher {
 
   @Column({ nullable: true })
   schoolName?: string;
+
+  @Column({ nullable: true })
+  schoolId?: string;
+
+  @ManyToOne(() => School, (s) => s.teachers, { nullable: true, onDelete: "SET NULL" })
+  school?: School;
 
   // Profile fields
   @Column({ nullable: true })

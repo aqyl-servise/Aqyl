@@ -4,7 +4,7 @@ import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { StudentsService, CreateStudentDto } from "./students.service";
 
-interface ReqUser { id: string; role: string }
+interface ReqUser { id: string; role: string; schoolId?: string | null }
 
 @Controller("students")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -15,7 +15,7 @@ export class StudentsController {
   @Get()
   findAll(@Req() req: { user: ReqUser }, @Query("classroomId") classroomId?: string) {
     if (["admin", "principal", "vice_principal"].includes(req.user.role)) {
-      return this.service.findAll(classroomId);
+      return this.service.findAll(classroomId, req.user.schoolId);
     }
     return this.service.findByTeacher(req.user.id, classroomId);
   }
@@ -23,14 +23,14 @@ export class StudentsController {
   @Get("classrooms")
   getClassrooms(@Req() req: { user: ReqUser }) {
     if (["admin", "principal", "vice_principal"].includes(req.user.role)) {
-      return this.service.getClassrooms();
+      return this.service.getClassrooms(req.user.schoolId);
     }
     return this.service.getTeacherClassrooms(req.user.id);
   }
 
   @Get("class-teachers")
-  getClassTeachers() {
-    return this.service.getClassTeachers();
+  getClassTeachers(@Req() req: { user: ReqUser }) {
+    return this.service.getClassTeachers(req.user.schoolId);
   }
 
   @Post()

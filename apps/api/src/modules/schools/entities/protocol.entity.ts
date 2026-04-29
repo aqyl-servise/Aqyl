@@ -23,6 +23,9 @@ export class Protocol {
   @Column({ type: "jsonb", default: "[]" })
   fileUrls!: string[];
 
+  @Column({ nullable: true })
+  schoolId?: string;
+
   @CreateDateColumn()
   createdAt!: Date;
 

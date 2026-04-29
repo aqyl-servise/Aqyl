@@ -5,7 +5,7 @@ import { Roles } from "../auth/decorators/roles.decorator";
 import { KtpService } from "./ktp.service";
 import { KtpStatus } from "../schools/entities/ktp-review.entity";
 
-interface ReqUser { user: { id: string; role: string } }
+interface ReqUser { user: { id: string; role: string; schoolId?: string | null } }
 
 @Controller("ktp")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -15,8 +15,8 @@ export class KtpController {
 
   @Get("files")
   @Roles("admin", "principal", "vice_principal")
-  getFiles(@Query("section") section: string) {
-    return this.service.getFilesWithReviews(section ?? "");
+  getFiles(@Query("section") section: string, @Req() req: ReqUser) {
+    return this.service.getFilesWithReviews(section ?? "", req.user.schoolId);
   }
 
   @Patch("reviews/:fileId")

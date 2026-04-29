@@ -17,8 +17,10 @@ export class LessonsService {
     });
   }
 
-  getAll() {
+  getAll(schoolId?: string | null) {
+    const where = schoolId ? { schoolId } : {};
     return this.repo.find({
+      where,
       relations: { teacher: true },
       order: { date: "DESC" },
     });

@@ -6,6 +6,9 @@ export class SchoolInfo {
   id!: string;
 
   @Column({ nullable: true })
+  schoolId?: string;
+
+  @Column({ nullable: true })
   name?: string;
 
   @Column({ nullable: true })

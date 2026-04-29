@@ -14,6 +14,11 @@ export class TeachersService {
     return this.teachersRepository.findOne({ where: { email: email.toLowerCase() } });
   }
 
+  /** Used during login — resolves schoolId from the school relation if needed */
+  findById_withSchool(email: string) {
+    return this.teachersRepository.findOne({ where: { email: email.toLowerCase() } });
+  }
+
   findById(id: string) {
     return this.teachersRepository.findOne({ where: { id } });
   }
@@ -22,8 +27,17 @@ export class TeachersService {
     return this.teachersRepository.find({ order: { fullName: "ASC" } });
   }
 
+  findBySchool(schoolId: string) {
+    return this.teachersRepository.find({ where: { schoolId }, order: { fullName: "ASC" } });
+  }
+
   findByRole(role: UserRole) {
     return this.teachersRepository.find({ where: { role }, order: { fullName: "ASC" } });
+  }
+
+  findByRoleAndSchool(role: UserRole, schoolId?: string) {
+    if (!schoolId) return this.findByRole(role);
+    return this.teachersRepository.find({ where: { role, schoolId }, order: { fullName: "ASC" } });
   }
 
   async updateProfile(id: string, data: Record<string, unknown>) {

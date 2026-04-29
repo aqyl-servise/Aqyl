@@ -1,8 +1,10 @@
-import { Body, Controller, Get, Param, Patch, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Req, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { AttestationService } from "./attestation.service";
+
+interface ReqUser { user: { schoolId?: string | null } }
 
 @Controller("attestation")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -11,8 +13,8 @@ export class AttestationController {
   constructor(private readonly service: AttestationService) {}
 
   @Get()
-  findAll() {
-    return this.service.findAll();
+  findAll(@Req() req: ReqUser) {
+    return this.service.findAll(req.user.schoolId);
   }
 
   @Get(":teacherId")

@@ -26,6 +26,9 @@ export class FinalAttestationStudent {
   @Column({ nullable: true })
   parentName?: string;
 
+  @Column({ nullable: true })
+  schoolId?: string;
+
   @CreateDateColumn()
   createdAt!: Date;
 }

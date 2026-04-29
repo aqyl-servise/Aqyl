@@ -25,9 +25,15 @@ export class StudentsService {
     @InjectRepository(StudentTransfer) private readonly transferRepo: Repository<StudentTransfer>,
   ) {}
 
-  findAll(classroomId?: string) {
+  findAll(classroomId?: string, schoolId?: string | null) {
+    const where: Record<string, unknown> = {};
+    if (classroomId) {
+      where["classroom"] = { id: classroomId };
+    } else if (schoolId) {
+      where["classroom"] = { schoolId };
+    }
     return this.studentRepo.find({
-      where: classroomId ? { classroom: { id: classroomId } } : {},
+      where,
       relations: ["classroom", "classTeacher"],
       order: { fullName: "ASC" },
     });
@@ -43,8 +49,10 @@ export class StudentsService {
     });
   }
 
-  getClassrooms() {
+  getClassrooms(schoolId?: string | null) {
+    const where = schoolId ? { schoolId } : {};
     return this.classroomRepo.find({
+      where,
       relations: ["classTeacher"],
       order: { grade: "ASC", name: "ASC" },
     });
@@ -58,11 +66,11 @@ export class StudentsService {
     });
   }
 
-  getClassTeachers() {
-    return this.teacherRepo.find({
-      where: { role: "class_teacher" },
-      order: { fullName: "ASC" },
-    });
+  getClassTeachers(schoolId?: string | null) {
+    const where = schoolId
+      ? { role: "class_teacher" as const, schoolId }
+      : { role: "class_teacher" as const };
+    return this.teacherRepo.find({ where, order: { fullName: "ASC" } });
   }
 
   async create(dto: CreateStudentDto) {

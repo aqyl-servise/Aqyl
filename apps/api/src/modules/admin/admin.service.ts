@@ -22,17 +22,32 @@ export class AdminService {
     @InjectRepository(Protocol) private readonly protocolRepo: Repository<Protocol>,
   ) {}
 
-  async getOverview() {
-    const [teachers, classrooms, students, submissions, documents, openLessons, protocols, pendingCount] = await Promise.all([
-      this.teacherRepo.count({ where: { role: "teacher" } }),
-      this.classroomRepo.count(),
-      this.studentRepo.count(),
-      this.submissionRepo.find(),
-      this.docRepo.count(),
-      this.lessonRepo.count(),
-      this.protocolRepo.count(),
-      this.teacherRepo.count({ where: { status: "pending" } }),
+  async getOverview(schoolId?: string | null) {
+    const teacherWhere = schoolId ? { role: "teacher" as const, schoolId } : { role: "teacher" as const };
+    const classroomWhere = schoolId ? { schoolId } : {};
+    const lessonWhere = schoolId ? { schoolId } : {};
+    const protocolWhere = schoolId ? { schoolId } : {};
+    const pendingWhere = schoolId
+      ? { status: "pending" as const, schoolId }
+      : { status: "pending" as const };
+
+    const [teachers, classrooms, documents, openLessons, protocols, pendingCount] = await Promise.all([
+      this.teacherRepo.count({ where: teacherWhere }),
+      this.classroomRepo.count({ where: classroomWhere }),
+      schoolId
+        ? this.docRepo.count({ where: { teacher: { schoolId } } })
+        : this.docRepo.count(),
+      this.lessonRepo.count({ where: lessonWhere }),
+      this.protocolRepo.count({ where: protocolWhere }),
+      this.teacherRepo.count({ where: pendingWhere }),
     ]);
+
+    const studentWhere = schoolId ? { classroom: { schoolId } } : {};
+    const students = await this.studentRepo.count({ where: studentWhere });
+
+    const submissions = await this.submissionRepo.find({
+      ...(schoolId ? { where: { student: { classroom: { schoolId } } } } : {}),
+    });
 
     const avgScore = submissions.length
       ? Math.round(submissions.reduce((s, sub) => s + Number(sub.score) / Number(sub.maxScore), 0) / submissions.length * 100)
@@ -41,8 +56,10 @@ export class AdminService {
     return { teachers, classrooms, students, avgScore, documents, openLessons, protocols, pendingCount };
   }
 
-  async getSchoolAnalytics() {
+  async getSchoolAnalytics(schoolId?: string | null) {
+    const where = schoolId ? { schoolId } : {};
     const classrooms = await this.classroomRepo.find({
+      where,
       relations: { students: { submissions: true }, teacher: true },
       order: { grade: "ASC", name: "ASC" },
     });
@@ -64,9 +81,13 @@ export class AdminService {
     });
   }
 
-  async getTeachersWithStats() {
+  async getTeachersWithStats(schoolId?: string | null) {
+    const where = schoolId
+      ? { role: "teacher" as const, schoolId }
+      : { role: "teacher" as const };
+
     const teachers = await this.teacherRepo.find({
-      where: { role: "teacher" },
+      where,
       relations: { classrooms: { students: { submissions: true } }, generatedDocuments: true },
       order: { fullName: "ASC" },
     });
@@ -99,13 +120,15 @@ export class AdminService {
       role: t.role,
       status: t.status,
       schoolName: t.schoolName,
+      schoolId: t.schoolId,
       preferredLanguage: t.preferredLanguage,
       createdAt: t.createdAt,
     };
   }
 
-  async getRegistrations() {
-    const rows = await this.teacherRepo.find({ order: { createdAt: "DESC" } });
+  async getRegistrations(schoolId?: string | null) {
+    const where = schoolId ? { schoolId } : {};
+    const rows = await this.teacherRepo.find({ where, order: { createdAt: "DESC" } });
     return rows.map((t) => this.serializeTeacher(t));
   }
 

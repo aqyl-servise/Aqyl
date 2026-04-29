@@ -14,9 +14,12 @@ export class KtpService {
     private readonly fileRepo: Repository<UploadedFile>,
   ) {}
 
-  async getFilesWithReviews(section: string) {
+  async getFilesWithReviews(section: string, schoolId?: string | null) {
+    const where: Record<string, unknown> = { section };
+    if (schoolId) where["schoolId"] = schoolId;
+
     const files = await this.fileRepo.find({
-      where: { section },
+      where,
       relations: ["uploadedBy"],
       order: { createdAt: "DESC" },
     });

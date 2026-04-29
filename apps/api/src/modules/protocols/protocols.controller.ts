@@ -5,7 +5,7 @@ import { Roles } from "../auth/decorators/roles.decorator";
 import { ProtocolsService } from "./protocols.service";
 import { ProtocolType } from "../schools/entities/protocol.entity";
 
-interface ReqUser { user: { id: string } }
+interface ReqUser { user: { id: string; schoolId?: string | null } }
 
 @Controller("protocols")
 @UseGuards(JwtAuthGuard)
@@ -13,8 +13,8 @@ export class ProtocolsController {
   constructor(private readonly service: ProtocolsService) {}
 
   @Get()
-  getAll() {
-    return this.service.getAll();
+  getAll(@Req() req: ReqUser) {
+    return this.service.getAll(req.user.schoolId);
   }
 
   @Get(":id")
@@ -35,6 +35,7 @@ export class ProtocolsController {
       date: body.date ? new Date(body.date) : undefined,
       content: body.content,
       createdBy: { id: req.user.id } as never,
+      schoolId: req.user.schoolId ?? undefined,
     });
   }
 

@@ -33,6 +33,9 @@ export class UploadedFile {
   @Column({ nullable: true })
   section?: string;
 
+  @Column({ nullable: true })
+  schoolId?: string;
+
   @CreateDateColumn()
   createdAt!: Date;
 
