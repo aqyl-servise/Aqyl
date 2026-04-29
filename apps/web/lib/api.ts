@@ -445,4 +445,14 @@ export const api = {
     request<{ id: string; name?: string; address?: string; builtYear?: string; capacity?: string; contingent?: string; completeness?: string; updatedAt: string }>("/school/info", undefined, token),
   updateSchoolInfo: (token: string, data: Record<string, string>) =>
     request<{ id: string }>("/school/info", { method: "PATCH", body: JSON.stringify(data) }, token),
+
+  // Schools (global admin)
+  getSchools: (token: string) =>
+    request<Array<{ id: string; name: string; city: string | null; region: string | null; code: string; isActive: boolean; userCount: number; createdAt: string }>>("/schools", undefined, token),
+  createSchool: (token: string, data: { name: string; city?: string; region?: string }) =>
+    request<{ id: string; name: string; code: string }>("/schools", { method: "POST", body: JSON.stringify(data) }, token),
+  activateSchool: (token: string, id: string) =>
+    request<{ id: string; isActive: boolean }>(`/schools/${id}/activate`, { method: "PATCH" }, token),
+  deactivateSchool: (token: string, id: string) =>
+    request<{ id: string; isActive: boolean }>(`/schools/${id}/deactivate`, { method: "PATCH" }, token),
 };

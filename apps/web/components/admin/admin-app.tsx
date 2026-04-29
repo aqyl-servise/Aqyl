@@ -23,6 +23,7 @@ import { SocialPedagoguePanel } from "./social-pedagogue-panel";
 import { SchoolInfoPanel } from "./school-info-panel";
 import { HouseholdPanel } from "./household-panel";
 import { WelfarePanel } from "./welfare-panel";
+import { SchoolsPanel } from "./schools-panel";
 
 export function AdminApp({ token, user, language, setLanguage, onLogout }: {
   token: string; user: AuthUser; language: Language;
@@ -56,6 +57,7 @@ export function AdminApp({ token, user, language, setLanguage, onLogout }: {
   const adminOnlyNav = [
     { key: "users", label: t.nav_users, icon: "👥" },
     { key: "registrations", label: t.nav_registrations, icon: "📬" },
+    { key: "schools", label: t.nav_schools, icon: "🏛️" },
   ];
 
   const navItems = user.role === "admin" ? [...baseNav, ...adminOnlyNav] : baseNav;
@@ -84,6 +86,7 @@ export function AdminApp({ token, user, language, setLanguage, onLogout }: {
       {section === "school-info" && <SchoolInfoPanel token={token} language={language} userRole={user.role} />}
       {section === "users" && user.role === "admin" && <UsersPanel token={token} language={language} t={t} currentUserId={user.id} />}
       {section === "registrations" && user.role === "admin" && <RegistrationsPanel token={token} language={language} t={t} />}
+      {section === "schools" && user.role === "admin" && <SchoolsPanel token={token} language={language} t={t} />}
     </AppLayout>
   );
 }

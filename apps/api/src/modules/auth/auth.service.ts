@@ -106,7 +106,10 @@ export class AuthService {
   private async findOrCreateSchool(name: string): Promise<School> {
     const existing = await this.schoolRepo.findOne({ where: { name } });
     if (existing) return existing;
-    return this.schoolRepo.save(this.schoolRepo.create({ name }));
+    const source = name.replace(/[^a-zA-ZА-Яа-яЁё]/g, "");
+    const prefix = source.slice(0, 3).toUpperCase() || "SCH";
+    const code = `${prefix}-${String(Date.now()).slice(-4)}`;
+    return this.schoolRepo.save(this.schoolRepo.create({ name, code }));
   }
 
   private serialize(teacher: Teacher) {

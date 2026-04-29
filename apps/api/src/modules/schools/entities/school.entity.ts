@@ -10,6 +10,18 @@ export class School {
   @Column({ unique: true })
   name!: string;
 
+  @Column({ nullable: true })
+  city?: string;
+
+  @Column({ nullable: true })
+  region?: string;
+
+  @Column({ unique: true })
+  code!: string;
+
+  @Column({ default: true })
+  isActive!: boolean;
+
   @CreateDateColumn()
   createdAt!: Date;
 
