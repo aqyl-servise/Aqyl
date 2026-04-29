@@ -87,7 +87,7 @@ function AdminAppContent({ token, user, language, setLanguage, onLogout }: {
       {section === "open-lessons" && <OpenLessonsPanel token={token} language={language} t={t} isAdmin={true} />}
       {section === "school-control" && <SchoolControlPanel token={token} language={language} userRole={user.role} />}
       {section === "class-hours" && <ClassHoursPanel token={token} language={language} t={t} isAdmin={true} />}
-      {section === "gifted" && <GiftedPanel token={token} language={language} t={t} />}
+      {section === "gifted" && <GiftedPanel token={token} language={language} userRole={user.role} />}
       {section === "welfare" && <WelfarePanel token={token} language={language} userRole={user.role} />}
       {section === "household" && <HouseholdPanel token={token} language={language} userRole={user.role} />}
       {section === "bbjm" && <ModoPanel token={token} language={language} userRole={user.role} />}

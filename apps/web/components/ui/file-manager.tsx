@@ -48,6 +48,12 @@ export interface FileManagerProps {
     loading?: string;
     confirmDeleteFolder?: string;
     confirmDeleteFile?: string;
+    sort?: string;
+    sortDate?: string;
+    sortName?: string;
+    sortAuthor?: string;
+    pin?: string;
+    unpin?: string;
   };
 }
 
@@ -56,6 +62,7 @@ function getFileIcon(mimetype: string): string {
   if (mimetype.includes("word") || mimetype.includes("msword")) return "📝";
   if (mimetype.includes("excel") || mimetype.includes("spreadsheet") || mimetype.includes("csv")) return "📊";
   if (mimetype.startsWith("image/")) return "🖼️";
+  if (mimetype.includes("presentation") || mimetype.includes("powerpoint")) return "📑";
   return "📎";
 }
 
@@ -80,7 +87,24 @@ const DEFAULT_LABELS = {
   loading: "Загрузка...",
   confirmDeleteFolder: "Удалить папку?",
   confirmDeleteFile: "Удалить файл?",
+  sort: "Сортировка",
+  sortDate: "По дате",
+  sortName: "По названию",
+  sortAuthor: "По автору",
+  pin: "Закрепить",
+  unpin: "Открепить",
 };
+
+type SortBy = "date" | "name" | "author";
+
+function loadPinned(section: string): Set<string> {
+  try { return new Set(JSON.parse(localStorage.getItem(`aqyl-pins-${section}`) ?? "[]")); }
+  catch { return new Set(); }
+}
+
+function savePinned(section: string, ids: Set<string>) {
+  localStorage.setItem(`aqyl-pins-${section}`, JSON.stringify([...ids]));
+}
 
 export function FileManager({ token, section, teacherRefId, canEdit, canUpload, labels: labelOverrides }: FileManagerProps) {
   const L = { ...DEFAULT_LABELS, ...labelOverrides };
@@ -93,9 +117,14 @@ export function FileManager({ token, section, teacherRefId, canEdit, canUpload, 
   const [showFolderInput, setShowFolderInput] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [sortBy, setSortBy] = useState<SortBy>("date");
+  const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => loadPinned(section));
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentId = crumbs[crumbs.length - 1]?.id;
+
+  // Reload pinned when section changes
+  useEffect(() => { setPinnedIds(loadPinned(section)); }, [section]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -120,6 +149,15 @@ export function FileManager({ token, section, teacherRefId, canEdit, canUpload, 
   }, [token, section, teacherRefId, currentId]);
 
   useEffect(() => { load(); }, [load]);
+
+  function togglePin(id: string) {
+    setPinnedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      savePinned(section, next);
+      return next;
+    });
+  }
 
   const openFolder = (folder: Folder) => {
     setCrumbs(prev => [...prev, { id: folder.id, name: folder.name }]);
@@ -195,6 +233,13 @@ export function FileManager({ token, section, teacherRefId, canEdit, canUpload, 
     if (!confirm(L.confirmDeleteFile)) return;
     try {
       await api.deleteFile(token, id);
+      // Remove from pinned if was pinned
+      if (pinnedIds.has(id)) {
+        const next = new Set(pinnedIds);
+        next.delete(id);
+        setPinnedIds(next);
+        savePinned(section, next);
+      }
       load();
     } catch (e) {
       setError(String(e));
@@ -203,7 +248,18 @@ export function FileManager({ token, section, teacherRefId, canEdit, canUpload, 
 
   const q = search.toLowerCase();
   const visibleFolders = folders.filter(f => f.name.toLowerCase().includes(q));
-  const visibleFiles = files.filter(f => f.originalName.toLowerCase().includes(q));
+  const visibleFiles = files
+    .filter(f => f.originalName.toLowerCase().includes(q))
+    .sort((a, b) => {
+      const ap = pinnedIds.has(a.id), bp = pinnedIds.has(b.id);
+      if (ap !== bp) return ap ? -1 : 1;
+      switch (sortBy) {
+        case "name": return a.originalName.localeCompare(b.originalName);
+        case "author": return (a.uploadedBy?.fullName ?? "").localeCompare(b.uploadedBy?.fullName ?? "");
+        default: return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+    });
+
   const isEmpty = visibleFolders.length === 0 && visibleFiles.length === 0;
 
   return (
@@ -232,6 +288,17 @@ export function FileManager({ token, section, teacherRefId, canEdit, canUpload, 
           onChange={e => setSearch(e.target.value)}
         />
         <div className="fm-toolbar-actions">
+          <select
+            className="input"
+            style={{ width: "auto", fontSize: 13, padding: "4px 8px" }}
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value as SortBy)}
+            title={L.sort}
+          >
+            <option value="date">{L.sortDate}</option>
+            <option value="name">{L.sortName}</option>
+            <option value="author">{L.sortAuthor}</option>
+          </select>
           {canEdit && (
             <button className="btn btn-outline btn-sm" onClick={() => setShowFolderInput(v => !v)}>
               {L.newFolder}
@@ -250,7 +317,7 @@ export function FileManager({ token, section, teacherRefId, canEdit, canUpload, 
                 ref={fileInputRef}
                 type="file"
                 style={{ display: "none" }}
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp,.txt,.csv"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp,.ppt,.pptx,.txt,.csv"
                 onChange={handleUpload}
               />
             </>
@@ -307,29 +374,41 @@ export function FileManager({ token, section, teacherRefId, canEdit, canUpload, 
               </div>
             ))}
 
-            {visibleFiles.map(file => (
-              <div key={file.id} className="fm-item fm-item-file">
-                <span className="fm-item-icon">{getFileIcon(file.mimetype)}</span>
-                <div className="fm-item-info">
-                  <span className="fm-item-name">{file.originalName}</span>
-                  <span className="fm-item-meta">
-                    {formatSize(file.size)}
-                    {file.uploadedBy && ` · ${file.uploadedBy.fullName}`}
-                    {" · "}{new Date(file.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="fm-item-actions">
-                  <button className="btn btn-outline btn-sm" onClick={() => handleDownload(file)}>
-                    ↓ {L.download}
-                  </button>
-                  {canEdit && (
-                    <button className="btn btn-danger btn-sm" onClick={() => handleDeleteFile(file.id)}>
-                      {L.delete}
+            {visibleFiles.map(file => {
+              const isPinned = pinnedIds.has(file.id);
+              return (
+                <div key={file.id} className={`fm-item fm-item-file${isPinned ? " fm-item-pinned" : ""}`}>
+                  <span className="fm-item-icon">{isPinned ? "📌" : getFileIcon(file.mimetype)}</span>
+                  <div className="fm-item-info">
+                    <span className="fm-item-name">{file.originalName}</span>
+                    <span className="fm-item-meta">
+                      {formatSize(file.size)}
+                      {file.uploadedBy && ` · ${file.uploadedBy.fullName}`}
+                      {" · "}{new Date(file.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="fm-item-actions">
+                    <button className="btn btn-outline btn-sm" onClick={() => handleDownload(file)}>
+                      ↓ {L.download}
                     </button>
-                  )}
+                    {canEdit && (
+                      <>
+                        <button
+                          className={`btn btn-sm ${isPinned ? "btn-primary" : "btn-outline"}`}
+                          onClick={() => togglePin(file.id)}
+                          title={isPinned ? L.unpin : L.pin}
+                        >
+                          📌
+                        </button>
+                        <button className="btn btn-danger btn-sm" onClick={() => handleDeleteFile(file.id)}>
+                          {L.delete}
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </>
         )}
       </div>

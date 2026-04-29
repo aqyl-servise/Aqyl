@@ -11,6 +11,7 @@ import { TeacherProfile } from "./teacher-profile";
 import { OpenLessonsPanel } from "./open-lessons-panel";
 import { AssignmentsPanel } from "./assignments-panel";
 import { StudentsPanel } from "../admin/students-panel";
+import { FileManager } from "../ui/file-manager";
 
 export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
   token: string; user: AuthUser; language: Language;
@@ -28,6 +29,7 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
     { key: "assignments", label: t.nav_assignments, icon: "📋" },
     { key: "lessons", label: t.nav_lessons, icon: "🎓" },
     { key: "analytics", label: t.nav_analytics, icon: "📊" },
+    { key: "gifted", label: t.nav_gifted, icon: "⭐" },
   ];
 
   return (
@@ -41,6 +43,55 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
       {section === "assignments" && <AssignmentsPanel token={token} language={language} t={t} />}
       {section === "lessons" && <OpenLessonsPanel token={token} language={language} t={t} isAdmin={false} />}
       {section === "analytics" && <AnalyticsPanel token={token} language={language} t={t} />}
+      {section === "gifted" && <TeacherGiftedSection token={token} userId={user.id} language={language} t={t} />}
     </AppLayout>
+  );
+}
+
+function TeacherGiftedSection({ token, userId, language, t }: {
+  token: string; userId: string; language: Language; t: Record<string, string>;
+}) {
+  const [active, setActive] = useState<"achievements" | "workplan" | null>(null);
+
+  const labels = {
+    home: t.fm_home, newFolder: t.fm_new_folder, upload: t.fm_upload,
+    uploading: t.fm_uploading, search: t.fm_search, folderName: t.fm_folder_name,
+    create: t.fm_create, cancel: t.cancel, noFiles: t.fm_no_files,
+    download: t.fm_download, delete: t.fm_delete, loading: t.loading,
+    sort: t.fm_sort, sortDate: t.fm_sort_date, sortName: t.fm_sort_name,
+    sortAuthor: t.fm_sort_author, pin: t.fm_pin, unpin: t.fm_unpin,
+  };
+
+  return (
+    <div className="page">
+      <h1 className="page-title">⭐ {t.nav_gifted}</h1>
+
+      <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+        <button
+          className={`btn ${active === "achievements" ? "btn-primary" : "btn-outline"}`}
+          onClick={() => setActive(p => p === "achievements" ? null : "achievements")}
+        >
+          🏆 {t.gifted_my_achievements ?? "Мои достижения"}
+        </button>
+        <button
+          className={`btn ${active === "workplan" ? "btn-primary" : "btn-outline"}`}
+          onClick={() => setActive(p => p === "workplan" ? null : "workplan")}
+        >
+          📋 {t.gifted_my_workplan ?? "Мой план работы"}
+        </button>
+      </div>
+
+      {active && (
+        <div className="card" style={{ marginTop: 0 }}>
+          <FileManager
+            token={token}
+            section={`gifted-${active}-${userId}`}
+            canEdit={true}
+            canUpload={true}
+            labels={labels}
+          />
+        </div>
+      )}
+    </div>
   );
 }
