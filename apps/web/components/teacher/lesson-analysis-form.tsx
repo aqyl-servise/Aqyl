@@ -129,26 +129,41 @@ export function LessonAnalysisForm({ token, lesson, classroomName, readOnly, onC
     });
   }
 
-  if (loading) return (
-    <div className="modal-overlay">
-      <div className="modal-card"><p className="muted">Жүктелуде...</p></div>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="page">
+        <p className="muted" style={{ textAlign: "center", padding: 40 }}>Жүктелуде...</p>
+      </div>
+    );
+  }
 
   const dateStr = lesson.date ? new Date(lesson.date).toLocaleDateString("ru-RU") : "—";
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" style={{ maxWidth: 900, width: "95%", maxHeight: "90vh", overflowY: "auto" }}
-        onClick={(e) => e.stopPropagation()}>
-
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h2 style={{ margin: 0, fontSize: 16 }}>САБАҚТЫ ТАЛДАУ СЫЗБАСЫ</h2>
-          <button className="btn btn-ghost btn-sm" onClick={onClose}>✕</button>
+    <div className="page">
+      <div className="page-header">
+        <button className="btn btn-ghost btn-sm" onClick={onClose}>← Назад</button>
+        <h1 className="page-title">📋 САБАҚТЫ ТАЛДАУ СЫЗБАСЫ</h1>
+        <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
+          {!readOnly && (
+            <>
+              <button className="btn btn-outline btn-sm" disabled={saving} onClick={() => handleSave(true)}>
+                Черновик
+              </button>
+              <button className="btn btn-primary btn-sm" disabled={saving} onClick={() => handleSave(false)}>
+                {saving ? <span className="spinner" /> : "Сохранить"}
+              </button>
+            </>
+          )}
+          {analysis && !analysis.isDraft && (
+            <button className="btn btn-outline btn-sm" onClick={handlePdf}>📄 PDF</button>
+          )}
         </div>
+      </div>
 
-        {/* Header */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 16px", marginBottom: 12 }}>
+      <div className="card">
+        {/* Header block */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 16px", marginBottom: 16 }}>
           <div className="field">
             <label className="field-label">Күні</label>
             <input className="input" readOnly value={dateStr} />
@@ -171,50 +186,47 @@ export function LessonAnalysisForm({ token, lesson, classroomName, readOnly, onC
           </div>
         </div>
 
-        <div className="field" style={{ marginBottom: 8 }}>
+        <div className="field" style={{ marginBottom: 10 }}>
           <label className="field-label">Сабаққа қатынасу мақсаты</label>
           <textarea className="textarea" rows={2} value={visitPurpose}
             onChange={(e) => setVisitPurpose(e.target.value)} readOnly={readOnly} />
         </div>
-
-        {/* Main fields */}
-        <div className="field" style={{ marginBottom: 8 }}>
+        <div className="field" style={{ marginBottom: 10 }}>
           <label className="field-label">Сабақ тақырыбы</label>
           <input className="input" value={lessonTopic}
             onChange={(e) => setLessonTopic(e.target.value)} readOnly={readOnly} />
         </div>
-        <div className="field" style={{ marginBottom: 8 }}>
+        <div className="field" style={{ marginBottom: 10 }}>
           <label className="field-label">Сабақтың мақсаты</label>
           <textarea className="textarea" rows={2} value={lessonPurpose}
             onChange={(e) => setLessonPurpose(e.target.value)} readOnly={readOnly} />
         </div>
-        <div className="field" style={{ marginBottom: 16 }}>
+        <div className="field" style={{ marginBottom: 20 }}>
           <label className="field-label">Сабақтың жабдықталуы</label>
           <textarea className="textarea" rows={2} value={equipment}
             onChange={(e) => setEquipment(e.target.value)} readOnly={readOnly} />
         </div>
 
         {/* Table 1 */}
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 20 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-            <strong style={{ fontSize: 13 }}>Оқушыларды сұраудың схемалық кестесі</strong>
+            <strong>Оқушыларды сұраудың схемалық кестесі</strong>
             {!readOnly && (
               <button className="btn btn-outline btn-sm"
                 onClick={() => setSurveyRows((r) => [...r, emptyRow(4)])}>+ Жол</button>
             )}
           </div>
           <div style={{ overflowX: "auto" }}>
-            <table className="data-table" style={{ minWidth: 500 }}>
+            <table className="data-table">
               <thead>
-                <tr>{SURVEY_COLS.map((c) => <th key={c}>{c}</th>)}{!readOnly && <th></th>}</tr>
+                <tr>{SURVEY_COLS.map((c) => <th key={c}>{c}</th>)}{!readOnly && <th style={{ width: 36 }}></th>}</tr>
               </thead>
               <tbody>
                 {surveyRows.map((row, ri) => (
                   <tr key={ri}>
                     {SURVEY_COLS.map((_, ci) => (
                       <td key={ci}>
-                        {readOnly
-                          ? row[ci]
+                        {readOnly ? (row[ci] ?? "")
                           : <input className="input" style={{ padding: "4px 6px" }} value={row[ci] ?? ""}
                               onChange={(e) => updateSurveyCell(ri, ci, e.target.value)} />}
                       </td>
@@ -233,26 +245,25 @@ export function LessonAnalysisForm({ token, lesson, classroomName, readOnly, onC
         </div>
 
         {/* Table 2 */}
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 20 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-            <strong style={{ fontSize: 13 }}>Сабақтың барысы</strong>
+            <strong>Сабақтың барысы</strong>
             {!readOnly && (
               <button className="btn btn-outline btn-sm"
                 onClick={() => setProgressRows((r) => [...r, emptyRow(5)])}>+ Жол</button>
             )}
           </div>
           <div style={{ overflowX: "auto" }}>
-            <table className="data-table" style={{ minWidth: 700 }}>
+            <table className="data-table">
               <thead>
-                <tr>{PROGRESS_COLS.map((c) => <th key={c} style={{ fontSize: 11 }}>{c}</th>)}{!readOnly && <th></th>}</tr>
+                <tr>{PROGRESS_COLS.map((c) => <th key={c} style={{ fontSize: 11 }}>{c}</th>)}{!readOnly && <th style={{ width: 36 }}></th>}</tr>
               </thead>
               <tbody>
                 {progressRows.map((row, ri) => (
                   <tr key={ri}>
                     {PROGRESS_COLS.map((_, ci) => (
                       <td key={ci}>
-                        {readOnly
-                          ? row[ci]
+                        {readOnly ? (row[ci] ?? "")
                           : <input className="input" style={{ padding: "4px 6px" }} value={row[ci] ?? ""}
                               onChange={(e) => updateProgressCell(ri, ci, e.target.value)} />}
                       </td>
@@ -271,42 +282,44 @@ export function LessonAnalysisForm({ token, lesson, classroomName, readOnly, onC
         </div>
 
         {/* Conclusion */}
-        <div className="field" style={{ marginBottom: 8 }}>
+        <div className="field" style={{ marginBottom: 10 }}>
           <label className="field-label">Қорытынды</label>
-          <textarea className="textarea" rows={3} value={conclusion}
+          <textarea className="textarea" rows={4} value={conclusion}
             onChange={(e) => setConclusion(e.target.value)} readOnly={readOnly} />
         </div>
-        <div className="field" style={{ marginBottom: 16 }}>
+        <div className="field" style={{ marginBottom: 20 }}>
           <label className="field-label">Сабақты жақсарту мақсатындағы ұсыныстар</label>
-          <textarea className="textarea" rows={3} value={recommendations}
+          <textarea className="textarea" rows={4} value={recommendations}
             onChange={(e) => setRecommendations(e.target.value)} readOnly={readOnly} />
         </div>
 
         {/* Signatures */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 16px", marginBottom: 20, borderTop: "1px solid var(--border)", paddingTop: 12 }}>
-          <div className="field">
-            <label className="field-label">Қорытынды және ұсыныспен танысқан мұғалім</label>
-            <input className="input" value={teacherSignature}
-              onChange={(e) => setTeacherSignature(e.target.value)} readOnly={readOnly} placeholder="Қолы" />
-          </div>
-          <div className="field">
-            <label className="field-label">Күні</label>
-            <input className="input" type="date" value={teacherSignDate}
-              onChange={(e) => setTeacherSignDate(e.target.value)} readOnly={readOnly} />
-          </div>
-          <div className="field">
-            <label className="field-label">Сабаққа қатысушы</label>
-            <input className="input" value={analyzerSignature}
-              onChange={(e) => setAnalyzerSignature(e.target.value)} readOnly={readOnly} placeholder="Қолы" />
-          </div>
-          <div className="field">
-            <label className="field-label">Күні</label>
-            <input className="input" type="date" value={analyzerSignDate}
-              onChange={(e) => setAnalyzerSignDate(e.target.value)} readOnly={readOnly} />
+        <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16, marginBottom: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 16px" }}>
+            <div className="field">
+              <label className="field-label">Қорытынды және ұсыныспен танысқан мұғалім</label>
+              <input className="input" value={teacherSignature}
+                onChange={(e) => setTeacherSignature(e.target.value)} readOnly={readOnly} placeholder="Қолы" />
+            </div>
+            <div className="field">
+              <label className="field-label">Күні</label>
+              <input className="input" type="date" value={teacherSignDate}
+                onChange={(e) => setTeacherSignDate(e.target.value)} readOnly={readOnly} />
+            </div>
+            <div className="field">
+              <label className="field-label">Сабаққа қатысушы</label>
+              <input className="input" value={analyzerSignature}
+                onChange={(e) => setAnalyzerSignature(e.target.value)} readOnly={readOnly} placeholder="Қолы" />
+            </div>
+            <div className="field">
+              <label className="field-label">Күні</label>
+              <input className="input" type="date" value={analyzerSignDate}
+                onChange={(e) => setAnalyzerSignDate(e.target.value)} readOnly={readOnly} />
+            </div>
           </div>
         </div>
 
-        {/* Actions */}
+        {/* Bottom actions */}
         <div className="form-row">
           {!readOnly && (
             <>
@@ -319,9 +332,9 @@ export function LessonAnalysisForm({ token, lesson, classroomName, readOnly, onC
             </>
           )}
           {analysis && !analysis.isDraft && (
-            <button className="btn btn-outline" onClick={handlePdf}>Экспорт в PDF</button>
+            <button className="btn btn-outline" onClick={handlePdf}>📄 Экспорт в PDF</button>
           )}
-          <button className="btn btn-ghost" onClick={onClose}>Жабу</button>
+          <button className="btn btn-ghost" onClick={onClose}>← Назад</button>
         </div>
       </div>
     </div>
