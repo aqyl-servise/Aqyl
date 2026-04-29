@@ -16,8 +16,9 @@ export class School {
   @Column({ nullable: true })
   region?: string;
 
-  @Column({ unique: true })
-  code!: string;
+  // nullable so existing rows (created before this column was added) don't break synchronize
+  @Column({ nullable: true, unique: true })
+  code?: string;
 
   @Column({ default: true })
   isActive!: boolean;

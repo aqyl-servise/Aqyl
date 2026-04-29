@@ -7,7 +7,8 @@ import { Teacher } from "../teachers/entities/teacher.entity";
 function generateCode(name: string, city?: string): string {
   const source = (city || name).replace(/[^a-zA-ZА-Яа-яЁё]/g, "");
   const prefix = source.slice(0, 3).toUpperCase() || "SCH";
-  const suffix = String(Date.now()).slice(-4);
+  // Use timestamp + random to avoid collisions
+  const suffix = String(Date.now()).slice(-3) + String(Math.floor(Math.random() * 100)).padStart(2, "0");
   return `${prefix}-${suffix}`;
 }
 
@@ -28,7 +29,7 @@ export class SchoolsService {
           name: s.name,
           city: s.city ?? null,
           region: s.region ?? null,
-          code: s.code,
+          code: s.code ?? null,
           isActive: s.isActive,
           userCount,
           createdAt: s.createdAt,
@@ -57,7 +58,12 @@ export class SchoolsService {
     const existing = await this.findByName(data.name);
     if (existing) throw new ConflictException("Школа с таким названием уже существует");
     const code = generateCode(data.name, data.city);
-    return this.repo.save(this.repo.create({ name: data.name, city: data.city, region: data.region, code }));
+    return this.repo.save(this.repo.create({
+      name: data.name,
+      city: data.city,
+      region: data.region,
+      code,
+    }));
   }
 
   async activate(id: string) {

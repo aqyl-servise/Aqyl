@@ -60,8 +60,13 @@ export function SchoolsPanel({ token, language, t }: {
       setShowForm(false);
       await load();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setFormError(msg.includes("уже существует") ? "Школа с таким названием уже существует" : "Ошибка при создании");
+      const raw = err instanceof Error ? err.message : String(err);
+      let display = raw;
+      try { display = JSON.parse(raw)?.message ?? raw; } catch {}
+      if (display.includes("уже существует") || display.includes("conflict") || display.includes("Conflict")) {
+        display = "Школа с таким названием уже существует";
+      }
+      setFormError(display || "Ошибка при создании");
     } finally {
       setFormBusy(false);
     }
