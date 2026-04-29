@@ -17,6 +17,7 @@ import { Schedule } from "./modules/schools/entities/schedule.entity";
 import { Assignment } from "./modules/schools/entities/assignment.entity";
 import { TaskSubmission } from "./modules/schools/entities/task-submission.entity";
 import { OpenLesson } from "./modules/schools/entities/open-lesson.entity";
+import { LessonAnalysis } from "./modules/schools/entities/lesson-analysis.entity";
 import { Protocol } from "./modules/schools/entities/protocol.entity";
 import { ClassHour } from "./modules/schools/entities/class-hour.entity";
 import { UploadedFile } from "./modules/schools/entities/uploaded-file.entity";
@@ -72,7 +73,7 @@ import { SchoolsModule } from "./modules/schools/schools.module";
         synchronize: true,
         entities: [
           School, Teacher, Classroom, Student, Submission, GeneratedDocument,
-          Schedule, Assignment, TaskSubmission, OpenLesson, Protocol, ClassHour, UploadedFile,
+          Schedule, Assignment, TaskSubmission, OpenLesson, LessonAnalysis, Protocol, ClassHour, UploadedFile,
           GiftedPlan, GiftedStudent, GiftedTeacherAssignment, GiftedMaterial, GiftedAchievement,
           StudentTransfer, PasswordReset, FileFolder, TeacherAttestation, FinalAttestationStudent, KtpReview, SchoolInfo,
         ],
@@ -80,7 +81,7 @@ import { SchoolsModule } from "./modules/schools/schools.module";
     }),
     TypeOrmModule.forFeature([
       School, Teacher, Classroom, Student, Submission, GeneratedDocument,
-      Schedule, Assignment, TaskSubmission, OpenLesson, Protocol, ClassHour, UploadedFile,
+      Schedule, Assignment, TaskSubmission, OpenLesson, LessonAnalysis, Protocol, ClassHour, UploadedFile,
       GiftedPlan, GiftedStudent, GiftedTeacherAssignment, GiftedMaterial, GiftedAchievement,
       StudentTransfer, PasswordReset, FileFolder, TeacherAttestation, FinalAttestationStudent, KtpReview, SchoolInfo,
     ]),

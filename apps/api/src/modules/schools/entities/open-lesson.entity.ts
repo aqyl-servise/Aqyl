@@ -7,28 +7,34 @@ export class OpenLesson {
   id!: string;
 
   @Column()
-  title!: string;
-
-  @Column()
   subject!: string;
 
-  @Column()
-  grade!: number;
+  @Column({ nullable: true })
+  classroomId?: string;
+
+  @Column({ nullable: true })
+  cabinet?: string;
+
+  @Column({ nullable: true })
+  lessonTime?: string;
 
   @Column({ nullable: true })
   date?: Date;
 
   @Column({ type: "text", nullable: true })
-  description?: string;
-
-  @Column({ default: "planned" })
-  status!: "planned" | "conducted" | "reviewed";
+  lessonTopic?: string;
 
   @Column({ type: "text", nullable: true })
-  directorComment?: string;
+  visitPurpose?: string;
 
-  @Column({ type: "jsonb", default: "[]" })
-  fileUrls!: string[];
+  @Column({ type: "text", nullable: true })
+  lessonPurpose?: string;
+
+  @Column({ type: "text", nullable: true })
+  equipment?: string;
+
+  @Column({ default: "planned" })
+  status!: "planned" | "conducted" | "analyzed";
 
   @Column({ nullable: true })
   schoolId?: string;

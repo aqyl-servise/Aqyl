@@ -276,13 +276,35 @@ export const api = {
 
   // Open Lessons
   getMyLessons: (token: string) =>
-    request<Array<{ id: string; title: string; subject: string; grade: number; date?: string; status: string; description?: string; directorComment?: string }>>("/lessons", undefined, token),
+    request<Array<{
+      id: string; subject: string; classroomId?: string; cabinet?: string; lessonTime?: string;
+      date?: string; lessonTopic?: string; visitPurpose?: string; lessonPurpose?: string;
+      equipment?: string; status: string;
+    }>>("/lessons", undefined, token),
   getAllLessons: (token: string) =>
-    request<Array<{ id: string; title: string; subject: string; grade: number; date?: string; status: string; teacher?: { fullName: string } }>>("/lessons/all", undefined, token),
+    request<Array<{
+      id: string; subject: string; classroomId?: string; cabinet?: string; lessonTime?: string;
+      date?: string; lessonTopic?: string; visitPurpose?: string; lessonPurpose?: string;
+      equipment?: string; status: string; teacher?: { id: string; fullName: string };
+    }>>("/lessons/all", undefined, token),
   createLesson: (token: string, data: Record<string, unknown>) =>
     request<{ id: string }>("/lessons", { method: "POST", body: JSON.stringify(data) }, token),
   updateLesson: (token: string, id: string, data: Record<string, unknown>) =>
     request<{ id: string }>(`/lessons/${id}`, { method: "PATCH", body: JSON.stringify(data) }, token),
+  deleteLesson: (token: string, id: string) =>
+    request<{ ok: boolean }>(`/lessons/${id}`, { method: "DELETE" }, token),
+  getLessonAnalysis: (token: string, lessonId: string) =>
+    request<{
+      id: string; lessonId: string; visitPurpose?: string; lessonTopic?: string; lessonPurpose?: string;
+      equipment?: string; studentSurveyTable: string[][]; lessonProgressTable: string[][];
+      conclusion?: string; recommendations?: string; teacherSignature?: string; teacherSignDate?: string;
+      analyzerSignature?: string; analyzerSignDate?: string; isDraft: boolean;
+      analyzer?: { fullName: string };
+    } | null>(`/lessons/${lessonId}/analysis`, undefined, token),
+  saveLessonAnalysis: (token: string, lessonId: string, data: Record<string, unknown>) =>
+    request<{ id: string }>(`/lessons/${lessonId}/analysis`, { method: "POST", body: JSON.stringify(data) }, token),
+  getLessonAnalysisPdf: (token: string, lessonId: string) =>
+    request<Blob>(`/lessons/${lessonId}/analysis/pdf`, undefined, token),
 
   // Protocols
   getProtocols: (token: string) =>
