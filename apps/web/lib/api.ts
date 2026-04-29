@@ -10,6 +10,8 @@ export type AuthUser = {
   role: UserRole;
   subject?: string | null;
   status?: "pending" | "active" | "rejected" | "inactive";
+  schoolId?: string | null;
+  schoolName?: string | null;
 };
 
 export type LoginResponse = { accessToken: string; user: AuthUser };
@@ -109,12 +111,16 @@ export type TransferRecord = {
   transferredAt: string;
 };
 
+let _selectedSchoolId: string | null = null;
+export function setApiSchoolId(id: string | null) { _selectedSchoolId = id; }
+
 async function request<T>(path: string, init?: RequestInit, token?: string): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
       ...(init?.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(_selectedSchoolId ? { "X-School-Id": _selectedSchoolId } : {}),
       ...(init?.headers ?? {}),
     },
   });

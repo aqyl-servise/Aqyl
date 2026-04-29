@@ -5,6 +5,7 @@ import { join } from "path";
 import helmet from "helmet";
 import { AppModule } from "./app.module";
 import { SeedService } from "./seed.service";
+import { SchoolSwitchInterceptor } from "./common/school-switch.interceptor";
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -17,7 +18,10 @@ async function bootstrap() {
   app.enableCors({
     origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
     credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization", "X-School-Id"],
   });
+
+  app.useGlobalInterceptors(new SchoolSwitchInterceptor());
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
 

@@ -10,12 +10,13 @@ type NavItem = { key: string; label: string; icon: string };
 
 export function AppLayout({
   user, token, language, setLanguage, onLogout,
-  navItems, activeSection, onNav, children,
+  navItems, activeSection, onNav, children, schoolSwitcher,
 }: {
   user: AuthUser; token: string; language: Language;
   setLanguage: (l: Language) => void; onLogout: () => void;
   navItems: NavItem[]; activeSection: string;
   onNav: (key: string) => void; children: ReactNode;
+  schoolSwitcher?: ReactNode;
 }) {
   const t = translations[language];
   const roleLabel = t[`role_${user.role}` as keyof typeof t] ?? user.role;
@@ -30,6 +31,11 @@ export function AppLayout({
             <span className="al-brand-icon">✦</span>
             <span className="al-brand-name">{t.appName}</span>
           </div>
+          {schoolSwitcher && (
+            <div style={{ padding: "0 8px", marginBottom: 4 }}>
+              {schoolSwitcher}
+            </div>
+          )}
           <nav className="al-nav">
             {navItems.map((item) => (
               <button

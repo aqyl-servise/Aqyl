@@ -3,6 +3,8 @@ import { useState } from "react";
 import { AuthUser } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 import { AppLayout } from "../layout/app-layout";
+import { SchoolProvider } from "../../contexts/school-context";
+import { SchoolSwitcher } from "./school-switcher";
 import { AdminDashboard } from "./admin-dashboard";
 import { TeacherListPanel } from "./teacher-list-panel";
 import { SchoolAnalyticsPanel } from "./school-analytics-panel";
@@ -25,12 +27,24 @@ import { HouseholdPanel } from "./household-panel";
 import { WelfarePanel } from "./welfare-panel";
 import { SchoolsPanel } from "./schools-panel";
 
-export function AdminApp({ token, user, language, setLanguage, onLogout }: {
+export function AdminApp(props: {
+  token: string; user: AuthUser; language: Language;
+  setLanguage: (l: Language) => void; onLogout: () => void;
+}) {
+  return (
+    <SchoolProvider>
+      <AdminAppContent {...props} />
+    </SchoolProvider>
+  );
+}
+
+function AdminAppContent({ token, user, language, setLanguage, onLogout }: {
   token: string; user: AuthUser; language: Language;
   setLanguage: (l: Language) => void; onLogout: () => void;
 }) {
   const [section, setSection] = useState("dashboard");
   const t = translations[language];
+  const isGlobalAdmin = user.role === "admin" && !user.schoolId;
 
   const baseNav = [
     { key: "dashboard", label: t.nav_dashboard, icon: "⊞" },
@@ -64,7 +78,8 @@ export function AdminApp({ token, user, language, setLanguage, onLogout }: {
 
   return (
     <AppLayout user={user} token={token} language={language} setLanguage={setLanguage}
-      onLogout={onLogout} navItems={navItems} activeSection={section} onNav={setSection}>
+      onLogout={onLogout} navItems={navItems} activeSection={section} onNav={setSection}
+      schoolSwitcher={isGlobalAdmin ? <SchoolSwitcher token={token} /> : undefined}>
       {section === "dashboard" && <AdminDashboard token={token} language={language} t={t} />}
       {section === "classrooms" && <ClassroomsPanel token={token} language={language} t={t} userRole={user.role} />}
       {section === "students" && <StudentsPanel token={token} language={language} t={t} userRole={user.role} />}
