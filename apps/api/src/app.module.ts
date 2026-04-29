@@ -20,6 +20,7 @@ import { OpenLesson } from "./modules/schools/entities/open-lesson.entity";
 import { LessonAnalysis } from "./modules/schools/entities/lesson-analysis.entity";
 import { Protocol } from "./modules/schools/entities/protocol.entity";
 import { ClassHour } from "./modules/schools/entities/class-hour.entity";
+import { ClassHourHistory } from "./modules/schools/entities/class-hour-history.entity";
 import { UploadedFile } from "./modules/schools/entities/uploaded-file.entity";
 import { FileFolder } from "./modules/schools/entities/file-folder.entity";
 import { Teacher } from "./modules/teachers/entities/teacher.entity";
@@ -73,7 +74,7 @@ import { SchoolsModule } from "./modules/schools/schools.module";
         synchronize: true,
         entities: [
           School, Teacher, Classroom, Student, Submission, GeneratedDocument,
-          Schedule, Assignment, TaskSubmission, OpenLesson, LessonAnalysis, Protocol, ClassHour, UploadedFile,
+          Schedule, Assignment, TaskSubmission, OpenLesson, LessonAnalysis, Protocol, ClassHour, ClassHourHistory, UploadedFile,
           GiftedPlan, GiftedStudent, GiftedTeacherAssignment, GiftedMaterial, GiftedAchievement,
           StudentTransfer, PasswordReset, FileFolder, TeacherAttestation, FinalAttestationStudent, KtpReview, SchoolInfo,
         ],

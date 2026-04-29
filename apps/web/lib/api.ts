@@ -314,11 +314,24 @@ export const api = {
 
   // Class Hours
   getMyClassHours: (token: string) =>
-    request<Array<{ id: string; title: string; topic: string; date?: string; duration?: number; notes?: string; classroom: { name: string } }>>("/class-hours", undefined, token),
+    request<Array<{ id: string; title?: string; topic: string; date?: string; duration?: number; notes?: string; dayOfWeek?: string; time?: string; status?: string; comment?: string; classroom: { id: string; name: string } }>>("/class-hours", undefined, token),
   getAllClassHours: (token: string) =>
-    request<Array<{ id: string; title: string; topic: string; date?: string; classTeacher?: { fullName: string }; classroom?: { name: string } }>>("/class-hours/all", undefined, token),
+    request<Array<{ id: string; title?: string; topic: string; date?: string; dayOfWeek?: string; time?: string; status?: string; comment?: string; classTeacher?: { id: string; fullName: string }; classroom?: { id: string; name: string } }>>("/class-hours/all", undefined, token),
+  getClassHoursSchedule: (token: string) =>
+    request<Array<{
+      id: string; title?: string; topic: string; dayOfWeek?: string; time?: string;
+      date?: string; status: string; comment?: string; notes?: string; duration?: number;
+      classTeacher?: { id: string; fullName: string };
+      classroom?: { id: string; name: string; grade: number };
+    }>>("/class-hours/schedule", undefined, token),
   createClassHour: (token: string, data: Record<string, unknown>) =>
     request<{ id: string }>("/class-hours", { method: "POST", body: JSON.stringify(data) }, token),
+  updateClassHour: (token: string, id: string, data: Record<string, unknown>) =>
+    request<{ id: string }>(`/class-hours/${id}`, { method: "PATCH", body: JSON.stringify(data) }, token),
+  deleteClassHour: (token: string, id: string) =>
+    request<{ ok: boolean }>(`/class-hours/${id}`, { method: "DELETE" }, token),
+  getClassHourHistory: (token: string, id: string) =>
+    request<Array<{ id: string; changeDescription?: string; createdAt: string; changedBy?: { fullName: string } }>>(`/class-hours/${id}/history`, undefined, token),
 
   // Files
   uploadFile: (token: string, file: File) => {

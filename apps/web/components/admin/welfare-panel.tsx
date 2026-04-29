@@ -2,8 +2,9 @@
 import { useState } from "react";
 import { Language, translations } from "../../lib/translations";
 import { FileManager } from "../ui/file-manager";
+import { ClassHoursSchedulePanel } from "./class-hours-schedule";
 
-type WelfareTab = "tarbiye" | "law" | "circle";
+type WelfareTab = "tarbiye" | "law" | "circle" | "class-hours";
 
 interface Props {
   token: string;
@@ -30,6 +31,7 @@ export function WelfarePanel({ token, language, userRole }: Props) {
     { key: "tarbiye", label: t.tab_tarbiye },
     { key: "law", label: t.tab_law },
     { key: "circle", label: t.tab_circle },
+    { key: "class-hours", label: t.tab_class_hours },
   ];
 
   return (
@@ -75,6 +77,9 @@ export function WelfarePanel({ token, language, userRole }: Props) {
             canUpload={canEdit}
             labels={fmLabels(language)}
           />
+        )}
+        {tab === "class-hours" && (
+          <ClassHoursSchedulePanel token={token} language={language} isAdmin={true} />
         )}
       </div>
     </div>
