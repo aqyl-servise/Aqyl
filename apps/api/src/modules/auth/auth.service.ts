@@ -41,6 +41,9 @@ export class AuthService {
         email: teacher.email,
         role: teacher.role,
         schoolId: teacher.schoolId ?? undefined,
+        isClassTeacher: teacher.isClassTeacher ?? false,
+        managedClassroomId: teacher.managedClassroomId ?? null,
+        managedClassroomName: teacher.managedClassroomName ?? null,
       }),
       user: this.serialize(teacher),
     };
@@ -122,6 +125,9 @@ export class AuthService {
       subject: teacher.subject,
       schoolId: teacher.schoolId ?? null,
       schoolName: teacher.schoolName ?? null,
+      isClassTeacher: teacher.isClassTeacher ?? false,
+      managedClassroomId: teacher.managedClassroomId ?? null,
+      managedClassroomName: teacher.managedClassroomName ?? null,
     };
   }
 }

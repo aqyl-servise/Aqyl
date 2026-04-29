@@ -1,14 +1,20 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, ForbiddenException, Get, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { ClassHoursService } from "./class-hours.service";
 import { ClassHourTopic } from "../schools/entities/class-hour.entity";
 
-interface ReqUser { user: { id: string; role: string; schoolId?: string | null } }
+interface ReqUser { user: { id: string; role: string; schoolId?: string | null; isClassTeacher?: boolean } }
 
 const ADMIN_ROLES = ["admin", "principal", "vice_principal"] as const;
 const WRITE_ROLES = ["class_teacher", "admin", "principal", "vice_principal"] as const;
+
+function assertCanWrite(user: ReqUser["user"]) {
+  const ok = (WRITE_ROLES as readonly string[]).includes(user.role) ||
+    (user.role === "teacher" && user.isClassTeacher === true);
+  if (!ok) throw new ForbiddenException("Insufficient permissions");
+}
 
 @Controller("class-hours")
 @UseGuards(JwtAuthGuard)
@@ -39,8 +45,6 @@ export class ClassHoursController {
   }
 
   @Post()
-  @UseGuards(RolesGuard)
-  @Roles(...WRITE_ROLES)
   create(
     @Req() req: ReqUser,
     @Body() body: {
@@ -56,6 +60,7 @@ export class ClassHoursController {
       classroomId: string;
     },
   ) {
+    assertCanWrite(req.user);
     return this.service.create({
       title: body.title,
       topic: body.topic ?? "other",
@@ -73,13 +78,12 @@ export class ClassHoursController {
   }
 
   @Patch(":id")
-  @UseGuards(RolesGuard)
-  @Roles(...WRITE_ROLES)
   update(
     @Param("id") id: string,
     @Req() req: ReqUser,
     @Body() body: Record<string, unknown>,
   ) {
+    assertCanWrite(req.user);
     const changeDesc = typeof body.changeDescription === "string" ? body.changeDescription : undefined;
     const { changeDescription: _cd, ...updateData } = body;
     if (updateData.date && typeof updateData.date === "string") {
@@ -89,9 +93,8 @@ export class ClassHoursController {
   }
 
   @Delete(":id")
-  @UseGuards(RolesGuard)
-  @Roles(...WRITE_ROLES)
-  remove(@Param("id") id: string) {
+  remove(@Param("id") id: string, @Req() req: ReqUser) {
+    assertCanWrite(req.user);
     return this.service.remove(id);
   }
 }

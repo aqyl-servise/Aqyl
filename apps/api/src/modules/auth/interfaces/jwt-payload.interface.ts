@@ -5,4 +5,7 @@ export interface JwtPayload {
   email: string;
   role: UserRole;
   schoolId?: string;
+  isClassTeacher?: boolean;
+  managedClassroomId?: string | null;
+  managedClassroomName?: string | null;
 }

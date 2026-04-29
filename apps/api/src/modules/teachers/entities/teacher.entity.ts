@@ -64,6 +64,15 @@ export class Teacher {
   @Column({ nullable: true })
   avatarUrl?: string;
 
+  @Column({ default: false })
+  isClassTeacher!: boolean;
+
+  @Column({ nullable: true })
+  managedClassroomId?: string;
+
+  @Column({ nullable: true })
+  managedClassroomName?: string;
+
   @CreateDateColumn()
   createdAt!: Date;
 

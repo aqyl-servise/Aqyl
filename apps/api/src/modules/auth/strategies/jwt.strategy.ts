@@ -31,6 +31,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       role: teacher.role,
       subject: teacher.subject,
       schoolId: teacher.schoolId ?? null,
+      isClassTeacher: teacher.isClassTeacher ?? false,
+      managedClassroomId: teacher.managedClassroomId ?? null,
+      managedClassroomName: teacher.managedClassroomName ?? null,
     };
   }
 }

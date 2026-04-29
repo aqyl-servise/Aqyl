@@ -12,6 +12,7 @@ import { OpenLessonsPanel } from "./open-lessons-panel";
 import { AssignmentsPanel } from "./assignments-panel";
 import { StudentsPanel } from "../admin/students-panel";
 import { FileManager } from "../ui/file-manager";
+import { ClassHoursSchedulePanel } from "../admin/class-hours-schedule";
 
 export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
   token: string; user: AuthUser; language: Language;
@@ -19,6 +20,7 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
 }) {
   const [section, setSection] = useState("dashboard");
   const t = translations[language];
+  const isClassTeacher = user.isClassTeacher === true;
 
   const nav = [
     { key: "dashboard", label: t.nav_dashboard, icon: "⊞" },
@@ -29,6 +31,7 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
     { key: "assignments", label: t.nav_assignments, icon: "📋" },
     { key: "lessons", label: t.nav_lessons, icon: "🎓" },
     { key: "analytics", label: t.nav_analytics, icon: "📊" },
+    ...(isClassTeacher ? [{ key: "class-hours", label: t.nav_class_hours, icon: "🕐" }] : []),
     { key: "gifted", label: t.nav_gifted, icon: "⭐" },
   ];
 
@@ -43,6 +46,19 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
       {section === "assignments" && <AssignmentsPanel token={token} language={language} t={t} />}
       {section === "lessons" && <OpenLessonsPanel token={token} language={language} t={t} isAdmin={false} />}
       {section === "analytics" && <AnalyticsPanel token={token} language={language} t={t} />}
+      {section === "class-hours" && isClassTeacher && (
+        <div className="page">
+          <h1 className="page-title">🕐 {t.nav_class_hours}</h1>
+          {user.managedClassroomName && (
+            <p className="muted" style={{ marginTop: -8, marginBottom: 12, fontSize: 14 }}>
+              Класс: <strong>{user.managedClassroomName}</strong>
+            </p>
+          )}
+          <div className="card">
+            <ClassHoursSchedulePanel token={token} language={language} isAdmin={false} />
+          </div>
+        </div>
+      )}
       {section === "gifted" && <TeacherGiftedSection token={token} userId={user.id} language={language} t={t} />}
     </AppLayout>
   );

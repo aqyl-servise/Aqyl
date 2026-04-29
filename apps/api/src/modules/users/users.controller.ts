@@ -54,9 +54,22 @@ export class UsersController {
   }
 
   @Patch(":id")
-  @Roles("admin")
-  update(@Param("id") id: string, @Body() body: Partial<{ fullName: string; role: UserRole; subject: string; experience: number; category: string; university: string; phone: string }>) {
-    return this.teachersService.updateProfile(id, body);
+  @Roles("admin", "principal", "vice_principal")
+  update(
+    @Param("id") id: string,
+    @Body() body: Partial<{
+      fullName: string; role: UserRole; subject: string; experience: number;
+      category: string; university: string; phone: string;
+      isClassTeacher: boolean; managedClassroomId: string | null; managedClassroomName: string | null;
+    }>,
+  ) {
+    const data: Record<string, unknown> = { ...body };
+    // When removing class teacher flag, clear classroom fields too
+    if (body.isClassTeacher === false) {
+      data.managedClassroomId = null;
+      data.managedClassroomName = null;
+    }
+    return this.teachersService.updateProfile(id, data);
   }
 
   @Delete(":id")

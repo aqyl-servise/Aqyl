@@ -1,6 +1,6 @@
 "use client";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { api, AuthUser, UserRole } from "../../lib/api";
+import { api, AuthUser, ClassroomOption, UserRole } from "../../lib/api";
 import { Language } from "../../lib/translations";
 import { PasswordInput } from "../ui/password-input";
 
@@ -28,6 +28,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [busy, setBusy] = useState(false);
   const [actionBusy, setActionBusy] = useState<string | null>(null);
+  const [classrooms, setClassrooms] = useState<ClassroomOption[]>([]);
 
   function showToast(msg: string) {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -37,7 +38,10 @@ export function UsersPanel({ token, language, t, currentUserId }: {
 
   const reload = () => api.getUsers(token).then(setUsers).catch(console.error);
 
-  useEffect(() => { reload(); }, [token]);
+  useEffect(() => {
+    reload();
+    api.getClassroomsForDropdown(token).then(setClassrooms).catch(console.error);
+  }, [token]);
 
   const filtered = users.filter((u) => {
     const matchSearch = u.fullName.toLowerCase().includes(search.toLowerCase()) ||
@@ -68,11 +72,19 @@ export function UsersPanel({ token, language, t, currentUserId }: {
     if (!editing) return;
     setBusy(true);
     const fd = new FormData(e.currentTarget);
+    const isClassTeacher = fd.get("isClassTeacher") === "on";
+    const managedClassroomId = isClassTeacher ? (fd.get("managedClassroomId") as string || null) : null;
+    const chosenClassroom = managedClassroomId
+      ? classrooms.find(c => c.id === managedClassroomId) ?? null
+      : null;
     try {
       await api.updateUser(token, editing.id, {
         fullName: fd.get("fullName"),
         role: fd.get("role"),
         subject: fd.get("subject") || undefined,
+        isClassTeacher,
+        managedClassroomId,
+        managedClassroomName: chosenClassroom?.name ?? null,
       });
       await reload();
       setEditing(null);
@@ -168,25 +180,14 @@ export function UsersPanel({ token, language, t, currentUserId }: {
       )}
 
       {editing && (
-        <div className="modal-overlay" onClick={() => setEditing(null)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ marginBottom: 16 }}>Редактировать пользователя</h3>
-            <form onSubmit={handleUpdate} className="form-stack">
-              <Field label="ФИО" name="fullName" defaultValue={editing.fullName} />
-              <Field label={t.subject} name="subject" defaultValue={editing.subject ?? ""} />
-              <div className="field">
-                <label className="field-label">Роль</label>
-                <select name="role" className="input" defaultValue={editing.role}>
-                  {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
-                </select>
-              </div>
-              <div className="form-row">
-                <button className="btn btn-primary" disabled={busy}>{busy ? <span className="spinner" /> : t.save}</button>
-                <button type="button" className="btn btn-ghost" onClick={() => setEditing(null)}>{t.cancel}</button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <EditUserModal
+          user={editing}
+          classrooms={classrooms}
+          busy={busy}
+          t={t}
+          onSubmit={handleUpdate}
+          onClose={() => setEditing(null)}
+        />
       )}
 
       {passwordTarget && (
@@ -251,7 +252,29 @@ export function UsersPanel({ token, language, t, currentUserId }: {
                   <td className="muted">{u.email}</td>
                   <td>{u.subject ?? "—"}</td>
                   <td>
-                    <span className={`role-chip role-${u.role}`}>{ROLE_LABELS[u.role]}</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
+                      <span className={`role-chip role-${u.role}`}>{ROLE_LABELS[u.role]}</span>
+                      {u.role === "teacher" && u.isClassTeacher && u.managedClassroomName && (
+                        <span style={{
+                          fontSize: 11, fontWeight: 600,
+                          background: "#dbeafe", color: "#1d4ed8",
+                          borderRadius: 6, padding: "2px 7px",
+                          border: "1px solid #bfdbfe",
+                        }}>
+                          Кл. рук. {u.managedClassroomName}
+                        </span>
+                      )}
+                      {u.role === "teacher" && u.isClassTeacher && !u.managedClassroomName && (
+                        <span style={{
+                          fontSize: 11, fontWeight: 600,
+                          background: "#dbeafe", color: "#1d4ed8",
+                          borderRadius: 6, padding: "2px 7px",
+                          border: "1px solid #bfdbfe",
+                        }}>
+                          Кл. рук.
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td>
                     {u.status === "inactive" ? (
@@ -314,6 +337,77 @@ export function UsersPanel({ token, language, t, currentUserId }: {
             </tbody>
           </table>
         )}
+      </div>
+    </div>
+  );
+}
+
+function EditUserModal({ user, classrooms, busy, t, onSubmit, onClose }: {
+  user: AuthUser; classrooms: ClassroomOption[]; busy: boolean;
+  t: Record<string, string>;
+  onSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  onClose: () => void;
+}) {
+  const [isClassTeacher, setIsClassTeacher] = useState(user.isClassTeacher ?? false);
+  const [selectedRole, setSelectedRole] = useState<string>(user.role);
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" style={{ maxWidth: 500 }} onClick={(e) => e.stopPropagation()}>
+        <h3 style={{ marginBottom: 16 }}>Редактировать пользователя</h3>
+        <form onSubmit={onSubmit} className="form-stack">
+          <Field label="ФИО" name="fullName" defaultValue={user.fullName} />
+          <Field label={t.subject} name="subject" defaultValue={user.subject ?? ""} />
+          <div className="field">
+            <label className="field-label">Роль</label>
+            <select
+              name="role"
+              className="input"
+              value={selectedRole}
+              onChange={e => {
+                setSelectedRole(e.target.value);
+                if (e.target.value !== "teacher") setIsClassTeacher(false);
+              }}
+            >
+              {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+            </select>
+          </div>
+
+          {selectedRole === "teacher" && (
+            <div style={{ background: "var(--surface-alt, #f8fafc)", borderRadius: 8, padding: "12px 14px", border: "1px solid var(--border, #e2e8f0)" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: isClassTeacher ? 10 : 0 }}>
+                <input
+                  type="checkbox"
+                  name="isClassTeacher"
+                  checked={isClassTeacher}
+                  onChange={e => setIsClassTeacher(e.target.checked)}
+                  style={{ width: 16, height: 16, cursor: "pointer" }}
+                />
+                <span style={{ fontWeight: 500 }}>Классный руководитель</span>
+              </label>
+              {isClassTeacher && (
+                <div className="field" style={{ margin: "0 0 0 26px" }}>
+                  <label className="field-label" style={{ fontSize: 12 }}>Класс</label>
+                  <select
+                    name="managedClassroomId"
+                    className="input"
+                    defaultValue={user.managedClassroomId ?? ""}
+                  >
+                    <option value="">— выберите класс —</option>
+                    {classrooms.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="form-row">
+            <button className="btn btn-primary" disabled={busy}>{busy ? <span className="spinner" /> : t.save}</button>
+            <button type="button" className="btn btn-ghost" onClick={onClose}>{t.cancel}</button>
+          </div>
+        </form>
       </div>
     </div>
   );

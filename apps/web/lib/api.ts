@@ -12,6 +12,9 @@ export type AuthUser = {
   status?: "pending" | "active" | "rejected" | "inactive";
   schoolId?: string | null;
   schoolName?: string | null;
+  isClassTeacher?: boolean;
+  managedClassroomId?: string | null;
+  managedClassroomName?: string | null;
 };
 
 export type LoginResponse = { accessToken: string; user: AuthUser };
