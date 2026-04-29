@@ -55,6 +55,7 @@ export function SchoolControlPanel({ token, language, userRole }: Props) {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loadingTeachers, setLoadingTeachers] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
+  const [teacherSearch, setTeacherSearch] = useState("");
 
   const canEdit = ["admin", "principal", "vice_principal"].includes(userRole);
   const canUpload = canEdit;
@@ -168,8 +169,7 @@ export function SchoolControlPanel({ token, language, userRole }: Props) {
               </h2>
               <FileManager
                 token={token}
-                section="young-specialist"
-                teacherRefId={selectedTeacher.id}
+                section={`young-specialist-${selectedTeacher.id}`}
                 canEdit={canEdit}
                 canUpload={canUpload}
                 labels={labels}
@@ -177,40 +177,57 @@ export function SchoolControlPanel({ token, language, userRole }: Props) {
             </div>
           ) : (
             <div>
-              <h2 className="card-title" style={{ marginBottom: 16 }}>{t.sc_young_title}</h2>
+              <h2 className="card-title" style={{ marginBottom: 12 }}>{t.sc_young_title}</h2>
+              <input
+                className="input"
+                type="text"
+                placeholder={labels.search}
+                value={teacherSearch}
+                onChange={e => setTeacherSearch(e.target.value)}
+                style={{ marginBottom: 16, maxWidth: 320 }}
+              />
               {loadingTeachers ? (
                 <p className="fm-empty">{t.loading}</p>
               ) : teachers.length === 0 ? (
                 <p className="fm-empty">{t.noData}</p>
-              ) : (
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>{t.name}</th>
-                      <th>{t.subject ?? "Пән"}</th>
-                      <th>{t.sc_experience}</th>
-                      <th>{t.actions}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {teachers.map(teacher => (
-                      <tr key={teacher.id}>
-                        <td>{teacher.fullName}</td>
-                        <td>{teacher.subject ?? "—"}</td>
-                        <td>{teacher.experience}</td>
-                        <td>
-                          <button
-                            className="btn btn-outline btn-sm"
-                            onClick={() => setSelectedTeacher(teacher)}
-                          >
-                            📁 {t.sc_documents_btn}
-                          </button>
-                        </td>
+              ) : (() => {
+                const q = teacherSearch.toLowerCase();
+                const filtered = teachers.filter(tc =>
+                  tc.fullName.toLowerCase().includes(q) ||
+                  (tc.subject ?? "").toLowerCase().includes(q)
+                );
+                return filtered.length === 0 ? (
+                  <p className="fm-empty">{t.noData}</p>
+                ) : (
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>{t.name}</th>
+                        <th>{t.subject ?? "Пән"}</th>
+                        <th>{t.sc_experience}</th>
+                        <th>{t.actions}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+                    </thead>
+                    <tbody>
+                      {filtered.map(teacher => (
+                        <tr key={teacher.id}>
+                          <td>{teacher.fullName}</td>
+                          <td>{teacher.subject ?? "—"}</td>
+                          <td>{teacher.experience}</td>
+                          <td>
+                            <button
+                              className="btn btn-outline btn-sm"
+                              onClick={() => setSelectedTeacher(teacher)}
+                            >
+                              📁 {t.sc_documents_btn}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                );
+              })()}
             </div>
           )
         )}
