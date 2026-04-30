@@ -6,7 +6,9 @@ import { FileManager } from "../ui/file-manager";
 
 type KtpFile = Awaited<ReturnType<typeof api.getKtpFiles>>[number];
 type KtpStatus = "unchecked" | "reviewing" | "approved" | "revision";
-type MainTab = "ktp" | "ksp" | "review";
+type MainTab = "ktp" | "ksp" | "review" | "teacher-uploads";
+type TeacherUploadTab = "ktp" | "ksp";
+type TeacherItem = { id: string; fullName: string; subject?: string };
 
 const GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
 
@@ -187,6 +189,67 @@ function ReviewPane({
   );
 }
 
+function TeacherUploadsTab({ token, language, t }: { token: string; language: Language; t: Record<string, string> }) {
+  const labels = fmLabels(t);
+  const [subTab, setSubTab] = useState<TeacherUploadTab>("ktp");
+  const [teachers, setTeachers] = useState<TeacherItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<TeacherItem | null>(null);
+
+  useEffect(() => {
+    api.getAdminTeachers(token)
+      .then(data => setTeachers(data))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [token]);
+
+  if (selected) {
+    const section = subTab === "ktp" ? `teacher-ktp-${selected.id}` : `teacher-ksp-${selected.id}`;
+    return (
+      <div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 16 }}>
+          <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}>← {t.attest_back}</button>
+          <span style={{ fontWeight: 600 }}>{selected.fullName}</span>
+        </div>
+        <div className="sc-tabs" style={{ marginBottom: 16 }}>
+          <button className={`sc-tab${subTab === "ktp" ? " sc-tab-active" : ""}`} onClick={() => setSubTab("ktp")}>{t.ktp_tab_ktp}</button>
+          <button className={`sc-tab${subTab === "ksp" ? " sc-tab-active" : ""}`} onClick={() => setSubTab("ksp")}>{t.ktp_tab_ksp}</button>
+        </div>
+        <FileManager token={token} section={section} canEdit={false} canUpload={false} labels={labels} />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {loading ? (
+        <p className="fm-empty">{t.loading}</p>
+      ) : teachers.length === 0 ? (
+        <p className="fm-empty">{t.noData}</p>
+      ) : (
+        <table className="data-table">
+          <thead>
+            <tr><th>{t.name}</th><th>{t.subject}</th><th>{t.actions}</th></tr>
+          </thead>
+          <tbody>
+            {teachers.map(tc => (
+              <tr key={tc.id}>
+                <td>{tc.fullName}</td>
+                <td>{tc.subject ?? "—"}</td>
+                <td>
+                  <button className="btn btn-outline btn-sm" onClick={() => setSelected(tc)}>
+                    📁 {t.sc_documents_btn}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
 export function KtpPanel({ token, language, userRole }: Props) {
   const t = translations[language];
   const labels = fmLabels(t);
@@ -200,6 +263,7 @@ export function KtpPanel({ token, language, userRole }: Props) {
     { key: "ktp", label: t.ktp_tab_ktp },
     { key: "ksp", label: t.ktp_tab_ksp },
     ...(isAdmin ? [{ key: "review" as MainTab, label: t.ktp_tab_review }] : []),
+    { key: "teacher-uploads", label: t.nav_teachers },
   ];
 
   return (
@@ -271,6 +335,11 @@ export function KtpPanel({ token, language, userRole }: Props) {
             <ReviewPane token={token} grade={reviewGrade} t={t} isAdmin={isAdmin} />
           </div>
         )
+      )}
+
+      {/* ── Загрузки учителей ── */}
+      {tab === "teacher-uploads" && (
+        <TeacherUploadsTab token={token} language={language} t={t} />
       )}
     </div>
   );

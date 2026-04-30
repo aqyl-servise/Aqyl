@@ -259,6 +259,12 @@ export const api = {
     request<{ transferred: number }>(`/classrooms/${fromId}/bulk-transfer`, { method: "POST", body: JSON.stringify({ toClassroomId: toId }) }, token),
   getClassroomClassTeachers: (token: string) =>
     request<Array<{ id: string; fullName: string }>>("/classrooms/class-teachers", undefined, token),
+  getClassroomSubjectTeachers: (token: string, classroomId: string) =>
+    request<Array<{ id: string; teacherId: string; subject: string; teacher: { id: string; fullName: string } }>>(`/classrooms/${classroomId}/subject-teachers`, undefined, token),
+  addClassroomSubjectTeacher: (token: string, classroomId: string, data: { teacherId: string; subject: string }) =>
+    request<{ id: string }>(`/classrooms/${classroomId}/subject-teachers`, { method: "POST", body: JSON.stringify(data) }, token),
+  removeClassroomSubjectTeacher: (token: string, classroomId: string, assignmentId: string) =>
+    request<{ ok: boolean }>(`/classrooms/${classroomId}/subject-teachers/${assignmentId}`, { method: "DELETE" }, token),
 
   // Schedule
   getMySchedule: (token: string) =>

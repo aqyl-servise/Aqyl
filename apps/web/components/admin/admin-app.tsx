@@ -54,7 +54,6 @@ function AdminAppContent({ token, user, language, setLanguage, onLogout }: {
     { key: "school-analytics", label: t.nav_school_analytics, icon: "📈" },
     { key: "open-lessons", label: t.nav_lessons, icon: "🎓" },
     { key: "school-control", label: t.nav_protocols, icon: "📋" },
-    { key: "class-hours", label: t.nav_class_hours, icon: "🕐" },
     { key: "gifted", label: t.nav_gifted, icon: "⭐" },
     { key: "welfare", label: t.nav_education, icon: "🌱" },
     { key: "household", label: t.nav_household, icon: "🔧" },

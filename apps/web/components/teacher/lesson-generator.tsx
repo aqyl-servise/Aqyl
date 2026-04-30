@@ -1,18 +1,50 @@
 "use client";
 import { FormEvent, useState } from "react";
 import { api } from "../../lib/api";
-import { Language } from "../../lib/translations";
+import { Language, translations } from "../../lib/translations";
+
+const CONTACT_WHATSAPP = "77000000000";
+const CONTACT_EMAIL = "support@aqyl.kz";
+
+function PremiumModal({ onClose, t }: { onClose: () => void; t: Record<string, string> }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div style={{ textAlign: "center", padding: "8px 0 24px" }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
+          <h3 style={{ marginBottom: 12 }}>Premium</h3>
+          <p style={{ color: "var(--muted)", marginBottom: 24, lineHeight: 1.6, maxWidth: 340, margin: "0 auto 24px" }}>
+            {t.premium_message ?? "Эта функция доступна в Premium версии. Свяжитесь с нами для подключения."}
+          </p>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            <a href={`https://wa.me/${CONTACT_WHATSAPP}`} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+              💬 WhatsApp
+            </a>
+            <a href={`mailto:${CONTACT_EMAIL}`} className="btn btn-outline">
+              ✉️ Email
+            </a>
+            <button className="btn btn-ghost" onClick={onClose}>{t.cancel}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const SUBJECTS = ["Математика","Физика","Химия","Биология","История","Казахский язык","Русский язык","Русская литература","Английский язык","Информатика","География","Казахская литература"];
 const GRADES = Array.from({ length: 11 }, (_, i) => i + 1);
 
 export function LessonGenerator({ token, language, t }: { token: string; language: Language; t: Record<string, string> }) {
+  const tFull = translations[language];
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPremium, setShowPremium] = useState(false);
 
   async function handleGenerate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setShowPremium(true);
+    return;
     setBusy(true); setError(null);
     const fd = new FormData(e.currentTarget);
     try {
@@ -40,6 +72,7 @@ export function LessonGenerator({ token, language, t }: { token: string; languag
 
   return (
     <div className="page">
+      {showPremium && <PremiumModal onClose={() => setShowPremium(false)} t={tFull} />}
       <h1 className="page-title">📝 {t.lessonPlan}</h1>
       <div className="main-grid">
         <div className="card">
@@ -66,8 +99,8 @@ export function LessonGenerator({ token, language, t }: { token: string; languag
               <textarea name="objectives" className="textarea" defaultValue="Ученики научатся решать линейные уравнения." />
             </div>
             {error && <div className="alert alert-error">⚠ {error}</div>}
-            <button className="btn btn-primary" disabled={busy}>
-              {busy ? <><span className="spinner" /> Генерирую...</> : `✦ ${t.generate}`}
+            <button className="btn btn-primary" disabled={busy} type="submit">
+              🔒 {t.generate}
             </button>
           </form>
         </div>

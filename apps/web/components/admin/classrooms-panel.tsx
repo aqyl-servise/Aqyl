@@ -1,15 +1,19 @@
 "use client";
 import { FormEvent, useEffect, useState } from "react";
 import { api, ClassroomItem } from "../../lib/api";
-import { Language } from "../../lib/translations";
+import { Language, translations } from "../../lib/translations";
 
 type TeacherOption = { id: string; fullName: string };
+type SubjectAssignment = { id: string; teacherId: string; subject: string; teacher: { id: string; fullName: string } };
+type AllTeacher = { id: string; fullName: string; subject?: string };
 
 export function ClassroomsPanel({ token, language, t, userRole }: {
   token: string; language: Language; t: Record<string, string>; userRole: string;
 }) {
+  const tFull = translations[language];
   const [classrooms, setClassrooms] = useState<ClassroomItem[]>([]);
   const [teachers, setTeachers] = useState<TeacherOption[]>([]);
+  const [allTeachers, setAllTeachers] = useState<AllTeacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<ClassroomItem | null>(null);
@@ -17,16 +21,19 @@ export function ClassroomsPanel({ token, language, t, userRole }: {
   const [bulkToId, setBulkToId] = useState("");
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [subjectClassroom, setSubjectClassroom] = useState<ClassroomItem | null>(null);
 
   const canDelete = userRole === "admin" || userRole === "principal";
 
   async function reload() {
-    const [cls, tch] = await Promise.all([
+    const [cls, tch, allTch] = await Promise.all([
       api.getClassrooms(token),
       api.getClassroomClassTeachers(token),
+      api.getAdminTeachers(token).catch(() => [] as AllTeacher[]),
     ]);
     setClassrooms(cls);
     setTeachers(tch);
+    setAllTeachers(allTch);
   }
 
   useEffect(() => {
@@ -146,6 +153,10 @@ export function ClassroomsPanel({ token, language, t, userRole }: {
                         onClick={() => { setEditing(c); setFormError(null); }}>
                         ✏️
                       </button>
+                      <button className="btn btn-ghost btn-sm" title={tFull.cr_subject_teachers ?? "Учителя-предметники"}
+                        onClick={() => setSubjectClassroom(c)}>
+                        👩‍🏫
+                      </button>
                       {c.studentCount > 0 && (
                         <button className="btn btn-ghost btn-sm" title={t.bulkTransfer}
                           onClick={() => { setBulkFrom(c); setBulkToId(""); }}>
@@ -183,6 +194,16 @@ export function ClassroomsPanel({ token, language, t, userRole }: {
             />
           </div>
         </div>
+      )}
+
+      {subjectClassroom && (
+        <SubjectTeachersModal
+          token={token}
+          classroom={subjectClassroom}
+          allTeachers={allTeachers}
+          t={tFull}
+          onClose={() => setSubjectClassroom(null)}
+        />
       )}
 
       {bulkFrom && (
@@ -254,5 +275,100 @@ function ClassroomForm({ teachers, t, onSubmit, onCancel, busy, error, defaults 
         <button type="button" className="btn btn-ghost" onClick={onCancel}>{t.cancel}</button>
       </div>
     </form>
+  );
+}
+
+function SubjectTeachersModal({ token, classroom, allTeachers, t, onClose }: {
+  token: string;
+  classroom: ClassroomItem;
+  allTeachers: AllTeacher[];
+  t: Record<string, string>;
+  onClose: () => void;
+}) {
+  const [assignments, setAssignments] = useState<SubjectAssignment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [teacherId, setTeacherId] = useState("");
+  const [subject, setSubject] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.getClassroomSubjectTeachers(token, classroom.id)
+      .then(setAssignments)
+      .catch(() => setAssignments([]))
+      .finally(() => setLoading(false));
+  }, [token, classroom.id]);
+
+  async function handleAdd(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!teacherId || !subject.trim()) return;
+    setSaving(true); setError(null);
+    try {
+      const created = await api.addClassroomSubjectTeacher(token, classroom.id, { teacherId, subject: subject.trim() });
+      const teacher = allTeachers.find(tc => tc.id === teacherId);
+      if (teacher) {
+        setAssignments(prev => [...prev, { id: (created as { id: string }).id, teacherId, subject: subject.trim(), teacher: { id: teacherId, fullName: teacher.fullName } }]);
+      }
+      setTeacherId(""); setSubject("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Ошибка");
+    } finally { setSaving(false); }
+  }
+
+  async function handleRemove(assignmentId: string) {
+    try {
+      await api.removeClassroomSubjectTeacher(token, classroom.id, assignmentId);
+      setAssignments(prev => prev.filter(a => a.id !== assignmentId));
+    } catch { /* ignore */ }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
+        <h3 style={{ marginBottom: 4 }}>{t.cr_subject_teachers ?? "Учителя-предметники"}</h3>
+        <p className="muted" style={{ fontSize: 13, marginBottom: 16 }}>{classroom.name}</p>
+
+        {loading ? (
+          <p className="fm-empty">{t.loading}</p>
+        ) : assignments.length === 0 ? (
+          <p className="fm-empty" style={{ marginBottom: 16 }}>{t.noData}</p>
+        ) : (
+          <table className="data-table" style={{ marginBottom: 20 }}>
+            <thead><tr><th>{t.name}</th><th>{t.cr_assign_subject ?? "Предмет"}</th><th></th></tr></thead>
+            <tbody>
+              {assignments.map(a => (
+                <tr key={a.id}>
+                  <td>{a.teacher.fullName}</td>
+                  <td>{a.subject}</td>
+                  <td>
+                    <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }} onClick={() => handleRemove(a.id)}>🗑</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        <form onSubmit={handleAdd} className="form-stack">
+          <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>{t.cr_add_subject_teacher ?? "Назначить учителя"}</p>
+          <div className="form-row">
+            <div className="field" style={{ flex: 1 }}>
+              <select className="input" value={teacherId} onChange={e => setTeacherId(e.target.value)} required>
+                <option value="">— {t.nav_teachers} —</option>
+                {allTeachers.map(tc => <option key={tc.id} value={tc.id}>{tc.fullName}</option>)}
+              </select>
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <input className="input" placeholder={t.cr_assign_subject ?? "Предмет"} value={subject} onChange={e => setSubject(e.target.value)} required />
+            </div>
+          </div>
+          {error && <div className="alert alert-error">⚠ {error}</div>}
+          <div className="form-row">
+            <button className="btn btn-primary btn-sm" type="submit" disabled={saving}>{saving ? <span className="spinner" /> : t.add}</button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>{t.close}</button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }

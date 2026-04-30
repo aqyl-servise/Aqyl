@@ -54,6 +54,67 @@ function BarChart({ items, labelKey, valueKey }: { items: Record<string, unknown
   );
 }
 
+function TeacherAnalyticsDocsCard({ token, labels, tl }: { token: string; labels: Record<string, string>; tl: Record<string, string> }) {
+  const [teachers, setTeachers] = useState<Array<{ id: string; fullName: string }>>([]);
+  const [selected, setSelected] = useState<{ id: string; fullName: string } | null>(null);
+  const [docType, setDocType] = useState<"quality" | "class">("quality");
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (loaded) return;
+    api.getAdminTeachers(token)
+      .then(data => { setTeachers(data); setLoaded(true); })
+      .catch(() => setLoaded(true));
+  }, [token, loaded]);
+
+  return (
+    <div className="card">
+      <h3 style={{ fontWeight: 600, marginBottom: 16, fontSize: 14 }}>👩‍🏫 {tl.nav_teachers} — {tl.nav_analytics}</h3>
+      {!selected ? (
+        !loaded ? (
+          <p className="fm-empty">{tl.loading}</p>
+        ) : teachers.length === 0 ? (
+          <p className="fm-empty">{tl.noData}</p>
+        ) : (
+          <table className="data-table">
+            <thead><tr><th>{tl.name}</th><th>{tl.actions}</th></tr></thead>
+            <tbody>
+              {teachers.map(tc => (
+                <tr key={tc.id}>
+                  <td>{tc.fullName}</td>
+                  <td><button className="btn btn-outline btn-sm" onClick={() => setSelected(tc)}>📂 {tl.sc_documents_btn}</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )
+      ) : (
+        <div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 16 }}>
+            <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}>← {tl.attest_back}</button>
+            <span style={{ fontWeight: 600 }}>{selected.fullName}</span>
+          </div>
+          <div className="sc-tabs" style={{ marginBottom: 12 }}>
+            <button className={`sc-tab${docType === "quality" ? " sc-tab-active" : ""}`} onClick={() => setDocType("quality")}>
+              {tl.teacher_analytics_quality ?? "Білім сапасы"}
+            </button>
+            <button className={`sc-tab${docType === "class" ? " sc-tab-active" : ""}`} onClick={() => setDocType("class")}>
+              {tl.teacher_analytics_class_data ?? "Сынып бойынша мәлімет"}
+            </button>
+          </div>
+          <FileManager
+            token={token}
+            section={`analytics-${docType === "quality" ? "quality" : "class"}-${selected.id}`}
+            canEdit={false}
+            canUpload={false}
+            labels={labels}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function SchoolAnalyticsPanel({ token, language, t }: Props) {
   const tl = translations[language];
   const labels = fmLabels(t);
@@ -435,6 +496,7 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
             <h3 style={{ fontWeight: 600, marginBottom: 16, fontSize: 14 }}>📂 {tl.san_docs_progress}</h3>
             <FileManager token={token} section="analytics-progress" canEdit canUpload labels={labels} />
           </div>
+          <TeacherAnalyticsDocsCard token={token} labels={labels} tl={tl} />
         </div>
       )}
     </div>

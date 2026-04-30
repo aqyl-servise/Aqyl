@@ -165,9 +165,12 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
 
   // Teacher file manager view
   if (teacherView) {
-    const section = teacherView.mode === "materials"
+    const adminSection = teacherView.mode === "materials"
       ? `final-attestation-materials-${teacherView.teacher.id}`
       : `final-attestation-monitoring-${teacherView.teacher.id}`;
+    const teacherSection = teacherView.mode === "materials"
+      ? `teacher-final-materials-${teacherView.teacher.id}`
+      : `teacher-final-monitoring-${teacherView.teacher.id}`;
     return (
       <div className="page">
         <div className="page-header">
@@ -182,7 +185,12 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
           </h1>
         </div>
         <div className="card" style={{ marginTop: 0 }}>
-          <FileManager token={token} section={section} canEdit={canEdit} canUpload={canEdit} labels={labels} />
+          <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12, fontWeight: 600 }}>Загружено администрацией</p>
+          <FileManager token={token} section={adminSection} canEdit={canEdit} canUpload={canEdit} labels={labels} />
+        </div>
+        <div className="card">
+          <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12, fontWeight: 600 }}>Загружено учителем</p>
+          <FileManager token={token} section={teacherSection} canEdit={false} canUpload={false} labels={labels} />
         </div>
       </div>
     );

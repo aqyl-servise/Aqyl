@@ -7,6 +7,7 @@ import { FileManager } from "../ui/file-manager";
 type ModoTab = "order" | "action-plan" | "monitoring" | "student-info";
 type MonSub = "teacher-works" | "corrections" | "diagrams";
 type GradeFilter = 4 | 9 | null;
+type TeacherFileTab = "materials" | "corrections-teacher";
 
 interface TeacherItem {
   id: string;
@@ -36,6 +37,45 @@ function fmLabels(language: Language) {
     delete: t.fm_delete,
     loading: t.loading,
   };
+}
+
+function TeacherModoFilesView({ token, teacher, labels, canEdit }: {
+  token: string;
+  teacher: TeacherItem;
+  labels: Record<string, string>;
+  canEdit: boolean;
+}) {
+  const [fileTab, setFileTab] = useState<TeacherFileTab>("materials");
+  return (
+    <div>
+      <div className="sc-tabs" style={{ marginBottom: 12 }}>
+        <button className={`sc-tab${fileTab === "materials" ? " sc-tab-active" : ""}`} onClick={() => setFileTab("materials")}>
+          📁 Материалы
+        </button>
+        <button className={`sc-tab${fileTab === "corrections-teacher" ? " sc-tab-active" : ""}`} onClick={() => setFileTab("corrections-teacher")}>
+          📝 Работы над ошибками
+        </button>
+      </div>
+      {fileTab === "materials" && (
+        <FileManager
+          token={token}
+          section={`teacher-modo-materials-${teacher.id}`}
+          canEdit={canEdit}
+          canUpload={false}
+          labels={labels}
+        />
+      )}
+      {fileTab === "corrections-teacher" && (
+        <FileManager
+          token={token}
+          section={`teacher-modo-corrections-${teacher.id}`}
+          canEdit={canEdit}
+          canUpload={false}
+          labels={labels}
+        />
+      )}
+    </div>
+  );
 }
 
 export function ModoPanel({ token, language, userRole }: Props) {
@@ -163,7 +203,7 @@ export function ModoPanel({ token, language, userRole }: Props) {
             {/* 3a — Teacher works */}
             {monSub === "teacher-works" && (
               selectedTeacher ? (
-                /* Teacher file manager */
+                /* Teacher file manager — shows both admin section and teacher's own uploads */
                 <div>
                   <button className="btn btn-ghost btn-sm" style={{ marginBottom: 16 }}
                     onClick={() => setSelectedTeacher(null)}>
@@ -171,19 +211,12 @@ export function ModoPanel({ token, language, userRole }: Props) {
                   </button>
                   <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>
                     📁 {selectedTeacher.fullName}
-                    {gradeFilter && (
-                      <span style={{ marginLeft: 8, color: "var(--muted)", fontWeight: 400 }}>
-                        — {gradeFilter === 4 ? t.modo_grade_4 : t.modo_grade_9}
-                      </span>
-                    )}
                   </h2>
-                  <FileManager
+                  <TeacherModoFilesView
                     token={token}
-                    section={teacherSection}
-                    teacherRefId={selectedTeacher.id}
-                    canEdit={canEdit}
-                    canUpload={canUpload}
+                    teacher={selectedTeacher}
                     labels={labels}
+                    canEdit={canEdit}
                   />
                 </div>
               ) : (

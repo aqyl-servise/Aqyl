@@ -47,14 +47,6 @@ export function AppLayout({
                 <span>{item.label}</span>
               </button>
             ))}
-            {/* AI nav item — always at bottom of nav */}
-            <button
-              className={`al-nav-item al-nav-ai${aiOpen ? " active" : ""}`}
-              onClick={() => setAiOpen((v) => !v)}
-            >
-              <span className="al-nav-icon">✦</span>
-              <span>ИИ Помощник</span>
-            </button>
           </nav>
         </div>
         <div className="al-sidebar-bottom">
