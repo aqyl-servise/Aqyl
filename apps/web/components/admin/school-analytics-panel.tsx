@@ -55,9 +55,10 @@ function BarChart({ items, labelKey, valueKey }: { items: Record<string, unknown
 }
 
 function TeacherAnalyticsDocsCard({ token, labels, tl }: { token: string; labels: Record<string, string>; tl: Record<string, string> }) {
-  const [teachers, setTeachers] = useState<Array<{ id: string; fullName: string }>>([]);
-  const [selected, setSelected] = useState<{ id: string; fullName: string } | null>(null);
-  const [docType, setDocType] = useState<"quality" | "class">("quality");
+  const [teachers, setTeachers] = useState<Array<{ id: string; fullName: string; subject?: string }>>([]);
+  const [selected, setSelected] = useState<{ id: string; fullName: string; subject?: string } | null>(null);
+  const [docType, setDocType] = useState<"quality" | "class" | "subject">("quality");
+  const [subjectFilter, setSubjectFilter] = useState("");
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -67,32 +68,56 @@ function TeacherAnalyticsDocsCard({ token, labels, tl }: { token: string; labels
       .catch(() => setLoaded(true));
   }, [token, loaded]);
 
+  const subjects = [...new Set(teachers.map(t => t.subject).filter(Boolean) as string[])].sort();
+  const filtered = subjectFilter ? teachers.filter(t => t.subject === subjectFilter) : teachers;
+
   return (
     <div className="card">
       <h3 style={{ fontWeight: 600, marginBottom: 16, fontSize: 14 }}>👩‍🏫 {tl.nav_teachers} — {tl.nav_analytics}</h3>
       {!selected ? (
         !loaded ? (
           <p className="fm-empty">{tl.loading}</p>
-        ) : teachers.length === 0 ? (
-          <p className="fm-empty">{tl.noData}</p>
         ) : (
-          <table className="data-table">
-            <thead><tr><th>{tl.name}</th><th>{tl.actions}</th></tr></thead>
-            <tbody>
-              {teachers.map(tc => (
-                <tr key={tc.id}>
-                  <td>{tc.fullName}</td>
-                  <td><button className="btn btn-outline btn-sm" onClick={() => setSelected(tc)}>📂 {tl.sc_documents_btn}</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <>
+            {subjects.length > 0 && (
+              <div style={{ marginBottom: 12, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <label style={{ fontSize: 13, color: "var(--muted)" }}>{tl.subject ?? "Предмет"}:</label>
+                <select
+                  className="input"
+                  style={{ width: "auto", fontSize: 13, padding: "4px 8px" }}
+                  value={subjectFilter}
+                  onChange={e => setSubjectFilter(e.target.value)}
+                >
+                  <option value="">{tl.all_subjects ?? "Все предметы"}</option>
+                  {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+                {subjectFilter && <button className="btn btn-ghost btn-sm" onClick={() => setSubjectFilter("")}>✕</button>}
+              </div>
+            )}
+            {filtered.length === 0 ? (
+              <p className="fm-empty">{tl.noData}</p>
+            ) : (
+              <table className="data-table">
+                <thead><tr><th>{tl.name}</th><th>{tl.subject}</th><th>{tl.actions}</th></tr></thead>
+                <tbody>
+                  {filtered.map(tc => (
+                    <tr key={tc.id}>
+                      <td>{tc.fullName}</td>
+                      <td>{tc.subject ?? "—"}</td>
+                      <td><button className="btn btn-outline btn-sm" onClick={() => setSelected(tc)}>📂 {tl.sc_documents_btn}</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </>
         )
       ) : (
         <div>
           <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 16 }}>
             <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}>← {tl.attest_back}</button>
             <span style={{ fontWeight: 600 }}>{selected.fullName}</span>
+            {selected.subject && <span style={{ color: "var(--muted)", fontSize: 13 }}>· {selected.subject}</span>}
           </div>
           <div className="sc-tabs" style={{ marginBottom: 12 }}>
             <button className={`sc-tab${docType === "quality" ? " sc-tab-active" : ""}`} onClick={() => setDocType("quality")}>
@@ -101,10 +126,13 @@ function TeacherAnalyticsDocsCard({ token, labels, tl }: { token: string; labels
             <button className={`sc-tab${docType === "class" ? " sc-tab-active" : ""}`} onClick={() => setDocType("class")}>
               {tl.teacher_analytics_class_data ?? "Сынып бойынша мәлімет"}
             </button>
+            <button className={`sc-tab${docType === "subject" ? " sc-tab-active" : ""}`} onClick={() => setDocType("subject")}>
+              {tl.analytics_by_subject ?? "По предмету"}
+            </button>
           </div>
           <FileManager
             token={token}
-            section={`analytics-${docType === "quality" ? "quality" : "class"}-${selected.id}`}
+            section={`analytics-${docType}-${selected.id}`}
             canEdit={false}
             canUpload={false}
             labels={labels}

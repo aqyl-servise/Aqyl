@@ -43,7 +43,7 @@ export class AssignmentsController {
   @Roles("teacher", "admin")
   create(
     @Req() req: ReqUser,
-    @Body() body: { title: string; description?: string; subject: string; dueDate?: string; maxScore?: number; classroomId: string },
+    @Body() body: { title: string; description?: string; subject: string; dueDate?: string; maxScore?: number; classroomId: string; assignmentType?: string; status?: string },
   ) {
     return this.service.create({
       title: body.title,
@@ -51,15 +51,31 @@ export class AssignmentsController {
       subject: body.subject,
       dueDate: body.dueDate ? new Date(body.dueDate) : undefined,
       maxScore: body.maxScore ?? 100,
+      status: (body.status as never) ?? "draft",
+      assignmentType: body.assignmentType,
       teacher: { id: req.user.id } as never,
       classroom: { id: body.classroomId } as never,
     });
   }
 
+  @Patch(":id/publish")
+  @UseGuards(RolesGuard)
+  @Roles("teacher", "admin")
+  publish(@Param("id") id: string) {
+    return this.service.publish(id);
+  }
+
+  @Patch(":id/close")
+  @UseGuards(RolesGuard)
+  @Roles("teacher", "admin")
+  close(@Param("id") id: string) {
+    return this.service.close(id);
+  }
+
   @Patch(":id")
   @UseGuards(RolesGuard)
   @Roles("teacher", "admin")
-  update(@Param("id") id: string, @Body() body: Partial<{ title: string; description: string; dueDate: string; status: "active" | "closed" }>) {
+  update(@Param("id") id: string, @Body() body: Partial<{ title: string; description: string; dueDate: string; status: string; assignmentType: string }>) {
     const update: Record<string, unknown> = { ...body };
     if (body.dueDate) update.dueDate = new Date(body.dueDate);
     return this.service.update(id, update as never);

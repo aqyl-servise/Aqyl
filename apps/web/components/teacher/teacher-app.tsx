@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
-import { api, AuthUser, StudentRow } from "../../lib/api";
+import { useState, useEffect, useRef } from "react";
+import { api, AuthUser, StudentRow, ClassroomItem } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 import { AppLayout } from "../layout/app-layout";
 import { TeacherDashboard } from "./teacher-dashboard";
@@ -13,6 +13,7 @@ import { AssignmentsPanel } from "./assignments-panel";
 import { StudentsPanel } from "../admin/students-panel";
 import { FileManager } from "../ui/file-manager";
 import { ClassHoursSchedulePanel } from "../admin/class-hours-schedule";
+import { SorSochPanel } from "./sor-soch-panel";
 
 const CONTACT_WHATSAPP = "77000000000";
 const CONTACT_EMAIL = "support@aqyl.kz";
@@ -78,6 +79,7 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
     { key: "teacher-modo", label: t.nav_bbjm, icon: "📑" },
     { key: "teacher-final", label: t.nav_final_attestation, icon: "🎓" },
     { key: "gifted", label: t.nav_gifted, icon: "⭐" },
+    { key: "sor-soch", label: t.nav_sor_soch ?? "СОР/СОЧ", icon: "📄" },
   ];
 
   function handleNav(key: string) {
@@ -101,7 +103,7 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
       {section === "lessons" && <OpenLessonsPanel token={token} language={language} t={t} isAdmin={false} />}
       {section === "my-ktp-ksp" && <TeacherKtpKspSection token={token} userId={user.id} language={language} t={t} />}
       {section === "analytics" && isClassTeacher && (
-        <TeacherAnalyticsSection token={token} userId={user.id} language={language} t={t} />
+        <TeacherAnalyticsSection token={token} user={user} language={language} t={t} />
       )}
       {section === "class-hours" && isClassTeacher && (
         <div className="page">
@@ -122,7 +124,8 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
       {section === "teacher-final" && (
         <TeacherFinalSection token={token} userId={user.id} language={language} t={t} />
       )}
-      {section === "gifted" && <TeacherGiftedSection token={token} userId={user.id} language={language} t={t} />}
+      {section === "gifted" && <TeacherGiftedSection token={token} userId={user.id} language={language} t={t} user={user} />}
+      {section === "sor-soch" && <SorSochPanel token={token} language={language} t={t} />}
     </AppLayout>
   );
 }
@@ -132,7 +135,29 @@ function TeacherKtpKspSection({ token, userId, language, t }: {
   token: string; userId: string; language: Language; t: Record<string, string>;
 }) {
   const [tab, setTab] = useState<"ktp" | "ksp">("ktp");
+  const [classrooms, setClassrooms] = useState<ClassroomItem[]>([]);
+  const [selectedClassrooms, setSelectedClassrooms] = useState<string[]>([]);
+  const [showClassroomPicker, setShowClassroomPicker] = useState(false);
+  const selectedRef = useRef<string[]>([]);
   const labels = fmLabels(t);
+
+  useEffect(() => {
+    if (tab !== "ksp" || classrooms.length > 0) return;
+    api.getClassrooms(token).then(setClassrooms).catch(() => {});
+  }, [tab, token, classrooms.length]);
+
+  const toggleClassroom = (id: string) => {
+    setSelectedClassrooms(prev => {
+      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      selectedRef.current = next;
+      return next;
+    });
+  };
+
+  const getExtraUploadData = (): Record<string, string> => {
+    if (selectedRef.current.length === 0) return {};
+    return { assignedClassrooms: JSON.stringify(selectedRef.current) };
+  };
 
   return (
     <div className="page">
@@ -156,13 +181,50 @@ function TeacherKtpKspSection({ token, userId, language, t }: {
           />
         )}
         {tab === "ksp" && (
-          <FileManager
-            token={token}
-            section={`teacher-ksp-${userId}`}
-            canEdit={true}
-            canUpload={true}
-            labels={labels}
-          />
+          <>
+            {/* Classroom assignment selector */}
+            <div style={{ marginBottom: 12, padding: "10px 12px", background: "var(--surface)", borderRadius: 8, border: "1px solid var(--border)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 500 }}>
+                  {t.ksp_assign_to_class ?? "Привязать к классам при загрузке:"}
+                </span>
+                <button
+                  className="btn btn-outline btn-sm"
+                  onClick={() => setShowClassroomPicker(v => !v)}
+                >
+                  🏫 {selectedClassrooms.length > 0
+                    ? classrooms.filter(c => selectedClassrooms.includes(c.id)).map(c => c.name).join(", ")
+                    : (t.ksp_select_classes ?? "Выбрать классы")}
+                </button>
+                {selectedClassrooms.length > 0 && (
+                  <button className="btn btn-ghost btn-sm" onClick={() => { setSelectedClassrooms([]); selectedRef.current = []; }}>✕</button>
+                )}
+              </div>
+              {showClassroomPicker && classrooms.length > 0 && (
+                <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {classrooms.map(c => (
+                    <label key={c.id} style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 13, padding: "4px 8px", borderRadius: 6, background: selectedClassrooms.includes(c.id) ? "var(--primary-light, #e0f0ff)" : "var(--bg)", border: "1px solid var(--border)" }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedClassrooms.includes(c.id)}
+                        onChange={() => toggleClassroom(c.id)}
+                        style={{ margin: 0 }}
+                      />
+                      {c.name}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            <FileManager
+              token={token}
+              section={`teacher-ksp-${userId}`}
+              canEdit={true}
+              canUpload={true}
+              labels={labels}
+              getExtraUploadData={getExtraUploadData}
+            />
+          </>
         )}
       </div>
     </div>
@@ -170,38 +232,107 @@ function TeacherKtpKspSection({ token, userId, language, t }: {
 }
 
 // ── Аналитика (только для классного руководителя) ────────────────────────────
-function TeacherAnalyticsSection({ token, userId, language, t }: {
-  token: string; userId: string; language: Language; t: Record<string, string>;
+type AnalyticsView = "quality" | "class" | "by-subject" | "classroom-subjects";
+type SubjectTeacherRow = { id: string; subject: string; teacher: { id: string; fullName: string } };
+
+function TeacherAnalyticsSection({ token, user, language, t }: {
+  token: string; user: AuthUser; language: Language; t: Record<string, string>;
 }) {
-  const [active, setActive] = useState<"quality" | "class" | null>(null);
+  const userId = user.id;
+  const [active, setActive] = useState<AnalyticsView | null>(null);
+  const [subjectTeachers, setSubjectTeachers] = useState<SubjectTeacherRow[]>([]);
+  const [selectedSubjectTeacher, setSelectedSubjectTeacher] = useState<SubjectTeacherRow | null>(null);
+  const [subjectLoading, setSubjectLoading] = useState(false);
   const labels = fmLabels(t);
+
+  useEffect(() => {
+    if (active !== "classroom-subjects" || !user.managedClassroomId) return;
+    if (subjectTeachers.length > 0) return;
+    setSubjectLoading(true);
+    api.getClassroomSubjectTeachers(token, user.managedClassroomId)
+      .then(setSubjectTeachers)
+      .catch(() => {})
+      .finally(() => setSubjectLoading(false));
+  }, [active, token, user.managedClassroomId, subjectTeachers.length]);
 
   return (
     <div className="page">
       <h1 className="page-title">📊 {t.nav_analytics}</h1>
-      <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
-        <button
-          className={`btn ${active === "quality" ? "btn-primary" : "btn-outline"}`}
-          onClick={() => setActive(p => p === "quality" ? null : "quality")}
-        >
-          📈 {t.teacher_analytics_quality ?? "Білім сапасы"}
-        </button>
-        <button
-          className={`btn ${active === "class" ? "btn-primary" : "btn-outline"}`}
-          onClick={() => setActive(p => p === "class" ? null : "class")}
-        >
-          📋 {t.teacher_analytics_class_data ?? "Сынып бойынша мәлімет"}
-        </button>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
+        {(["quality", "class", "by-subject"] as const).map(key => {
+          const labels2: Record<string, string> = {
+            quality: t.teacher_analytics_quality ?? "Білім сапасы",
+            class: t.teacher_analytics_class_data ?? "Сынып бойынша мәлімет",
+            "by-subject": t.analytics_by_subject ?? "По предмету",
+          };
+          return (
+            <button
+              key={key}
+              className={`btn ${active === key ? "btn-primary" : "btn-outline"}`}
+              onClick={() => { setActive(p => p === key ? null : key); setSelectedSubjectTeacher(null); }}
+            >
+              {key === "quality" ? "📈" : key === "class" ? "📋" : "📚"} {labels2[key]}
+            </button>
+          );
+        })}
+        {user.isClassTeacher && user.managedClassroomId && (
+          <button
+            className={`btn ${active === "classroom-subjects" ? "btn-primary" : "btn-outline"}`}
+            onClick={() => { setActive(p => p === "classroom-subjects" ? null : "classroom-subjects"); setSelectedSubjectTeacher(null); }}
+          >
+            🏫 {t.analytics_classroom_subjects ?? "Предметы класса"}
+          </button>
+        )}
       </div>
-      {active && (
+
+      {active && active !== "classroom-subjects" && (
         <div className="card" style={{ marginTop: 0 }}>
           <FileManager
             token={token}
-            section={`analytics-${active === "quality" ? "quality" : "class"}-${userId}`}
+            section={`analytics-${active === "quality" ? "quality" : active === "class" ? "class" : "subject"}-${userId}`}
             canEdit={true}
             canUpload={true}
             labels={labels}
           />
+        </div>
+      )}
+
+      {active === "classroom-subjects" && (
+        <div className="card" style={{ marginTop: 0 }}>
+          {subjectLoading ? (
+            <p className="fm-empty">{t.loading}</p>
+          ) : selectedSubjectTeacher ? (
+            <div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 16 }}>
+                <button className="btn btn-ghost btn-sm" onClick={() => setSelectedSubjectTeacher(null)}>← {t.attest_back}</button>
+                <span style={{ fontWeight: 600 }}>{selectedSubjectTeacher.subject}</span>
+                <span style={{ color: "var(--muted)", fontSize: 13 }}>· {selectedSubjectTeacher.teacher.fullName}</span>
+              </div>
+              <FileManager
+                token={token}
+                section={`analytics-quality-${selectedSubjectTeacher.teacher.id}`}
+                canEdit={false}
+                canUpload={false}
+                labels={labels}
+              />
+            </div>
+          ) : subjectTeachers.length === 0 ? (
+            <p className="fm-empty">{t.noData}</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {subjectTeachers.map(st => (
+                <div key={st.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "var(--surface)", borderRadius: 8, border: "1px solid var(--border)" }}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>{st.subject}</div>
+                    <div style={{ fontSize: 12, color: "var(--muted)" }}>{st.teacher.fullName}</div>
+                  </div>
+                  <button className="btn btn-outline btn-sm" onClick={() => setSelectedSubjectTeacher(st)}>
+                    📂 {t.sc_documents_btn}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -387,16 +518,25 @@ function TeacherFinalSection({ token, userId, language, t }: {
 }
 
 // ── Одарённые учащиеся ────────────────────────────────────────────────────────
-function TeacherGiftedSection({ token, userId, language, t }: {
-  token: string; userId: string; language: Language; t: Record<string, string>;
+function TeacherGiftedSection({ token, userId, language, t, user }: {
+  token: string; userId: string; language: Language; t: Record<string, string>; user: AuthUser;
 }) {
-  const [active, setActive] = useState<"achievements" | "workplan" | null>(null);
+  const [active, setActive] = useState<"achievements" | "workplan" | "my-students" | null>(null);
+  const [classStudents, setClassStudents] = useState<StudentRow[]>([]);
+  const [studentsLoaded, setStudentsLoaded] = useState(false);
   const labels = fmLabels(t);
+
+  useEffect(() => {
+    if (active !== "my-students" || studentsLoaded || !user.managedClassroomId) return;
+    api.getStudents(token, user.managedClassroomId)
+      .then(data => { setClassStudents(data); setStudentsLoaded(true); })
+      .catch(() => setStudentsLoaded(true));
+  }, [active, token, user.managedClassroomId, studentsLoaded]);
 
   return (
     <div className="page">
       <h1 className="page-title">⭐ {t.nav_gifted}</h1>
-      <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
         <button
           className={`btn ${active === "achievements" ? "btn-primary" : "btn-outline"}`}
           onClick={() => setActive(p => p === "achievements" ? null : "achievements")}
@@ -409,16 +549,58 @@ function TeacherGiftedSection({ token, userId, language, t }: {
         >
           📋 {t.gifted_my_workplan ?? "Мой план работы"}
         </button>
+        {user.isClassTeacher && (
+          <button
+            className={`btn ${active === "my-students" ? "btn-primary" : "btn-outline"}`}
+            onClick={() => setActive(p => p === "my-students" ? null : "my-students")}
+          >
+            👩‍🎓 Мои ученики
+          </button>
+        )}
       </div>
-      {active && (
+      {active === "achievements" && (
         <div className="card" style={{ marginTop: 0 }}>
-          <FileManager
-            token={token}
-            section={`gifted-${active}-${userId}`}
-            canEdit={true}
-            canUpload={true}
-            labels={labels}
-          />
+          <FileManager token={token} section={`gifted-achievements-${userId}`} canEdit={true} canUpload={true} labels={labels} />
+        </div>
+      )}
+      {active === "workplan" && (
+        <div className="card" style={{ marginTop: 0 }}>
+          <FileManager token={token} section={`gifted-workplan-${userId}`} canEdit={true} canUpload={true} labels={labels} />
+        </div>
+      )}
+      {active === "my-students" && (
+        <div className="card" style={{ marginTop: 0 }}>
+          <h3 style={{ marginBottom: 12, fontSize: 15 }}>
+            Ученики класса{user.managedClassroomName ? ` — ${user.managedClassroomName}` : ""}
+          </h3>
+          {!studentsLoaded ? (
+            <p className="fm-empty">{t.loading}</p>
+          ) : classStudents.length === 0 ? (
+            <p className="fm-empty">{t.noData}</p>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>ФИО</th>
+                  <th>ИИН</th>
+                  <th>Дата рождения</th>
+                  <th>Родитель</th>
+                </tr>
+              </thead>
+              <tbody>
+                {classStudents.map((s, idx) => (
+                  <tr key={s.id}>
+                    <td style={{ color: "var(--muted)", width: 36 }}>{idx + 1}</td>
+                    <td className="table-name">{s.fullName}</td>
+                    <td style={{ fontFamily: "monospace", fontSize: 13 }}>{s.iin ?? "—"}</td>
+                    <td className="muted">{s.dateOfBirth ?? "—"}</td>
+                    <td className="muted">{s.parentName ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
     </div>

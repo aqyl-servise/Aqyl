@@ -199,9 +199,12 @@ const ru = {
   san_student_search: "Поиск ученика (ФИО или ИИН)", san_student_card: "Карточка ученика",
   san_submitted: "Сдано", san_total_ass: "Всего заданий",
   san_back_classes: "К списку классов",
-  ktp_tab_ktp: "КТП (КТЖ)", ktp_tab_ksp: "КСП/ҚМЖ", ktp_tab_review: "Проверка",
+  ktp_tab_ktp: "КТП (КТЖ)", ktp_tab_ksp: "КСП/ҚМЖ", ktp_tab_review: "Проверка", ktp_tab_all_ksp: "Все КСП",
   ktp_select_grade: "Выберите класс для просмотра", ktp_grade_n: "класс",
   ktp_back_grades: "← К классам",
+  ksp_assign_to_class: "Привязать к классам при загрузке:", ksp_select_classes: "Выбрать классы",
+  all_teachers: "Все учителя", all_classes: "Все классы", all_subjects: "Все предметы",
+  analytics_by_subject: "По предмету", analytics_classroom_subjects: "Предметы класса",
   ktp_status_unchecked: "Не проверено", ktp_status_reviewing: "На проверке",
   ktp_status_approved: "Одобрено", ktp_status_revision: "Требует доработки",
   ktp_comment_label: "Комментарий завуча", ktp_save_review: "Сохранить",
@@ -231,6 +234,7 @@ const ru = {
   cr_subject_teachers: "Учителя-предметники",
   cr_add_subject_teacher: "Назначить учителя",
   cr_assign_subject: "Предмет",
+  nav_sor_soch: "СОР/СОЧ",
 };
 
 type TranslationShape = typeof ru;
@@ -414,9 +418,12 @@ const kz: TranslationShape = {
   san_student_search: "Оқушыны іздеу (аты-жөні немесе ЖСН)", san_student_card: "Оқушы картасы",
   san_submitted: "Тапсырылды", san_total_ass: "Барлық тапсырма",
   san_back_classes: "Сыныптар тізіміне",
-  ktp_tab_ktp: "КТЖ (КТП)", ktp_tab_ksp: "ҚМЖ/КСП", ktp_tab_review: "Тексеру",
+  ktp_tab_ktp: "КТЖ (КТП)", ktp_tab_ksp: "ҚМЖ/КСП", ktp_tab_review: "Тексеру", ktp_tab_all_ksp: "Барлық ҚМЖ",
   ktp_select_grade: "Сыныпты таңдаңыз", ktp_grade_n: "сынып",
   ktp_back_grades: "← Сыныптарға",
+  ksp_assign_to_class: "Жүктеу кезінде сыныпқа байланыстыру:", ksp_select_classes: "Сыныпты таңдаңыз",
+  all_teachers: "Барлық мұғалімдер", all_classes: "Барлық сыныптар", all_subjects: "Барлық пәндер",
+  analytics_by_subject: "Пән бойынша", analytics_classroom_subjects: "Сынып пәндері",
   ktp_status_unchecked: "Тексерілмеген", ktp_status_reviewing: "Тексерілуде",
   ktp_status_approved: "Мақұлданды", ktp_status_revision: "Өңдеу қажет",
   ktp_comment_label: "Меңгеруші пікірі", ktp_save_review: "Сақтау",
@@ -446,6 +453,7 @@ const kz: TranslationShape = {
   cr_subject_teachers: "Пән мұғалімдері",
   cr_add_subject_teacher: "Мұғалімді тағайындау",
   cr_assign_subject: "Пән",
+  nav_sor_soch: "БЖБ/ТЖБ",
 };
 
 const en: TranslationShape = {
@@ -627,9 +635,12 @@ const en: TranslationShape = {
   san_student_search: "Search student (name or IIN)", san_student_card: "Student card",
   san_submitted: "Submitted", san_total_ass: "Total assignments",
   san_back_classes: "Back to classes",
-  ktp_tab_ktp: "Lesson Plans (KTP)", ktp_tab_ksp: "Short-term Plans (KSP)", ktp_tab_review: "Review",
+  ktp_tab_ktp: "Lesson Plans (KTP)", ktp_tab_ksp: "Short-term Plans (KSP)", ktp_tab_review: "Review", ktp_tab_all_ksp: "All KSP",
   ktp_select_grade: "Select a grade to view", ktp_grade_n: "grade",
   ktp_back_grades: "← Back to grades",
+  ksp_assign_to_class: "Assign to classes on upload:", ksp_select_classes: "Select classes",
+  all_teachers: "All teachers", all_classes: "All classes", all_subjects: "All subjects",
+  analytics_by_subject: "By subject", analytics_classroom_subjects: "Class subjects",
   ktp_status_unchecked: "Not reviewed", ktp_status_reviewing: "Under review",
   ktp_status_approved: "Approved", ktp_status_revision: "Needs revision",
   ktp_comment_label: "Vice-principal comment", ktp_save_review: "Save",
@@ -659,6 +670,7 @@ const en: TranslationShape = {
   cr_subject_teachers: "Subject Teachers",
   cr_add_subject_teacher: "Assign Teacher",
   cr_assign_subject: "Subject",
+  nav_sor_soch: "SOR/SOCH",
 };
 
 export const translations: Record<Language, TranslationShape> = { ru, kz, en };

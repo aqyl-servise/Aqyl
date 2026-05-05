@@ -23,8 +23,14 @@ export class Assignment {
   @Column({ default: 100 })
   maxScore!: number;
 
-  @Column({ default: "active" })
-  status!: "active" | "closed";
+  @Column({ default: "draft" })
+  status!: "draft" | "published" | "active" | "closed";
+
+  @Column({ nullable: true })
+  schoolId?: string;
+
+  @Column({ nullable: true })
+  assignmentType?: string;
 
   @CreateDateColumn()
   createdAt!: Date;

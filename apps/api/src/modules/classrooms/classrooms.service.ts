@@ -5,6 +5,7 @@ import { Classroom } from "../schools/entities/classroom.entity";
 import { Student } from "../schools/entities/student.entity";
 import { StudentTransfer } from "../schools/entities/student-transfer.entity";
 import { Teacher } from "../teachers/entities/teacher.entity";
+import { SubjectTeacherAssignment } from "../schools/entities/subject-teacher-assignment.entity";
 
 export interface CreateClassroomDto {
   name: string;
@@ -29,7 +30,27 @@ export class ClassroomsService {
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
     @InjectRepository(StudentTransfer) private readonly transferRepo: Repository<StudentTransfer>,
     @InjectRepository(Teacher) private readonly teacherRepo: Repository<Teacher>,
+    @InjectRepository(SubjectTeacherAssignment) private readonly subjectTeacherRepo: Repository<SubjectTeacherAssignment>,
   ) {}
+
+  getSubjectTeachers(classroomId: string) {
+    return this.subjectTeacherRepo.find({
+      where: { classroomId },
+      relations: ["teacher"],
+      order: { subject: "ASC" },
+    });
+  }
+
+  addSubjectTeacher(classroomId: string, teacherId: string, subject: string) {
+    return this.subjectTeacherRepo.save(
+      this.subjectTeacherRepo.create({ classroomId, teacherId, subject, teacher: { id: teacherId }, classroom: { id: classroomId } }),
+    );
+  }
+
+  async removeSubjectTeacher(assignmentId: string) {
+    await this.subjectTeacherRepo.delete(assignmentId);
+    return { ok: true };
+  }
 
   async findAll(schoolId?: string | null) {
     const where = schoolId ? { schoolId } : {};
@@ -58,10 +79,42 @@ export class ClassroomsService {
       school: schoolId ? ({ id: schoolId } as never) : undefined,
     });
     const saved = await this.classroomRepo.save(classroom);
+
+    if (dto.classTeacherId) {
+      await this.teacherRepo.update(dto.classTeacherId, {
+        isClassTeacher: true,
+        managedClassroomId: saved.id,
+        managedClassroomName: dto.name.trim(),
+      });
+    }
+
     return this.classroomRepo.findOne({ where: { id: saved.id }, relations: ["classTeacher"] });
   }
 
   async update(id: string, dto: Partial<CreateClassroomDto>) {
+    if (dto.classTeacherId !== undefined) {
+      const existing = await this.classroomRepo.findOne({ where: { id }, relations: ["classTeacher"] });
+      const prevTeacherId = existing?.classTeacher?.id;
+      const newTeacherId = dto.classTeacherId || null;
+
+      if (prevTeacherId && prevTeacherId !== newTeacherId) {
+        await this.teacherRepo.update(prevTeacherId, {
+          isClassTeacher: false,
+          managedClassroomId: null as never,
+          managedClassroomName: null as never,
+        });
+      }
+
+      if (newTeacherId) {
+        const classroomName = dto.name?.trim() ?? existing?.name ?? "";
+        await this.teacherRepo.update(newTeacherId, {
+          isClassTeacher: true,
+          managedClassroomId: id,
+          managedClassroomName: classroomName,
+        });
+      }
+    }
+
     await this.classroomRepo.update(id, {
       ...(dto.name ? { name: dto.name.trim(), grade: gradeFromName(dto.name) } : {}),
       ...(dto.academicYear !== undefined ? { academicYear: dto.academicYear?.trim() || undefined } : {}),
@@ -99,9 +152,18 @@ export class ClassroomsService {
   }
 
   getClassTeachers(schoolId?: string | null) {
-    const where = schoolId
-      ? { role: "class_teacher" as const, schoolId }
-      : { role: "class_teacher" as const };
-    return this.teacherRepo.find({ where, order: { fullName: "ASC" } });
+    if (schoolId) {
+      return this.teacherRepo.find({
+        where: [
+          { role: "class_teacher", schoolId },
+          { role: "teacher", schoolId },
+        ],
+        order: { fullName: "ASC" },
+      });
+    }
+    return this.teacherRepo.find({
+      where: [{ role: "class_teacher" }, { role: "teacher" }],
+      order: { fullName: "ASC" },
+    });
   }
 }

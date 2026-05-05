@@ -37,7 +37,10 @@ export class StudentPortalService {
     const student = await this.getStudentByUserId(userId);
     const [assignments, submissions] = await Promise.all([
       this.assignmentRepo.find({
-        where: { classroom: { id: student.classroom.id } },
+        where: [
+          { classroom: { id: student.classroom.id }, status: "published" },
+          { classroom: { id: student.classroom.id }, status: "active" },
+        ],
         relations: ["teacher"],
         order: { dueDate: "ASC" },
       }),

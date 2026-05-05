@@ -33,6 +33,8 @@ export interface FileManagerProps {
   teacherRefId?: string;
   canEdit: boolean;
   canUpload: boolean;
+  /** Called before each upload; returned key-value pairs are appended to FormData */
+  getExtraUploadData?: () => Record<string, string>;
   labels?: {
     home?: string;
     newFolder?: string;
@@ -106,7 +108,7 @@ function savePinned(section: string, ids: Set<string>) {
   localStorage.setItem(`aqyl-pins-${section}`, JSON.stringify([...ids]));
 }
 
-export function FileManager({ token, section, teacherRefId, canEdit, canUpload, labels: labelOverrides }: FileManagerProps) {
+export function FileManager({ token, section, teacherRefId, canEdit, canUpload, getExtraUploadData, labels: labelOverrides }: FileManagerProps) {
   const L = { ...DEFAULT_LABELS, ...labelOverrides };
   const [crumbs, setCrumbs] = useState<Crumb[]>([{ id: null, name: L.home }]);
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -119,6 +121,8 @@ export function FileManager({ token, section, teacherRefId, canEdit, canUpload, 
   const [error, setError] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("date");
   const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => loadPinned(section));
+  const [renaming, setRenaming] = useState<{ type: "file" | "folder"; id: string; name: string } | null>(null);
+  const [renameValue, setRenameValue] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentId = crumbs[crumbs.length - 1]?.id;
@@ -200,7 +204,8 @@ export function FileManager({ token, section, teacherRefId, canEdit, canUpload, 
     setUploading(true);
     setError("");
     try {
-      await api.uploadFileToFolder(token, file, currentId ?? undefined, section);
+      const extraData = getExtraUploadData?.();
+      await api.uploadFileToFolder(token, file, currentId ?? undefined, section, extraData);
       load();
     } catch (e) {
       setError(String(e));
@@ -233,7 +238,6 @@ export function FileManager({ token, section, teacherRefId, canEdit, canUpload, 
     if (!confirm(L.confirmDeleteFile)) return;
     try {
       await api.deleteFile(token, id);
-      // Remove from pinned if was pinned
       if (pinnedIds.has(id)) {
         const next = new Set(pinnedIds);
         next.delete(id);
@@ -241,6 +245,27 @@ export function FileManager({ token, section, teacherRefId, canEdit, canUpload, 
         savePinned(section, next);
       }
       load();
+    } catch (e) {
+      setError(String(e));
+    }
+  };
+
+  const startRename = (type: "file" | "folder", id: string, currentName: string) => {
+    setRenaming({ type, id, name: currentName });
+    setRenameValue(currentName);
+  };
+
+  const handleRename = async () => {
+    if (!renaming || !renameValue.trim()) return;
+    try {
+      if (renaming.type === "file") {
+        await api.renameFile(token, renaming.id, renameValue.trim());
+        setFiles(prev => prev.map(f => f.id === renaming.id ? { ...f, originalName: renameValue.trim() } : f));
+      } else {
+        await api.renameFolder(token, renaming.id, renameValue.trim());
+        setFolders(prev => prev.map(f => f.id === renaming.id ? { ...f, name: renameValue.trim() } : f));
+      }
+      setRenaming(null);
     } catch (e) {
       setError(String(e));
     }
@@ -362,14 +387,24 @@ export function FileManager({ token, section, teacherRefId, canEdit, canUpload, 
                 <span className="fm-item-icon">📁</span>
                 <span className="fm-item-name">{folder.name}</span>
                 {canEdit && (
-                  <button
-                    className="fm-item-del"
-                    onClick={e => { e.stopPropagation(); handleDeleteFolder(folder.id); }}
-                    title={L.delete}
-                    aria-label={L.delete}
-                  >
-                    ✕
-                  </button>
+                  <div className="fm-item-actions" onClick={e => e.stopPropagation()}>
+                    <button
+                      className="fm-item-del"
+                      onClick={e => { e.stopPropagation(); startRename("folder", folder.id, folder.name); }}
+                      title="Переименовать"
+                      aria-label="Переименовать"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      className="fm-item-del"
+                      onClick={e => { e.stopPropagation(); handleDeleteFolder(folder.id); }}
+                      title={L.delete}
+                      aria-label={L.delete}
+                    >
+                      ✕
+                    </button>
+                  </div>
                 )}
               </div>
             ))}
@@ -394,6 +429,13 @@ export function FileManager({ token, section, teacherRefId, canEdit, canUpload, 
                     {canEdit && (
                       <>
                         <button
+                          className="btn btn-outline btn-sm"
+                          onClick={() => startRename("file", file.id, file.originalName)}
+                          title="Переименовать"
+                        >
+                          ✏️
+                        </button>
+                        <button
                           className={`btn btn-sm ${isPinned ? "btn-primary" : "btn-outline"}`}
                           onClick={() => togglePin(file.id)}
                           title={isPinned ? L.unpin : L.pin}
@@ -412,6 +454,27 @@ export function FileManager({ token, section, teacherRefId, canEdit, canUpload, 
           </>
         )}
       </div>
+      {renaming && (
+        <div className="modal-overlay" onClick={() => setRenaming(null)}>
+          <div className="modal-card" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ marginBottom: 12, fontSize: 15 }}>Переименовать</h3>
+            <input
+              className="input"
+              value={renameValue}
+              onChange={e => setRenameValue(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") handleRename(); if (e.key === "Escape") setRenaming(null); }}
+              style={{ marginBottom: 12 }}
+              autoFocus
+            />
+            <div className="form-row">
+              <button className="btn btn-primary btn-sm" onClick={handleRename} disabled={!renameValue.trim()}>
+                Сохранить
+              </button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setRenaming(null)}>Отмена</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

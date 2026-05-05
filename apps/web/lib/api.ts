@@ -59,7 +59,7 @@ export type AssignmentWithSubmission = {
   subject: string;
   dueDate?: string;
   maxScore: number;
-  status: "active" | "closed";
+  status: "draft" | "published" | "active" | "closed";
   createdAt: string;
   teacher?: { id: string; fullName: string };
   submission: {
@@ -70,6 +70,21 @@ export type AssignmentWithSubmission = {
     status: "pending" | "submitted" | "graded";
     submittedAt?: string;
   } | null;
+};
+
+export type SorSochDoc = {
+  id: string;
+  title: string;
+  type: "sor" | "soch";
+  subject?: string;
+  classroomId?: string;
+  quarter?: string;
+  fileUrl?: string;
+  teacherId?: string;
+  schoolId?: string;
+  createdAt: string;
+  teacher?: { id: string; fullName: string };
+  classroom?: { id: string; name: string };
 };
 
 export type GradeRow = {
@@ -275,7 +290,11 @@ export const api = {
 
   // Assignments
   getMyAssignments: (token: string) =>
-    request<Array<{ id: string; title: string; subject: string; dueDate?: string; maxScore: number; status: string; classroom: { id: string; name: string }; submissions: unknown[] }>>("/assignments", undefined, token),
+    request<Array<{ id: string; title: string; description?: string; subject: string; dueDate?: string; maxScore: number; status: string; assignmentType?: string; classroom: { id: string; name: string }; submissions: Array<{ id: string; status: string; student?: { id: string; fullName: string } }> }>>("/assignments", undefined, token),
+  publishAssignment: (token: string, id: string) =>
+    request<{ id: string; status: string }>(`/assignments/${id}/publish`, { method: "PATCH" }, token),
+  closeAssignment: (token: string, id: string) =>
+    request<{ id: string; status: string }>(`/assignments/${id}/close`, { method: "PATCH" }, token),
   getClassroomAssignments: (token: string, classroomId: string) =>
     request<Array<{ id: string; title: string; subject: string; dueDate?: string; maxScore: number; teacher?: { fullName: string } }>>(`/assignments/classroom/${classroomId}`, undefined, token),
   createAssignment: (token: string, data: Record<string, unknown>) =>
@@ -349,11 +368,12 @@ export const api = {
   },
 
   // File manager
-  uploadFileToFolder: (token: string, file: File, folderId?: string, section?: string) => {
+  uploadFileToFolder: (token: string, file: File, folderId?: string, section?: string, extraData?: Record<string, string>) => {
     const fd = new FormData();
     fd.append("file", file);
     if (folderId) fd.append("folderId", folderId);
     if (section) fd.append("section", section);
+    if (extraData) { for (const [k, v] of Object.entries(extraData)) fd.append(k, v); }
     return request<{ id: string; filename: string; originalName: string; url: string }>("/files/upload", { method: "POST", body: fd }, token);
   },
   listFilesInFolder: (token: string, folderId: string | null | undefined, section?: string) => {
@@ -362,10 +382,14 @@ export const api = {
     else if (folderId) q.set("folderId", folderId);
     if (section) q.set("section", section);
     const qs = q.toString();
-    return request<Array<{ id: string; filename: string; originalName: string; mimetype: string; size: number; folderId?: string; section?: string; createdAt: string; uploadedBy?: { id: string; fullName: string } }>>(`/files${qs ? "?" + qs : ""}`, undefined, token);
+    return request<Array<{ id: string; filename: string; originalName: string; mimetype: string; size: number; folderId?: string; section?: string; createdAt: string; uploadedBy?: { id: string; fullName: string }; assignedClassrooms?: string[] }>>(`/files${qs ? "?" + qs : ""}`, undefined, token);
   },
   deleteFile: (token: string, id: string) =>
     request<{ ok: boolean }>(`/files/file/${id}`, { method: "DELETE" }, token),
+  renameFile: (token: string, id: string, originalName: string) =>
+    request<{ ok: boolean; originalName: string }>(`/files/file/${id}`, { method: "PATCH", body: JSON.stringify({ originalName }) }, token),
+  renameFolder: (token: string, id: string, name: string) =>
+    request<{ ok: boolean; name: string }>(`/files/folder/${id}`, { method: "PATCH", body: JSON.stringify({ name }) }, token),
   createFolder: (token: string, data: { name: string; parentId?: string; section?: string; teacherRefId?: string }) =>
     request<{ id: string; name: string; parentId?: string; section?: string; teacherRefId?: string; createdAt: string }>("/files/folder", { method: "POST", body: JSON.stringify(data) }, token),
   listFolders: (token: string, params?: { parentId?: string; section?: string; teacherRefId?: string }) => {
@@ -384,6 +408,8 @@ export const api = {
     }>(`/files/folder/${folderId}`, undefined, token),
   deleteFolder: (token: string, id: string) =>
     request<{ ok: boolean }>(`/files/folder/${id}`, { method: "DELETE" }, token),
+  getAllKspFiles: (token: string) =>
+    request<Array<{ id: string; filename: string; originalName: string; mimetype: string; size: number; section?: string; createdAt: string; uploadedBy?: { id: string; fullName: string }; assignedClassrooms?: string[] }>>("/files/ksp-all", undefined, token),
 
   // Gifted
   getGiftedPlans: (token: string, type?: string) =>
@@ -471,7 +497,7 @@ export const api = {
     request<{ id: string }>(`/attestation/${teacherId}`, { method: "PATCH", body: JSON.stringify(data) }, token),
 
   // Final Attestation
-  getFinalStudents: (token: string, grade: 9 | 11) =>
+  getFinalStudents: (token: string, grade: 9 | 10 | 11) =>
     request<Array<{ id: string; grade: number; fullName: string; subject?: string; iin?: string; email?: string; phone?: string; parentName?: string; createdAt: string }>>(`/final-attestation/students?grade=${grade}`, undefined, token),
   createFinalStudent: (token: string, data: Record<string, unknown>) =>
     request<{ id: string }>("/final-attestation/students", { method: "POST", body: JSON.stringify(data) }, token),
@@ -495,6 +521,24 @@ export const api = {
     request<{ id: string; name?: string; address?: string; builtYear?: string; capacity?: string; contingent?: string; completeness?: string; updatedAt: string }>("/school/info", undefined, token),
   updateSchoolInfo: (token: string, data: Record<string, string>) =>
     request<{ id: string }>("/school/info", { method: "PATCH", body: JSON.stringify(data) }, token),
+
+  // SOR/SOCH
+  getSorSoch: (token: string, params?: { type?: "sor" | "soch"; subject?: string; classroomId?: string; quarter?: string; teacherId?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.type) q.set("type", params.type);
+    if (params?.subject) q.set("subject", params.subject);
+    if (params?.classroomId) q.set("classroomId", params.classroomId);
+    if (params?.quarter) q.set("quarter", params.quarter);
+    if (params?.teacherId) q.set("teacherId", params.teacherId);
+    const qs = q.toString();
+    return request<SorSochDoc[]>(`/sor-soch${qs ? "?" + qs : ""}`, undefined, token);
+  },
+  createSorSoch: (token: string, data: { title: string; type: "sor" | "soch"; subject?: string; classroomId?: string; quarter?: string; fileUrl?: string }) =>
+    request<SorSochDoc>("/sor-soch", { method: "POST", body: JSON.stringify(data) }, token),
+  updateSorSoch: (token: string, id: string, data: Partial<{ title: string; subject: string; classroomId: string; quarter: string; fileUrl: string }>) =>
+    request<SorSochDoc>(`/sor-soch/${id}`, { method: "PATCH", body: JSON.stringify(data) }, token),
+  deleteSorSoch: (token: string, id: string) =>
+    request<{ ok: boolean }>(`/sor-soch/${id}`, { method: "DELETE" }, token),
 
   // Schools (global admin)
   getSchools: (token: string) =>

@@ -8,7 +8,7 @@ interface ReqUser { user: { id: string; role: string; schoolId?: string | null }
 
 @Controller("classrooms")
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles("admin", "principal", "vice_principal")
+@Roles("admin", "principal", "vice_principal", "teacher", "class_teacher")
 export class ClassroomsController {
   constructor(private readonly service: ClassroomsService) {}
 
@@ -23,11 +23,13 @@ export class ClassroomsController {
   }
 
   @Post()
+  @Roles("admin", "principal", "vice_principal")
   create(@Req() req: ReqUser, @Body() dto: CreateClassroomDto) {
     return this.service.create(dto, req.user.schoolId);
   }
 
   @Patch(":id")
+  @Roles("admin", "principal", "vice_principal")
   update(@Param("id") id: string, @Body() dto: Partial<CreateClassroomDto>) {
     return this.service.update(id, dto);
   }
@@ -41,5 +43,20 @@ export class ClassroomsController {
   @Post(":id/bulk-transfer")
   bulkTransfer(@Param("id") id: string, @Body() body: { toClassroomId: string }) {
     return this.service.bulkTransfer(id, body.toClassroomId);
+  }
+
+  @Get(":id/subject-teachers")
+  getSubjectTeachers(@Param("id") id: string) {
+    return this.service.getSubjectTeachers(id);
+  }
+
+  @Post(":id/subject-teachers")
+  addSubjectTeacher(@Param("id") id: string, @Body() body: { teacherId: string; subject: string }) {
+    return this.service.addSubjectTeacher(id, body.teacherId, body.subject);
+  }
+
+  @Delete(":id/subject-teachers/:assignmentId")
+  removeSubjectTeacher(@Param("id") _id: string, @Param("assignmentId") assignmentId: string) {
+    return this.service.removeSubjectTeacher(assignmentId);
   }
 }

@@ -36,6 +36,9 @@ export class UploadedFile {
   @Column({ nullable: true })
   schoolId?: string;
 
+  @Column({ type: "jsonb", nullable: true })
+  assignedClassrooms?: string[];
+
   @CreateDateColumn()
   createdAt!: Date;
 

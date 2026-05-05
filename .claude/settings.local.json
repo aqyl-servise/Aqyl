@@ -57,7 +57,8 @@
       "Bash(node *)",
       "Bash(npx ts-node -e ' *)",
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('scripts',{}\\), indent=2\\)\\)\")",
-      "Bash(netstat -ano)"
+      "Bash(netstat -ano)",
+      "Bash(grep -E \"\\(src|app|modules\\)$\")"
     ]
   }
 }

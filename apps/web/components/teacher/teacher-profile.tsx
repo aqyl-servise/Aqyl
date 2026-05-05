@@ -1,11 +1,32 @@
 "use client";
-import { FormEvent, useState } from "react";
-import { api, AuthUser } from "../../lib/api";
+import { FormEvent, useEffect, useState } from "react";
+import { api, AuthUser, StudentRow } from "../../lib/api";
 import { Language } from "../../lib/translations";
+
+const CATEGORY_LABELS: Record<string, string> = {
+  "": "Не указана / Жоқ",
+  "Вторая": "Екінші / Вторая",
+  "Первая": "Бірінші / Первая",
+  "Высшая": "Жоғары / Высшая",
+  "Педагог-исследователь": "Педагог-зерттеуші / Педагог-исследователь",
+  "Педагог-мастер": "Педагог-шебер / Педагог-мастер",
+};
 
 export function TeacherProfile({ token, user, language, t }: { token: string; user: AuthUser; language: Language; t: Record<string, string> }) {
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [students, setStudents] = useState<StudentRow[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const isClassTeacher = user.isClassTeacher === true;
+
+  useEffect(() => {
+    if (!isClassTeacher || !user.managedClassroomId) return;
+    setLoadingStudents(true);
+    api.getStudents(token, user.managedClassroomId)
+      .then(setStudents)
+      .catch(console.error)
+      .finally(() => setLoadingStudents(false));
+  }, [token, isClassTeacher, user.managedClassroomId]);
 
   async function handleSave(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -28,12 +49,18 @@ export function TeacherProfile({ token, user, language, t }: { token: string; us
   return (
     <div className="page">
       <h1 className="page-title">{t.nav_profile}</h1>
-      <div className="card" style={{ maxWidth: 600 }}>
+
+      <div className="card" style={{ maxWidth: 640 }}>
         <div className="profile-header">
           <div className="profile-avatar">{user.fullName.charAt(0)}</div>
           <div>
             <h2 style={{ margin: 0 }}>{user.fullName}</h2>
             <p className="muted">{user.email} · {user.subject ?? "—"}</p>
+            {isClassTeacher && user.managedClassroomName && (
+              <p style={{ fontSize: 13, color: "var(--accent)", marginTop: 2 }}>
+                Классный руководитель: <strong>{user.managedClassroomName}</strong>
+              </p>
+            )}
           </div>
         </div>
 
@@ -46,8 +73,8 @@ export function TeacherProfile({ token, user, language, t }: { token: string; us
             <div className="field">
               <label className="field-label">{t.category}</label>
               <select name="category" className="input">
-                {["", "Вторая", "Первая", "Высшая", "Педагог-исследователь", "Педагог-мастер"].map((c) => (
-                  <option key={c} value={c}>{c || "Не указана"}</option>
+                {Object.entries(CATEGORY_LABELS).map(([val, lbl]) => (
+                  <option key={val} value={val}>{lbl}</option>
                 ))}
               </select>
             </div>
@@ -72,6 +99,45 @@ export function TeacherProfile({ token, user, language, t }: { token: string; us
           </button>
         </form>
       </div>
+
+      {isClassTeacher && (
+        <div className="card" style={{ maxWidth: 640, marginTop: 16 }}>
+          <h3 className="card-title">
+            👩‍🎓 Мои ученики
+            {user.managedClassroomName && (
+              <span className="muted" style={{ fontWeight: 400, fontSize: 14, marginLeft: 8 }}>
+                {user.managedClassroomName}
+              </span>
+            )}
+          </h3>
+          {loadingStudents ? (
+            <p className="fm-empty">{t.loading}</p>
+          ) : students.length === 0 ? (
+            <p className="fm-empty">{t.noData}</p>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>{t.name ?? "ФИО"}</th>
+                  <th>{t.parentName ?? "Родитель"}</th>
+                  <th>{t.parentContact ?? "Контакт"}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {students.map((s, idx) => (
+                  <tr key={s.id}>
+                    <td style={{ color: "var(--muted)", width: 36 }}>{idx + 1}</td>
+                    <td className="table-name">{s.fullName}</td>
+                    <td className="muted">{s.parentName ?? "—"}</td>
+                    <td className="muted">{s.parentContact ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
     </div>
   );
 }

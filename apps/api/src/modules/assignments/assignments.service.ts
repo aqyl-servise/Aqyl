@@ -23,10 +23,23 @@ export class AssignmentsService {
 
   getForClassroom(classroomId: string) {
     return this.assignmentRepo.find({
-      where: { classroom: { id: classroomId }, status: "active" },
+      where: [
+        { classroom: { id: classroomId }, status: "published" },
+        { classroom: { id: classroomId }, status: "active" },
+      ],
       relations: { teacher: true },
       order: { dueDate: "ASC" },
     });
+  }
+
+  async publish(id: string) {
+    await this.assignmentRepo.update(id, { status: "published" });
+    return this.findOne(id);
+  }
+
+  async close(id: string) {
+    await this.assignmentRepo.update(id, { status: "closed" });
+    return this.findOne(id);
   }
 
   getAll() {

@@ -55,6 +55,9 @@ import { SchoolInfoModule } from "./modules/school-info/school-info.module";
 import { SchoolInfo } from "./modules/schools/entities/school-info.entity";
 import { SeedService } from "./seed.service";
 import { SchoolsModule } from "./modules/schools/schools.module";
+import { SorSochModule } from "./modules/sor-soch/sor-soch.module";
+import { SorSochDocument } from "./modules/schools/entities/sor-soch-document.entity";
+import { SubjectTeacherAssignment } from "./modules/schools/entities/subject-teacher-assignment.entity";
 
 @Module({
   imports: [
@@ -77,6 +80,8 @@ import { SchoolsModule } from "./modules/schools/schools.module";
           Schedule, Assignment, TaskSubmission, OpenLesson, LessonAnalysis, Protocol, ClassHour, ClassHourHistory, UploadedFile,
           GiftedPlan, GiftedStudent, GiftedTeacherAssignment, GiftedMaterial, GiftedAchievement,
           StudentTransfer, PasswordReset, FileFolder, TeacherAttestation, FinalAttestationStudent, KtpReview, SchoolInfo,
+          SorSochDocument,
+          SubjectTeacherAssignment,
         ],
       }),
     }),
@@ -85,6 +90,8 @@ import { SchoolsModule } from "./modules/schools/schools.module";
       Schedule, Assignment, TaskSubmission, OpenLesson, LessonAnalysis, Protocol, ClassHour, UploadedFile,
       GiftedPlan, GiftedStudent, GiftedTeacherAssignment, GiftedMaterial, GiftedAchievement,
       StudentTransfer, PasswordReset, FileFolder, TeacherAttestation, FinalAttestationStudent, KtpReview, SchoolInfo,
+      SorSochDocument,
+      SubjectTeacherAssignment,
     ]),
     TeachersModule,
     AuthModule,
@@ -110,6 +117,7 @@ import { SchoolsModule } from "./modules/schools/schools.module";
     KtpModule,
     SchoolInfoModule,
     SchoolsModule,
+    SorSochModule,
   ],
   providers: [
     SeedService,

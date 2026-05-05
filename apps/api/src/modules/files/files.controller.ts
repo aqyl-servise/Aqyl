@@ -1,6 +1,6 @@
 import {
   BadRequestException, Body, Controller, Delete, ForbiddenException,
-  Get, NotFoundException, Param, Post, Query, Req, Res,
+  Get, NotFoundException, Param, Patch, Post, Query, Req, Res,
   UploadedFile, UseGuards, UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
@@ -9,7 +9,7 @@ import { extname, join, normalize } from "path";
 import { v4 as uuid } from "uuid";
 import { Response } from "express";
 import { InjectRepository } from "@nestjs/typeorm";
-import { IsNull, Repository } from "typeorm";
+import { IsNull, Like, Repository } from "typeorm";
 import * as fs from "fs";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { UploadedFile as UploadedFileEntity } from "../schools/entities/uploaded-file.entity";
@@ -69,7 +69,12 @@ export class FilesController {
     @Body("section") section?: string,
     @Body("refType") refType?: string,
     @Body("refId") refId?: string,
+    @Body("assignedClassrooms") assignedClassroomsRaw?: string,
   ) {
+    let assignedClassrooms: string[] | undefined;
+    if (assignedClassroomsRaw) {
+      try { assignedClassrooms = JSON.parse(assignedClassroomsRaw); } catch {}
+    }
     const saved = await this.fileRepo.save(
       this.fileRepo.create({
         filename: file.filename,
@@ -82,6 +87,7 @@ export class FilesController {
         refType: refType || undefined,
         refId: refId || undefined,
         schoolId: req.user.schoolId ?? undefined,
+        assignedClassrooms: assignedClassrooms || undefined,
         uploadedBy: { id: req.user.id } as never,
       }),
     );
@@ -151,6 +157,17 @@ export class FilesController {
     return { ok: true };
   }
 
+  // ── All teachers' KSP files (admin) ────────────────────────────────────────
+
+  @Get("ksp-all")
+  @UseGuards(JwtAuthGuard)
+  async listAllKsp(@Req() req: ReqUser) {
+    if (!ADMIN_ROLES.has(req.user.role)) throw new ForbiddenException("Access denied");
+    const where: Record<string, unknown> = { section: Like("teacher-ksp-%") };
+    if (req.user.schoolId) where["schoolId"] = req.user.schoolId;
+    return this.fileRepo.find({ where, order: { createdAt: "DESC" }, relations: ["uploadedBy"] });
+  }
+
   // ── File list ───────────────────────────────────────────────────────────────
 
   @Get()
@@ -173,6 +190,33 @@ export class FilesController {
       where["uploadedBy"] = { id: req.user.id };
     }
     return this.fileRepo.find({ where, order: { createdAt: "DESC" }, relations: ["uploadedBy"] });
+  }
+
+  // ── Rename file ─────────────────────────────────────────────────────────────
+
+  @Patch("file/:id")
+  @UseGuards(JwtAuthGuard)
+  async renameFile(@Param("id") id: string, @Body() body: { originalName: string }, @Req() req: ReqUser) {
+    const file = await this.fileRepo.findOne({ where: { id }, relations: ["uploadedBy"] });
+    if (!file) throw new NotFoundException("File not found");
+    if (!ADMIN_ROLES.has(req.user.role) && file.uploadedBy?.id !== req.user.id) {
+      throw new ForbiddenException("Access denied");
+    }
+    if (!body.originalName?.trim()) throw new BadRequestException("Name is required");
+    await this.fileRepo.update(id, { originalName: body.originalName.trim() });
+    return { ok: true, originalName: body.originalName.trim() };
+  }
+
+  // ── Rename folder ────────────────────────────────────────────────────────────
+
+  @Patch("folder/:id")
+  @UseGuards(JwtAuthGuard)
+  async renameFolder(@Param("id") id: string, @Body() body: { name: string }, @Req() req: ReqUser) {
+    const folder = await this.folderRepo.findOne({ where: { id } });
+    if (!folder) throw new NotFoundException("Folder not found");
+    if (!body.name?.trim()) throw new BadRequestException("Name is required");
+    await this.folderRepo.update(id, { name: body.name.trim() });
+    return { ok: true, name: body.name.trim() };
   }
 
   // ── Delete file by DB id ────────────────────────────────────────────────────
