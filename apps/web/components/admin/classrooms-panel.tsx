@@ -1,6 +1,6 @@
 "use client";
 import { FormEvent, useEffect, useState } from "react";
-import { api, ClassroomItem } from "../../lib/api";
+import { api, ClassroomItem, StudentRow } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 
 type TeacherOption = { id: string; fullName: string };
@@ -22,6 +22,7 @@ export function ClassroomsPanel({ token, language, t, userRole }: {
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [subjectClassroom, setSubjectClassroom] = useState<ClassroomItem | null>(null);
+  const [classListClassroom, setClassListClassroom] = useState<ClassroomItem | null>(null);
 
   const canDelete = userRole === "admin" || userRole === "principal";
 
@@ -157,6 +158,10 @@ export function ClassroomsPanel({ token, language, t, userRole }: {
                         onClick={() => setSubjectClassroom(c)}>
                         👩‍🏫
                       </button>
+                      <button className="btn btn-ghost btn-sm" title="Список класса"
+                        onClick={() => setClassListClassroom(c)}>
+                        📋
+                      </button>
                       {c.studentCount > 0 && (
                         <button className="btn btn-ghost btn-sm" title={t.bulkTransfer}
                           onClick={() => { setBulkFrom(c); setBulkToId(""); }}>
@@ -203,6 +208,15 @@ export function ClassroomsPanel({ token, language, t, userRole }: {
           allTeachers={allTeachers}
           t={tFull}
           onClose={() => setSubjectClassroom(null)}
+        />
+      )}
+
+      {classListClassroom && (
+        <ClassStudentListModal
+          token={token}
+          classroom={classListClassroom}
+          t={t}
+          onClose={() => setClassListClassroom(null)}
         />
       )}
 
@@ -275,6 +289,65 @@ function ClassroomForm({ teachers, t, onSubmit, onCancel, busy, error, defaults 
         <button type="button" className="btn btn-ghost" onClick={onCancel}>{t.cancel}</button>
       </div>
     </form>
+  );
+}
+
+function ClassStudentListModal({ token, classroom, t, onClose }: {
+  token: string;
+  classroom: ClassroomItem;
+  t: Record<string, string>;
+  onClose: () => void;
+}) {
+  const [students, setStudents] = useState<StudentRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.getStudents(token, classroom.id)
+      .then(setStudents)
+      .catch(() => setStudents([]))
+      .finally(() => setLoading(false));
+  }, [token, classroom.id]);
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" style={{ maxWidth: 600 }} onClick={(e) => e.stopPropagation()}>
+        <h3 style={{ marginBottom: 4 }}>Список класса</h3>
+        <p className="muted" style={{ fontSize: 13, marginBottom: 16 }}>
+          {classroom.name} — {t.grade ?? "Класс"} {classroom.grade}
+        </p>
+
+        {loading ? (
+          <p className="fm-empty">{t.loading}</p>
+        ) : students.length === 0 ? (
+          <p className="fm-empty">{t.noData}</p>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>{t.name ?? "ФИО"}</th>
+                <th>ИИН</th>
+                <th>{t.classroomName ?? "Класс"}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {students.map((s, idx) => (
+                <tr key={s.id}>
+                  <td style={{ color: "var(--muted)", width: 36 }}>{idx + 1}</td>
+                  <td className="table-name">{s.fullName}</td>
+                  <td style={{ fontFamily: "monospace", fontSize: 13 }}>{s.iin ?? "—"}</td>
+                  <td>{s.classroom.name}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        <div style={{ marginTop: 16, textAlign: "right" }}>
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>{t.close ?? "Закрыть"}</button>
+        </div>
+      </div>
+    </div>
   );
 }
 

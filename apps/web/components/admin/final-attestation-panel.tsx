@@ -6,7 +6,7 @@ import { FileManager } from "../ui/file-manager";
 
 type FinalStudent = Awaited<ReturnType<typeof api.getFinalStudents>>[number];
 type TeacherItem = { id: string; fullName: string; subject?: string };
-type MainTab = 9 | 10 | 11 | "teachers";
+type MainTab = 9 | 11 | "teachers";
 type TeacherView = { teacher: TeacherItem; mode: "materials" | "monitoring" } | null;
 
 interface Props {
@@ -49,13 +49,10 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
 
   // Student list state (per grade)
   const [students9, setStudents9] = useState<FinalStudent[]>([]);
-  const [students10, setStudents10] = useState<FinalStudent[]>([]);
   const [students11, setStudents11] = useState<FinalStudent[]>([]);
   const [loaded9, setLoaded9] = useState(false);
-  const [loaded10, setLoaded10] = useState(false);
   const [loaded11, setLoaded11] = useState(false);
   const [loading9, setLoading9] = useState(false);
-  const [loading10, setLoading10] = useState(false);
   const [loading11, setLoading11] = useState(false);
 
   const [search, setSearch] = useState("");
@@ -80,16 +77,6 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
       .finally(() => setLoading9(false));
   }, [tab, token, loaded9]);
 
-  // Load grade 10 students on first open
-  useEffect(() => {
-    if (tab !== 10 || loaded10) return;
-    setLoading10(true);
-    api.getFinalStudents(token, 10)
-      .then((d) => { setStudents10(d); setLoaded10(true); })
-      .catch(console.error)
-      .finally(() => setLoading10(false));
-  }, [tab, token, loaded10]);
-
   // Load grade 11 students on first open
   useEffect(() => {
     if (tab !== 11 || loaded11) return;
@@ -108,13 +95,12 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
       .catch(console.error);
   }, [tab, token, teachersLoaded]);
 
-  const currentGrade = (tab === 9 || tab === 10 || tab === 11) ? tab : null;
-  const students = currentGrade === 9 ? students9 : currentGrade === 10 ? students10 : currentGrade === 11 ? students11 : [];
-  const loading = currentGrade === 9 ? loading9 : currentGrade === 10 ? loading10 : loading11;
+  const currentGrade = (tab === 9 || tab === 11) ? tab : null;
+  const students = currentGrade === 9 ? students9 : currentGrade === 11 ? students11 : [];
+  const loading = currentGrade === 9 ? loading9 : loading11;
 
-  function setStudents(grade: 9 | 10 | 11, data: FinalStudent[]) {
+  function setStudents(grade: 9 | 11, data: FinalStudent[]) {
     if (grade === 9) setStudents9(data);
-    else if (grade === 10) setStudents10(data);
     else setStudents11(data);
   }
 
@@ -147,8 +133,8 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
       } else {
         await api.createFinalStudent(token, data);
       }
-      const fresh = await api.getFinalStudents(token, currentGrade as 9 | 10 | 11);
-      setStudents(currentGrade as 9 | 10 | 11, fresh);
+      const fresh = await api.getFinalStudents(token, currentGrade as 9 | 11);
+      setStudents(currentGrade as 9 | 11, fresh);
       closeForm();
     } catch (err) {
       console.error(err);
@@ -162,8 +148,8 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
     setBusy(true);
     try {
       await api.deleteFinalStudent(token, deleteTarget.id);
-      const fresh = await api.getFinalStudents(token, currentGrade as 9 | 10 | 11);
-      setStudents(currentGrade as 9 | 10 | 11, fresh);
+      const fresh = await api.getFinalStudents(token, currentGrade as 9 | 11);
+      setStudents(currentGrade as 9 | 11, fresh);
       setDeleteTarget(null);
     } catch (err) {
       console.error(err);
@@ -215,19 +201,19 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
       <h1 className="page-title">📝 {t.nav_final_attestation}</h1>
 
       <div className="sc-tabs">
-        {([9, 10, 11, "teachers"] as MainTab[]).map((key) => (
+        {([9, 11, "teachers"] as MainTab[]).map((key) => (
           <button
             key={String(key)}
             className={`sc-tab${tab === key ? " sc-tab-active" : ""}`}
             onClick={() => { setTab(key); setSearch(""); setShowForm(false); setDeleteTarget(null); }}
           >
-            {key === 9 ? t.final_grade_9 : key === 10 ? "10 класс" : key === 11 ? t.final_grade_11 : t.final_teachers_db}
+            {key === 9 ? t.final_grade_9 : key === 11 ? t.final_grade_11 : t.final_teachers_db}
           </button>
         ))}
       </div>
 
       {/* ── Grade tabs ── */}
-      {(tab === 9 || tab === 10 || tab === 11) && (
+      {(tab === 9 || tab === 11) && (
         <div className="card" style={{ marginTop: 0 }}>
           {/* Toolbar */}
           <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>

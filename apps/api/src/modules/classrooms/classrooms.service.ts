@@ -6,6 +6,7 @@ import { Student } from "../schools/entities/student.entity";
 import { StudentTransfer } from "../schools/entities/student-transfer.entity";
 import { Teacher } from "../teachers/entities/teacher.entity";
 import { SubjectTeacherAssignment } from "../schools/entities/subject-teacher-assignment.entity";
+import { FinalAttestationStudent } from "../schools/entities/final-attestation-student.entity";
 
 export interface CreateClassroomDto {
   name: string;
@@ -31,6 +32,7 @@ export class ClassroomsService {
     @InjectRepository(StudentTransfer) private readonly transferRepo: Repository<StudentTransfer>,
     @InjectRepository(Teacher) private readonly teacherRepo: Repository<Teacher>,
     @InjectRepository(SubjectTeacherAssignment) private readonly subjectTeacherRepo: Repository<SubjectTeacherAssignment>,
+    @InjectRepository(FinalAttestationStudent) private readonly attestationRepo: Repository<FinalAttestationStudent>,
   ) {}
 
   getSubjectTeachers(classroomId: string) {
@@ -136,6 +138,8 @@ export class ClassroomsService {
       where: { classroom: { id: fromId } },
     });
 
+    const toClassroom = await this.classroomRepo.findOne({ where: { id: toId } });
+
     for (const student of students) {
       await this.transferRepo.save(
         this.transferRepo.create({
@@ -146,6 +150,23 @@ export class ClassroomsService {
         }),
       );
       await this.studentRepo.update(student.id, { classroom: { id: toId } });
+
+      if (toClassroom && (toClassroom.grade === 9 || toClassroom.grade === 11)) {
+        const exists = student.iin
+          ? await this.attestationRepo.findOne({ where: { iin: student.iin, grade: toClassroom.grade } })
+          : null;
+        if (!exists) {
+          await this.attestationRepo.save(
+            this.attestationRepo.create({
+              grade: toClassroom.grade,
+              fullName: student.fullName,
+              iin: student.iin || undefined,
+              parentName: student.parentName || undefined,
+              schoolId: toClassroom.schoolId ?? undefined,
+            }),
+          );
+        }
+      }
     }
 
     return { transferred: students.length };

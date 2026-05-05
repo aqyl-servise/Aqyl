@@ -4,11 +4,12 @@ import { Student } from "../schools/entities/student.entity";
 import { Classroom } from "../schools/entities/classroom.entity";
 import { Teacher } from "../teachers/entities/teacher.entity";
 import { StudentTransfer } from "../schools/entities/student-transfer.entity";
+import { FinalAttestationStudent } from "../schools/entities/final-attestation-student.entity";
 import { StudentsController } from "./students.controller";
 import { StudentsService } from "./students.service";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Student, Classroom, Teacher, StudentTransfer])],
+  imports: [TypeOrmModule.forFeature([Student, Classroom, Teacher, StudentTransfer, FinalAttestationStudent])],
   controllers: [StudentsController],
   providers: [StudentsService],
 })
