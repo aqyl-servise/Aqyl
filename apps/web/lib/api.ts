@@ -129,6 +129,22 @@ export type TransferRecord = {
   transferredAt: string;
 };
 
+export type ClassroomFullInfo = {
+  id: string;
+  name: string;
+  grade: number;
+  academicYear?: string;
+  classTeacher: { id: string; fullName: string } | null;
+  students: Array<{ id: string; fullName: string; iin?: string; parentName?: string; parentContact?: string }>;
+  subjectTeachers: Array<{ id: string; subject: string; teacher: { id: string; fullName: string } }>;
+  statistics: { total: number };
+};
+
+export type GiftedAssignment = {
+  id: string;
+  student: StudentRow;
+};
+
 let _selectedSchoolId: string | null = null;
 export function setApiSchoolId(id: string | null) { _selectedSchoolId = id; }
 
@@ -246,6 +262,8 @@ export const api = {
   // Students
   getStudents: (token: string, classroomId?: string) =>
     request<StudentRow[]>(`/students${classroomId ? `?classroomId=${classroomId}` : ""}`, undefined, token),
+  getSchoolStudentsByGrades: (token: string, grades: number[]) =>
+    request<StudentRow[]>(`/students?schoolWide=true&grades=${grades.join(",")}`, undefined, token),
   createStudent: (token: string, data: Record<string, unknown>) =>
     request<StudentRow>("/students", { method: "POST", body: JSON.stringify(data) }, token),
   updateStudent: (token: string, id: string, data: Record<string, unknown>) =>
@@ -274,6 +292,8 @@ export const api = {
     request<{ transferred: number }>(`/classrooms/${fromId}/bulk-transfer`, { method: "POST", body: JSON.stringify({ toClassroomId: toId }) }, token),
   getClassroomClassTeachers: (token: string) =>
     request<Array<{ id: string; fullName: string }>>("/classrooms/class-teachers", undefined, token),
+  getClassroomFullInfo: (token: string, classroomId: string) =>
+    request<ClassroomFullInfo>(`/classrooms/${classroomId}/full-info`, undefined, token),
   getClassroomSubjectTeachers: (token: string, classroomId: string) =>
     request<Array<{ id: string; teacherId: string; subject: string; teacher: { id: string; fullName: string } }>>(`/classrooms/${classroomId}/subject-teachers`, undefined, token),
   addClassroomSubjectTeacher: (token: string, classroomId: string, data: { teacherId: string; subject: string }) =>
@@ -505,6 +525,16 @@ export const api = {
     request<{ id: string }>(`/final-attestation/students/${id}`, { method: "PATCH", body: JSON.stringify(data) }, token),
   deleteFinalStudent: (token: string, id: string) =>
     request<{ ok: boolean }>(`/final-attestation/students/${id}`, { method: "DELETE" }, token),
+
+  // Gifted — teacher-owned
+  getMyGiftedStudents: (token: string) =>
+    request<GiftedAssignment[]>("/gifted/my-students", undefined, token),
+  addMyGiftedStudent: (token: string, studentId: string) =>
+    request<{ id: string }>("/gifted/my-student", { method: "POST", body: JSON.stringify({ studentId }) }, token),
+  removeMyGiftedStudent: (token: string, assignmentId: string) =>
+    request<{ ok: boolean }>(`/gifted/my-student/${assignmentId}`, { method: "DELETE" }, token),
+  searchAllStudents: (token: string, q?: string) =>
+    request<StudentRow[]>(`/gifted/all-students${q ? `?q=${encodeURIComponent(q)}` : ""}`, undefined, token),
 
   // KTP/KSP
   getKtpFiles: (token: string, section: string) =>

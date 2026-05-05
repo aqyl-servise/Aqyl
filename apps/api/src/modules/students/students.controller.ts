@@ -13,9 +13,18 @@ export class StudentsController {
   constructor(private readonly service: StudentsService) {}
 
   @Get()
-  findAll(@Req() req: { user: ReqUser }, @Query("classroomId") classroomId?: string) {
+  findAll(
+    @Req() req: { user: ReqUser },
+    @Query("classroomId") classroomId?: string,
+    @Query("grades") grades?: string,
+    @Query("schoolWide") schoolWide?: string,
+  ) {
     if (["admin", "principal", "vice_principal"].includes(req.user.role)) {
       return this.service.findAll(classroomId, req.user.schoolId);
+    }
+    if (schoolWide === "true" && req.user.schoolId && grades) {
+      const gradeArr = grades.split(",").map(Number).filter((n) => !isNaN(n));
+      return this.service.findAllBySchoolAndGrades(req.user.schoolId, gradeArr);
     }
     return this.service.findByTeacher(req.user.id, classroomId);
   }

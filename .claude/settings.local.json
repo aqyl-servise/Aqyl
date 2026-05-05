@@ -64,7 +64,13 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\MI\\\\aqyl-teacher\" -Recurse -Depth 2)",
       "Bash(Select-Object FullName)",
       "Bash(ls -la /home)",
-      "Read(//c/Users/MI/**)"
+      "Read(//c/Users/MI/**)",
+      "Bash(dir \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\web\\\\components\\\\teacher\" -Recurse -Name)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\web\\\\components\\\\teacher\" -Recurse -File | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\web\\\\components\\\\admin\" -Recurse -File | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\api\\\\src\\\\modules\\\\gifted\" -Recurse -File 2>/dev/null | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\api\\\\src\\\\modules\" -Directory | ForEach-Object { $_.Name })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\api\\\\src\\\\modules\\\\gifted\" -Recurse -File | ForEach-Object { $_.FullName })"
     ]
   }
 }

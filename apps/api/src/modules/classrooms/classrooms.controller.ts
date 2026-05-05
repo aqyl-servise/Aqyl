@@ -45,6 +45,11 @@ export class ClassroomsController {
     return this.service.bulkTransfer(id, body.toClassroomId);
   }
 
+  @Get(":id/full-info")
+  getFullInfo(@Param("id") id: string) {
+    return this.service.getFullInfo(id);
+  }
+
   @Get(":id/subject-teachers")
   getSubjectTeachers(@Param("id") id: string) {
     return this.service.getSubjectTeachers(id);

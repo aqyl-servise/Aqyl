@@ -4,7 +4,7 @@ import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { GiftedService } from "./gifted.service";
 
-interface ReqUser { user: { id: string } }
+interface ReqUser { user: { id: string; role: string } }
 
 @Controller("gifted")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -97,6 +97,25 @@ export class GiftedController {
   @Get("student-card/:studentId")
   getStudentCard(@Param("studentId") studentId: string) {
     return this.svc.getStudentCard(studentId);
+  }
+
+  // ── Teacher-owned gifted students ─────────────────────────────────
+  @Get("my-students")
+  @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal")
+  getMyGiftedStudents(@Req() req: ReqUser) {
+    return this.svc.getMyGiftedStudents(req.user.id);
+  }
+
+  @Post("my-student")
+  @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal")
+  addMyGiftedStudent(@Body() body: { studentId: string }, @Req() req: ReqUser) {
+    return this.svc.addMyGiftedStudent(req.user.id, body.studentId);
+  }
+
+  @Delete("my-student/:id")
+  @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal")
+  removeMyGiftedStudent(@Param("id") id: string, @Req() req: ReqUser) {
+    return this.svc.removeMyGiftedStudent(id, req.user.id);
   }
 
   // ── Achievements ──────────────────────────────────────────────────

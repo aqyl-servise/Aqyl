@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { api, AuthUser, StudentRow, ClassroomItem } from "../../lib/api";
+import { api, AuthUser, StudentRow, ClassroomItem, ClassroomFullInfo, GiftedAssignment } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 import { AppLayout } from "../layout/app-layout";
 import { TeacherDashboard } from "./teacher-dashboard";
@@ -74,6 +74,7 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
     { key: "my-ktp-ksp", label: t.nav_my_ktp_ksp ?? "Мои КТП/КСП", icon: "📂" },
     { key: "presentations", label: t.nav_presentations ?? "Генерация презентаций", icon: "🔒" },
     { key: "illustrations", label: t.nav_illustrations ?? "Генерация иллюстраций", icon: "🔒" },
+    ...(isClassTeacher ? [{ key: "my-class", label: t.nav_my_class ?? "Мой класс", icon: "🏫" }] : []),
     ...(isClassTeacher ? [{ key: "analytics", label: t.nav_analytics, icon: "📊" }] : []),
     ...(isClassTeacher ? [{ key: "class-hours", label: t.nav_class_hours, icon: "🕐" }] : []),
     { key: "teacher-modo", label: t.nav_bbjm, icon: "📑" },
@@ -102,6 +103,9 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
       {section === "assignments" && <AssignmentsPanel token={token} language={language} t={t} />}
       {section === "lessons" && <OpenLessonsPanel token={token} language={language} t={t} isAdmin={false} />}
       {section === "my-ktp-ksp" && <TeacherKtpKspSection token={token} userId={user.id} language={language} t={t} />}
+      {section === "my-class" && isClassTeacher && (
+        <TeacherMyClassSection token={token} user={user} language={language} t={t} />
+      )}
       {section === "analytics" && isClassTeacher && (
         <TeacherAnalyticsSection token={token} user={user} language={language} t={t} />
       )}
@@ -354,13 +358,13 @@ function TeacherModoSection({ token, userId, language, t }: {
   useEffect(() => {
     if (tab !== "students" || loaded) return;
     setLoading(true);
-    api.getStudents(token)
+    api.getSchoolStudentsByGrades(token, [4, 9])
       .then(data => { setStudents(data); setLoaded(true); })
       .catch(() => setLoaded(true))
       .finally(() => setLoading(false));
   }, [tab, token, loaded]);
 
-  const modoStudents = students.filter(s => s.classroom.grade === 4 || s.classroom.grade === 9);
+  const modoStudents = students;
 
   const TABS: { key: ModoTab; label: string }[] = [
     { key: "students", label: t.teacher_final_students ?? "Список учеников" },
@@ -443,13 +447,13 @@ function TeacherFinalSection({ token, userId, language, t }: {
   useEffect(() => {
     if (tab !== "students" || loaded) return;
     setLoading(true);
-    api.getStudents(token)
+    api.getSchoolStudentsByGrades(token, [9, 11])
       .then(data => { setStudents(data); setLoaded(true); })
       .catch(() => setLoaded(true))
       .finally(() => setLoading(false));
   }, [tab, token, loaded]);
 
-  const finalStudents = students.filter(s => s.classroom.grade === 9 || s.classroom.grade === 11);
+  const finalStudents = students;
 
   const TABS: { key: FinalTab; label: string }[] = [
     { key: "students", label: t.teacher_final_students ?? "Список учеников" },
@@ -524,14 +528,61 @@ function TeacherGiftedSection({ token, userId, language, t, user }: {
   const [active, setActive] = useState<"achievements" | "workplan" | "my-students" | null>(null);
   const [classStudents, setClassStudents] = useState<StudentRow[]>([]);
   const [studentsLoaded, setStudentsLoaded] = useState(false);
+  const [studentSearch, setStudentSearch] = useState("");
+  const [giftedList, setGiftedList] = useState<GiftedAssignment[]>([]);
+  const [giftedLoaded, setGiftedLoaded] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [modalSearch, setModalSearch] = useState("");
+  const [modalStudents, setModalStudents] = useState<StudentRow[]>([]);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [addBusy, setAddBusy] = useState(false);
   const labels = fmLabels(t);
 
   useEffect(() => {
-    if (active !== "my-students" || studentsLoaded || !user.managedClassroomId) return;
-    api.getStudents(token, user.managedClassroomId)
+    if (active !== "my-students" || studentsLoaded) return;
+    api.getStudents(token)
       .then(data => { setClassStudents(data); setStudentsLoaded(true); })
       .catch(() => setStudentsLoaded(true));
-  }, [active, token, user.managedClassroomId, studentsLoaded]);
+  }, [active, token, studentsLoaded]);
+
+  useEffect(() => {
+    if (active !== "my-students" || giftedLoaded) return;
+    api.getMyGiftedStudents(token)
+      .then(data => { setGiftedList(data); setGiftedLoaded(true); })
+      .catch(() => setGiftedLoaded(true));
+  }, [active, token, giftedLoaded]);
+
+  useEffect(() => {
+    if (!showAddModal) return;
+    setModalLoading(true);
+    api.searchAllStudents(token, modalSearch || undefined)
+      .then(setModalStudents)
+      .catch(() => setModalStudents([]))
+      .finally(() => setModalLoading(false));
+  }, [showAddModal, modalSearch, token]);
+
+  const filteredClassStudents = classStudents.filter(s =>
+    s.fullName.toLowerCase().includes(studentSearch.toLowerCase())
+  );
+  const giftedStudentIds = new Set(giftedList.map(g => g.student?.id));
+
+  async function handleAddGifted(studentId: string) {
+    setAddBusy(true);
+    try {
+      const created = await api.addMyGiftedStudent(token, studentId);
+      const student = modalStudents.find(s => s.id === studentId);
+      if (student && created) {
+        setGiftedList(prev => [...prev, { id: (created as { id: string }).id, student }]);
+      }
+      setShowAddModal(false);
+      setModalSearch("");
+    } catch { /* ignore */ } finally { setAddBusy(false); }
+  }
+
+  async function handleRemoveGifted(assignmentId: string) {
+    await api.removeMyGiftedStudent(token, assignmentId);
+    setGiftedList(prev => prev.filter(g => g.id !== assignmentId));
+  }
 
   return (
     <div className="page">
@@ -549,58 +600,259 @@ function TeacherGiftedSection({ token, userId, language, t, user }: {
         >
           📋 {t.gifted_my_workplan ?? "Мой план работы"}
         </button>
-        {user.isClassTeacher && (
-          <button
-            className={`btn ${active === "my-students" ? "btn-primary" : "btn-outline"}`}
-            onClick={() => setActive(p => p === "my-students" ? null : "my-students")}
-          >
-            👩‍🎓 Мои ученики
-          </button>
-        )}
+        <button
+          className={`btn ${active === "my-students" ? "btn-primary" : "btn-outline"}`}
+          onClick={() => setActive(p => p === "my-students" ? null : "my-students")}
+        >
+          👩‍🎓 Мои ученики
+        </button>
       </div>
+
       {active === "achievements" && (
         <div className="card" style={{ marginTop: 0 }}>
           <FileManager token={token} section={`gifted-achievements-${userId}`} canEdit={true} canUpload={true} labels={labels} />
         </div>
       )}
+
       {active === "workplan" && (
         <div className="card" style={{ marginTop: 0 }}>
           <FileManager token={token} section={`gifted-workplan-${userId}`} canEdit={true} canUpload={true} labels={labels} />
         </div>
       )}
+
       {active === "my-students" && (
-        <div className="card" style={{ marginTop: 0 }}>
-          <h3 style={{ marginBottom: 12, fontSize: 15 }}>
-            Ученики класса{user.managedClassroomName ? ` — ${user.managedClassroomName}` : ""}
-          </h3>
-          {!studentsLoaded ? (
-            <p className="fm-empty">{t.loading}</p>
-          ) : classStudents.length === 0 ? (
-            <p className="fm-empty">{t.noData}</p>
-          ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>ФИО</th>
-                  <th>ИИН</th>
-                  <th>Дата рождения</th>
-                  <th>Родитель</th>
-                </tr>
-              </thead>
-              <tbody>
-                {classStudents.map((s, idx) => (
-                  <tr key={s.id}>
-                    <td style={{ color: "var(--muted)", width: 36 }}>{idx + 1}</td>
-                    <td className="table-name">{s.fullName}</td>
-                    <td style={{ fontFamily: "monospace", fontSize: 13 }}>{s.iin ?? "—"}</td>
-                    <td className="muted">{s.dateOfBirth ?? "—"}</td>
-                    <td className="muted">{s.parentName ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <>
+          {/* Class roster */}
+          <div className="card" style={{ marginTop: 0 }}>
+            <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <h3 style={{ margin: 0, fontSize: 15, flex: 1 }}>Мои ученики</h3>
+              <input
+                className="input" style={{ maxWidth: 220 }}
+                placeholder="🔍 Поиск по имени..."
+                value={studentSearch}
+                onChange={e => setStudentSearch(e.target.value)}
+              />
+              <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>
+                ⭐ Добавить одаренного ученика
+              </button>
+            </div>
+            {!studentsLoaded ? (
+              <p className="fm-empty">{t.loading}</p>
+            ) : filteredClassStudents.length === 0 ? (
+              <p className="fm-empty">{t.noData}</p>
+            ) : (
+              <table className="data-table">
+                <thead>
+                  <tr><th>#</th><th>ФИО</th><th>Класс</th><th>ИИН</th><th>Родитель</th><th></th></tr>
+                </thead>
+                <tbody>
+                  {filteredClassStudents.map((s, idx) => (
+                    <tr key={s.id}>
+                      <td style={{ color: "var(--muted)", width: 36 }}>{idx + 1}</td>
+                      <td className="table-name">{s.fullName}</td>
+                      <td className="muted">{s.classroom.name}</td>
+                      <td style={{ fontFamily: "monospace", fontSize: 13 }}>{s.iin ?? "—"}</td>
+                      <td className="muted">{s.parentName ?? "—"}</td>
+                      <td>{giftedStudentIds.has(s.id) && <span title="Одарённый">⭐</span>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* Gifted assignments list */}
+          {giftedList.length > 0 && (
+            <div className="card">
+              <h3 style={{ marginBottom: 12, fontSize: 15 }}>Мои одарённые ученики</h3>
+              <table className="data-table">
+                <thead><tr><th>#</th><th>ФИО</th><th>Класс</th><th></th></tr></thead>
+                <tbody>
+                  {giftedList.map((g, idx) => (
+                    <tr key={g.id}>
+                      <td style={{ color: "var(--muted)", width: 36 }}>{idx + 1}</td>
+                      <td className="table-name">⭐ {g.student?.fullName ?? "—"}</td>
+                      <td className="muted">{g.student?.classroom?.name ?? "—"}</td>
+                      <td>
+                        <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }}
+                          onClick={() => handleRemoveGifted(g.id)}>🗑</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
+        </>
+      )}
+
+      {/* Add gifted student modal */}
+      {showAddModal && (
+        <div className="modal-overlay" onClick={() => { setShowAddModal(false); setModalSearch(""); }}>
+          <div className="modal-card" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ marginBottom: 12 }}>Добавить одаренного ученика</h3>
+            <input
+              className="input" style={{ marginBottom: 12 }}
+              placeholder="🔍 Поиск по имени..."
+              value={modalSearch}
+              onChange={e => setModalSearch(e.target.value)}
+              autoFocus
+            />
+            {modalLoading ? (
+              <p className="fm-empty">{t.loading}</p>
+            ) : modalStudents.length === 0 ? (
+              <p className="fm-empty">{t.noData}</p>
+            ) : (
+              <div style={{ maxHeight: 320, overflowY: "auto" }}>
+                <table className="data-table">
+                  <thead><tr><th>ФИО</th><th>Класс</th><th></th></tr></thead>
+                  <tbody>
+                    {modalStudents.map(s => (
+                      <tr key={s.id}>
+                        <td className="table-name">{s.fullName}</td>
+                        <td className="muted">{s.classroom.name}</td>
+                        <td>
+                          {giftedStudentIds.has(s.id) ? (
+                            <span style={{ color: "var(--muted)", fontSize: 12 }}>⭐ Уже добавлен</span>
+                          ) : (
+                            <button className="btn btn-primary btn-sm" disabled={addBusy}
+                              onClick={() => handleAddGifted(s.id)}>
+                              + Добавить
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div style={{ marginTop: 12, textAlign: "right" }}>
+              <button className="btn btn-ghost btn-sm" onClick={() => { setShowAddModal(false); setModalSearch(""); }}>
+                {t.cancel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Мой класс (только для классного руководителя) ────────────────────────────
+function TeacherMyClassSection({ token, user, language: _language, t }: {
+  token: string; user: AuthUser; language: Language; t: Record<string, string>;
+}) {
+  const [info, setInfo] = useState<ClassroomFullInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    if (!user.managedClassroomId) { setLoading(false); return; }
+    api.getClassroomFullInfo(token, user.managedClassroomId)
+      .then(setInfo)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [token, user.managedClassroomId]);
+
+  function exportCsv() {
+    if (!info) return;
+    const BOM = "﻿";
+    const headers = ["№", "ФИО", "ИИН", "Родитель", "Контакт"];
+    const rows = info.students.map((s, idx) =>
+      [String(idx + 1), s.fullName, s.iin ?? "", s.parentName ?? "", s.parentContact ?? ""]
+        .map(v => `"${v.replace(/"/g, '""')}"`).join(",")
+    );
+    const csv = BOM + [headers.join(","), ...rows].join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `class-${info.name}-students.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  if (!user.managedClassroomId) {
+    return (
+      <div className="page">
+        <h1 className="page-title">🏫 {t.nav_my_class ?? "Мой класс"}</h1>
+        <div className="card"><p className="fm-empty">Вы не являетесь классным руководителем.</p></div>
+      </div>
+    );
+  }
+  if (loading) return <div className="page"><h1 className="page-title">🏫 {t.nav_my_class ?? "Мой класс"}</h1><div className="card"><p className="fm-empty">{t.loading}</p></div></div>;
+  if (!info) return <div className="page"><h1 className="page-title">🏫 {t.nav_my_class ?? "Мой класс"}</h1><div className="card"><p className="fm-empty">{t.noData}</p></div></div>;
+
+  const filtered = info.students.filter(s =>
+    s.fullName.toLowerCase().includes(search.toLowerCase()) ||
+    (s.iin ?? "").includes(search)
+  );
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <h1 className="page-title">🏫 {info.name} — {info.grade} класс</h1>
+        <button className="btn btn-outline btn-sm" onClick={exportCsv}>📊 Экспорт CSV</button>
+      </div>
+
+      <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+        <div className="card" style={{ flex: "0 0 auto", padding: "12px 24px", textAlign: "center" }}>
+          <div style={{ fontSize: 28, fontWeight: 700, color: "var(--primary)" }}>{info.statistics.total}</div>
+          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>Учеников</div>
+        </div>
+        {info.classTeacher && (
+          <div className="card" style={{ flex: "0 0 auto", padding: "12px 16px" }}>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 2 }}>Классный руководитель</div>
+            <div style={{ fontWeight: 600 }}>{info.classTeacher.fullName}</div>
+          </div>
+        )}
+        {info.academicYear && (
+          <div className="card" style={{ flex: "0 0 auto", padding: "12px 16px" }}>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 2 }}>Учебный год</div>
+            <div style={{ fontWeight: 600 }}>{info.academicYear}</div>
+          </div>
+        )}
+      </div>
+
+      <div className="card" style={{ marginTop: 0 }}>
+        <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
+          <h3 style={{ margin: 0, fontSize: 15, flex: 1 }}>Список учеников</h3>
+          <input className="input" style={{ maxWidth: 240 }} placeholder="🔍 Поиск..."
+            value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        {filtered.length === 0 ? <p className="fm-empty">{t.noData}</p> : (
+          <table className="data-table">
+            <thead>
+              <tr><th>#</th><th>ФИО</th><th>ИИН</th><th>Родитель</th><th>Контакт</th></tr>
+            </thead>
+            <tbody>
+              {filtered.map((s, idx) => (
+                <tr key={s.id}>
+                  <td style={{ color: "var(--muted)", width: 36 }}>{idx + 1}</td>
+                  <td className="table-name">{s.fullName}</td>
+                  <td style={{ fontFamily: "monospace", fontSize: 13 }}>{s.iin ?? "—"}</td>
+                  <td className="muted">{s.parentName ?? "—"}</td>
+                  <td className="muted">{s.parentContact ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {info.subjectTeachers.length > 0 && (
+        <div className="card">
+          <h3 style={{ marginBottom: 12, fontSize: 15 }}>Учителя-предметники</h3>
+          <table className="data-table">
+            <thead><tr><th>Предмет</th><th>Учитель</th></tr></thead>
+            <tbody>
+              {info.subjectTeachers.map(st => (
+                <tr key={st.id}>
+                  <td style={{ fontWeight: 500 }}>{st.subject}</td>
+                  <td>{st.teacher.fullName}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

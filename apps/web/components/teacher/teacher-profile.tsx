@@ -4,12 +4,13 @@ import { api, AuthUser, StudentRow } from "../../lib/api";
 import { Language } from "../../lib/translations";
 
 const CATEGORY_LABELS: Record<string, string> = {
-  "": "Не указана / Жоқ",
-  "Вторая": "Екінші / Вторая",
-  "Первая": "Бірінші / Первая",
-  "Высшая": "Жоғары / Высшая",
-  "Педагог-исследователь": "Педагог-зерттеуші / Педагог-исследователь",
-  "Педагог-мастер": "Педагог-шебер / Педагог-мастер",
+  "": "Не указана",
+  "stazher": "Педагог-стажер",
+  "pedagog": "Педагог",
+  "moderator": "Педагог-модератор",
+  "expert": "Педагог-эксперт",
+  "researcher": "Педагог-исследователь",
+  "master": "Педагог-мастер",
 };
 
 export function TeacherProfile({ token, user, language, t }: { token: string; user: AuthUser; language: Language; t: Record<string, string> }) {

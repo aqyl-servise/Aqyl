@@ -1,11 +1,12 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { In, Repository } from "typeorm";
 import { Student } from "../schools/entities/student.entity";
 import { Classroom } from "../schools/entities/classroom.entity";
 import { Teacher } from "../teachers/entities/teacher.entity";
 import { StudentTransfer } from "../schools/entities/student-transfer.entity";
 import { FinalAttestationStudent } from "../schools/entities/final-attestation-student.entity";
+import { SubjectTeacherAssignment } from "../schools/entities/subject-teacher-assignment.entity";
 
 export interface CreateStudentDto {
   fullName: string;
@@ -25,7 +26,21 @@ export class StudentsService {
     @InjectRepository(Teacher) private readonly teacherRepo: Repository<Teacher>,
     @InjectRepository(StudentTransfer) private readonly transferRepo: Repository<StudentTransfer>,
     @InjectRepository(FinalAttestationStudent) private readonly attestationRepo: Repository<FinalAttestationStudent>,
+    @InjectRepository(SubjectTeacherAssignment) private readonly subjectTeacherAssignRepo: Repository<SubjectTeacherAssignment>,
   ) {}
+
+  private async getTeacherClassroomIds(teacherId: string): Promise<string[]> {
+    const [direct, asClassTeacher, asSub] = await Promise.all([
+      this.classroomRepo.find({ where: { teacher: { id: teacherId } }, select: ["id"] }),
+      this.classroomRepo.find({ where: { classTeacher: { id: teacherId } }, select: ["id"] }),
+      this.subjectTeacherAssignRepo.find({ where: { teacherId }, select: ["classroomId"] }),
+    ]);
+    return [...new Set([
+      ...direct.map((c) => c.id),
+      ...asClassTeacher.map((c) => c.id),
+      ...asSub.map((a) => a.classroomId),
+    ])];
+  }
 
   private async maybeCreateAttestation(fullName: string, grade: number, iin?: string, parentName?: string, schoolId?: string) {
     if (grade !== 9 && grade !== 11) return;
@@ -52,14 +67,32 @@ export class StudentsService {
     });
   }
 
-  findByTeacher(teacherId: string, classroomId?: string) {
+  async findByTeacher(teacherId: string, classroomId?: string) {
+    if (classroomId) {
+      return this.studentRepo.find({
+        where: { classroom: { id: classroomId } },
+        relations: ["classroom", "classTeacher"],
+        order: { fullName: "ASC" },
+      });
+    }
+    const classroomIds = await this.getTeacherClassroomIds(teacherId);
+    if (classroomIds.length === 0) return [];
     return this.studentRepo.find({
-      where: {
-        ...(classroomId ? { classroom: { id: classroomId } } : { classroom: { teacher: { id: teacherId } } }),
-      },
+      where: { classroom: { id: In(classroomIds) } },
       relations: ["classroom", "classTeacher"],
       order: { fullName: "ASC" },
     });
+  }
+
+  findAllBySchoolAndGrades(schoolId: string, grades: number[]) {
+    return this.studentRepo
+      .createQueryBuilder("s")
+      .leftJoinAndSelect("s.classroom", "classroom")
+      .leftJoinAndSelect("s.classTeacher", "ct")
+      .where("classroom.schoolId = :schoolId", { schoolId })
+      .andWhere("classroom.grade IN (:...grades)", { grades })
+      .orderBy("s.fullName", "ASC")
+      .getMany();
   }
 
   getClassrooms(schoolId?: string | null) {
@@ -71,9 +104,11 @@ export class StudentsService {
     });
   }
 
-  getTeacherClassrooms(teacherId: string) {
+  async getTeacherClassrooms(teacherId: string) {
+    const classroomIds = await this.getTeacherClassroomIds(teacherId);
+    if (classroomIds.length === 0) return [];
     return this.classroomRepo.find({
-      where: { teacher: { id: teacherId } },
+      where: { id: In(classroomIds) },
       relations: ["classTeacher"],
       order: { grade: "ASC", name: "ASC" },
     });

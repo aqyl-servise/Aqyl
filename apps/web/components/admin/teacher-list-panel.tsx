@@ -7,11 +7,12 @@ import { FileManager } from "../ui/file-manager";
 type Teacher = Awaited<ReturnType<typeof api.getAdminTeachers>>[number];
 
 const CATEGORY_LABELS: Record<string, string> = {
-  "Вторая": "Вторая категория",
-  "Первая": "Первая категория",
-  "Высшая": "Высшая категория",
-  "Педагог-исследователь": "Педагог-исследователь",
-  "Педагог-мастер": "Педагог-мастер",
+  "stazher": "Педагог-стажер",
+  "pedagog": "Педагог",
+  "moderator": "Педагог-модератор",
+  "expert": "Педагог-эксперт",
+  "researcher": "Педагог-исследователь",
+  "master": "Педагог-мастер",
 };
 
 export function TeacherListPanel({ token, language, t }: { token: string; language: Language; t: Record<string, string> }) {

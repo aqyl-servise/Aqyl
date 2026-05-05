@@ -237,6 +237,29 @@ export class GiftedService {
     return { ok: true };
   }
 
+  // ── Teacher-owned gifted management ────────────────────────────────
+  async getMyGiftedStudents(teacherId: string) {
+    return this.assignmentRepo
+      .createQueryBuilder("ta")
+      .leftJoinAndSelect("ta.student", "student")
+      .leftJoinAndSelect("student.classroom", "classroom")
+      .where("ta.teacher = :teacherId", { teacherId })
+      .orderBy("student.fullName", "ASC")
+      .getMany();
+  }
+
+  async addMyGiftedStudent(teacherId: string, studentId: string) {
+    await this.markGifted(studentId);
+    return this.addTeacherAssignment(teacherId, studentId);
+  }
+
+  async removeMyGiftedStudent(assignmentId: string, teacherId: string) {
+    const a = await this.assignmentRepo.findOne({ where: { id: assignmentId, teacher: { id: teacherId } } });
+    if (!a) return { ok: false };
+    await this.assignmentRepo.delete(assignmentId);
+    return { ok: true };
+  }
+
   // ── Search all students (for add-gifted modal) ─────────────────────
   async searchStudents(q?: string) {
     const qb = this.studentRepo

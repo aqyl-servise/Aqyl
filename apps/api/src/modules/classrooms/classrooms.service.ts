@@ -172,6 +172,45 @@ export class ClassroomsService {
     return { transferred: students.length };
   }
 
+  async getFullInfo(classroomId: string) {
+    const classroom = await this.classroomRepo.findOne({
+      where: { id: classroomId },
+      relations: ["classTeacher", "students"],
+    });
+    if (!classroom) return null;
+
+    const subjectTeachers = await this.subjectTeacherRepo.find({
+      where: { classroomId },
+      relations: ["teacher"],
+      order: { subject: "ASC" },
+    });
+
+    const students = (classroom.students ?? []).sort((a, b) => a.fullName.localeCompare(b.fullName, "ru"));
+
+    return {
+      id: classroom.id,
+      name: classroom.name,
+      grade: classroom.grade,
+      academicYear: classroom.academicYear,
+      classTeacher: classroom.classTeacher
+        ? { id: classroom.classTeacher.id, fullName: classroom.classTeacher.fullName }
+        : null,
+      students: students.map((s) => ({
+        id: s.id,
+        fullName: s.fullName,
+        iin: s.iin,
+        parentName: s.parentName,
+        parentContact: s.parentContact,
+      })),
+      subjectTeachers: subjectTeachers.map((st) => ({
+        id: st.id,
+        subject: st.subject,
+        teacher: { id: st.teacher.id, fullName: st.teacher.fullName },
+      })),
+      statistics: { total: students.length },
+    };
+  }
+
   getClassTeachers(schoolId?: string | null) {
     if (schoolId) {
       return this.teacherRepo.find({
