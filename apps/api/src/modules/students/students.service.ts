@@ -97,8 +97,16 @@ export class StudentsService {
 
   async findAllByTeacherSchoolAndGrades(teacherId: string, grades: number[]) {
     const teacher = await this.teacherRepo.findOne({ where: { id: teacherId } });
-    if (!teacher?.schoolId) return [];
-    return this.findAllBySchoolAndGrades(teacher.schoolId, grades);
+    let schoolId = teacher?.schoolId;
+    if (!schoolId) {
+      const assignment = await this.subjectTeacherAssignRepo.findOne({
+        where: { teacherId },
+        relations: ["classroom"],
+      });
+      schoolId = assignment?.classroom?.schoolId ?? undefined;
+    }
+    if (!schoolId) return [];
+    return this.findAllBySchoolAndGrades(schoolId, grades);
   }
 
   getClassrooms(schoolId?: string | null) {

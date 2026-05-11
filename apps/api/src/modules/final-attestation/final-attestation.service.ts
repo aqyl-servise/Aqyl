@@ -26,10 +26,10 @@ export class FinalAttestationService {
   findAll(grade: number, schoolId?: string | null) {
     const qb = this.studentRepo
       .createQueryBuilder("s")
-      .leftJoinAndSelect("s.classroom", "classroom")
-      .where("classroom.grade = :grade", { grade });
+      .innerJoinAndSelect("s.classroom", "c")
+      .where("c.grade = :grade", { grade });
     if (schoolId) {
-      qb.andWhere("classroom.schoolId = :schoolId", { schoolId });
+      qb.andWhere("c.schoolId = :schoolId", { schoolId });
     }
     return qb.orderBy("s.fullName", "ASC").getMany();
   }

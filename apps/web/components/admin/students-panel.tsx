@@ -48,13 +48,15 @@ export function StudentsPanel({ token, language, t, userRole }: {
       api.getStudents(token),
       api.getClassroomsForDropdown(token),
       api.getClassTeachersForDropdown(token),
-      api.getUsers(token),
-    ]).then(([s, c, ct, users]) => {
+    ]).then(([s, c, ct]) => {
       setStudents(s as StudentRow[]);
       setClassrooms(c);
       setClassTeachers(ct);
-      setStudentUsers((users as UserOption[]).filter((u) => u.role === "student"));
     }).catch(console.error);
+
+    api.getUsers(token)
+      .then((users) => setStudentUsers((users as UserOption[]).filter((u) => u.role === "student")))
+      .catch(() => {});
   }, [token]);
 
   const filtered = students.filter((s) => {
