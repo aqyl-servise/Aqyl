@@ -237,7 +237,8 @@ const ru = {
   cr_subject_teachers: "Учителя-предметники",
   cr_add_subject_teacher: "Назначить учителя",
   cr_assign_subject: "Предмет",
-  nav_sor_soch: "СОР/СОЧ",\n  nav_my_class: "Мой класс",
+  nav_sor_soch: "СОР/СОЧ",
+  nav_my_class: "Мой класс",
 };
 
 type TranslationShape = typeof ru;
@@ -459,7 +460,8 @@ const kz: TranslationShape = {
   cr_subject_teachers: "Пән мұғалімдері",
   cr_add_subject_teacher: "Мұғалімді тағайындау",
   cr_assign_subject: "Пән",
-  nav_sor_soch: "БЖБ/ТЖБ",\n  nav_my_class: "Менің сыныбым",
+  nav_sor_soch: "БЖБ/ТЖБ",
+  nav_my_class: "Менің сыныбым",
 };
 
 const en: TranslationShape = {
@@ -679,7 +681,8 @@ const en: TranslationShape = {
   cr_subject_teachers: "Subject Teachers",
   cr_add_subject_teacher: "Assign Teacher",
   cr_assign_subject: "Subject",
-  nav_sor_soch: "SOR/SOCH",\n  nav_my_class: "My Class",
+  nav_sor_soch: "SOR/SOCH",
+  nav_my_class: "My Class",
 };
 
 export const translations: Record<Language, TranslationShape> = { ru, kz, en };
