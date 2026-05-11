@@ -390,10 +390,10 @@ function TeacherModoSection({ token, userId, language, t }: {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>{t.name}</th>
-                  <th>{t.nav_classrooms}</th>
-                  <th>{t.grade ?? "Класс"}</th>
+                  <th>№</th>
+                  <th>ФИО</th>
+                  <th>Класс</th>
+                  <th>Параллель</th>
                 </tr>
               </thead>
               <tbody>
@@ -402,7 +402,7 @@ function TeacherModoSection({ token, userId, language, t }: {
                     <td style={{ color: "var(--muted)", width: 40 }}>{idx + 1}</td>
                     <td>{s.fullName}</td>
                     <td>{s.classroom.name}</td>
-                    <td>{s.classroom.grade}</td>
+                    <td>{s.classroom.grade} класс</td>
                   </tr>
                 ))}
               </tbody>
@@ -434,26 +434,25 @@ function TeacherModoSection({ token, userId, language, t }: {
 
 // ── Итоговая аттестация ───────────────────────────────────────────────────────
 type FinalTab = "students" | "materials" | "monitoring";
+type FinalGrade = 9 | 11;
 
 function TeacherFinalSection({ token, userId, language, t }: {
   token: string; userId: string; language: Language; t: Record<string, string>;
 }) {
   const [tab, setTab] = useState<FinalTab>("students");
+  const [grade, setGrade] = useState<FinalGrade>(9);
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [loaded, setLoaded] = useState(false);
   const labels = fmLabels(t);
 
   useEffect(() => {
-    if (tab !== "students" || loaded) return;
+    if (tab !== "students") return;
     setLoading(true);
-    api.getSchoolStudentsByGrades(token, [9, 11])
-      .then(data => { setStudents(data); setLoaded(true); })
-      .catch(() => setLoaded(true))
+    api.getFinalStudents(token, grade)
+      .then(setStudents)
+      .catch(() => setStudents([]))
       .finally(() => setLoading(false));
-  }, [tab, token, loaded]);
-
-  const finalStudents = students;
+  }, [tab, grade, token]);
 
   const TABS: { key: FinalTab; label: string }[] = [
     { key: "students", label: t.teacher_final_students ?? "Список учеников" },
@@ -473,30 +472,47 @@ function TeacherFinalSection({ token, userId, language, t }: {
       </div>
       <div className="card" style={{ marginTop: 0 }}>
         {tab === "students" && (
-          loading ? (
-            <p className="fm-empty">{t.loading}</p>
-          ) : finalStudents.length === 0 ? (
-            <p className="fm-empty">{loaded ? t.noData : t.loading}</p>
-          ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>{t.name}</th>
-                  <th>{t.nav_classrooms}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {finalStudents.map((s, idx) => (
-                  <tr key={s.id}>
-                    <td style={{ color: "var(--muted)", width: 40 }}>{idx + 1}</td>
-                    <td>{s.fullName}</td>
-                    <td>{s.classroom.name}</td>
+          <>
+            <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+              {([9, 11] as FinalGrade[]).map((g) => (
+                <button
+                  key={g}
+                  className={`btn btn-sm ${grade === g ? "btn-primary" : "btn-outline"}`}
+                  onClick={() => setGrade(g)}
+                >
+                  {g} класс
+                </button>
+              ))}
+            </div>
+            {loading ? (
+              <p className="fm-empty">{t.loading}</p>
+            ) : students.length === 0 ? (
+              <p className="fm-empty">{t.noData}</p>
+            ) : (
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>№</th>
+                    <th>ФИО</th>
+                    <th>Класс</th>
+                    <th>ИИН</th>
+                    <th>ФИО родителей</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )
+                </thead>
+                <tbody>
+                  {students.map((s, idx) => (
+                    <tr key={s.id}>
+                      <td style={{ color: "var(--muted)", width: 40 }}>{idx + 1}</td>
+                      <td>{s.fullName}</td>
+                      <td>{s.classroom.name}</td>
+                      <td style={{ fontFamily: "monospace", fontSize: 13 }}>{s.iin ?? "—"}</td>
+                      <td>{s.parentName ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </>
         )}
         {tab === "materials" && (
           <FileManager
