@@ -3,15 +3,15 @@ import { FormEvent, useEffect, useState } from "react";
 import { api, AuthUser, StudentRow } from "../../lib/api";
 import { Language } from "../../lib/translations";
 
-const CATEGORY_LABELS: Record<string, string> = {
-  "": "Не указана",
-  "stazher": "Педагог-стажер",
-  "pedagog": "Педагог",
-  "moderator": "Педагог-модератор",
-  "expert": "Педагог-эксперт",
-  "researcher": "Педагог-исследователь",
-  "master": "Педагог-мастер",
-};
+const CATEGORIES = [
+  { value: "", key: "attest_category_none" },
+  { value: "stazher", key: "attest_category_second" },
+  { value: "pedagog", key: "attest_category_first" },
+  { value: "moderator", key: "attest_category_highest" },
+  { value: "expert", key: "attest_category_expert" },
+  { value: "researcher", key: "attest_category_researcher" },
+  { value: "master", key: "attest_category_master" },
+];
 
 export function TeacherProfile({ token, user, language, t }: { token: string; user: AuthUser; language: Language; t: Record<string, string> }) {
   const [saved, setSaved] = useState(false);
@@ -74,8 +74,8 @@ export function TeacherProfile({ token, user, language, t }: { token: string; us
             <div className="field">
               <label className="field-label">{t.category}</label>
               <select name="category" className="input">
-                {Object.entries(CATEGORY_LABELS).map(([val, lbl]) => (
-                  <option key={val} value={val}>{lbl}</option>
+                {CATEGORIES.map(({ value, key }) => (
+                  <option key={value} value={value}>{t[key] ?? key}</option>
                 ))}
               </select>
             </div>

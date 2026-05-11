@@ -6,13 +6,13 @@ import { FileManager } from "../ui/file-manager";
 
 type Teacher = Awaited<ReturnType<typeof api.getAdminTeachers>>[number];
 
-const CATEGORY_LABELS: Record<string, string> = {
-  "stazher": "Педагог-стажер",
-  "pedagog": "Педагог",
-  "moderator": "Педагог-модератор",
-  "expert": "Педагог-эксперт",
-  "researcher": "Педагог-исследователь",
-  "master": "Педагог-мастер",
+const CATEGORY_KEYS: Record<string, string> = {
+  "stazher": "attest_category_second",
+  "pedagog": "attest_category_first",
+  "moderator": "attest_category_highest",
+  "expert": "attest_category_expert",
+  "researcher": "attest_category_researcher",
+  "master": "attest_category_master",
 };
 
 export function TeacherListPanel({ token, language, t }: { token: string; language: Language; t: Record<string, string> }) {
@@ -53,7 +53,7 @@ export function TeacherListPanel({ token, language, t }: { token: string; langua
                   </td>
                   <td>{tc.subject ?? "—"}</td>
                   <td>{tc.experience != null ? `${tc.experience} л.` : "—"}</td>
-                  <td>{tc.category ? (CATEGORY_LABELS[tc.category] ?? tc.category) : "—"}</td>
+                  <td>{tc.category ? (t[CATEGORY_KEYS[tc.category]] ?? tc.category) : "—"}</td>
                   <td>{tc.classCount}</td>
                   <td>{tc.studentCount}</td>
                   <td>
@@ -118,7 +118,7 @@ function TeacherProfileModal({ teacher, token, t, onClose }: {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 24px" }}>
               <InfoRow label="Предмет" value={teacher.subject} />
               <InfoRow label="Стаж" value={teacher.experience != null ? `${teacher.experience} лет` : undefined} />
-              <InfoRow label="Категория" value={teacher.category ? (CATEGORY_LABELS[teacher.category] ?? teacher.category) : undefined} />
+              <InfoRow label="Категория" value={teacher.category ? (t[CATEGORY_KEYS[teacher.category]] ?? teacher.category) : undefined} />
               <InfoRow label="Классов" value={String(teacher.classCount)} />
               <InfoRow label="Учеников" value={String(teacher.studentCount)} />
               <InfoRow label="Документов" value={String(teacher.docCount)} />
