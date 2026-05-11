@@ -13,10 +13,14 @@ type PendingUser = {
   status: string;
 };
 
+type SchoolOption = { id: string; name: string };
+
 const ROLE_LABELS: Record<string, string> = {
   teacher: "Учитель", class_teacher: "Классный руководитель",
   vice_principal: "Завуч", principal: "Директор", student: "Ученик",
 };
+
+const SCHOOL_ROLES = new Set(["teacher", "principal", "vice_principal", "class_teacher"]);
 
 export function RegistrationsPanel({ token, language, t }: {
   token: string; language: Language; t: Record<string, string>;
@@ -24,17 +28,25 @@ export function RegistrationsPanel({ token, language, t }: {
   const [users, setUsers] = useState<PendingUser[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [tab, setTab] = useState<"pending" | "all">("pending");
+  const [schools, setSchools] = useState<SchoolOption[]>([]);
+  const [selectedSchools, setSelectedSchools] = useState<Record<string, string>>({});
 
   useEffect(() => {
     api.getPendingRegistrations(token).then(setUsers).catch(console.error);
+    api.getSchools(token).then(setSchools).catch(console.error);
   }, [token]);
 
   const filtered = tab === "pending" ? users.filter((u) => u.status === "pending") : users;
 
-  async function handleApprove(id: string) {
+  async function handleApprove(id: string, role: string) {
+    const schoolId = selectedSchools[id];
+    if (SCHOOL_ROLES.has(role) && !schoolId) {
+      const confirmed = window.confirm("Школа не выбрана. Одобрить без привязки к школе?");
+      if (!confirmed) return;
+    }
     setBusy(id);
     try {
-      await api.approveRegistration(token, id);
+      await api.approveRegistration(token, id, schoolId || undefined);
       setUsers((prev) => prev.map((u) => u.id === id ? { ...u, status: "active" } : u));
     } finally { setBusy(null); }
   }
@@ -104,22 +116,37 @@ export function RegistrationsPanel({ token, language, t }: {
                   </td>
                   <td>
                     {u.status === "pending" && (
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <button
-                          className="btn btn-primary btn-sm"
-                          disabled={busy === u.id}
-                          onClick={() => handleApprove(u.id)}
-                        >
-                          {busy === u.id ? <span className="spinner" /> : "✓ " + t.approve}
-                        </button>
-                        <button
-                          className="btn btn-ghost btn-sm"
-                          style={{ color: "var(--danger)" }}
-                          disabled={busy === u.id}
-                          onClick={() => handleReject(u.id)}
-                        >
-                          ✕ {t.reject}
-                        </button>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 200 }}>
+                        {SCHOOL_ROLES.has(u.role) && schools.length > 0 && (
+                          <select
+                            className="input"
+                            style={{ fontSize: 12, padding: "4px 8px" }}
+                            value={selectedSchools[u.id] ?? ""}
+                            onChange={e => setSelectedSchools(prev => ({ ...prev, [u.id]: e.target.value }))}
+                          >
+                            <option value="">— выберите школу —</option>
+                            {schools.map(s => (
+                              <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                          </select>
+                        )}
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            disabled={busy === u.id}
+                            onClick={() => handleApprove(u.id, u.role)}
+                          >
+                            {busy === u.id ? <span className="spinner" /> : "✓ " + t.approve}
+                          </button>
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            style={{ color: "var(--danger)" }}
+                            disabled={busy === u.id}
+                            onClick={() => handleReject(u.id)}
+                          >
+                            ✕ {t.reject}
+                          </button>
+                        </div>
                       </div>
                     )}
                   </td>

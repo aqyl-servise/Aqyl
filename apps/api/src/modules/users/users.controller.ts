@@ -4,6 +4,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { TeachersService } from "../teachers/teachers.service";
+import { SchoolsService } from "../schools/schools.service";
 import { UserRole } from "../teachers/entities/teacher.entity";
 
 interface ReqUser { user: { id: string; role: string; schoolId?: string | null } }
@@ -11,7 +12,10 @@ interface ReqUser { user: { id: string; role: string; schoolId?: string | null }
 @Controller("users")
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
-  constructor(private readonly teachersService: TeachersService) {}
+  constructor(
+    private readonly teachersService: TeachersService,
+    private readonly schoolsService: SchoolsService,
+  ) {}
 
   @Get()
   @Roles("admin", "principal")
@@ -55,19 +59,28 @@ export class UsersController {
 
   @Patch(":id")
   @Roles("admin", "principal", "vice_principal")
-  update(
+  async update(
     @Param("id") id: string,
     @Body() body: Partial<{
       fullName: string; role: UserRole; subject: string; experience: number;
       category: string; university: string; phone: string;
       isClassTeacher: boolean; managedClassroomId: string | null; managedClassroomName: string | null;
+      schoolId: string | null;
     }>,
   ) {
     const data: Record<string, unknown> = { ...body };
-    // When removing class teacher flag, clear classroom fields too
     if (body.isClassTeacher === false) {
       data.managedClassroomId = null;
       data.managedClassroomName = null;
+    }
+    if ("schoolId" in body) {
+      if (body.schoolId) {
+        const school = await this.schoolsService.findById(body.schoolId);
+        data.schoolName = school?.name ?? null;
+      } else {
+        data.schoolId = null;
+        data.schoolName = null;
+      }
     }
     return this.teachersService.updateProfile(id, data);
   }

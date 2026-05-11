@@ -239,8 +239,8 @@ export const api = {
   // Registrations (admin only)
   getPendingRegistrations: (token: string) =>
     request<PendingUser[]>("/admin/registrations", undefined, token),
-  approveRegistration: (token: string, id: string) =>
-    request<PendingUser>(`/admin/registrations/${id}/approve`, { method: "PATCH" }, token),
+  approveRegistration: (token: string, id: string, schoolId?: string) =>
+    request<PendingUser>(`/admin/registrations/${id}/approve`, { method: "PATCH", body: JSON.stringify({ schoolId }) }, token),
   rejectRegistration: (token: string, id: string) =>
     request<PendingUser>(`/admin/registrations/${id}/reject`, { method: "PATCH" }, token),
 

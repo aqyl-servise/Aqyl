@@ -10,6 +10,10 @@ const ROLE_LABELS: Record<UserRole, string> = {
   vice_principal: "Завуч", class_teacher: "Классный руководитель", student: "Ученик",
 };
 
+const SCHOOL_ROLES: UserRole[] = ["teacher", "principal", "vice_principal", "class_teacher"];
+
+type SchoolOption = { id: string; name: string };
+
 type ConfirmModal =
   | { kind: "deactivate"; user: AuthUser }
   | { kind: "delete"; user: AuthUser };
@@ -29,6 +33,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
   const [busy, setBusy] = useState(false);
   const [actionBusy, setActionBusy] = useState<string | null>(null);
   const [classrooms, setClassrooms] = useState<ClassroomOption[]>([]);
+  const [schools, setSchools] = useState<SchoolOption[]>([]);
 
   function showToast(msg: string) {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -41,6 +46,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
   useEffect(() => {
     reload();
     api.getClassroomsForDropdown(token).then(setClassrooms).catch(console.error);
+    api.getSchools(token).then(setSchools).catch(console.error);
   }, [token]);
 
   const filtered = users.filter((u) => {
@@ -77,14 +83,19 @@ export function UsersPanel({ token, language, t, currentUserId }: {
     const chosenClassroom = managedClassroomId
       ? classrooms.find(c => c.id === managedClassroomId) ?? null
       : null;
+    const role = fd.get("role") as string;
+    const schoolId = SCHOOL_ROLES.includes(role as UserRole)
+      ? (fd.get("schoolId") as string || null)
+      : undefined;
     try {
       await api.updateUser(token, editing.id, {
         fullName: fd.get("fullName"),
-        role: fd.get("role"),
+        role,
         subject: fd.get("subject") || undefined,
         isClassTeacher,
         managedClassroomId,
         managedClassroomName: chosenClassroom?.name ?? null,
+        ...(schoolId !== undefined ? { schoolId } : {}),
       });
       await reload();
       setEditing(null);
@@ -183,6 +194,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
         <EditUserModal
           user={editing}
           classrooms={classrooms}
+          schools={schools}
           busy={busy}
           t={t}
           onSubmit={handleUpdate}
@@ -243,7 +255,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
         {filtered.length === 0 ? <p className="empty-state">{t.noData}</p> : (
           <table className="data-table">
             <thead>
-              <tr><th>ФИО</th><th>Email</th><th>Предмет</th><th>Роль</th><th>Статус</th><th></th></tr>
+              <tr><th>ФИО</th><th>Email</th><th>Предмет</th><th>Школа</th><th>Роль</th><th>Статус</th><th></th></tr>
             </thead>
             <tbody>
               {filtered.map((u) => (
@@ -251,6 +263,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
                   <td className="table-name">{u.fullName}</td>
                   <td className="muted">{u.email}</td>
                   <td>{u.subject ?? "—"}</td>
+                  <td className="muted" style={{ fontSize: 13 }}>{u.schoolName ?? "—"}</td>
                   <td>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
                       <span className={`role-chip role-${u.role}`}>{ROLE_LABELS[u.role]}</span>
@@ -342,8 +355,8 @@ export function UsersPanel({ token, language, t, currentUserId }: {
   );
 }
 
-function EditUserModal({ user, classrooms, busy, t, onSubmit, onClose }: {
-  user: AuthUser; classrooms: ClassroomOption[]; busy: boolean;
+function EditUserModal({ user, classrooms, schools, busy, t, onSubmit, onClose }: {
+  user: AuthUser; classrooms: ClassroomOption[]; schools: SchoolOption[]; busy: boolean;
   t: Record<string, string>;
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
   onClose: () => void;
@@ -372,6 +385,18 @@ function EditUserModal({ user, classrooms, busy, t, onSubmit, onClose }: {
               {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
             </select>
           </div>
+
+          {SCHOOL_ROLES.includes(selectedRole as UserRole) && schools.length > 0 && (
+            <div className="field">
+              <label className="field-label">Школа</label>
+              <select name="schoolId" className="input" defaultValue={user.schoolId ?? ""}>
+                <option value="">— не привязан —</option>
+                {schools.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {selectedRole === "teacher" && (
             <div style={{ background: "var(--surface-alt, #f8fafc)", borderRadius: 8, padding: "12px 14px", border: "1px solid var(--border, #e2e8f0)" }}>

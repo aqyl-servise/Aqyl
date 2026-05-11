@@ -9,6 +9,7 @@ import { Submission } from "../schools/entities/submission.entity";
 import { GeneratedDocument } from "../schools/entities/generated-document.entity";
 import { OpenLesson } from "../schools/entities/open-lesson.entity";
 import { Protocol } from "../schools/entities/protocol.entity";
+import { School } from "../schools/entities/school.entity";
 
 @Injectable()
 export class AdminService {
@@ -20,6 +21,7 @@ export class AdminService {
     @InjectRepository(GeneratedDocument) private readonly docRepo: Repository<GeneratedDocument>,
     @InjectRepository(OpenLesson) private readonly lessonRepo: Repository<OpenLesson>,
     @InjectRepository(Protocol) private readonly protocolRepo: Repository<Protocol>,
+    @InjectRepository(School) private readonly schoolRepo: Repository<School>,
   ) {}
 
   async getOverview(schoolId?: string | null) {
@@ -132,8 +134,14 @@ export class AdminService {
     return rows.map((t) => this.serializeTeacher(t));
   }
 
-  async approveRegistration(id: string) {
-    await this.teacherRepo.update(id, { status: "active" });
+  async approveRegistration(id: string, schoolId?: string) {
+    const update: Partial<Teacher> = { status: "active" };
+    if (schoolId) {
+      const school = await this.schoolRepo.findOne({ where: { id: schoolId } });
+      update.schoolId = schoolId;
+      update.schoolName = school?.name;
+    }
+    await this.teacherRepo.update(id, update);
     const t = await this.teacherRepo.findOne({ where: { id } });
     return t ? this.serializeTeacher(t) : null;
   }

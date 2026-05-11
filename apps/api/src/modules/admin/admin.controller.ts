@@ -35,8 +35,8 @@ export class AdminController {
 
   @Patch("registrations/:id/approve")
   @Roles("admin", "principal")
-  approveRegistration(@Param("id") id: string) {
-    return this.service.approveRegistration(id);
+  approveRegistration(@Param("id") id: string, @Body() body?: { schoolId?: string }) {
+    return this.service.approveRegistration(id, body?.schoolId);
   }
 
   @Patch("registrations/:id/reject")
