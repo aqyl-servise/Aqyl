@@ -23,11 +23,13 @@ type TeacherOption = { id: string; fullName: string };
 export function StudentsPanel({ token, language, t, userRole }: {
   token: string; language: Language; t: Record<string, string>; userRole?: string;
 }) {
+  const isTeacher = userRole === "teacher" || userRole === "class_teacher";
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [classrooms, setClassrooms] = useState<ClassroomOption[]>([]);
   const [classTeachers, setClassTeachers] = useState<TeacherOption[]>([]);
   const [search, setSearch] = useState("");
   const [filterClassroom, setFilterClassroom] = useState("");
+  const [classFilterMode, setClassFilterMode] = useState<"all" | "class">("all");
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<StudentRow | null>(null);
   const [transferring, setTransferring] = useState<StudentRow | null>(null);
@@ -177,13 +179,42 @@ export function StudentsPanel({ token, language, t, userRole }: {
       <div className="filter-row">
         <input className="input" style={{ maxWidth: 260 }} placeholder={`🔍 ${t.search}...`}
           value={search} onChange={(e) => setSearch(e.target.value)} />
-        <select className="input" style={{ maxWidth: 200 }} value={filterClassroom}
-          onChange={(e) => setFilterClassroom(e.target.value)}>
-          <option value="">{t.all} — {t.classroom}</option>
-          {classrooms.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
+        {isTeacher ? (
+          <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
+            <button
+              className={`btn btn-sm ${classFilterMode === "all" ? "btn-primary" : "btn-ghost"}`}
+              onClick={() => { setClassFilterMode("all"); setFilterClassroom(""); }}
+            >
+              {t.all ?? "Все"}
+            </button>
+            <button
+              className={`btn btn-sm ${classFilterMode === "class" ? "btn-primary" : "btn-ghost"}`}
+              onClick={() => setClassFilterMode("class")}
+            >
+              {t.classroom ?? "Класс"}
+            </button>
+            {classFilterMode === "class" && (
+              <select
+                className="input" style={{ maxWidth: 200 }}
+                value={filterClassroom}
+                onChange={(e) => setFilterClassroom(e.target.value)}
+              >
+                <option value="">{t.all ?? "Все классы"}</option>
+                {classrooms.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
+        ) : (
+          <select className="input" style={{ maxWidth: 200 }} value={filterClassroom}
+            onChange={(e) => setFilterClassroom(e.target.value)}>
+            <option value="">{t.all} — {t.classroom}</option>
+            {classrooms.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {adding && (

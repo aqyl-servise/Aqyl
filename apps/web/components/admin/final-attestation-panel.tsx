@@ -1,10 +1,10 @@
 "use client";
-import { FormEvent, useEffect, useState } from "react";
-import { api } from "../../lib/api";
+import { useEffect, useState } from "react";
+import { api, StudentRow } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 import { FileManager } from "../ui/file-manager";
 
-type FinalStudent = Awaited<ReturnType<typeof api.getFinalStudents>>[number];
+type FinalStudent = StudentRow;
 type TeacherItem = { id: string; fullName: string; subject?: string };
 type MainTab = 9 | 11 | "teachers";
 type TeacherView = { teacher: TeacherItem; mode: "materials" | "monitoring" } | null;
@@ -26,9 +26,9 @@ function fmLabels(t: Record<string, string>) {
 
 function exportCsv(students: FinalStudent[], grade: number) {
   const BOM = "﻿";
-  const headers = ["ФИО", "Предмет", "ИИН", "Email", "Телефон", "ФИО родителей"];
+  const headers = ["ФИО", "Класс", "ИИН", "ФИО родителей"];
   const rows = students.map((s) => [
-    s.fullName, s.subject ?? "", s.iin ?? "", s.email ?? "", s.phone ?? "", s.parentName ?? "",
+    s.fullName, s.classroom.name, s.iin ?? "", s.parentName ?? "",
   ].map((v) => `"${v.replace(/"/g, '""')}"`).join(","));
   const csv = BOM + [headers.join(","), ...rows].join("\r\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -47,7 +47,6 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
 
   const [tab, setTab] = useState<MainTab>(9);
 
-  // Student list state (per grade)
   const [students9, setStudents9] = useState<FinalStudent[]>([]);
   const [students11, setStudents11] = useState<FinalStudent[]>([]);
   const [loaded9, setLoaded9] = useState(false);
@@ -56,18 +55,12 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
   const [loading11, setLoading11] = useState(false);
 
   const [search, setSearch] = useState("");
-  const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState<FinalStudent | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<FinalStudent | null>(null);
-  const [busy, setBusy] = useState(false);
 
-  // Teacher database state
   const [teachers, setTeachers] = useState<TeacherItem[]>([]);
   const [teachersLoaded, setTeachersLoaded] = useState(false);
   const [teacherView, setTeacherView] = useState<TeacherView>(null);
   const [teacherSearch, setTeacherSearch] = useState("");
 
-  // Load grade 9 students on first open
   useEffect(() => {
     if (tab !== 9 || loaded9) return;
     setLoading9(true);
@@ -77,7 +70,6 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
       .finally(() => setLoading9(false));
   }, [tab, token, loaded9]);
 
-  // Load grade 11 students on first open
   useEffect(() => {
     if (tab !== 11 || loaded11) return;
     setLoading11(true);
@@ -87,7 +79,6 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
       .finally(() => setLoading11(false));
   }, [tab, token, loaded11]);
 
-  // Load teachers for teacher DB tab
   useEffect(() => {
     if (tab !== "teachers" || teachersLoaded) return;
     api.getAdminTeachers(token)
@@ -99,71 +90,17 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
   const students = currentGrade === 9 ? students9 : currentGrade === 11 ? students11 : [];
   const loading = currentGrade === 9 ? loading9 : loading11;
 
-  function setStudents(grade: 9 | 11, data: FinalStudent[]) {
-    if (grade === 9) setStudents9(data);
-    else setStudents11(data);
-  }
-
   const filtered = students.filter((s) =>
     s.fullName.toLowerCase().includes(search.toLowerCase()) ||
-    (s.iin ?? "").includes(search)
+    (s.iin ?? "").includes(search) ||
+    s.classroom.name.toLowerCase().includes(search.toLowerCase())
   );
-
-  function openAdd() { setEditing(null); setShowForm(true); }
-  function openEdit(s: FinalStudent) { setEditing(s); setShowForm(true); }
-  function closeForm() { setShowForm(false); setEditing(null); }
-
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!currentGrade) return;
-    setBusy(true);
-    try {
-      const fd = new FormData(e.currentTarget);
-      const data = {
-        grade: currentGrade as number,
-        fullName: String(fd.get("fullName") ?? "").trim(),
-        subject: String(fd.get("subject") ?? "").trim() || undefined,
-        iin: String(fd.get("iin") ?? "").trim() || undefined,
-        email: String(fd.get("email") ?? "").trim() || undefined,
-        phone: String(fd.get("phone") ?? "").trim() || undefined,
-        parentName: String(fd.get("parentName") ?? "").trim() || undefined,
-      };
-      if (editing) {
-        await api.updateFinalStudent(token, editing.id, data);
-      } else {
-        await api.createFinalStudent(token, data);
-      }
-      const fresh = await api.getFinalStudents(token, currentGrade as 9 | 11);
-      setStudents(currentGrade as 9 | 11, fresh);
-      closeForm();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleDelete() {
-    if (!deleteTarget || !currentGrade) return;
-    setBusy(true);
-    try {
-      await api.deleteFinalStudent(token, deleteTarget.id);
-      const fresh = await api.getFinalStudents(token, currentGrade as 9 | 11);
-      setStudents(currentGrade as 9 | 11, fresh);
-      setDeleteTarget(null);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setBusy(false);
-    }
-  }
 
   const filteredTeachers = teachers.filter((tc) =>
     tc.fullName.toLowerCase().includes(teacherSearch.toLowerCase()) ||
     (tc.subject ?? "").toLowerCase().includes(teacherSearch.toLowerCase())
   );
 
-  // Teacher file manager view
   if (teacherView) {
     const adminSection = teacherView.mode === "materials"
       ? `final-attestation-materials-${teacherView.teacher.id}`
@@ -205,17 +142,15 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
           <button
             key={String(key)}
             className={`sc-tab${tab === key ? " sc-tab-active" : ""}`}
-            onClick={() => { setTab(key); setSearch(""); setShowForm(false); setDeleteTarget(null); }}
+            onClick={() => { setTab(key); setSearch(""); }}
           >
             {key === 9 ? t.final_grade_9 : key === 11 ? t.final_grade_11 : t.final_teachers_db}
           </button>
         ))}
       </div>
 
-      {/* ── Grade tabs ── */}
       {(tab === 9 || tab === 11) && (
         <div className="card" style={{ marginTop: 0 }}>
-          {/* Toolbar */}
           <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
             <input
               className="input" style={{ maxWidth: 240 }}
@@ -223,7 +158,10 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+            <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>
+              Ученики добавляются автоматически из модуля «Ученики»
+            </p>
+            <div style={{ marginLeft: "auto" }}>
               <button
                 className="btn btn-outline btn-sm"
                 onClick={() => exportCsv(search ? filtered : students, tab as number)}
@@ -231,72 +169,9 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
               >
                 📊 {t.final_export_excel}
               </button>
-              {canEdit && (
-                <button className="btn btn-primary btn-sm" onClick={openAdd}>
-                  + {t.final_add_student}
-                </button>
-              )}
             </div>
           </div>
 
-          {/* Add/Edit form */}
-          {showForm && (
-            <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) closeForm(); }}>
-              <div className="modal">
-                <h2 className="modal-title">{editing ? t.final_edit_student : t.final_add_student}</h2>
-                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div>
-                    <label className="form-label">{t.name} *</label>
-                    <input name="fullName" className="input" required defaultValue={editing?.fullName ?? ""} placeholder="Фамилия Имя Отчество" />
-                  </div>
-                  <div>
-                    <label className="form-label">{t.final_subject}</label>
-                    <input name="subject" className="input" defaultValue={editing?.subject ?? ""} />
-                  </div>
-                  <div>
-                    <label className="form-label">{t.iin}</label>
-                    <input name="iin" className="input" defaultValue={editing?.iin ?? ""} maxLength={12} />
-                  </div>
-                  <div>
-                    <label className="form-label">Email</label>
-                    <input name="email" type="email" className="input" defaultValue={editing?.email ?? ""} />
-                  </div>
-                  <div>
-                    <label className="form-label">{t.final_phone}</label>
-                    <input name="phone" className="input" defaultValue={editing?.phone ?? ""} />
-                  </div>
-                  <div>
-                    <label className="form-label">{t.final_parent_name}</label>
-                    <input name="parentName" className="input" defaultValue={editing?.parentName ?? ""} />
-                  </div>
-                  <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                    <button type="submit" className="btn btn-primary" disabled={busy}>
-                      {busy ? t.loading : t.save}
-                    </button>
-                    <button type="button" className="btn btn-ghost" onClick={closeForm}>{t.cancel}</button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-
-          {/* Delete confirm */}
-          {deleteTarget && (
-            <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setDeleteTarget(null); }}>
-              <div className="modal">
-                <p style={{ marginBottom: 16 }}>{t.final_confirm_delete}</p>
-                <p style={{ fontWeight: 600, marginBottom: 20 }}>{deleteTarget.fullName}</p>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button className="btn btn-danger" onClick={handleDelete} disabled={busy}>
-                    {busy ? t.loading : t.final_delete_student}
-                  </button>
-                  <button className="btn btn-ghost" onClick={() => setDeleteTarget(null)}>{t.cancel}</button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Table */}
           {loading ? (
             <p className="empty-state">{t.loading}</p>
           ) : filtered.length === 0 ? (
@@ -307,12 +182,9 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
                 <tr>
                   <th>#</th>
                   <th>{t.name}</th>
-                  <th>{t.final_subject}</th>
+                  <th>{t.nav_classrooms ?? "Класс"}</th>
                   <th>{t.iin}</th>
-                  <th>Email</th>
-                  <th>{t.final_phone}</th>
                   <th>{t.final_parent_name}</th>
-                  {canEdit && <th>{t.actions}</th>}
                 </tr>
               </thead>
               <tbody>
@@ -320,19 +192,9 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
                   <tr key={s.id}>
                     <td style={{ color: "var(--muted)", width: 36 }}>{idx + 1}</td>
                     <td className="table-name">{s.fullName}</td>
-                    <td>{s.subject ?? "—"}</td>
+                    <td>{s.classroom.name}</td>
                     <td style={{ fontFamily: "monospace", fontSize: 13 }}>{s.iin ?? "—"}</td>
-                    <td>{s.email ?? "—"}</td>
-                    <td>{s.phone ?? "—"}</td>
                     <td>{s.parentName ?? "—"}</td>
-                    {canEdit && (
-                      <td>
-                        <div style={{ display: "flex", gap: 4 }}>
-                          <button className="btn btn-outline btn-sm" onClick={() => openEdit(s)}>✏️</button>
-                          <button className="btn btn-danger btn-sm" onClick={() => setDeleteTarget(s)}>🗑️</button>
-                        </div>
-                      </td>
-                    )}
                   </tr>
                 ))}
               </tbody>
@@ -341,7 +203,6 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
         </div>
       )}
 
-      {/* ── Teachers DB tab ── */}
       {tab === "teachers" && (
         <div className="card" style={{ marginTop: 0 }}>
           <input

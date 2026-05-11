@@ -395,6 +395,7 @@ function TeacherModoSection({ token, userId, language, t }: {
                   <th>#</th>
                   <th>{t.name}</th>
                   <th>{t.nav_classrooms}</th>
+                  <th>{t.grade ?? "Класс"}</th>
                 </tr>
               </thead>
               <tbody>
@@ -403,6 +404,7 @@ function TeacherModoSection({ token, userId, language, t }: {
                     <td style={{ color: "var(--muted)", width: 40 }}>{idx + 1}</td>
                     <td>{s.fullName}</td>
                     <td>{s.classroom.name}</td>
+                    <td>{s.classroom.grade}</td>
                   </tr>
                 ))}
               </tbody>

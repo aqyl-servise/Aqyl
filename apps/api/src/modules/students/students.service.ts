@@ -95,6 +95,12 @@ export class StudentsService {
       .getMany();
   }
 
+  async findAllByTeacherSchoolAndGrades(teacherId: string, grades: number[]) {
+    const teacher = await this.teacherRepo.findOne({ where: { id: teacherId } });
+    if (!teacher?.schoolId) return [];
+    return this.findAllBySchoolAndGrades(teacher.schoolId, grades);
+  }
+
   getClassrooms(schoolId?: string | null) {
     const where = schoolId ? { schoolId } : {};
     return this.classroomRepo.find({

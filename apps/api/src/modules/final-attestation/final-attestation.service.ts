@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { FinalAttestationStudent } from "../schools/entities/final-attestation-student.entity";
+import { Student } from "../schools/entities/student.entity";
 
 export interface FinalStudentDto {
   grade: number;
@@ -18,12 +19,19 @@ export class FinalAttestationService {
   constructor(
     @InjectRepository(FinalAttestationStudent)
     private readonly repo: Repository<FinalAttestationStudent>,
+    @InjectRepository(Student)
+    private readonly studentRepo: Repository<Student>,
   ) {}
 
   findAll(grade: number, schoolId?: string | null) {
-    const where: Record<string, unknown> = { grade };
-    if (schoolId) where["schoolId"] = schoolId;
-    return this.repo.find({ where, order: { fullName: "ASC" } });
+    const qb = this.studentRepo
+      .createQueryBuilder("s")
+      .leftJoinAndSelect("s.classroom", "classroom")
+      .where("classroom.grade = :grade", { grade });
+    if (schoolId) {
+      qb.andWhere("classroom.schoolId = :schoolId", { schoolId });
+    }
+    return qb.orderBy("s.fullName", "ASC").getMany();
   }
 
   create(dto: FinalStudentDto, schoolId?: string | null) {
