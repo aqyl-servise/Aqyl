@@ -4,7 +4,6 @@ import { FormEvent, useEffect, useState } from "react";
 import { api, AuthUser } from "../lib/api";
 import { Language, translations } from "../lib/translations";
 import { PasswordInput } from "./ui/password-input";
-import { ThemeToggle } from "./ui/theme-toggle";
 import { TeacherApp } from "./teacher/teacher-app";
 import { AdminApp } from "./admin/admin-app";
 import { ClassTeacherApp } from "./class-teacher/class-teacher-app";
@@ -161,6 +160,13 @@ export function AqylApp() {
 function AuthShell({ language, setLanguage, children }: {
   language: Language; setLanguage: (l: Language) => void; children: React.ReactNode;
 }) {
+  useEffect(() => {
+    const html = document.documentElement;
+    const prev = html.getAttribute("data-theme") ?? "light";
+    html.setAttribute("data-theme", "light");
+    return () => { html.setAttribute("data-theme", prev); };
+  }, []);
+
   return (
     <main className="login-shell">
       {/* Left panel — brand / logo */}
@@ -203,9 +209,8 @@ function AuthShell({ language, setLanguage, children }: {
       {/* Right panel — auth forms */}
       <div className="login-right">
         <div className="login-right-inner">
-          <div className="lang-row" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div className="lang-row">
             <LangSwitcher language={language} onChange={setLanguage} />
-            <ThemeToggle />
           </div>
           {children}
         </div>
