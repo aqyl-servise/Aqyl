@@ -62,7 +62,8 @@ export function StudentsPanel({ token, language, t, userRole }: {
   const filtered = students.filter((s) => {
     const matchSearch = s.fullName.toLowerCase().includes(search.toLowerCase()) ||
       (s.iin ?? "").includes(search);
-    const matchClass = !filterClassroom || s.classroom.id === filterClassroom;
+    // For teachers with a classroom selected, students are already server-filtered by classroom
+    const matchClass = (isTeacher && filterClassroom) ? true : (!filterClassroom || s.classroom.id === filterClassroom);
     return matchSearch && matchClass;
   });
 
@@ -185,13 +186,22 @@ export function StudentsPanel({ token, language, t, userRole }: {
           <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
             <button
               className={`btn btn-sm ${classFilterMode === "all" ? "btn-primary" : "btn-ghost"}`}
-              onClick={() => { setClassFilterMode("all"); setFilterClassroom(""); }}
+              onClick={() => {
+                setClassFilterMode("all");
+                setFilterClassroom("");
+                api.getStudents(token).then((s) => setStudents(s as StudentRow[])).catch(() => {});
+              }}
             >
               {t.all ?? "Все"}
             </button>
             <button
               className={`btn btn-sm ${classFilterMode === "class" ? "btn-primary" : "btn-ghost"}`}
-              onClick={() => setClassFilterMode("class")}
+              onClick={() => {
+                setClassFilterMode("class");
+                if (classrooms.length === 0) {
+                  api.getClassroomsForDropdown(token).then(setClassrooms).catch(() => {});
+                }
+              }}
             >
               {t.classroom ?? "Класс"}
             </button>
@@ -199,7 +209,15 @@ export function StudentsPanel({ token, language, t, userRole }: {
               <select
                 className="input" style={{ maxWidth: 200 }}
                 value={filterClassroom}
-                onChange={(e) => setFilterClassroom(e.target.value)}
+                onChange={(e) => {
+                  const cid = e.target.value;
+                  setFilterClassroom(cid);
+                  if (cid) {
+                    api.getStudents(token, cid).then((s) => setStudents(s as StudentRow[])).catch(() => {});
+                  } else {
+                    api.getStudents(token).then((s) => setStudents(s as StudentRow[])).catch(() => {});
+                  }
+                }}
               >
                 <option value="">{t.all ?? "Все классы"}</option>
                 {classrooms.map((c) => (

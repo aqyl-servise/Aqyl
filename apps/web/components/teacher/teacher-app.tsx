@@ -352,17 +352,15 @@ function TeacherModoSection({ token, userId, language, t }: {
   const [tab, setTab] = useState<ModoTab>("students");
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [loaded, setLoaded] = useState(false);
   const labels = fmLabels(t);
 
   useEffect(() => {
-    if (tab !== "students" || loaded) return;
     setLoading(true);
-    api.getSchoolStudentsByGrades(token, [4, 9])
-      .then(data => { setStudents(data); setLoaded(true); })
-      .catch(() => setLoaded(true))
+    api.getModoStudents(token)
+      .then(setStudents)
+      .catch(() => setStudents([]))
       .finally(() => setLoading(false));
-  }, [tab, token, loaded]);
+  }, [token]);
 
   const modoStudents = students;
 
@@ -387,7 +385,7 @@ function TeacherModoSection({ token, userId, language, t }: {
           loading ? (
             <p className="fm-empty">{t.loading}</p>
           ) : modoStudents.length === 0 ? (
-            <p className="fm-empty">{loaded ? t.noData : t.loading}</p>
+            <p className="fm-empty">{t.noData}</p>
           ) : (
             <table className="data-table">
               <thead>

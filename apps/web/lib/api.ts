@@ -264,6 +264,8 @@ export const api = {
     request<StudentRow[]>(`/students${classroomId ? `?classroomId=${classroomId}` : ""}`, undefined, token),
   getSchoolStudentsByGrades: (token: string, grades: number[]) =>
     request<StudentRow[]>(`/students?schoolWide=true&grades=${grades.join(",")}`, undefined, token),
+  getModoStudents: (token: string) =>
+    request<StudentRow[]>("/students?schoolWide=true&grades=4,9", undefined, token),
   createStudent: (token: string, data: Record<string, unknown>) =>
     request<StudentRow>("/students", { method: "POST", body: JSON.stringify(data) }, token),
   updateStudent: (token: string, id: string, data: Record<string, unknown>) =>

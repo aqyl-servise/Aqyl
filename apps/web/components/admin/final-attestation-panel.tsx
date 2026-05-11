@@ -49,8 +49,6 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
 
   const [students9, setStudents9] = useState<FinalStudent[]>([]);
   const [students11, setStudents11] = useState<FinalStudent[]>([]);
-  const [loaded9, setLoaded9] = useState(false);
-  const [loaded11, setLoaded11] = useState(false);
   const [loading9, setLoading9] = useState(false);
   const [loading11, setLoading11] = useState(false);
 
@@ -62,22 +60,22 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
   const [teacherSearch, setTeacherSearch] = useState("");
 
   useEffect(() => {
-    if (tab !== 9 || loaded9) return;
+    if (tab !== 9) return;
     setLoading9(true);
     api.getFinalStudents(token, 9)
-      .then((d) => { setStudents9(d); setLoaded9(true); })
+      .then(setStudents9)
       .catch(console.error)
       .finally(() => setLoading9(false));
-  }, [tab, token, loaded9]);
+  }, [tab, token]);
 
   useEffect(() => {
-    if (tab !== 11 || loaded11) return;
+    if (tab !== 11) return;
     setLoading11(true);
     api.getFinalStudents(token, 11)
-      .then((d) => { setStudents11(d); setLoaded11(true); })
+      .then(setStudents11)
       .catch(console.error)
       .finally(() => setLoading11(false));
-  }, [tab, token, loaded11]);
+  }, [tab, token]);
 
   useEffect(() => {
     if (tab !== "teachers" || teachersLoaded) return;
