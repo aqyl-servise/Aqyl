@@ -157,27 +157,58 @@ export function AqylApp() {
   );
 }
 
-/* ─── Shell wrapper (logo + lang switcher) ─────────────────────────── */
+/* ─── Shell wrapper (two-panel login) ──────────────────────────────── */
 function AuthShell({ language, setLanguage, children }: {
   language: Language; setLanguage: (l: Language) => void; children: React.ReactNode;
 }) {
-  const t = translations[language];
   return (
     <main className="login-shell">
-      <div className="login-bg" />
-      <div className="login-card">
-        <div className="login-logo">
-          <span className="logo-icon">✦</span>
-          <div>
-            <h1 className="logo-name">{t.appName}</h1>
-            <p className="logo-sub">{t.subtitle}</p>
+      {/* Left panel — brand / logo */}
+      <div className="login-left">
+        <div className="login-left-content">
+          <svg viewBox="0 0 680 340" xmlns="http://www.w3.org/2000/svg" width="220" aria-hidden="true">
+            <circle cx="340" cy="116" r="57" fill="none" stroke="#7F77DD" strokeWidth="1"/>
+            <circle cx="340" cy="116" r="52" fill="none" stroke="#4A4299" strokeWidth="0.35" opacity="0.55"/>
+            <circle cx="340" cy="116" r="50" fill="#3d3499"/>
+            <path d="M 336 85 L 308 149 L 316 149 L 344 85 Z" fill="#9B95E4"/>
+            <path d="M 336 85 L 344 85 L 372 149 L 364 149 Z" fill="#3DB88E"/>
+            <rect x="321" y="119" width="38" height="8" rx="2" fill="#F5A623"/>
+            <circle cx="340" cy="85" r="6.5" fill="white" opacity="0.96"/>
+            <circle cx="340" cy="85" r="2.8" fill="#2E2780"/>
+            <circle cx="312" cy="149" r="3.2" fill="#9B95E4" opacity="0.75"/>
+            <circle cx="368" cy="149" r="3.2" fill="#3DB88E" opacity="0.75"/>
+            <text x="348" y="220" textAnchor="middle" fontFamily="system-ui,sans-serif" fontSize="52" fontWeight="500" letterSpacing="10" fill="#EEEDFE">aqyl</text>
+            <rect x="321" y="228" width="10" height="2.5" rx="1.25" fill="#7F77DD"/>
+            <rect x="335" y="228" width="10" height="2.5" rx="1.25" fill="#1D9E75"/>
+            <rect x="349" y="228" width="10" height="2.5" rx="1.25" fill="#EF9F27"/>
+          </svg>
+          <p className="login-tagline">Цифровая образовательная платформа</p>
+          <div className="login-modules">
+            <span className="login-module">
+              <span className="login-module-dot" style={{ background: "#7F77DD" }} />
+              ДАННЫЕ ШКОЛЫ
+            </span>
+            <span className="login-module">
+              <span className="login-module-dot" style={{ background: "#3DB88E" }} />
+              АНАЛИТИКА И ИИ
+            </span>
+            <span className="login-module">
+              <span className="login-module-dot" style={{ background: "#F5A623" }} />
+              ИНТЕРАКТИВНОСТЬ
+            </span>
           </div>
         </div>
-        <div className="lang-row" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <LangSwitcher language={language} onChange={setLanguage} />
-          <ThemeToggle />
+      </div>
+
+      {/* Right panel — auth forms */}
+      <div className="login-right">
+        <div className="login-right-inner">
+          <div className="lang-row" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <LangSwitcher language={language} onChange={setLanguage} />
+            <ThemeToggle />
+          </div>
+          {children}
         </div>
-        {children}
       </div>
     </main>
   );
@@ -209,7 +240,7 @@ function LoginForm({ t, busy, error, onSubmit, onRegister, onForgot }: {
         <button
           type="button"
           className="btn btn-ghost btn-full btn-sm"
-          style={{ marginTop: 4, fontSize: 13, color: "var(--text-muted, #888)" }}
+          style={{ marginTop: 4, fontSize: 13, color: "#7F77DD" }}
           onClick={onForgot}
         >
           {t.forgotPassword}

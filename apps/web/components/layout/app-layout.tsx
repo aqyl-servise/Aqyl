@@ -28,8 +28,18 @@ export function AppLayout({
       <aside className="al-sidebar">
         <div className="al-sidebar-top">
           <div className="al-brand">
-            <span className="al-brand-icon">✦</span>
-            <span className="al-brand-name">{t.appName}</span>
+            <span className="al-brand-icon">
+              <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" width="26" height="26" aria-hidden="true">
+                <circle cx="40" cy="40" r="38" fill="none" stroke="#7F77DD" strokeWidth="1"/>
+                <circle cx="40" cy="40" r="36" fill="#3d3499"/>
+                <path d="M 37 19 L 19 62 L 24 62 L 43 19 Z" fill="#9B95E4"/>
+                <path d="M 37 19 L 43 19 L 61 62 L 56 62 Z" fill="#3DB88E"/>
+                <rect x="27" y="42" width="25" height="5" rx="1.5" fill="#F5A623"/>
+                <circle cx="40" cy="19" r="4" fill="white" opacity="0.96"/>
+                <circle cx="40" cy="19" r="2" fill="#2E2780"/>
+              </svg>
+            </span>
+            <span className="al-brand-name">aqyl</span>
           </div>
           {schoolSwitcher && (
             <div style={{ padding: "0 8px", marginBottom: 4 }}>
