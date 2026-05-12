@@ -12,43 +12,65 @@ interface Props {
 type Tab = "leaderboard" | "overview" | "violations" | "history";
 type Period = "year" | "semester" | "quarter";
 
-const SCORE_BARS: { key: keyof TeacherRating; label: string; max: number }[] = [
-  { key: "scoreExperience", label: "Стаж", max: 10 },
-  { key: "scoreCategory", label: "Категория", max: 15 },
-  { key: "scoreAcademic", label: "Успеваемость", max: 25 },
-  { key: "scoreFLiteracy", label: "Функц. грамотность", max: 15 },
-  { key: "scoreOpenLessons", label: "Открытые уроки", max: 10 },
-  { key: "scoreAchievements", label: "Достижения", max: 10 },
-  { key: "scoreActivity", label: "Активность", max: 10 },
-  { key: "scoreViolations", label: "Нарушения", max: 5 },
+const SCORE_CRITERIA: { key: keyof TeacherRating; labelRu: string; max: number }[] = [
+  { key: "scoreExperience",   labelRu: "Стаж работы",                max: 10 },
+  { key: "scoreCategory",     labelRu: "Квалификационная категория", max: 15 },
+  { key: "scoreAcademic",     labelRu: "Успеваемость учеников",      max: 25 },
+  { key: "scoreFLiteracy",    labelRu: "Функциональная грамотность", max: 15 },
+  { key: "scoreOpenLessons",  labelRu: "Открытые уроки",             max: 10 },
+  { key: "scoreAchievements", labelRu: "Достижения учеников",        max: 10 },
+  { key: "scoreActivity",     labelRu: "Активность на платформе",    max: 10 },
+  { key: "scoreViolations",   labelRu: "Дисциплина",                 max:  5 },
 ];
+
+function scoreChipClass(score: number) {
+  if (score >= 75) return "score-chip score-high";
+  if (score >= 50) return "score-chip score-mid";
+  return "score-chip score-low";
+}
+
+function barColor(pct: number) {
+  if (pct >= 80) return "var(--success)";
+  if (pct >= 50) return "var(--warn-amber)";
+  return "var(--warn)";
+}
+
+function violationTypeChip(type: string) {
+  if (type === "reprimand")       return { label: "Выговор",          cls: "status-chip status-rejected" };
+  if (type === "parent_complaint") return { label: "Жалоба родителей", cls: "status-chip status-pending" };
+  return                                  { label: "Другое",           cls: "status-chip status-inactive" };
+}
 
 export function RatingAdminPanel({ token, language }: Props) {
   const t = translations[language];
-  const [tab, setTab] = useState<Tab>("leaderboard");
-  const [ratings, setRatings] = useState<TeacherRating[]>([]);
-  const [selected, setSelected] = useState<TeacherRating | null>(null);
+
+  const [tab, setTab]               = useState<Tab>("leaderboard");
+  const [ratings, setRatings]       = useState<TeacherRating[]>([]);
+  const [selected, setSelected]     = useState<TeacherRating | null>(null);
   const [violations, setViolations] = useState<TeacherViolation[]>([]);
-  const [history, setHistory] = useState<TeacherRating[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [history, setHistory]       = useState<TeacherRating[]>([]);
+  const [loading, setLoading]       = useState(false);
   const [calculating, setCalculating] = useState(false);
-  const [period, setPeriod] = useState<Period>("year");
+  const [calcDone, setCalcDone]     = useState(false);
+
+  const [period, setPeriod]         = useState<Period>("year");
   const [periodNumber, setPeriodNumber] = useState(0);
   const [academicYear, setAcademicYear] = useState("2025-2026");
   const [filterSubject, setFilterSubject] = useState("");
-  const [showAdjustModal, setShowAdjustModal] = useState(false);
+
+  const [showAdjustModal, setShowAdjustModal]     = useState(false);
   const [showViolationModal, setShowViolationModal] = useState(false);
-  const [adjValue, setAdjValue] = useState(0);
+  const [adjValue, setAdjValue]     = useState(0);
   const [adjComment, setAdjComment] = useState("");
-  const [violation, setViolation] = useState({ type: "reprimand", description: "", date: new Date().toISOString().slice(0, 10), pointsDeducted: 1 });
+  const [violation, setViolation]   = useState({
+    type: "reprimand", description: "", date: new Date().toISOString().slice(0, 10), pointsDeducted: 1,
+  });
 
   const fetchRatings = async () => {
     setLoading(true);
     try {
       const data = await api.ratingGetSchool(token, {
-        period,
-        periodNumber,
-        academicYear,
+        period, periodNumber, academicYear,
         subject: filterSubject || undefined,
       });
       setRatings(data);
@@ -60,14 +82,17 @@ export function RatingAdminPanel({ token, language }: Props) {
 
   const handleCalculate = async () => {
     setCalculating(true);
+    setCalcDone(false);
     try {
       await api.ratingCalculate(token, { period, periodNumber, academicYear });
       await fetchRatings();
+      setCalcDone(true);
+      setTimeout(() => setCalcDone(false), 3000);
     } catch { /* ignore */ }
     setCalculating(false);
   };
 
-  const handleSelectTeacher = async (r: TeacherRating) => {
+  const openTeacher = async (r: TeacherRating) => {
     setSelected(r);
     setTab("overview");
     if (r.teacherId) {
@@ -103,336 +128,455 @@ export function RatingAdminPanel({ token, language }: Props) {
   const handleDeleteViolation = async (id: string) => {
     await api.ratingDeleteViolation(token, id);
     if (selected?.teacherId) {
-      const v = await api.ratingGetViolations(token, selected.teacherId);
-      setViolations(v);
+      setViolations(await api.ratingGetViolations(token, selected.teacherId));
     }
   };
 
-  const tabs: { key: Tab; label: string }[] = [
-    { key: "leaderboard", label: t.rating_leaderboard ?? "Таблица лидеров" },
-    { key: "overview", label: t.rating_overview ?? "Обзор" },
-    { key: "violations", label: t.rating_violations ?? "Нарушения" },
-    { key: "history", label: t.rating_history ?? "История" },
+  const TABS: { key: Tab; label: string; icon: string }[] = [
+    { key: "leaderboard", label: t.rating_leaderboard ?? "Таблица лидеров", icon: "🏆" },
+    { key: "overview",    label: t.rating_overview    ?? "Обзор учителя",   icon: "👤" },
+    { key: "violations",  label: t.rating_violations  ?? "Нарушения",       icon: "⚠️" },
+    { key: "history",     label: t.rating_history     ?? "История",         icon: "📈" },
   ];
 
+  const subjects = [...new Set(ratings.map(r => r.subject).filter(Boolean) as string[])].sort();
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-xl font-bold">{t.nav_rating ?? "Рейтинг учителей"}</h2>
-        <div className="flex items-center gap-2 flex-wrap">
-          <select value={period} onChange={e => { setPeriod(e.target.value as Period); setPeriodNumber(0); }}
-            className="border rounded px-2 py-1 text-sm">
-            <option value="year">{t.rating_period_year ?? "Год"}</option>
-            <option value="semester">{t.rating_period_semester ?? "Полугодие"}</option>
-            <option value="quarter">{t.rating_period_quarter ?? "Четверть"}</option>
-          </select>
+    <div className="page">
+      {/* Header */}
+      <div className="page-header">
+        <h1 className="page-title">🏆 {t.nav_rating ?? "Рейтинг учителей"}</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          {calcDone && (
+            <span className="status-chip status-active" style={{ fontSize: 13 }}>
+              ✓ {t.rating_calculated ?? "Рейтинг рассчитан"}
+            </span>
+          )}
+          <button className="btn btn-primary btn-sm" onClick={handleCalculate} disabled={calculating}>
+            {calculating ? <><span className="spinner" /> {t.rating_calculating ?? "Идёт расчёт..."}</> : `⚡ ${t.rating_calculate ?? "Рассчитать рейтинг"}`}
+          </button>
+        </div>
+      </div>
+
+      {/* Period filters */}
+      <div className="card" style={{ padding: "16px 20px", gap: 0 }}>
+        <div className="filter-row">
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span className="muted" style={{ fontSize: 13, whiteSpace: "nowrap" }}>{t.rating_period ?? "Период"}:</span>
+            <div className="role-tabs">
+              {(["year", "semester", "quarter"] as Period[]).map(p => (
+                <button key={p}
+                  className={`role-tab${period === p ? " active" : ""}`}
+                  onClick={() => { setPeriod(p); setPeriodNumber(0); }}>
+                  {p === "year" ? (t.rating_period_year ?? "Год") : p === "semester" ? (t.rating_period_semester ?? "Полугодие") : (t.rating_period_quarter ?? "Четверть")}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {period !== "year" && (
-            <select value={periodNumber} onChange={e => setPeriodNumber(Number(e.target.value))}
-              className="border rounded px-2 py-1 text-sm">
-              {period === "semester"
-                ? [1, 2].map(n => <option key={n} value={n}>{n}</option>)
-                : [1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}
+            <select className="input" style={{ width: "auto", fontSize: 13, padding: "5px 10px" }}
+              value={periodNumber} onChange={e => setPeriodNumber(Number(e.target.value))}>
+              {(period === "semester" ? [1, 2] : [1, 2, 3, 4]).map(n => (
+                <option key={n} value={n}>{n}</option>
+              ))}
             </select>
           )}
-          <select value={academicYear} onChange={e => setAcademicYear(e.target.value)}
-            className="border rounded px-2 py-1 text-sm">
+
+          <select className="input" style={{ width: "auto", fontSize: 13, padding: "5px 10px" }}
+            value={academicYear} onChange={e => setAcademicYear(e.target.value)}>
             <option value="2024-2025">2024-2025</option>
             <option value="2025-2026">2025-2026</option>
             <option value="2026-2027">2026-2027</option>
           </select>
-          <button onClick={handleCalculate} disabled={calculating}
-            className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700 disabled:opacity-60">
-            {calculating ? (t.rating_calculating ?? "Идёт расчёт...") : (t.rating_calculate ?? "Рассчитать рейтинг")}
-          </button>
+
+          {subjects.length > 0 && (
+            <select className="input" style={{ width: "auto", fontSize: 13, padding: "5px 10px" }}
+              value={filterSubject} onChange={e => setFilterSubject(e.target.value)}>
+              <option value="">Все предметы</option>
+              {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          )}
+
+          {filterSubject && (
+            <button className="btn btn-ghost btn-sm" onClick={() => setFilterSubject("")}>✕ Сбросить</button>
+          )}
         </div>
       </div>
 
-      <div className="flex gap-2 border-b">
-        {tabs.map(tb => (
-          <button key={tb.key} onClick={() => setTab(tb.key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === tb.key ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
-            {tb.label}
+      {/* Tabs */}
+      <div className="sc-tabs">
+        {TABS.map(tb => (
+          <button key={tb.key}
+            className={`sc-tab${tab === tb.key ? " sc-tab-active" : ""}`}
+            onClick={() => setTab(tb.key)}>
+            {tb.icon} {tb.label}
           </button>
         ))}
       </div>
 
+      {/* ── Leaderboard ── */}
       {tab === "leaderboard" && (
-        <div className="space-y-3">
-          <div className="flex gap-2">
-            <input value={filterSubject} onChange={e => setFilterSubject(e.target.value)}
-              placeholder="Фильтр по предмету..."
-              className="border rounded px-3 py-1.5 text-sm flex-1 max-w-xs" />
-          </div>
+        <div className="card" style={{ gap: 0, padding: 0, overflow: "hidden" }}>
           {loading ? (
-            <p className="text-gray-500 text-sm">{t.loading ?? "Загрузка..."}</p>
+            <div className="page-loading">{t.loading ?? "Загрузка..."}</div>
           ) : ratings.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
-              <p className="text-4xl mb-3">🏆</p>
-              <p>{t.rating_no_data ?? "Рейтинг ещё не рассчитан"}</p>
-              <p className="text-sm mt-1">Нажмите «Рассчитать рейтинг»</p>
+            <div style={{ padding: 48, textAlign: "center" }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>🏆</div>
+              <p className="empty-state" style={{ fontSize: 15 }}>
+                {t.rating_no_data ?? "Рейтинг ещё не рассчитан"}
+              </p>
+              <p className="muted" style={{ fontSize: 13, marginTop: 6 }}>
+                Нажмите «Рассчитать рейтинг» чтобы начать
+              </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left text-gray-500">
-                    <th className="py-2 pr-3">#</th>
-                    <th className="py-2 pr-3">{t.nav_teachers ?? "Учитель"}</th>
-                    <th className="py-2 pr-3">{t.rating_experience ?? "Стаж"}</th>
-                    <th className="py-2 pr-3">{t.rating_category ?? "Категория"}</th>
-                    <th className="py-2 pr-3">{t.rating_academic ?? "Успеваемость"}</th>
-                    <th className="py-2 pr-3">{t.rating_fl ?? "Функц. гр."}</th>
-                    <th className="py-2 pr-3">{t.rating_open_lessons ?? "Отк. уроки"}</th>
-                    <th className="py-2 pr-3">{t.rating_achievements ?? "Достижения"}</th>
-                    <th className="py-2 pr-3">{t.rating_activity ?? "Активность"}</th>
-                    <th className="py-2 pr-3">{t.rating_violations_score ?? "Нарушения"}</th>
-                    <th className="py-2 pr-3 font-bold text-blue-700">{t.rating_total_score ?? "Итог"}</th>
-                    <th className="py-2"></th>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th style={{ width: 48 }}>#</th>
+                  <th>{t.fullNameLabel ?? "Учитель"}</th>
+                  <th style={{ textAlign: "center" }}>Стаж</th>
+                  <th style={{ textAlign: "center" }}>Категория</th>
+                  <th style={{ textAlign: "center" }}>Успеваемость</th>
+                  <th style={{ textAlign: "center" }}>ФГ</th>
+                  <th style={{ textAlign: "center" }}>Уроки</th>
+                  <th style={{ textAlign: "center" }}>Достиж.</th>
+                  <th style={{ textAlign: "center" }}>Акт.</th>
+                  <th style={{ textAlign: "center" }}>Дисц.</th>
+                  <th style={{ textAlign: "center" }}>{t.rating_total_score ?? "Итог"}</th>
+                  <th style={{ width: 32 }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {ratings.map(r => (
+                  <tr key={r.id} style={{ cursor: "pointer" }} onClick={() => openTeacher(r)}>
+                    <td>
+                      <span style={{ fontWeight: 700, fontSize: 15 }}>
+                        {r.rank === 1 ? "🥇" : r.rank === 2 ? "🥈" : r.rank === 3 ? "🥉" : r.rank}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="table-name">{r.teacherName}</div>
+                      {r.subject && <div className="muted" style={{ fontSize: 12 }}>{r.subject}</div>}
+                    </td>
+                    <td style={{ textAlign: "center" }}>{r.scoreExperience}</td>
+                    <td style={{ textAlign: "center" }}>{r.scoreCategory}</td>
+                    <td style={{ textAlign: "center" }}>{r.scoreAcademic}</td>
+                    <td style={{ textAlign: "center" }}>{r.scoreFLiteracy}</td>
+                    <td style={{ textAlign: "center" }}>{r.scoreOpenLessons}</td>
+                    <td style={{ textAlign: "center" }}>{r.scoreAchievements}</td>
+                    <td style={{ textAlign: "center" }}>{r.scoreActivity}</td>
+                    <td style={{ textAlign: "center" }}>{r.scoreViolations}</td>
+                    <td style={{ textAlign: "center" }}>
+                      <span className={scoreChipClass(r.totalScore)}>{r.totalScore}</span>
+                    </td>
+                    <td>
+                      <button className="btn btn-ghost btn-sm" style={{ padding: "4px 8px" }}
+                        onClick={e => { e.stopPropagation(); openTeacher(r); }}>→</button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {ratings.map(r => (
-                    <tr key={r.id} className="border-b hover:bg-gray-50 cursor-pointer" onClick={() => handleSelectTeacher(r)}>
-                      <td className="py-2 pr-3">
-                        <span className={`font-bold ${r.rank === 1 ? "text-yellow-500" : r.rank === 2 ? "text-gray-400" : r.rank === 3 ? "text-amber-600" : "text-gray-700"}`}>
-                          {r.rank === 1 ? "🥇" : r.rank === 2 ? "🥈" : r.rank === 3 ? "🥉" : r.rank}
-                        </span>
-                      </td>
-                      <td className="py-2 pr-3">
-                        <p className="font-medium">{r.teacherName}</p>
-                        <p className="text-xs text-gray-400">{r.subject}</p>
-                      </td>
-                      <td className="py-2 pr-3 text-center">{r.scoreExperience}</td>
-                      <td className="py-2 pr-3 text-center">{r.scoreCategory}</td>
-                      <td className="py-2 pr-3 text-center">{r.scoreAcademic}</td>
-                      <td className="py-2 pr-3 text-center">{r.scoreFLiteracy}</td>
-                      <td className="py-2 pr-3 text-center">{r.scoreOpenLessons}</td>
-                      <td className="py-2 pr-3 text-center">{r.scoreAchievements}</td>
-                      <td className="py-2 pr-3 text-center">{r.scoreActivity}</td>
-                      <td className="py-2 pr-3 text-center">{r.scoreViolations}</td>
-                      <td className="py-2 pr-3 font-bold text-blue-700">{r.totalScore}</td>
-                      <td className="py-2">
-                        <button onClick={e => { e.stopPropagation(); handleSelectTeacher(r); }}
-                          className="text-xs text-blue-600 hover:underline">→</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
       )}
 
+      {/* ── Overview ── */}
       {tab === "overview" && (
-        <div className="space-y-4">
-          {!selected ? (
-            <p className="text-gray-400 text-sm">Выберите учителя в таблице лидеров</p>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-start justify-between flex-wrap gap-3">
+        !selected ? (
+          <div className="card">
+            <div style={{ textAlign: "center", padding: "32px 0" }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>👈</div>
+              <p className="empty-state">Выберите учителя в таблице лидеров</p>
+            </div>
+          </div>
+        ) : (
+          <div className="card">
+            {/* Teacher header */}
+            <div className="card-header">
+              <div>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>{selected.teacherName}</h2>
+                <p className="muted" style={{ margin: "4px 0 0", fontSize: 13 }}>
+                  {selected.subject ?? "—"} · {selected.category ?? "—"}
+                </p>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn btn-outline btn-sm"
+                  onClick={() => { setAdjValue(selected.manualAdjustment ?? 0); setAdjComment(selected.manualComment ?? ""); setShowAdjustModal(true); }}>
+                  ✏️ {t.rating_adjust ?? "Корректировать"}
+                </button>
+                <button className="btn btn-sm btn-danger"
+                  onClick={() => setShowViolationModal(true)}>
+                  ⚠️ {t.rating_add_violation ?? "Нарушение"}
+                </button>
+              </div>
+            </div>
+
+            {/* Stat cards */}
+            <div className="stats-row" style={{ gridTemplateColumns: "repeat(4, 1fr)", marginBottom: 0 }}>
+              <div className="stat-card stat-blue">
                 <div>
-                  <h3 className="text-lg font-bold">{selected.teacherName}</h3>
-                  <p className="text-sm text-gray-500">{selected.subject} · {selected.category}</p>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => { setAdjValue(selected.manualAdjustment ?? 0); setAdjComment(selected.manualComment ?? ""); setShowAdjustModal(true); }}
-                    className="text-sm border px-3 py-1.5 rounded hover:bg-gray-50">
-                    {t.rating_adjust ?? "Корректировать"}
-                  </button>
-                  <button onClick={() => setShowViolationModal(true)}
-                    className="text-sm bg-red-50 text-red-700 border border-red-200 px-3 py-1.5 rounded hover:bg-red-100">
-                    {t.rating_add_violation ?? "Добавить нарушение"}
-                  </button>
+                  <p className="stat-label">{t.rating_total_score ?? "Итоговый балл"}</p>
+                  <p className="stat-value" style={{ color: "var(--accent)" }}>{selected.totalScore}</p>
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-blue-50 rounded-lg p-3 text-center">
-                  <p className="text-3xl font-bold text-blue-700">{selected.totalScore}</p>
-                  <p className="text-xs text-gray-500 mt-1">{t.rating_total_score ?? "Итоговый балл"}</p>
+              <div className="stat-card stat-purple">
+                <div>
+                  <p className="stat-label">{t.rating_rank ?? "Место"}</p>
+                  <p className="stat-value">{selected.rank} <span style={{ fontSize: 14, fontWeight: 500, color: "var(--muted)" }}>/ {selected.total}</span></p>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-3 text-center">
-                  <p className="text-3xl font-bold text-gray-700">{selected.rank}</p>
-                  <p className="text-xs text-gray-500 mt-1">{t.rating_rank ?? "Место"} {t.rating_of ?? "из"} {selected.total}</p>
-                </div>
-                {selected.manualAdjustment !== 0 && (
-                  <div className={`rounded-lg p-3 text-center ${(selected.manualAdjustment ?? 0) > 0 ? "bg-green-50" : "bg-red-50"}`}>
-                    <p className={`text-3xl font-bold ${(selected.manualAdjustment ?? 0) > 0 ? "text-green-700" : "text-red-700"}`}>
+              </div>
+              {(selected.manualAdjustment ?? 0) !== 0 && (
+                <div className={`stat-card ${(selected.manualAdjustment ?? 0) > 0 ? "stat-green" : "stat-orange"}`}>
+                  <div>
+                    <p className="stat-label">{t.rating_manual_adj ?? "Корректировка"}</p>
+                    <p className="stat-value" style={{ color: (selected.manualAdjustment ?? 0) > 0 ? "var(--success)" : "var(--warn)" }}>
                       {(selected.manualAdjustment ?? 0) > 0 ? "+" : ""}{selected.manualAdjustment}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">{t.rating_manual_adj ?? "Ручная корр."}</p>
                   </div>
-                )}
-                {selected.pointsToTop10 !== null && selected.pointsToTop10 !== undefined && (
-                  <div className="bg-yellow-50 rounded-lg p-3 text-center">
-                    <p className="text-3xl font-bold text-yellow-700">{selected.pointsToTop10}</p>
-                    <p className="text-xs text-gray-500 mt-1">{t.rating_points_to_top10 ?? "До топ-10"}</p>
+                </div>
+              )}
+              {selected.pointsToTop10 != null && selected.pointsToTop10 > 0 && (
+                <div className="stat-card stat-orange">
+                  <div>
+                    <p className="stat-label">{t.rating_points_to_top10 ?? "До топ-10"}</p>
+                    <p className="stat-value" style={{ color: "var(--warn-amber)" }}>{selected.pointsToTop10}</p>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+            </div>
 
-              <div className="space-y-2">
-                {SCORE_BARS.map(({ key, label, max }) => {
+            {/* Criteria breakdown */}
+            <div>
+              <p className="section-subtitle">Детализация критериев</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {SCORE_CRITERIA.map(({ key, labelRu, max }) => {
                   const val = (selected[key] as number) ?? 0;
                   const pct = Math.round((val / max) * 100);
                   return (
                     <div key={key}>
-                      <div className="flex justify-between text-sm mb-0.5">
-                        <span className="text-gray-600">{label}</span>
-                        <span className="font-medium">{val} / {max}</span>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
+                        <span style={{ fontSize: 13, color: "var(--text)" }}>{labelRu}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600 }}>{val} <span className="muted" style={{ fontWeight: 400 }}>/ {max}</span></span>
                       </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      <div className="progress-bar-wrap">
+                        <div className="progress-bar-fill" style={{ width: `${pct}%`, background: barColor(pct) }} />
                       </div>
                     </div>
                   );
                 })}
               </div>
-
-              {selected.manualComment && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">
-                  <strong>Комментарий:</strong> {selected.manualComment}
-                </div>
-              )}
             </div>
-          )}
-        </div>
-      )}
 
-      {tab === "violations" && (
-        <div className="space-y-3">
-          {!selected ? (
-            <p className="text-gray-400 text-sm">Выберите учителя в таблице лидеров</p>
-          ) : (
-            <>
-              <div className="flex justify-between items-center">
-                <h3 className="font-semibold">{selected.teacherName} — {t.rating_violations ?? "Нарушения"}</h3>
-                <button onClick={() => setShowViolationModal(true)}
-                  className="text-sm bg-red-600 text-white px-3 py-1.5 rounded hover:bg-red-700">
-                  + {t.rating_add_violation ?? "Добавить нарушение"}
-                </button>
+            {selected.manualComment && (
+              <div style={{ background: "var(--warn-amber-light)", border: "1px solid rgba(245,166,35,0.3)", borderRadius: "var(--radius-sm)", padding: "12px 16px", fontSize: 13, color: "var(--text)" }}>
+                <strong>Комментарий администратора:</strong> {selected.manualComment}
               </div>
-              {violations.length === 0 ? (
-                <p className="text-gray-400 text-sm">Нарушений нет</p>
-              ) : (
-                <div className="space-y-2">
-                  {violations.map(v => (
-                    <div key={v.id} className="flex items-start justify-between border rounded p-3">
-                      <div>
-                        <p className="font-medium text-sm">{v.type === "reprimand" ? t.rating_reprimand : v.type === "parent_complaint" ? t.rating_parent_complaint : t.rating_other}</p>
-                        <p className="text-sm text-gray-600">{v.description}</p>
-                        <p className="text-xs text-gray-400">{v.date} · -{v.pointsDeducted} балл</p>
-                      </div>
-                      <button onClick={() => handleDeleteViolation(v.id)}
-                        className="text-red-500 hover:text-red-700 text-xs ml-3">✕</button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
+            )}
+          </div>
+        )
       )}
 
-      {tab === "history" && (
-        <div className="space-y-3">
-          {!selected ? (
-            <p className="text-gray-400 text-sm">Выберите учителя в таблице лидеров</p>
-          ) : (
-            <>
-              <h3 className="font-semibold">{selected.teacherName} — {t.rating_history ?? "История"}</h3>
-              {history.length === 0 ? (
-                <p className="text-gray-400 text-sm">История пуста</p>
+      {/* ── Violations ── */}
+      {tab === "violations" && (
+        !selected ? (
+          <div className="card">
+            <div style={{ textAlign: "center", padding: "32px 0" }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>👈</div>
+              <p className="empty-state">Выберите учителя в таблице лидеров</p>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div className="card-header">
+              <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>
+                ⚠️ {selected.teacherName} — {t.rating_violations ?? "Нарушения"}
+              </h2>
+              <button className="btn btn-sm btn-danger" onClick={() => setShowViolationModal(true)}>
+                + {t.rating_add_violation ?? "Добавить нарушение"}
+              </button>
+            </div>
+
+            <div className="card" style={{ gap: 0, padding: 0, overflow: "hidden" }}>
+              {violations.length === 0 ? (
+                <div style={{ padding: 32, textAlign: "center" }}>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>✅</div>
+                  <p className="empty-state">Нарушений нет</p>
+                </div>
               ) : (
-                <table className="w-full text-sm">
+                <table className="data-table">
                   <thead>
-                    <tr className="border-b text-left text-gray-500">
-                      <th className="py-2 pr-3">{t.rating_academic_year ?? "Уч. год"}</th>
-                      <th className="py-2 pr-3">{t.rating_period ?? "Период"}</th>
-                      <th className="py-2 pr-3">{t.rating_total_score ?? "Итог"}</th>
-                      <th className="py-2 pr-3">Стаж</th>
-                      <th className="py-2 pr-3">Категория</th>
-                      <th className="py-2 pr-3">Успеваемость</th>
-                      <th className="py-2">Активность</th>
+                    <tr>
+                      <th>{t.rating_violation_type ?? "Тип"}</th>
+                      <th>{t.rating_description ?? "Описание"}</th>
+                      <th>{t.rating_date ?? "Дата"}</th>
+                      <th style={{ textAlign: "center" }}>{t.rating_points_deducted ?? "Вычет"}</th>
+                      <th style={{ width: 48 }}></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {history.map(h => (
-                      <tr key={h.id} className="border-b hover:bg-gray-50">
-                        <td className="py-2 pr-3">{h.academicYear}</td>
-                        <td className="py-2 pr-3">{h.period}{h.periodNumber ? ` (${h.periodNumber})` : ""}</td>
-                        <td className="py-2 pr-3 font-bold text-blue-700">{h.totalScore}</td>
-                        <td className="py-2 pr-3">{h.scoreExperience}</td>
-                        <td className="py-2 pr-3">{h.scoreCategory}</td>
-                        <td className="py-2 pr-3">{h.scoreAcademic}</td>
-                        <td className="py-2">{h.scoreActivity}</td>
-                      </tr>
-                    ))}
+                    {violations.map(v => {
+                      const chip = violationTypeChip(v.type);
+                      return (
+                        <tr key={v.id}>
+                          <td><span className={chip.cls}>{chip.label}</span></td>
+                          <td style={{ maxWidth: 320 }}>{v.description}</td>
+                          <td className="muted">{v.date}</td>
+                          <td style={{ textAlign: "center" }}>
+                            <span className="score-chip score-low">−{v.pointsDeducted}</span>
+                          </td>
+                          <td>
+                            <button className="btn btn-ghost btn-sm"
+                              style={{ color: "var(--warn)" }}
+                              onClick={() => handleDeleteViolation(v.id)}>✕</button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               )}
-            </>
-          )}
-        </div>
+            </div>
+          </div>
+        )
       )}
 
+      {/* ── History ── */}
+      {tab === "history" && (
+        !selected ? (
+          <div className="card">
+            <div style={{ textAlign: "center", padding: "32px 0" }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>👈</div>
+              <p className="empty-state">Выберите учителя в таблице лидеров</p>
+            </div>
+          </div>
+        ) : (
+          <div className="card" style={{ gap: 0, padding: 0, overflow: "hidden" }}>
+            <div style={{ padding: "20px 24px 12px" }}>
+              <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>
+                📈 {selected.teacherName} — {t.rating_history ?? "История"}
+              </h2>
+            </div>
+            {history.length === 0 ? (
+              <div style={{ padding: "16px 24px 32px" }}>
+                <p className="empty-state">История пуста</p>
+              </div>
+            ) : (
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>{t.rating_academic_year ?? "Уч. год"}</th>
+                    <th>{t.rating_period ?? "Период"}</th>
+                    <th style={{ textAlign: "center" }}>{t.rating_total_score ?? "Итог"}</th>
+                    <th style={{ textAlign: "center" }}>Стаж</th>
+                    <th style={{ textAlign: "center" }}>Категория</th>
+                    <th style={{ textAlign: "center" }}>Успеваемость</th>
+                    <th style={{ textAlign: "center" }}>Активность</th>
+                    <th style={{ textAlign: "center" }}>Дисц.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map(h => (
+                    <tr key={h.id}>
+                      <td className="table-name">{h.academicYear}</td>
+                      <td>
+                        {h.period === "year" ? "Год" : h.period === "semester" ? `Полугодие ${h.periodNumber}` : `Четверть ${h.periodNumber}`}
+                      </td>
+                      <td style={{ textAlign: "center" }}>
+                        <span className={scoreChipClass(h.totalScore)}>{h.totalScore}</span>
+                      </td>
+                      <td style={{ textAlign: "center" }}>{h.scoreExperience}</td>
+                      <td style={{ textAlign: "center" }}>{h.scoreCategory}</td>
+                      <td style={{ textAlign: "center" }}>{h.scoreAcademic}</td>
+                      <td style={{ textAlign: "center" }}>{h.scoreActivity}</td>
+                      <td style={{ textAlign: "center" }}>{h.scoreViolations}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )
+      )}
+
+      {/* ── Adjust modal ── */}
       {showAdjustModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm space-y-4">
-            <h3 className="font-bold text-lg">{t.rating_adjust ?? "Корректировать балл"}</h3>
-            <div>
-              <label className="text-sm text-gray-600 block mb-1">{t.rating_manual_adj ?? "Корректировка"}</label>
-              <input type="number" step="0.5" value={adjValue} onChange={e => setAdjValue(Number(e.target.value))}
-                className="w-full border rounded px-3 py-2 text-sm" />
+        <div className="modal-overlay" onClick={() => setShowAdjustModal(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h2 style={{ margin: 0, fontSize: 18 }}>✏️ {t.rating_adjust ?? "Корректировать балл"}</h2>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowAdjustModal(false)}>✕</button>
             </div>
-            <div>
-              <label className="text-sm text-gray-600 block mb-1">{t.rating_manual_comment ?? "Комментарий"}</label>
-              <textarea value={adjComment} onChange={e => setAdjComment(e.target.value)} rows={3}
-                className="w-full border rounded px-3 py-2 text-sm" />
-            </div>
-            <div className="flex gap-2 justify-end">
-              <button onClick={() => setShowAdjustModal(false)} className="text-sm px-4 py-2 border rounded hover:bg-gray-50">Отмена</button>
-              <button onClick={handleAdjust} className="text-sm bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Сохранить</button>
+            <div className="form-stack">
+              <div className="field">
+                <label className="field-label">{t.rating_manual_adj ?? "Корректировка (положительная или отрицательная)"}</label>
+                <input className="input" type="number" step="0.5" value={adjValue}
+                  onChange={e => setAdjValue(Number(e.target.value))} />
+              </div>
+              <div className="field">
+                <label className="field-label">{t.rating_manual_comment ?? "Комментарий"}</label>
+                <textarea className="textarea" value={adjComment}
+                  onChange={e => setAdjComment(e.target.value)} rows={3} />
+              </div>
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                <button className="btn btn-outline btn-sm" onClick={() => setShowAdjustModal(false)}>
+                  {t.cancel ?? "Отмена"}
+                </button>
+                <button className="btn btn-primary btn-sm" onClick={handleAdjust}>
+                  {t.save ?? "Сохранить"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
+      {/* ── Add violation modal ── */}
       {showViolationModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm space-y-4">
-            <h3 className="font-bold text-lg">{t.rating_add_violation ?? "Добавить нарушение"}</h3>
-            <div>
-              <label className="text-sm text-gray-600 block mb-1">{t.rating_violation_type ?? "Тип"}</label>
-              <select value={violation.type} onChange={e => setViolation(v => ({ ...v, type: e.target.value }))}
-                className="w-full border rounded px-3 py-2 text-sm">
-                <option value="reprimand">{t.rating_reprimand ?? "Выговор"}</option>
-                <option value="parent_complaint">{t.rating_parent_complaint ?? "Жалоба родителей"}</option>
-                <option value="other">{t.rating_other ?? "Другое"}</option>
-              </select>
+        <div className="modal-overlay" onClick={() => setShowViolationModal(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h2 style={{ margin: 0, fontSize: 18 }}>⚠️ {t.rating_add_violation ?? "Добавить нарушение"}</h2>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowViolationModal(false)}>✕</button>
             </div>
-            <div>
-              <label className="text-sm text-gray-600 block mb-1">{t.rating_description ?? "Описание"}</label>
-              <textarea value={violation.description} onChange={e => setViolation(v => ({ ...v, description: e.target.value }))} rows={3}
-                className="w-full border rounded px-3 py-2 text-sm" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-sm text-gray-600 block mb-1">{t.rating_date ?? "Дата"}</label>
-                <input type="date" value={violation.date} onChange={e => setViolation(v => ({ ...v, date: e.target.value }))}
-                  className="w-full border rounded px-3 py-2 text-sm" />
+            <div className="form-stack">
+              <div className="field">
+                <label className="field-label">{t.rating_violation_type ?? "Тип нарушения"}</label>
+                <select className="input" value={violation.type}
+                  onChange={e => setViolation(v => ({ ...v, type: e.target.value }))}>
+                  <option value="reprimand">{t.rating_reprimand ?? "Выговор"}</option>
+                  <option value="parent_complaint">{t.rating_parent_complaint ?? "Жалоба родителей"}</option>
+                  <option value="other">{t.rating_other ?? "Другое"}</option>
+                </select>
               </div>
-              <div>
-                <label className="text-sm text-gray-600 block mb-1">{t.rating_points_deducted ?? "Вычет баллов"}</label>
-                <input type="number" min={0.5} max={5} step={0.5} value={violation.pointsDeducted}
-                  onChange={e => setViolation(v => ({ ...v, pointsDeducted: Number(e.target.value) }))}
-                  className="w-full border rounded px-3 py-2 text-sm" />
+              <div className="field">
+                <label className="field-label">{t.rating_description ?? "Описание"}</label>
+                <textarea className="textarea" value={violation.description}
+                  onChange={e => setViolation(v => ({ ...v, description: e.target.value }))} rows={3} />
               </div>
-            </div>
-            <div className="flex gap-2 justify-end">
-              <button onClick={() => setShowViolationModal(false)} className="text-sm px-4 py-2 border rounded hover:bg-gray-50">Отмена</button>
-              <button onClick={handleAddViolation} className="text-sm bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Добавить</button>
+              <div className="form-row">
+                <div className="field">
+                  <label className="field-label">{t.rating_date ?? "Дата"}</label>
+                  <input className="input" type="date" value={violation.date}
+                    onChange={e => setViolation(v => ({ ...v, date: e.target.value }))} />
+                </div>
+                <div className="field">
+                  <label className="field-label">{t.rating_points_deducted ?? "Вычет баллов"}</label>
+                  <input className="input" type="number" min={0.5} max={5} step={0.5}
+                    value={violation.pointsDeducted}
+                    onChange={e => setViolation(v => ({ ...v, pointsDeducted: Number(e.target.value) }))} />
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                <button className="btn btn-outline btn-sm" onClick={() => setShowViolationModal(false)}>
+                  {t.cancel ?? "Отмена"}
+                </button>
+                <button className="btn btn-sm btn-danger" onClick={handleAddViolation}>
+                  ⚠️ {t.rating_add_violation ?? "Добавить"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
