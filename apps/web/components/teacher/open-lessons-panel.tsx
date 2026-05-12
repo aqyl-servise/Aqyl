@@ -11,10 +11,10 @@ type Lesson = {
   equipment?: string; status: string; teacher?: { id: string; fullName: string };
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  planned: "Запланирован",
-  conducted: "Проведён",
-  analyzed: "Проанализирован",
+const STATUS_KEY: Record<string, string> = {
+  planned: "planned",
+  conducted: "conducted",
+  analyzed: "lesson_analyzed",
 };
 const STATUS_COLORS: Record<string, string> = {
   planned: "score-mid",
@@ -49,7 +49,7 @@ export function OpenLessonsPanel({
   }, [token, isAdmin]);
 
   async function handleDelete(id: string) {
-    if (!confirm("Урокты жою?")) return;
+    if (!confirm(t.teacher_delete + "?")) return;
     await api.deleteLesson(token, id);
     reload();
   }
@@ -63,15 +63,15 @@ export function OpenLessonsPanel({
     return (
       <div className="page">
         <div className="page-header">
-          <button className="btn btn-ghost btn-sm" onClick={() => setView({ type: "list" })}>← Назад</button>
-          <h1 className="page-title">Материалы — {view.lesson.lessonTopic ?? view.lesson.subject}</h1>
+          <button className="btn btn-ghost btn-sm" onClick={() => setView({ type: "list" })}>← {t.back}</button>
+          <h1 className="page-title">{t.lesson_materials_for} — {view.lesson.lessonTopic ?? view.lesson.subject}</h1>
         </div>
         <FileManager
           token={token}
           section={`open-lesson-${view.lesson.id}`}
           canEdit={!isAdmin}
           canUpload={!isAdmin}
-          labels={{ upload: "Жүктеу", newFolder: "+ Папка" }}
+          labels={{ upload: t.fm_upload, newFolder: t.fm_new_folder, sort: t.fm_sort, sortDate: t.fm_sort_date, sortName: t.fm_sort_name, sortAuthor: t.fm_sort_author, pin: t.fm_pin, unpin: t.fm_unpin }}
         />
       </div>
     );
@@ -97,6 +97,7 @@ export function OpenLessonsPanel({
         lesson={view.lesson}
         busy={busy}
         setBusy={setBusy}
+        t={t}
         onDone={() => { setView({ type: "list" }); reload(); }}
         onCancel={() => setView({ type: "list" })}
       />
@@ -108,7 +109,7 @@ export function OpenLessonsPanel({
       <div className="page-header">
         <h1 className="page-title">🎓 {t.nav_lessons}</h1>
         {!isAdmin && (
-          <button className="btn btn-primary btn-sm" onClick={() => setView({ type: "form" })}>+ Добавить</button>
+          <button className="btn btn-primary btn-sm" onClick={() => setView({ type: "form" })}>+ {t.lesson_add}</button>
         )}
       </div>
 
@@ -120,13 +121,13 @@ export function OpenLessonsPanel({
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Дата и время</th>
-                  <th>Класс</th>
-                  <th>Предмет</th>
-                  {isAdmin && <th>ФИО учителя</th>}
-                  <th>Тема урока</th>
-                  <th>Статус</th>
-                  <th>Действия</th>
+                  <th>{t.lesson_date_col}</th>
+                  <th>{t.classroom}</th>
+                  <th>{t.subject}</th>
+                  {isAdmin && <th>{t.lesson_teacher_name}</th>}
+                  <th>{t.lesson_topic_col}</th>
+                  <th>{t.status}</th>
+                  <th>{t.actions}</th>
                 </tr>
               </thead>
               <tbody>
@@ -142,26 +143,26 @@ export function OpenLessonsPanel({
                     <td className="table-name">{l.lessonTopic ?? "—"}</td>
                     <td>
                       <span className={`score-chip ${STATUS_COLORS[l.status] ?? "badge"}`}>
-                        {STATUS_LABELS[l.status] ?? l.status}
+                        {t[STATUS_KEY[l.status]] ?? l.status}
                       </span>
                     </td>
                     <td>
                       <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                         <button className="btn btn-outline btn-sm"
                           onClick={() => setView({ type: "materials", lesson: l })}>
-                          Материалы
+                          {t.lesson_materials_for}
                         </button>
                         {isAdmin && (
                           <>
                             {l.status === "analyzed" ? (
                               <button className="btn btn-outline btn-sm"
                                 onClick={() => setView({ type: "analysis", lesson: l, readOnly: true })}>
-                                Просмотреть
+                                {t.lesson_view}
                               </button>
                             ) : (
                               <button className="btn btn-primary btn-sm"
                                 onClick={() => setView({ type: "analysis", lesson: l, readOnly: false })}>
-                                Анализ урока
+                                {t.lesson_analysis_btn}
                               </button>
                             )}
                           </>
@@ -170,11 +171,11 @@ export function OpenLessonsPanel({
                           <>
                             <button className="btn btn-ghost btn-sm"
                               onClick={() => setView({ type: "form", lesson: l })}>
-                              Изменить
+                              {t.teacher_edit}
                             </button>
                             <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }}
                               onClick={() => handleDelete(l.id)}>
-                              Удалить
+                              {t.teacher_delete}
                             </button>
                           </>
                         )}
@@ -192,13 +193,14 @@ export function OpenLessonsPanel({
 }
 
 function LessonForm({
-  token, classrooms, lesson, busy, setBusy, onDone, onCancel,
+  token, classrooms, lesson, busy, setBusy, t, onDone, onCancel,
 }: {
   token: string;
   classrooms: ClassroomOption[];
   lesson?: Lesson;
   busy: boolean;
   setBusy: (v: boolean) => void;
+  t: Record<string, string>;
   onDone: () => void;
   onCancel: () => void;
 }) {
@@ -234,19 +236,19 @@ function LessonForm({
   return (
     <div className="page">
       <div className="page-header">
-        <button className="btn btn-ghost btn-sm" onClick={onCancel}>← Назад</button>
-        <h1 className="page-title">{lesson ? "Редактировать урок" : "Новый открытый урок"}</h1>
+        <button className="btn btn-ghost btn-sm" onClick={onCancel}>← {t.back}</button>
+        <h1 className="page-title">{lesson ? t.lesson_edit : t.lesson_new}</h1>
       </div>
       <div className="card">
         <form onSubmit={handleSubmit} className="form-stack">
           <div className="form-row">
             <div className="field">
-              <label className="field-label">Дата проведения</label>
+              <label className="field-label">{t.lesson_date_label}</label>
               <input name="date" type="date" className="input"
                 defaultValue={lesson?.date ? lesson.date.substring(0, 10) : ""} />
             </div>
             <div className="field">
-              <label className="field-label">Время проведения</label>
+              <label className="field-label">{t.lesson_time_label}</label>
               <input name="lessonTime" type="time" className="input"
                 defaultValue={lesson?.lessonTime ?? ""} />
             </div>
@@ -254,53 +256,53 @@ function LessonForm({
 
           <div className="form-row">
             <div className="field">
-              <label className="field-label">Класс</label>
+              <label className="field-label">{t.classroom}</label>
               <select name="classroomId" className="input" defaultValue={lesson?.classroomId ?? ""}>
-                <option value="">— Выбрать класс —</option>
+                <option value="">— {t.selectClass} —</option>
                 {classrooms.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
             </div>
             <div className="field">
-              <label className="field-label">Кабинет</label>
+              <label className="field-label">{t.room}</label>
               <input name="cabinet" className="input" defaultValue={lesson?.cabinet ?? ""} />
             </div>
           </div>
 
           <div className="field">
-            <label className="field-label">Пән / Предмет</label>
+            <label className="field-label">{t.subject}</label>
             <input name="subject" className="input" required defaultValue={lesson?.subject ?? ""} />
           </div>
 
           <div className="field">
-            <label className="field-label">Сабақ тақырыбы / Тема урока</label>
+            <label className="field-label">{t.lesson_topic_col}</label>
             <input name="lessonTopic" className="input" defaultValue={lesson?.lessonTopic ?? ""} />
           </div>
 
           <div className="field">
-            <label className="field-label">Сабаққа қатынасу мақсаты</label>
+            <label className="field-label">{t.lesson_visit_purpose}</label>
             <textarea name="visitPurpose" className="textarea" rows={3}
               defaultValue={lesson?.visitPurpose ?? ""} />
           </div>
 
           <div className="field">
-            <label className="field-label">Сабақтың мақсаты</label>
+            <label className="field-label">{t.lesson_purpose}</label>
             <textarea name="lessonPurpose" className="textarea" rows={3}
               defaultValue={lesson?.lessonPurpose ?? ""} />
           </div>
 
           <div className="field">
-            <label className="field-label">Сабақтың жабдықталуы</label>
+            <label className="field-label">{t.lesson_equipment}</label>
             <textarea name="equipment" className="textarea" rows={3}
               defaultValue={lesson?.equipment ?? ""} />
           </div>
 
           <div className="form-row">
             <button className="btn btn-primary" type="submit" disabled={busy}>
-              {busy ? <span className="spinner" /> : "Сохранить"}
+              {busy ? <span className="spinner" /> : t.save}
             </button>
-            <button type="button" className="btn btn-ghost" onClick={onCancel}>Отмена</button>
+            <button type="button" className="btn btn-ghost" onClick={onCancel}>{t.cancel}</button>
           </div>
         </form>
       </div>

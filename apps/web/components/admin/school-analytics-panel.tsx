@@ -81,14 +81,14 @@ function TeacherAnalyticsDocsCard({ token, labels, tl }: { token: string; labels
           <>
             {subjects.length > 0 && (
               <div style={{ marginBottom: 12, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                <label style={{ fontSize: 13, color: "var(--muted)" }}>{tl.subject ?? "Предмет"}:</label>
+                <label style={{ fontSize: 13, color: "var(--muted)" }}>{tl.subject}:</label>
                 <select
                   className="input"
                   style={{ width: "auto", fontSize: 13, padding: "4px 8px" }}
                   value={subjectFilter}
                   onChange={e => setSubjectFilter(e.target.value)}
                 >
-                  <option value="">{tl.all_subjects ?? "Все предметы"}</option>
+                  <option value="">{tl.all_subjects}</option>
                   {subjects.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
                 {subjectFilter && <button className="btn btn-ghost btn-sm" onClick={() => setSubjectFilter("")}>✕</button>}
@@ -121,13 +121,13 @@ function TeacherAnalyticsDocsCard({ token, labels, tl }: { token: string; labels
           </div>
           <div className="sc-tabs" style={{ marginBottom: 12 }}>
             <button className={`sc-tab${docType === "quality" ? " sc-tab-active" : ""}`} onClick={() => setDocType("quality")}>
-              {tl.teacher_analytics_quality ?? "Білім сапасы"}
+              {tl.teacher_analytics_quality}
             </button>
             <button className={`sc-tab${docType === "class" ? " sc-tab-active" : ""}`} onClick={() => setDocType("class")}>
-              {tl.teacher_analytics_class_data ?? "Сынып бойынша мәлімет"}
+              {tl.teacher_analytics_class_data}
             </button>
             <button className={`sc-tab${docType === "subject" ? " sc-tab-active" : ""}`} onClick={() => setDocType("subject")}>
-              {tl.analytics_by_subject ?? "По предмету"}
+              {tl.analytics_by_subject}
             </button>
           </div>
           <FileManager
@@ -218,7 +218,7 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
       setAiResult(result.analysis);
     } catch (e) {
       console.error(e);
-      setAiResult("Ошибка при получении анализа. Проверьте подключение к сети.");
+      setAiResult(tl.error_ai);
     } finally {
       setAiLoading(false);
     }
@@ -442,7 +442,7 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
                       <span className={`score-chip ${scoreClass(subj.avgScore)}`}>{subj.avgScore}%</span>
                     </div>
                     <table className="data-table">
-                      <thead><tr><th>{t.topic}</th><th>{t.averageScore}</th><th>Макс</th></tr></thead>
+                      <thead><tr><th>{t.topic}</th><th>{t.averageScore}</th><th>{t.maxScore}</th></tr></thead>
                       <tbody>
                         {subj.topics.map((tp, i) => (
                           <tr key={i}>
@@ -467,7 +467,7 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
               />
               {studentLoading && <p className="fm-empty">{t.loading}</p>}
               {!studentLoading && studentQ && studentResults.length === 0 && <p className="fm-empty">{t.noData}</p>}
-              {!studentQ && <p className="fm-empty" style={{ color: "var(--muted)" }}>Введите имя или ИИН для поиска</p>}
+              {!studentQ && <p className="fm-empty" style={{ color: "var(--muted)" }}>{tl.san_student_search}</p>}
               {studentResults.length > 0 && (
                 <table className="data-table">
                   <thead><tr><th>{t.name}</th><th>{t.iin}</th><th>{t.classroom}</th><th>{t.averageScore}</th><th>{t.actions}</th></tr></thead>

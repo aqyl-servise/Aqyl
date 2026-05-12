@@ -5,7 +5,7 @@ import { Language } from "../../lib/translations";
 
 type Classroom = { id: string; name: string };
 
-const QUARTER_OPTS = ["1 четверть", "2 четверть", "3 четверть", "4 четверть"];
+const QUARTER_NUMS = ["1", "2", "3", "4"];
 
 export function SorSochPanel({ token, language, t, isAdmin, userRole }: {
   token: string;
@@ -72,7 +72,7 @@ export function SorSochPanel({ token, language, t, isAdmin, userRole }: {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Удалить документ?")) return;
+    if (!confirm(t.sor_confirm_delete)) return;
     await api.deleteSorSoch(token, id);
     setDocs(prev => prev.filter(d => d.id !== id));
   }
@@ -91,14 +91,14 @@ export function SorSochPanel({ token, language, t, isAdmin, userRole }: {
 
   return (
     <div className="page">
-      <h1 className="page-title">📄 СОР/СОЧ</h1>
+      <h1 className="page-title">📄 {t.sor_soch_title}</h1>
 
       <div className="sc-tabs">
         <button className={`sc-tab${tab === "sor" ? " sc-tab-active" : ""}`} onClick={() => { setTab("sor"); setAdding(false); }}>
-          СОР (Суммативное оценивание за раздел)
+          {t.sor_tab_sor_full}
         </button>
         <button className={`sc-tab${tab === "soch" ? " sc-tab-active" : ""}`} onClick={() => { setTab("soch"); setAdding(false); }}>
-          СОЧ (Суммативное оценивание за четверть)
+          {t.sor_tab_soch_full}
         </button>
       </div>
 
@@ -106,23 +106,26 @@ export function SorSochPanel({ token, language, t, isAdmin, userRole }: {
         <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
           <input
             className="input" style={{ width: 180 }}
-            placeholder="Предмет"
+            placeholder={t.subject}
             value={filterSubject}
             onChange={e => setFilterSubject(e.target.value)}
           />
           <select className="input" style={{ width: 160 }} value={filterClassroom} onChange={e => setFilterClassroom(e.target.value)}>
-            <option value="">Все классы</option>
+            <option value="">{t.all_classes}</option>
             {classrooms.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <select className="input" style={{ width: 160 }} value={filterQuarter} onChange={e => setFilterQuarter(e.target.value)}>
-            <option value="">Все четверти</option>
-            {QUARTER_OPTS.map(q => <option key={q} value={q}>{q}</option>)}
+            <option value="">{t.sor_quarter_all}</option>
+            {QUARTER_NUMS.map(n => {
+              const label = `${n} ${t.sor_quarter}`;
+              return <option key={n} value={label}>{label}</option>;
+            })}
           </select>
-          <button className="btn btn-outline btn-sm" onClick={() => reload()}>Применить</button>
+          <button className="btn btn-outline btn-sm" onClick={() => reload()}>{t.sor_apply_filter}</button>
           <div style={{ marginLeft: "auto" }}>
             {!isAdmin && (
               <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>
-                + Загрузить {tab === "sor" ? "СОР" : "СОЧ"}
+                + {t.sor_upload}
               </button>
             )}
           </div>
@@ -130,43 +133,46 @@ export function SorSochPanel({ token, language, t, isAdmin, userRole }: {
 
         {adding && (
           <div style={{ marginBottom: 20, padding: "16px", background: "var(--surface)", borderRadius: 8, border: "1px solid var(--border)" }}>
-            <h4 style={{ marginBottom: 12 }}>Загрузить {tab === "sor" ? "СОР" : "СОЧ"}</h4>
+            <h4 style={{ marginBottom: 12 }}>{t.sor_upload} — {tab === "sor" ? t.sor_tab_sor : t.sor_tab_soch}</h4>
             <form onSubmit={handleCreate} className="form-stack">
               <div className="form-row">
                 <div className="field">
-                  <label className="field-label">Название *</label>
-                  <input name="title" className="input" required placeholder={tab === "sor" ? "СОР — Алгебра, Раздел 1" : "СОЧ — Физика, 2 четверть"} />
+                  <label className="field-label">{t.sor_name_label} *</label>
+                  <input name="title" className="input" required />
                 </div>
                 <div className="field">
-                  <label className="field-label">Предмет</label>
-                  <input name="subject" className="input" placeholder="Математика" />
+                  <label className="field-label">{t.subject}</label>
+                  <input name="subject" className="input" />
                 </div>
               </div>
               <div className="form-row">
                 <div className="field">
-                  <label className="field-label">Класс</label>
+                  <label className="field-label">{t.classroom}</label>
                   <select name="classroomId" className="input">
-                    <option value="">— Выберите класс —</option>
+                    <option value="">— {t.selectClass} —</option>
                     {classrooms.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
                 <div className="field">
-                  <label className="field-label">Четверть</label>
+                  <label className="field-label">{t.sor_quarter}</label>
                   <select name="quarter" className="input">
                     <option value="">—</option>
-                    {QUARTER_OPTS.map(q => <option key={q} value={q}>{q}</option>)}
+                    {QUARTER_NUMS.map(n => {
+                      const label = `${n} ${t.sor_quarter}`;
+                      return <option key={n} value={label}>{label}</option>;
+                    })}
                   </select>
                 </div>
               </div>
               <div className="field">
-                <label className="field-label">Файл (PDF, DOCX)</label>
+                <label className="field-label">{t.sor_file_label}</label>
                 <input name="file" type="file" className="input" accept=".pdf,.docx,.doc,.xlsx,.xls" />
               </div>
               <div className="form-row">
                 <button className="btn btn-primary btn-sm" type="submit" disabled={busy}>
-                  {busy ? <span className="spinner" /> : "Сохранить"}
+                  {busy ? <span className="spinner" /> : t.save}
                 </button>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setAdding(false)}>Отмена</button>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setAdding(false)}>{t.cancel}</button>
               </div>
             </form>
           </div>
@@ -180,12 +186,12 @@ export function SorSochPanel({ token, language, t, isAdmin, userRole }: {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Название</th>
-                <th>Предмет</th>
-                <th>Класс</th>
-                <th>Четверть</th>
-                {isAdmin && <th>Учитель</th>}
-                <th>Дата</th>
+                <th>{t.sor_name_label}</th>
+                <th>{t.subject}</th>
+                <th>{t.classroom}</th>
+                <th>{t.sor_quarter}</th>
+                {isAdmin && <th>{t.teacher_label}</th>}
+                <th>{t.date}</th>
                 <th></th>
               </tr>
             </thead>
@@ -205,7 +211,7 @@ export function SorSochPanel({ token, language, t, isAdmin, userRole }: {
                       )}
                       {!isAdmin && (
                         <>
-                          <button className="btn btn-ghost btn-sm" title="Переименовать"
+                          <button className="btn btn-ghost btn-sm" title={t.sor_rename}
                             onClick={() => { setRenaming(doc); setRenameTitle(doc.title); }}>
                             ✏️
                           </button>
@@ -227,7 +233,7 @@ export function SorSochPanel({ token, language, t, isAdmin, userRole }: {
       {renaming && (
         <div className="modal-overlay" onClick={() => setRenaming(null)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>
-            <h3 style={{ marginBottom: 16 }}>Переименовать</h3>
+            <h3 style={{ marginBottom: 16 }}>{t.sor_rename}</h3>
             <input
               className="input"
               value={renameTitle}
@@ -237,9 +243,9 @@ export function SorSochPanel({ token, language, t, isAdmin, userRole }: {
             />
             <div className="form-row">
               <button className="btn btn-primary btn-sm" onClick={handleRename} disabled={busy || !renameTitle.trim()}>
-                {busy ? <span className="spinner" /> : "Сохранить"}
+                {busy ? <span className="spinner" /> : t.save}
               </button>
-              <button className="btn btn-ghost btn-sm" onClick={() => setRenaming(null)}>Отмена</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setRenaming(null)}>{t.cancel}</button>
             </div>
           </div>
         </div>

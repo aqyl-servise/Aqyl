@@ -5,10 +5,10 @@ import { Language } from "../../lib/translations";
 import { PasswordInput } from "../ui/password-input";
 
 const ROLES: UserRole[] = ["teacher", "admin", "principal", "vice_principal", "class_teacher"];
-const ROLE_LABELS: Record<UserRole, string> = {
-  teacher: "Учитель", admin: "Администратор", principal: "Директор",
-  vice_principal: "Завуч", class_teacher: "Классный руководитель", student: "Ученик",
-};
+
+function roleLabel(role: string, t: Record<string, string>): string {
+  return t[`role_${role}`] ?? role;
+}
 
 const SCHOOL_ROLES: UserRole[] = ["teacher", "principal", "vice_principal", "class_teacher"];
 
@@ -113,7 +113,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
       }
       await reload();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Ошибка");
+      alert(err instanceof Error ? err.message : t.error);
     } finally {
       setActionBusy(null);
       setConfirmModal(null);
@@ -126,7 +126,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
       await api.activateUser(token, user.id);
       await reload();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Ошибка");
+      alert(err instanceof Error ? err.message : t.error);
     } finally { setActionBusy(null); }
   }
 
@@ -146,7 +146,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
       )}
       <div className="page-header">
         <h1 className="page-title">👥 {t.nav_users}</h1>
-        <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ Добавить</button>
+        <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ {t.add}</button>
       </div>
 
       <div className="filter-row">
@@ -155,7 +155,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
         <div className="role-tabs">
           {["all", ...ROLES].map((r) => (
             <button key={r} className={`role-tab ${roleFilter === r ? "active" : ""}`} onClick={() => setRoleFilter(r)}>
-              {r === "all" ? t.all : ROLE_LABELS[r as UserRole]}
+              {r === "all" ? t.all : roleLabel(r, t)}
             </button>
           ))}
         </div>
@@ -163,10 +163,10 @@ export function UsersPanel({ token, language, t, currentUserId }: {
 
       {adding && (
         <div className="card" style={{ marginBottom: 20 }}>
-          <h3 className="card-title">Новый пользователь</h3>
+          <h3 className="card-title">{t.users_new_user}</h3>
           <form onSubmit={handleCreate} className="form-stack">
             <div className="form-row">
-              <Field label="ФИО" name="fullName" />
+              <Field label={t.fullNameLabel} name="fullName" />
               <Field label={t.email} name="email" type="email" />
             </div>
             <div className="form-row">
@@ -177,9 +177,9 @@ export function UsersPanel({ token, language, t, currentUserId }: {
               <Field label={t.subject} name="subject" />
             </div>
             <div className="field">
-              <label className="field-label">Роль</label>
+              <label className="field-label">{t.users_role}</label>
               <select name="role" className="input" required>
-                {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+                {ROLES.map((r) => <option key={r} value={r}>{roleLabel(r, t)}</option>)}
               </select>
             </div>
             <div className="form-row">
@@ -208,7 +208,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
           token={token}
           t={t}
           onClose={() => setPasswordTarget(null)}
-          onSuccess={() => { setPasswordTarget(null); showToast("Пароль успешно изменён"); }}
+          onSuccess={() => { setPasswordTarget(null); showToast(t.users_password_changed); }}
         />
       )}
 
@@ -217,18 +217,17 @@ export function UsersPanel({ token, language, t, currentUserId }: {
           <div className="modal-card" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
             {confirmModal.kind === "deactivate" ? (
               <>
-                <h3 style={{ marginBottom: 12, color: "#92400e" }}>⏸ Деактивировать аккаунт?</h3>
+                <h3 style={{ marginBottom: 12, color: "#92400e" }}>⏸ {t.users_deactivate_title}</h3>
                 <p style={{ color: "#64748b", marginBottom: 20, lineHeight: 1.5 }}>
-                  Деактивировать аккаунт <strong>{confirmModal.user.fullName}</strong>?<br />
-                  Пользователь не сможет войти в систему.
+                  <strong>{confirmModal.user.fullName}</strong>
                 </p>
               </>
             ) : (
               <>
-                <h3 style={{ marginBottom: 12, color: "#991b1b" }}>🗑 Удалить аккаунт?</h3>
+                <h3 style={{ marginBottom: 12, color: "#991b1b" }}>🗑 {t.users_delete_title}</h3>
                 <p style={{ color: "#64748b", marginBottom: 20, lineHeight: 1.5 }}>
-                  Вы уверены? Это действие необратимо.<br />
-                  Все данные пользователя <strong>{confirmModal.user.fullName}</strong> будут удалены.
+                  {t.users_delete_body}<br />
+                  <strong>{confirmModal.user.fullName}</strong>
                 </p>
               </>
             )}
@@ -240,7 +239,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
               >
                 {actionBusy === confirmModal.user.id
                   ? <span className="spinner" />
-                  : confirmModal.kind === "delete" ? "Удалить" : "Деактивировать"}
+                  : confirmModal.kind === "delete" ? t.teacher_delete : t.users_deactivate}
               </button>
               <button type="button" className="btn btn-ghost" onClick={() => setConfirmModal(null)}>{t.cancel}</button>
             </div>
@@ -250,12 +249,12 @@ export function UsersPanel({ token, language, t, currentUserId }: {
 
       <div className="card">
         <div className="users-count muted" style={{ fontSize: 13, marginBottom: 4 }}>
-          Показано: {filtered.length} из {users.length}
+          {t.users_shown}: {filtered.length} {t.out_of} {users.length}
         </div>
         {filtered.length === 0 ? <p className="empty-state">{t.noData}</p> : (
           <table className="data-table">
             <thead>
-              <tr><th>ФИО</th><th>Email</th><th>Предмет</th><th>Школа</th><th>Роль</th><th>Статус</th><th></th></tr>
+              <tr><th>{t.fullNameLabel}</th><th>{t.email}</th><th>{t.subject}</th><th>{t.teacher_school}</th><th>{t.users_role}</th><th>{t.status}</th><th></th></tr>
             </thead>
             <tbody>
               {filtered.map((u) => (
@@ -266,7 +265,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
                   <td className="muted" style={{ fontSize: 13 }}>{u.schoolName ?? "—"}</td>
                   <td>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
-                      <span className={`role-chip role-${u.role}`}>{ROLE_LABELS[u.role]}</span>
+                      <span className={`role-chip role-${u.role}`}>{roleLabel(u.role, t)}</span>
                       {u.role === "teacher" && u.isClassTeacher && u.managedClassroomName && (
                         <span style={{
                           fontSize: 11, fontWeight: 600,
@@ -274,7 +273,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
                           borderRadius: 6, padding: "2px 7px",
                           border: "1px solid #bfdbfe",
                         }}>
-                          Кл. рук. {u.managedClassroomName}
+                          {t.role_class_teacher} · {u.managedClassroomName}
                         </span>
                       )}
                       {u.role === "teacher" && u.isClassTeacher && !u.managedClassroomName && (
@@ -284,27 +283,27 @@ export function UsersPanel({ token, language, t, currentUserId }: {
                           borderRadius: 6, padding: "2px 7px",
                           border: "1px solid #bfdbfe",
                         }}>
-                          Кл. рук.
+                          {t.role_class_teacher}
                         </span>
                       )}
                     </div>
                   </td>
                   <td>
                     {u.status === "inactive" ? (
-                      <span className="status-chip status-inactive">Неактивен</span>
+                      <span className="status-chip status-inactive">{t.teacher_status_inactive}</span>
                     ) : (
-                      <span className="status-chip status-active">Активен</span>
+                      <span className="status-chip status-active">{t.teacher_status_active}</span>
                     )}
                   </td>
                   <td>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      <button className="btn btn-ghost btn-sm" onClick={() => setEditing(u)}>Изменить</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setEditing(u)}>{t.teacher_edit}</button>
                       {!isSelf(u) && (
                         <button
                           className="btn btn-sm"
                           style={{ background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe" }}
                           onClick={() => setPasswordTarget(u)}
-                          title="Сменить пароль"
+                          title={t.users_change_password}
                         >
                           🔑
                         </button>
@@ -317,9 +316,9 @@ export function UsersPanel({ token, language, t, currentUserId }: {
                               style={{ background: "#dcfce7", color: "#166534", border: "1px solid #bbf7d0" }}
                               disabled={actionBusy === u.id}
                               onClick={() => handleActivate(u)}
-                              title="Активировать"
+                              title={t.users_activate}
                             >
-                              {actionBusy === u.id ? <span className="spinner" /> : "▶ Активировать"}
+                              {actionBusy === u.id ? <span className="spinner" /> : `▶ ${t.users_activate}`}
                             </button>
                           ) : (
                             <button
@@ -327,9 +326,9 @@ export function UsersPanel({ token, language, t, currentUserId }: {
                               style={{ background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a" }}
                               disabled={actionBusy === u.id}
                               onClick={() => setConfirmModal({ kind: "deactivate", user: u })}
-                              title="Деактивировать"
+                              title={t.users_deactivate}
                             >
-                              ⏸ Деактивировать
+                              ⏸ {t.users_deactivate}
                             </button>
                           )}
                           <button
@@ -337,7 +336,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
                             style={{ background: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" }}
                             disabled={actionBusy === u.id}
                             onClick={() => setConfirmModal({ kind: "delete", user: u })}
-                            title="Удалить"
+                            title={t.teacher_delete}
                           >
                             🗑
                           </button>
@@ -367,12 +366,12 @@ function EditUserModal({ user, classrooms, schools, busy, t, onSubmit, onClose }
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" style={{ maxWidth: 500 }} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ marginBottom: 16 }}>Редактировать пользователя</h3>
+        <h3 style={{ marginBottom: 16 }}>{t.users_edit_user}</h3>
         <form onSubmit={onSubmit} className="form-stack">
-          <Field label="ФИО" name="fullName" defaultValue={user.fullName} />
+          <Field label={t.fullNameLabel} name="fullName" defaultValue={user.fullName} />
           <Field label={t.subject} name="subject" defaultValue={user.subject ?? ""} />
           <div className="field">
-            <label className="field-label">Роль</label>
+            <label className="field-label">{t.users_role}</label>
             <select
               name="role"
               className="input"
@@ -382,15 +381,15 @@ function EditUserModal({ user, classrooms, schools, busy, t, onSubmit, onClose }
                 if (e.target.value !== "teacher") setIsClassTeacher(false);
               }}
             >
-              {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+              {ROLES.map((r) => <option key={r} value={r}>{roleLabel(r, t)}</option>)}
             </select>
           </div>
 
           {SCHOOL_ROLES.includes(selectedRole as UserRole) && schools.length > 0 && (
             <div className="field">
-              <label className="field-label">Школа</label>
+              <label className="field-label">{t.teacher_school}</label>
               <select name="schoolId" className="input" defaultValue={user.schoolId ?? ""}>
-                <option value="">— не привязан —</option>
+                <option value="">— {t.users_not_bound} —</option>
                 {schools.map(s => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
@@ -408,17 +407,17 @@ function EditUserModal({ user, classrooms, schools, busy, t, onSubmit, onClose }
                   onChange={e => setIsClassTeacher(e.target.checked)}
                   style={{ width: 16, height: 16, cursor: "pointer" }}
                 />
-                <span style={{ fontWeight: 500 }}>Классный руководитель</span>
+                <span style={{ fontWeight: 500 }}>{t.users_class_teacher_check}</span>
               </label>
               {isClassTeacher && (
                 <div className="field" style={{ margin: "0 0 0 26px" }}>
-                  <label className="field-label" style={{ fontSize: 12 }}>Класс</label>
+                  <label className="field-label" style={{ fontSize: 12 }}>{t.classroom}</label>
                   <select
                     name="managedClassroomId"
                     className="input"
                     defaultValue={user.managedClassroomId ?? ""}
                   >
-                    <option value="">— выберите класс —</option>
+                    <option value="">— {t.users_select_class} —</option>
                     {classrooms.map(c => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
@@ -459,38 +458,38 @@ function PasswordModal({ user, token, t, onClose, onSuccess }: {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (newPassword.length < 6) { setError("Минимум 6 символов"); return; }
-    if (newPassword !== confirmPassword) { setError("Пароли не совпадают"); return; }
+    if (newPassword.length < 6) { setError(t.users_min_password); return; }
+    if (newPassword !== confirmPassword) { setError(t.users_password_mismatch); return; }
     setBusy(true);
     try {
       await api.changeUserPassword(token, user.id, newPassword);
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Ошибка");
+      setError(err instanceof Error ? err.message : t.error);
     } finally { setBusy(false); }
   }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" style={{ maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ marginBottom: 4 }}>🔑 Смена пароля</h3>
+        <h3 style={{ marginBottom: 4 }}>🔑 {t.users_password_title}</h3>
         <p style={{ color: "#64748b", fontSize: 13, marginBottom: 20 }}>{user.fullName}</p>
         <form onSubmit={handleSubmit} className="form-stack">
           <div className="field">
-            <label className="field-label">Новый пароль</label>
+            <label className="field-label">{t.users_new_password}</label>
             <PasswordInput
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Минимум 6 символов"
+              placeholder={t.users_min_password}
               autoFocus
             />
           </div>
           <div className="field">
-            <label className="field-label">Подтвердить пароль</label>
+            <label className="field-label">{t.users_confirm_password}</label>
             <PasswordInput
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Повторите пароль"
+              placeholder={t.users_repeat_password}
             />
           </div>
           {error && <p style={{ color: "#dc2626", fontSize: 13, margin: 0 }}>{error}</p>}
