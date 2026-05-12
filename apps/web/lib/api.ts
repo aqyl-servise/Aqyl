@@ -191,6 +191,47 @@ export type FLSubmission = {
   student?: { id: string; fullName: string };
 };
 
+export type TeacherRating = {
+  id: string;
+  rank?: number;
+  total?: number;
+  pointsToTop10?: number | null;
+  teacherId?: string;
+  teacherName?: string;
+  subject?: string;
+  category?: string;
+  isClassTeacher?: boolean;
+  totalScore: number;
+  scoreExperience: number;
+  scoreCategory: number;
+  scoreAcademic: number;
+  scoreFLiteracy: number;
+  scoreOpenLessons: number;
+  scoreAchievements: number;
+  scoreActivity: number;
+  scoreViolations: number;
+  manualAdjustment: number;
+  manualComment?: string;
+  period: "quarter" | "semester" | "year";
+  periodNumber: number;
+  academicYear: string;
+  teacher?: { id: string; fullName: string; subject?: string; category?: string; isClassTeacher: boolean };
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type TeacherViolation = {
+  id: string;
+  teacherId?: string;
+  schoolId: string;
+  type: "reprimand" | "parent_complaint" | "other";
+  description: string;
+  date: string;
+  pointsDeducted: number;
+  createdBy?: string;
+  createdAt: string;
+};
+
 let _selectedSchoolId: string | null = null;
 export function setApiSchoolId(id: string | null) { _selectedSchoolId = id; }
 
@@ -655,6 +696,45 @@ export const api = {
     request<FLSubmission>(`/fl/student/submissions/${id}`, { method: "PATCH", body: JSON.stringify(data) }, token),
   flSubmitAnswers: (token: string, assignmentId: string, data: { answers: { taskId: string; answer: string }[] }) =>
     request<FLSubmission>(`/fl/assignments/${assignmentId}/submit`, { method: "POST", body: JSON.stringify(data) }, token),
+
+  // Teacher Rating
+  ratingCalculate: (token: string, data: { period?: string; periodNumber?: number; academicYear?: string }) =>
+    request<{ calculated: number; period: string; periodNumber: number; academicYear: string }>("/rating/calculate", { method: "POST", body: JSON.stringify(data) }, token),
+  ratingGetSchool: (token: string, params?: { subject?: string; period?: string; periodNumber?: number; academicYear?: string; isClassTeacher?: boolean }) => {
+    const q = new URLSearchParams();
+    if (params?.subject) q.set("subject", params.subject);
+    if (params?.period) q.set("period", params.period);
+    if (params?.periodNumber !== undefined) q.set("periodNumber", String(params.periodNumber));
+    if (params?.academicYear) q.set("academicYear", params.academicYear);
+    if (params?.isClassTeacher !== undefined) q.set("isClassTeacher", String(params.isClassTeacher));
+    return request<TeacherRating[]>(`/rating/school?${q}`, undefined, token);
+  },
+  ratingGetTeacher: (token: string, teacherId: string, params?: { period?: string; periodNumber?: number; academicYear?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.period) q.set("period", params.period);
+    if (params?.periodNumber !== undefined) q.set("periodNumber", String(params.periodNumber));
+    if (params?.academicYear) q.set("academicYear", params.academicYear);
+    return request<TeacherRating | null>(`/rating/teacher/${teacherId}?${q}`, undefined, token);
+  },
+  ratingGetMy: (token: string, params?: { period?: string; periodNumber?: number; academicYear?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.period) q.set("period", params.period);
+    if (params?.periodNumber !== undefined) q.set("periodNumber", String(params.periodNumber));
+    if (params?.academicYear) q.set("academicYear", params.academicYear);
+    return request<TeacherRating | null>(`/rating/my?${q}`, undefined, token);
+  },
+  ratingGetHistory: (token: string, teacherId: string) =>
+    request<TeacherRating[]>(`/rating/history/${teacherId}`, undefined, token),
+  ratingGetMyHistory: (token: string) =>
+    request<TeacherRating[]>("/rating/history/my", undefined, token),
+  ratingAdjust: (token: string, id: string, data: { manualAdjustment: number; manualComment?: string }) =>
+    request<TeacherRating>(`/rating/${id}/adjust`, { method: "PATCH", body: JSON.stringify(data) }, token),
+  ratingCreateViolation: (token: string, data: { teacherId: string; type: string; description: string; date: string; pointsDeducted: number }) =>
+    request<TeacherViolation>("/rating/violations", { method: "POST", body: JSON.stringify(data) }, token),
+  ratingGetViolations: (token: string, teacherId: string) =>
+    request<TeacherViolation[]>(`/rating/violations/${teacherId}`, undefined, token),
+  ratingDeleteViolation: (token: string, id: string) =>
+    request<{ ok: boolean }>(`/rating/violations/${id}`, { method: "DELETE" }, token),
 
   // Schools (global admin)
   getSchools: (token: string) =>

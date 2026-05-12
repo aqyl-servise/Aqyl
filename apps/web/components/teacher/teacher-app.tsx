@@ -15,6 +15,7 @@ import { FileManager } from "../ui/file-manager";
 import { ClassHoursSchedulePanel } from "../admin/class-hours-schedule";
 import { SorSochPanel } from "./sor-soch-panel";
 import { FLTeacherPanel } from "./fl-panel";
+import { MyRatingPanel } from "./my-rating-panel";
 
 const CONTACT_WHATSAPP = "77000000000";
 const CONTACT_EMAIL = "support@aqyl.kz";
@@ -82,6 +83,7 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
     { key: "teacher-final", label: t.nav_final_attestation, icon: "🎓" },
     { key: "gifted", label: t.nav_gifted, icon: "⭐" },
     { key: "fl", label: t.nav_fl ?? "Функц. грамотность", icon: "📚" },
+    { key: "my-rating", label: t.nav_my_rating ?? "Мой рейтинг", icon: "🏆" },
     { key: "sor-soch", label: t.nav_sor_soch ?? "СОР/СОЧ", icon: "📄" },
   ];
 
@@ -132,6 +134,7 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
       )}
       {section === "gifted" && <TeacherGiftedSection token={token} userId={user.id} language={language} t={t} user={user} />}
       {section === "fl" && <FLTeacherPanel token={token} language={language} />}
+      {section === "my-rating" && <MyRatingPanel token={token} language={language} />}
       {section === "sor-soch" && <SorSochPanel token={token} language={language} t={t} />}
     </AppLayout>
   );

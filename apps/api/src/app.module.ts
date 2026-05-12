@@ -63,6 +63,9 @@ import { FLAssignment } from "./modules/schools/entities/fl-assignment.entity";
 import { FLSubmission } from "./modules/schools/entities/fl-submission.entity";
 import { FLResult } from "./modules/schools/entities/fl-result.entity";
 import { FLModule } from "./modules/fl/fl.module";
+import { TeacherRating } from "./modules/schools/entities/teacher-rating.entity";
+import { TeacherViolation } from "./modules/schools/entities/teacher-violation.entity";
+import { RatingModule } from "./modules/rating/rating.module";
 
 @Module({
   imports: [
@@ -88,6 +91,7 @@ import { FLModule } from "./modules/fl/fl.module";
           SorSochDocument,
           SubjectTeacherAssignment,
           FLTask, FLAssignment, FLSubmission, FLResult,
+          TeacherRating, TeacherViolation,
         ],
       }),
     }),
@@ -99,6 +103,7 @@ import { FLModule } from "./modules/fl/fl.module";
       SorSochDocument,
       SubjectTeacherAssignment,
       FLTask, FLAssignment, FLSubmission, FLResult,
+      TeacherRating, TeacherViolation,
     ]),
     TeachersModule,
     AuthModule,
@@ -126,6 +131,7 @@ import { FLModule } from "./modules/fl/fl.module";
     SchoolsModule,
     SorSochModule,
     FLModule,
+    RatingModule,
   ],
   providers: [
     SeedService,
