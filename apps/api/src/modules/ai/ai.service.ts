@@ -65,6 +65,29 @@ export class AiChatService {
     return { content };
   }
 
+  async generateFLTask(params: {
+    subject: string; grade: number; direction: string;
+    difficulty: string; taskType: string; topic: string;
+  }): Promise<{ title: string; description: string; options?: { text: string; isCorrect: boolean }[]; correctAnswer?: string }> {
+    if (!this.client) {
+      return { title: `Функциональная грамотность: ${params.topic}`, description: `Задание по функциональной грамотности для ${params.grade} класса на тему «${params.topic}».` };
+    }
+    const dirMap: Record<string, string> = { reading: "читательской грамотности", math: "математической грамотности", science: "естественнонаучной грамотности" };
+    const diffMap: Record<string, string> = { low: "низкой", medium: "средней", high: "высокой" };
+    const isTest = params.taskType === "test";
+    const jsonSchema = isTest
+      ? `{"title":"...","description":"...","options":[{"text":"...","isCorrect":false},{"text":"...","isCorrect":true},{"text":"...","isCorrect":false},{"text":"...","isCorrect":false}]}`
+      : `{"title":"...","description":"...","correctAnswer":"..."}`;
+    const prompt = `Создай задание по ${dirMap[params.direction] ?? params.direction} для ${params.grade} класса. Предмет: ${params.subject}. Тема: «${params.topic}». Сложность: ${diffMap[params.difficulty] ?? params.difficulty}. Тип: ${isTest ? "тест с 4 вариантами (один правильный)" : "открытый ответ"}.\nВерни ТОЛЬКО JSON (без markdown): ${jsonSchema}`;
+    const response = await this.client.messages.create({ model: this.model, max_tokens: 1024, system: SYSTEM_PROMPT, messages: [{ role: "user", content: prompt }] });
+    const raw = response.content[0].type === "text" ? response.content[0].text : "{}";
+    try {
+      return JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
+    } catch {
+      return { title: `Задание по теме «${params.topic}»`, description: raw };
+    }
+  }
+
   async generateLessonPlan(subject: string, grade: string, topic: string, duration: number): Promise<{ content: string }> {
     if (!this.client) {
       return { content: `КМЖ: ${subject}, ${grade} класс, тема: «${topic}», ${duration} мин.` };

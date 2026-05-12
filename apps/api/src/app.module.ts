@@ -58,6 +58,11 @@ import { SchoolsModule } from "./modules/schools/schools.module";
 import { SorSochModule } from "./modules/sor-soch/sor-soch.module";
 import { SorSochDocument } from "./modules/schools/entities/sor-soch-document.entity";
 import { SubjectTeacherAssignment } from "./modules/schools/entities/subject-teacher-assignment.entity";
+import { FLTask } from "./modules/schools/entities/fl-task.entity";
+import { FLAssignment } from "./modules/schools/entities/fl-assignment.entity";
+import { FLSubmission } from "./modules/schools/entities/fl-submission.entity";
+import { FLResult } from "./modules/schools/entities/fl-result.entity";
+import { FLModule } from "./modules/fl/fl.module";
 
 @Module({
   imports: [
@@ -82,6 +87,7 @@ import { SubjectTeacherAssignment } from "./modules/schools/entities/subject-tea
           StudentTransfer, PasswordReset, FileFolder, TeacherAttestation, FinalAttestationStudent, KtpReview, SchoolInfo,
           SorSochDocument,
           SubjectTeacherAssignment,
+          FLTask, FLAssignment, FLSubmission, FLResult,
         ],
       }),
     }),
@@ -92,6 +98,7 @@ import { SubjectTeacherAssignment } from "./modules/schools/entities/subject-tea
       StudentTransfer, PasswordReset, FileFolder, TeacherAttestation, FinalAttestationStudent, KtpReview, SchoolInfo,
       SorSochDocument,
       SubjectTeacherAssignment,
+      FLTask, FLAssignment, FLSubmission, FLResult,
     ]),
     TeachersModule,
     AuthModule,
@@ -118,6 +125,7 @@ import { SubjectTeacherAssignment } from "./modules/schools/entities/subject-tea
     SchoolInfoModule,
     SchoolsModule,
     SorSochModule,
+    FLModule,
   ],
   providers: [
     SeedService,

@@ -145,6 +145,52 @@ export type GiftedAssignment = {
   student: StudentRow;
 };
 
+export type FLTask = {
+  id: string;
+  title: string;
+  description: string;
+  subject?: string;
+  grade?: number;
+  direction?: "reading" | "math" | "science";
+  difficulty?: "low" | "medium" | "high";
+  taskType?: "test" | "open" | "practical";
+  options?: { text: string; isCorrect: boolean }[];
+  correctAnswer?: string;
+  source?: "bank" | "teacher" | "ai";
+  schoolId?: string;
+  teacherId?: string;
+  createdAt: string;
+};
+
+export type FLAssignment = {
+  id: string;
+  title: string;
+  description?: string;
+  tasks: string[];
+  classroomId: string;
+  teacherId: string;
+  schoolId: string;
+  format?: "test" | "text_work" | "practical";
+  timeLimit?: number;
+  dueDate?: string;
+  status: "draft" | "published" | "closed";
+  createdAt: string;
+};
+
+export type FLSubmission = {
+  id: string;
+  assignmentId: string;
+  studentId: string;
+  answers: { taskId: string; answer: string; score?: number; teacherComment?: string }[];
+  totalScore?: number;
+  maxScore?: number;
+  status: "in_progress" | "submitted" | "graded";
+  startedAt?: string;
+  submittedAt?: string;
+  gradedAt?: string;
+  student?: { id: string; fullName: string };
+};
+
 let _selectedSchoolId: string | null = null;
 export function setApiSchoolId(id: string | null) { _selectedSchoolId = id; }
 
@@ -561,6 +607,54 @@ export const api = {
     request<SorSochDoc>(`/sor-soch/${id}`, { method: "PATCH", body: JSON.stringify(data) }, token),
   deleteSorSoch: (token: string, id: string) =>
     request<{ ok: boolean }>(`/sor-soch/${id}`, { method: "DELETE" }, token),
+
+  // Functional Literacy
+  flGetTasks: (token: string, params?: { subject?: string; grade?: number; direction?: string; difficulty?: string; source?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.subject) q.set("subject", params.subject);
+    if (params?.grade) q.set("grade", String(params.grade));
+    if (params?.direction) q.set("direction", params.direction);
+    if (params?.difficulty) q.set("difficulty", params.difficulty);
+    if (params?.source) q.set("source", params.source);
+    const qs = q.toString();
+    return request<FLTask[]>(`/fl/tasks${qs ? "?" + qs : ""}`, undefined, token);
+  },
+  flCreateTask: (token: string, data: Partial<FLTask>) =>
+    request<FLTask>("/fl/tasks", { method: "POST", body: JSON.stringify(data) }, token),
+  flUpdateTask: (token: string, id: string, data: Partial<FLTask>) =>
+    request<FLTask>(`/fl/tasks/${id}`, { method: "PATCH", body: JSON.stringify(data) }, token),
+  flDeleteTask: (token: string, id: string) =>
+    request<{ ok: boolean }>(`/fl/tasks/${id}`, { method: "DELETE" }, token),
+  flGetAssignments: (token: string, classroomId?: string) =>
+    request<FLAssignment[]>(`/fl/assignments${classroomId ? `?classroomId=${classroomId}` : ""}`, undefined, token),
+  flCreateAssignment: (token: string, data: Partial<FLAssignment>) =>
+    request<FLAssignment>("/fl/assignments", { method: "POST", body: JSON.stringify(data) }, token),
+  flUpdateAssignment: (token: string, id: string, data: Partial<FLAssignment>) =>
+    request<FLAssignment>(`/fl/assignments/${id}`, { method: "PATCH", body: JSON.stringify(data) }, token),
+  flPublishAssignment: (token: string, id: string) =>
+    request<FLAssignment>(`/fl/assignments/${id}/publish`, { method: "PATCH", body: JSON.stringify({}) }, token),
+  flCloseAssignment: (token: string, id: string) =>
+    request<FLAssignment>(`/fl/assignments/${id}/close`, { method: "PATCH", body: JSON.stringify({}) }, token),
+  flGetSubmissions: (token: string, assignmentId: string) =>
+    request<FLSubmission[]>(`/fl/assignments/${assignmentId}/submissions`, undefined, token),
+  flGradeSubmission: (token: string, id: string, data: { answers: { taskId: string; score?: number; teacherComment?: string }[]; totalScore?: number }) =>
+    request<FLSubmission>(`/fl/submissions/${id}/grade`, { method: "PATCH", body: JSON.stringify(data) }, token),
+  flGetSchoolAnalytics: (token: string) =>
+    request<{ directionStats: { direction: string; avg: number; count: number }[]; classroomStats: { classroomId: string; classroomName: string; avg: number; reading: number | null; math: number | null; science: number | null }[]; teacherStats: { teacherId: string; teacherName: string; assignmentsCount: number; avgStudentScore: number }[] }>("/fl/analytics/school", undefined, token),
+  flGetClassAnalytics: (token: string, classroomId: string) =>
+    request<{ classroomId: string; studentStats: { studentId: string; fullName: string; reading: number | null; math: number | null; science: number | null; totalSubmissions: number }[]; totalAssignments: number }>(`/fl/analytics/class/${classroomId}`, undefined, token),
+  flGenerateTask: (token: string, data: { subject: string; grade: number; direction: string; difficulty: string; taskType: string; topic: string }) =>
+    request<Partial<FLTask>>("/fl/ai/generate-task", { method: "POST", body: JSON.stringify(data) }, token),
+  flGetStudentAssignments: (token: string) =>
+    request<Array<FLAssignment & { submission: FLSubmission | null }>>("/fl/student/assignments", undefined, token),
+  flGetStudentAssignmentDetail: (token: string, id: string) =>
+    request<FLAssignment & { taskObjects: FLTask[]; submission: FLSubmission | null }>(`/fl/student/assignments/${id}`, undefined, token),
+  flStartAssignment: (token: string, id: string) =>
+    request<FLSubmission>(`/fl/student/assignments/${id}/start`, { method: "POST", body: JSON.stringify({}) }, token),
+  flUpdateSubmission: (token: string, id: string, data: { answers: { taskId: string; answer: string }[] }) =>
+    request<FLSubmission>(`/fl/student/submissions/${id}`, { method: "PATCH", body: JSON.stringify(data) }, token),
+  flSubmitAnswers: (token: string, assignmentId: string, data: { answers: { taskId: string; answer: string }[] }) =>
+    request<FLSubmission>(`/fl/assignments/${assignmentId}/submit`, { method: "POST", body: JSON.stringify(data) }, token),
 
   // Schools (global admin)
   getSchools: (token: string) =>

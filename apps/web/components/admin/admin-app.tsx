@@ -27,6 +27,7 @@ import { HouseholdPanel } from "./household-panel";
 import { WelfarePanel } from "./welfare-panel";
 import { SchoolsPanel } from "./schools-panel";
 import { SorSochPanel } from "../teacher/sor-soch-panel";
+import { FLAdminPanel } from "./fl-panel";
 
 export function AdminApp(props: {
   token: string; user: AuthUser; language: Language;
@@ -56,6 +57,7 @@ function AdminAppContent({ token, user, language, setLanguage, onLogout }: {
     { key: "open-lessons", label: t.nav_lessons, icon: "🎓" },
     { key: "school-control", label: t.nav_protocols, icon: "📋" },
     { key: "gifted", label: t.nav_gifted, icon: "⭐" },
+    { key: "fl", label: t.nav_fl ?? "Функц. грамотность", icon: "📚" },
     { key: "welfare", label: t.nav_education, icon: "🌱" },
     { key: "household", label: t.nav_household, icon: "🔧" },
     { key: "bbjm", label: t.nav_bbjm, icon: "📑" },
@@ -102,6 +104,7 @@ function AdminAppContent({ token, user, language, setLanguage, onLogout }: {
       {section === "registrations" && user.role === "admin" && <RegistrationsPanel token={token} language={language} t={t} />}
       {section === "schools" && user.role === "admin" && <SchoolsPanel token={token} language={language} t={t} />}
       {section === "sor-soch" && <SorSochPanel token={token} language={language} t={t} isAdmin={true} userRole={user.role} />}
+      {section === "fl" && <FLAdminPanel token={token} language={language} userRole={user.role} />}
     </AppLayout>
   );
 }
