@@ -160,7 +160,7 @@ function AppLayoutInner({
       <AiChatButton open={aiOpen && !isLimited} onClick={handleAiClick} />
 
       {/* AI chat panel */}
-      <AiChat token={token} currentSection={activeSection} open={aiOpen && !isLimited} onClose={() => setAiOpen(false)} />
+      <AiChat token={token} currentSection={activeSection} open={aiOpen && !isLimited} onClose={() => setAiOpen(false)} language={language} />
     </div>
   );
 }

@@ -6,25 +6,53 @@ import { useAiUsage } from "../../contexts/ai-usage-context";
 type Message = { role: "user" | "assistant"; content: string };
 
 const PAGE_PROMPTS: Record<string, string[]> = {
-  analytics:        ["Проанализируй успеваемость класса", "Дай рекомендации по слабым ученикам"],
+  analytics:          ["Проанализируй успеваемость класса", "Дай рекомендации по слабым ученикам"],
   "school-analytics": ["Проанализируй успеваемость по школе", "Какие классы требуют внимания?"],
-  assignments:      ["Создай задание по теме", "Придумай тест для проверки знаний"],
-  "ktp-plans":      ["Сгенерируй поурочный план", "Помоги с темой урока"],
-  lessons:          ["Как оформить открытый урок?", "Генерируй план открытого урока"],
-  students:         ["Дай советы по работе с учениками", "Как мотивировать слабых учеников?"],
-  dashboard:        ["Что я могу делать на платформе?", "Как работать с классом?"],
+  assignments:        ["Создай задание по теме", "Придумай тест для проверки знаний"],
+  "ktp-plans":        ["Сгенерируй поурочный план", "Помоги с темой урока"],
+  lessons:            ["Как оформить открытый урок?", "Генерируй план открытого урока"],
+  "open-lessons":     ["Как оформить открытый урок?", "Генерируй план открытого урока"],
+  students:           ["Дай советы по работе с учениками", "Как мотивировать слабых учеников?"],
+  dashboard:          ["Что я могу делать на платформе?", "Как работать с классом?"],
+  gifted:             ["Как работать с одарёнными учениками?", "Помоги составить план для олимпиады"],
+  fl:                 ["Создай задание по функциональной грамотности", "Объясни PISA-формат заданий"],
+  attestation:        ["Как подготовиться к аттестации?", "Требования МОН РК к аттестации"],
+  "sor-soch":         ["Как составить СОР по предмету?", "Критерии оценивания для СОЧ"],
 };
 
 const COMMON_PROMPTS = ["Как пользоваться платформой?", "Что я могу здесь сделать?"];
+
+const SECTION_MAP: Record<string, string> = {
+  ktp: "kmzh_generator",
+  "ktp-plans": "ktp_ksp",
+  tasks: "task_generator",
+  assignments: "assignments",
+  analytics: "analytics",
+  "school-analytics": "school_analytics",
+  lessons: "open_lessons",
+  "open-lessons": "open_lessons",
+  gifted: "gifted_students",
+  fl: "fl_tasks",
+  attestation: "attestation",
+  "final-attestation": "attestation",
+  bbjm: "modo",
+  "school-control": "modo",
+  "sor-soch": "sor_soch",
+};
+
+function getSection(currentSection: string): string {
+  return SECTION_MAP[currentSection] ?? "default";
+}
 
 interface AiChatProps {
   token: string;
   currentSection: string;
   open: boolean;
   onClose: () => void;
+  language?: string;
 }
 
-export function AiChat({ token, currentSection, open, onClose }: AiChatProps) {
+export function AiChat({ token, currentSection, open, onClose, language = "ru" }: AiChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -47,12 +75,24 @@ export function AiChat({ token, currentSection, open, onClose }: AiChatProps) {
   async function send(text: string) {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
-    const history = messages.map((m) => `${m.role === "user" ? "Пользователь" : "ИИ"}: ${m.content}`).join("\n");
-    setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
+
+    const newUserMsg: Message = { role: "user", content: trimmed };
+    const updatedMessages = [...messages, newUserMsg];
+    setMessages(updatedMessages);
     setInput("");
     setLoading(true);
+
+    // Send last 6 messages as structured history (excluding current user message)
+    const history = messages.slice(-6);
+
     try {
-      const res = await api.aiChat(token, { message: trimmed, context: history, pageContext: currentSection });
+      const res = await api.aiChat(token, {
+        message: trimmed,
+        history,
+        section: getSection(currentSection),
+        context: {},
+        language,
+      });
       setMessages((prev) => [...prev, { role: "assistant", content: res.reply }]);
       if (res.warning && res.warningMessage) triggerWarning(res.warningMessage);
       refresh();

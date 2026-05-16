@@ -12,11 +12,23 @@ export class AiController {
   constructor(private readonly aiChatService: AiChatService) {}
 
   @Post("chat")
-  chat(@Req() req: ReqUser, @Body() body: { message: string; context?: string; pageContext?: string }) {
+  chat(
+    @Req() req: ReqUser,
+    @Body() body: {
+      message: string;
+      history?: { role: "user" | "assistant"; content: string }[];
+      section?: string;
+      context?: { subject?: string; grade?: number; topic?: string; classroomName?: string; studentCount?: number; role?: string };
+      language?: string;
+      pageContext?: string; // legacy field
+    },
+  ) {
     return this.aiChatService.chat(
       body.message ?? "",
-      body.context ?? "",
-      body.pageContext ?? "",
+      body.history ?? [],
+      body.section ?? body.pageContext ?? "default",
+      body.context ?? {},
+      body.language ?? "ru",
       { userId: req.user.id, schoolId: req.user.schoolId ?? "", role: req.user.role },
     );
   }

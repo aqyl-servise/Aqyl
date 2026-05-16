@@ -576,7 +576,13 @@ export const api = {
     request<{ ok: boolean }>(`/gifted/achievements/${id}`, { method: "DELETE" }, token),
 
   // AI Chat
-  aiChat: (token: string, body: { message: string; context?: string; pageContext?: string }) =>
+  aiChat: (token: string, body: {
+    message: string;
+    history?: { role: "user" | "assistant"; content: string }[];
+    section?: string;
+    context?: Record<string, unknown>;
+    language?: string;
+  }) =>
     request<{ reply: string; warning?: boolean; warningMessage?: string }>("/ai/chat", { method: "POST", body: JSON.stringify(body) }, token),
   aiGenerateAssignment: (token: string, body: { subject: string; grade: string; topic: string; type: string }) =>
     request<{ content: string; warning?: boolean; warningMessage?: string }>("/ai/generate-assignment", { method: "POST", body: JSON.stringify(body) }, token),
