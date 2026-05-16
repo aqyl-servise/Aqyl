@@ -601,6 +601,17 @@ export const api = {
   getAiMostActive: (token: string) =>
     request<{ teacherName: string; count: number } | null>("/ai-usage/most-active", undefined, token),
 
+  // KMZh cache
+  getKmzhCacheStats: (token: string) =>
+    request<{
+      totalEntries: number;
+      hitRate: number;
+      tokensSaved: number;
+      mostUsed: Array<{ subject: string; classNumber: number; topic: string; useCount: number }>;
+    }>("/kmzh-cache/stats", undefined, token),
+  clearKmzhCache: (token: string, body: { subject?: string; classNumber?: number }) =>
+    request<{ ok: boolean }>("/kmzh-cache", { method: "DELETE", body: JSON.stringify(body) }, token),
+
   // Student portal
   getStudentMe: (token: string) =>
     request<StudentRow>("/student/me", undefined, token),

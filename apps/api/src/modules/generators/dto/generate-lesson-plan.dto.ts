@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsString, Max, Min } from "class-validator";
+import { IsBoolean, IsInt, IsOptional, IsString, Max, Min } from "class-validator";
 
 export class GenerateLessonPlanDto {
   @IsString()
@@ -23,4 +23,8 @@ export class GenerateLessonPlanDto {
   @Min(20)
   @Max(120)
   duration!: number;
+
+  @IsOptional()
+  @IsBoolean()
+  bypassCache?: boolean;
 }

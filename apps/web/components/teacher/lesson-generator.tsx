@@ -3,59 +3,55 @@ import { FormEvent, useState } from "react";
 import { api } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 
-const CONTACT_WHATSAPP = "77000000000";
-const CONTACT_EMAIL = "support@aqyl.kz";
-
-function PremiumModal({ onClose, t }: { onClose: () => void; t: Record<string, string> }) {
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <div style={{ textAlign: "center", padding: "8px 0 24px" }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
-          <h3 style={{ marginBottom: 12 }}>Premium</h3>
-          <p style={{ color: "var(--muted)", marginBottom: 24, lineHeight: 1.6, maxWidth: 340, margin: "0 auto 24px" }}>
-            {t.premium_message ?? "Эта функция доступна в Premium версии. Свяжитесь с нами для подключения."}
-          </p>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <a href={`https://wa.me/${CONTACT_WHATSAPP}`} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
-              💬 WhatsApp
-            </a>
-            <a href={`mailto:${CONTACT_EMAIL}`} className="btn btn-outline">
-              ✉️ Email
-            </a>
-            <button className="btn btn-ghost" onClick={onClose}>{t.cancel}</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 const SUBJECTS = ["Математика","Физика","Химия","Биология","История","Казахский язык","Русский язык","Русская литература","Английский язык","Информатика","География","Казахская литература"];
 const GRADES = Array.from({ length: 11 }, (_, i) => i + 1);
 
 export function LessonGenerator({ token, language, t }: { token: string; language: Language; t: Record<string, string> }) {
-  const tFull = translations[language];
+  translations[language]; // ensure correct language is loaded
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+  const [lastParams, setLastParams] = useState<Record<string, unknown> | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPremium, setShowPremium] = useState(false);
 
   async function handleGenerate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setShowPremium(true);
-    return;
-    setBusy(true); setError(null);
+    setBusy(true);
+    setError(null);
     const fd = new FormData(e.currentTarget);
+    const params: Record<string, unknown> = {
+      topic: fd.get("topic"),
+      subject: fd.get("subject"),
+      grade: Number(fd.get("grade")),
+      language,
+      objectives: fd.get("objectives"),
+      duration: Number(fd.get("duration")),
+    };
+    setLastParams(params);
     try {
-      const res = await api.generateLessonPlan(token, {
-        topic: fd.get("topic"), subject: fd.get("subject"),
-        grade: Number(fd.get("grade")), language,
-        objectives: fd.get("objectives"), duration: Number(fd.get("duration")),
-      });
+      const res = await api.generateLessonPlan(token, params);
       setResult(res);
-    } catch { setError("Ошибка генерации"); }
-    finally { setBusy(false); }
+      setFromCache(Boolean(res.fromCache));
+    } catch {
+      setError("Ошибка генерации");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleRegenerate() {
+    if (!lastParams || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await api.generateLessonPlan(token, { ...lastParams, bypassCache: true });
+      setResult(res);
+      setFromCache(false);
+    } catch {
+      setError("Ошибка генерации");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function handleExport() {
@@ -65,14 +61,15 @@ export function LessonGenerator({ token, language, t }: { token: string; languag
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a"); a.href = url; a.download = `${String(result.title)}.pdf`; a.click();
       URL.revokeObjectURL(url);
-    } catch { setError("Ошибка экспорта"); }
+    } catch {
+      setError("Ошибка экспорта");
+    }
   }
 
   const stages = (result?.stages as Array<Record<string, unknown>> | undefined) ?? [];
 
   return (
     <div className="page">
-      {showPremium && <PremiumModal onClose={() => setShowPremium(false)} t={tFull} />}
       <h1 className="page-title">📝 {t.lessonPlan}</h1>
       <div className="main-grid">
         <div className="card">
@@ -100,7 +97,7 @@ export function LessonGenerator({ token, language, t }: { token: string; languag
             </div>
             {error && <div className="alert alert-error">⚠ {error}</div>}
             <button className="btn btn-primary" disabled={busy} type="submit">
-              🔒 {t.generate}
+              {busy ? "⏳ Генерация..." : `✨ ${t.generate}`}
             </button>
           </form>
         </div>
@@ -108,8 +105,31 @@ export function LessonGenerator({ token, language, t }: { token: string; languag
         {result && (
           <div className="card">
             <div className="card-header">
-              <h3 className="card-title">{String(result.title)}</h3>
-              <button className="btn btn-outline btn-sm" onClick={handleExport}>↓ {t.exportPdf}</button>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <h3 className="card-title" style={{ margin: 0 }}>{String(result.title)}</h3>
+                {fromCache && (
+                  <span style={{
+                    display: "inline-flex", alignItems: "center", gap: 4,
+                    background: "#e8f5e9", color: "#2e7d32",
+                    fontSize: 12, padding: "2px 8px", borderRadius: 12,
+                    fontWeight: 500, whiteSpace: "nowrap",
+                  }}>
+                    ⚡ {t.kmzh_from_cache}
+                  </span>
+                )}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  className="btn btn-outline btn-sm"
+                  onClick={handleRegenerate}
+                  disabled={busy}
+                  type="button"
+                  title={t.kmzh_regenerate}
+                >
+                  🔄 {t.kmzh_regenerate}
+                </button>
+                <button className="btn btn-outline btn-sm" onClick={handleExport}>↓ {t.exportPdf}</button>
+              </div>
             </div>
             <div className="result-meta" style={{ marginBottom: 16 }}>
               <span className="badge">{String(result.subject)}</span>

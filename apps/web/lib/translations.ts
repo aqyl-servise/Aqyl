@@ -432,6 +432,15 @@ const ru = {
   ai_period_month: "Месяц",
   ai_chart_title: "График запросов за 30 дней",
   ai_no_data: "Нет данных по использованию AI",
+  // KMZh cache
+  kmzh_from_cache: "Из кэша — мгновенно",
+  kmzh_regenerate: "Перегенерировать",
+  kmzh_cache_stats: "Статистика кэша",
+  kmzh_cache_entries: "Записей в кэше",
+  kmzh_hit_rate: "Hit rate",
+  kmzh_tokens_saved: "Токенов сэкономлено",
+  kmzh_clear_cache: "Очистить кэш",
+  kmzh_clear_confirm: "Очистить весь кэш КМЖ? Это действие нельзя отменить.",
 };
 
 type TranslationShape = typeof ru;
@@ -841,6 +850,15 @@ const kz: TranslationShape = {
   ai_period_month: "Ай",
   ai_chart_title: "30 күндік сұраныстар графигі",
   ai_no_data: "ЖИ пайдалану деректері жоқ",
+  // KMZh cache
+  kmzh_from_cache: "Кэштен — лезде",
+  kmzh_regenerate: "Қайта жасау",
+  kmzh_cache_stats: "Кэш статистикасы",
+  kmzh_cache_entries: "Кэш жазбалары",
+  kmzh_hit_rate: "Хит қатынасы",
+  kmzh_tokens_saved: "Токен үнемделді",
+  kmzh_clear_cache: "Кэшті тазалау",
+  kmzh_clear_confirm: "Барлық КМЖ кэшін тазалау керек пе?",
 };
 
 const en: TranslationShape = {
@@ -1248,6 +1266,15 @@ const en: TranslationShape = {
   ai_period_month: "Month",
   ai_chart_title: "30-day request chart",
   ai_no_data: "No AI usage data",
+  // KMZh cache
+  kmzh_from_cache: "From cache — instant",
+  kmzh_regenerate: "Regenerate",
+  kmzh_cache_stats: "Cache Statistics",
+  kmzh_cache_entries: "Cache entries",
+  kmzh_hit_rate: "Hit rate",
+  kmzh_tokens_saved: "Tokens saved",
+  kmzh_clear_cache: "Clear cache",
+  kmzh_clear_confirm: "Clear all KMZh cache? This cannot be undone.",
 };
 
 export const translations: Record<Language, TranslationShape> = { ru, kz, en };

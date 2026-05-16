@@ -7,14 +7,17 @@ type Summary = { totalCount: number; totalCostKzt: number; activeTeachers: numbe
 type TeacherRow = { userId: string; teacherName: string; subject: string; todayCount: number; weekCount: number; monthCount: number; costKzt: number };
 type ChartPoint = { date: string; totalCount: number; totalCostKzt: number };
 type MostActive = { teacherName: string; count: number } | null;
+type CacheStats = { totalEntries: number; hitRate: number; tokensSaved: number; mostUsed: Array<{ subject: string; classNumber: number; topic: string; useCount: number }> } | null;
 
-export function AiUsagePanelAdmin({ token, language }: { token: string; language: Language }) {
+export function AiUsagePanelAdmin({ token, language, role }: { token: string; language: Language; role?: string }) {
   const t = translations[language];
   const [period, setPeriod] = useState<"today" | "week" | "month">("today");
   const [summary, setSummary] = useState<Summary | null>(null);
   const [teachers, setTeachers] = useState<TeacherRow[]>([]);
   const [chart, setChart] = useState<ChartPoint[]>([]);
   const [mostActive, setMostActive] = useState<MostActive>(null);
+  const [cacheStats, setCacheStats] = useState<CacheStats>(null);
+  const [clearing, setClearing] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,8 +27,23 @@ export function AiUsagePanelAdmin({ token, language }: { token: string; language
       api.getAiUsageByTeacher(token).then(setTeachers).catch(() => {}),
       api.getAiUsageChart(token, 30).then(setChart).catch(() => {}),
       api.getAiMostActive(token).then(setMostActive).catch(() => {}),
+      api.getKmzhCacheStats(token).then(setCacheStats).catch(() => {}),
     ]).finally(() => setLoading(false));
   }, [token, period]);
+
+  async function handleClearCache() {
+    if (!window.confirm(t.kmzh_clear_confirm)) return;
+    setClearing(true);
+    try {
+      await api.clearKmzhCache(token, {});
+      const fresh = await api.getKmzhCacheStats(token);
+      setCacheStats(fresh);
+    } catch {
+      // ignore
+    } finally {
+      setClearing(false);
+    }
+  }
 
   const maxCount = chart.length > 0 ? Math.max(...chart.map((p) => p.totalCount), 1) : 1;
 
@@ -105,7 +123,7 @@ export function AiUsagePanelAdmin({ token, language }: { token: string; language
       </div>
 
       {/* 30-day chart */}
-      <div style={{ background: "var(--bg-card, #fff)", borderRadius: 10, padding: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.07)" }}>
+      <div style={{ background: "var(--bg-card, #fff)", borderRadius: 10, padding: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.07)", marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 16px", fontSize: 16 }}>📈 {t.ai_chart_title}</h3>
         {chart.length === 0 ? (
           <p style={{ color: "var(--text-secondary, #888)" }}>{t.ai_no_data}</p>
@@ -128,6 +146,57 @@ export function AiUsagePanelAdmin({ token, language }: { token: string; language
               );
             })}
           </div>
+        )}
+      </div>
+
+      {/* KMZh cache stats */}
+      <div style={{ background: "var(--bg-card, #fff)", borderRadius: 10, padding: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.07)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <h3 style={{ margin: 0, fontSize: 16 }}>⚡ {t.kmzh_cache_stats}</h3>
+          {role === "admin" && (
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={handleClearCache}
+              disabled={clearing}
+              style={{ color: "#d32f2f", borderColor: "#d32f2f" }}
+            >
+              🗑 {t.kmzh_clear_cache}
+            </button>
+          )}
+        </div>
+        {loading || !cacheStats ? (
+          <p style={{ color: "var(--text-secondary, #888)" }}>{t.loading ?? "..."}</p>
+        ) : (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
+              <div style={{ textAlign: "center", padding: "12px 8px", background: "var(--bg, #f9f9f9)", borderRadius: 8 }}>
+                <div style={{ fontSize: 22, fontWeight: 700 }}>{cacheStats.totalEntries}</div>
+                <div style={{ fontSize: 12, color: "var(--text-secondary, #888)", marginTop: 4 }}>{t.kmzh_cache_entries}</div>
+              </div>
+              <div style={{ textAlign: "center", padding: "12px 8px", background: "var(--bg, #f9f9f9)", borderRadius: 8 }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: cacheStats.hitRate >= 50 ? "#2e7d32" : "#888" }}>
+                  {cacheStats.hitRate}%
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-secondary, #888)", marginTop: 4 }}>{t.kmzh_hit_rate}</div>
+              </div>
+              <div style={{ textAlign: "center", padding: "12px 8px", background: "var(--bg, #f9f9f9)", borderRadius: 8 }}>
+                <div style={{ fontSize: 22, fontWeight: 700 }}>~{(cacheStats.tokensSaved / 1000).toFixed(0)}K</div>
+                <div style={{ fontSize: 12, color: "var(--text-secondary, #888)", marginTop: 4 }}>{t.kmzh_tokens_saved}</div>
+              </div>
+            </div>
+            {cacheStats.mostUsed.length > 0 && (
+              <div style={{ fontSize: 13 }}>
+                {cacheStats.mostUsed.map((entry, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--border, #eee)" }}>
+                    <span style={{ color: "var(--text-secondary, #666)" }}>
+                      {entry.subject} · {entry.classNumber} кл. · {entry.topic.slice(0, 40)}{entry.topic.length > 40 ? "…" : ""}
+                    </span>
+                    <span style={{ fontWeight: 600, marginLeft: 8 }}>×{entry.useCount}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

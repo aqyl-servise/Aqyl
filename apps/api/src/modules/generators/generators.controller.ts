@@ -4,6 +4,8 @@ import { GenerateLessonPlanDto } from "./dto/generate-lesson-plan.dto";
 import { GenerateTaskSetDto } from "./dto/generate-task-set.dto";
 import { GeneratorsService } from "./generators.service";
 
+interface ReqUser { user: { id: string; schoolId?: string } }
+
 @UseGuards(JwtAuthGuard)
 @Controller("generators")
 export class GeneratorsController {
@@ -11,15 +13,15 @@ export class GeneratorsController {
 
   @Post("lesson-plan")
   lessonPlan(
-    @Req() req: { user: { id: string } },
+    @Req() req: ReqUser,
     @Body() body: GenerateLessonPlanDto,
   ) {
-    return this.generatorsService.generateLessonPlan(req.user.id, body);
+    return this.generatorsService.generateLessonPlan(req.user.id, req.user.schoolId, body);
   }
 
   @Post("task-set")
   taskSet(
-    @Req() req: { user: { id: string } },
+    @Req() req: ReqUser,
     @Body() body: GenerateTaskSetDto,
   ) {
     return this.generatorsService.generateTaskSet(req.user.id, body);

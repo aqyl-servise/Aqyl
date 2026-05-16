@@ -68,6 +68,9 @@ import { TeacherViolation } from "./modules/schools/entities/teacher-violation.e
 import { RatingModule } from "./modules/rating/rating.module";
 import { AiUsageDaily, AiUsageAlert } from "./modules/ai-usage/ai-usage.entity";
 import { AiUsageModule } from "./modules/ai-usage/ai-usage.module";
+import { KmzhCache } from "./modules/kmzh-cache/entities/kmzh-cache.entity";
+import { KmzhCacheHit } from "./modules/kmzh-cache/entities/kmzh-cache-hit.entity";
+import { KmzhCacheModule } from "./modules/kmzh-cache/kmzh-cache.module";
 
 @Module({
   imports: [
@@ -95,6 +98,7 @@ import { AiUsageModule } from "./modules/ai-usage/ai-usage.module";
           FLTask, FLAssignment, FLSubmission, FLResult,
           TeacherRating, TeacherViolation,
           AiUsageDaily, AiUsageAlert,
+          KmzhCache, KmzhCacheHit,
         ],
       }),
     }),
@@ -136,6 +140,7 @@ import { AiUsageModule } from "./modules/ai-usage/ai-usage.module";
     FLModule,
     RatingModule,
     AiUsageModule,
+    KmzhCacheModule,
   ],
   providers: [
     SeedService,
