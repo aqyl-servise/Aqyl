@@ -7,6 +7,7 @@ import { Classroom } from "../schools/entities/classroom.entity";
 import { Assignment } from "../schools/entities/assignment.entity";
 import { TaskSubmission } from "../schools/entities/task-submission.entity";
 import { AiClientService } from "../../services/ai-client.service";
+import { buildPrompt } from "../../utils/prompt-builder";
 
 type AnalyticsRow = {
   student: string; classroom: string; topic: string; score: number; maxScore: number;
@@ -245,24 +246,17 @@ export class AnalyticsService {
       return { analysis: "ИИ-анализ недоступен. Проверьте настройку ANTHROPIC_API_KEY." };
     }
 
-    const prompt = `Ты аналитик успеваемости казахстанской школы. Проанализируй данные и дай структурированный отчёт на русском языке.
-
-Данные успеваемости школы:
-${JSON.stringify(stats, null, 2)}
-
-Твой анализ должен включать:
-1. **Общая картина** — общий средний балл, количество учеников и классов
-2. **Сильные стороны** — лучшие классы и предметы
-3. **Зоны риска** — слабые классы, предметы и ученики (если есть)
-4. **Рекомендации учителям** — конкретные действия
-5. **Прогноз** — что произойдёт если не принять меры
-
-Отвечай чётко, используй маркированные списки и заголовки. Максимум 600 слов.`;
+    const systemPrompt = buildPrompt('class_analysis', {
+      class: '',
+      subject: '',
+      period: '',
+      grades_json: JSON.stringify(stats || {}),
+    });
 
     const result = await this.aiClientService.request({
       action: "analysis_class",
-      systemPrompt: "",
-      messages: [{ role: "user", content: prompt }],
+      systemPrompt,
+      messages: [{ role: "user", content: "Выполни анализ." }],
     });
 
     return { analysis: result.content || "Не удалось получить ответ." };

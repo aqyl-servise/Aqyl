@@ -1,9 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { AiClientService } from "../../services/ai-client.service";
+import { buildPrompt } from "../../utils/prompt-builder";
 import { GenerateLessonPlanDto } from "./dto/generate-lesson-plan.dto";
 import { GenerateTaskSetDto } from "./dto/generate-task-set.dto";
-
-const SYSTEM_PROMPT = "You are a school teacher assistant. Respond ONLY with valid JSON, no markdown, no extra text.";
 
 @Injectable()
 export class AiService {
@@ -13,14 +12,23 @@ export class AiService {
     if (!this.aiClientService.isConfigured) return this.buildFallbackLessonPlan(input);
 
     try {
+      const systemPrompt = buildPrompt('kmzh', {
+        subject: input.subject || '',
+        class: String(input.grade || ''),
+        topic: input.topic || '',
+        language: input.language || 'ru',
+        date: new Date().toLocaleDateString('ru-RU'),
+        teacher_name: 'Учитель',
+      });
+
       const result = await this.aiClientService.request({
         action: "kmzh_generate",
-        systemPrompt: SYSTEM_PROMPT,
+        systemPrompt,
         messages: [
           {
             role: "user",
             content: `Create a ${input.language} lesson plan for grade ${input.grade} ${input.subject} on "${input.topic}" (${input.duration} min). Objectives: ${input.objectives ?? "practical understanding"}.
-Return JSON with keys: title, subject, grade, duration, objectives(array), materials(array), stages(array of {name,duration,teacherActivity,studentActivity,assessment}), homework.`,
+Respond ONLY with valid JSON, no markdown, no extra text. Keys: title, subject, grade, duration, objectives(array), materials(array), stages(array of {name,duration,teacherActivity,studentActivity,assessment}), homework.`,
           },
         ],
       });
@@ -35,14 +43,24 @@ Return JSON with keys: title, subject, grade, duration, objectives(array), mater
     if (!this.aiClientService.isConfigured) return this.buildFallbackTaskSet(input);
 
     try {
+      const systemPrompt = buildPrompt('task_generate', {
+        subject: input.subject || '',
+        class: String(input.grade || ''),
+        topic: input.topic || '',
+        task_type: input.type === 'quiz' ? 'тест' : input.type === 'test' ? 'контрольная' : 'упражнение',
+        difficulty: 'средний',
+        language: input.language || 'ru',
+        max_score: '10',
+      });
+
       const result = await this.aiClientService.request({
         action: "task_generate",
-        systemPrompt: SYSTEM_PROMPT,
+        systemPrompt,
         messages: [
           {
             role: "user",
             content: `Create a ${input.language} ${input.type} for grade ${input.grade} ${input.subject} on "${input.topic}". Generate ${input.questionCount ?? 5} questions.
-Return JSON with keys: title, topic, type, questions(array of {prompt, answer}).`,
+Respond ONLY with valid JSON, no markdown, no extra text. Keys: title, topic, type, questions(array of {prompt, answer}).`,
           },
         ],
       });

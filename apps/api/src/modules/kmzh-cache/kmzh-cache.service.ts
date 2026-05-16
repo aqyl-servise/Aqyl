@@ -4,8 +4,9 @@ import { MoreThanOrEqual, Repository } from "typeorm";
 import * as crypto from "crypto";
 import { KmzhCache } from "./entities/kmzh-cache.entity";
 import { KmzhCacheHit } from "./entities/kmzh-cache-hit.entity";
+import { PROMPT_VERSIONS } from "../../config/prompt-versions";
 
-const CURRENT_PROMPT_VERSION = "v1.0";
+const CURRENT_PROMPT_VERSION = PROMPT_VERSIONS.kmzh;
 
 export interface FindOrGenerateParams {
   subject: string;

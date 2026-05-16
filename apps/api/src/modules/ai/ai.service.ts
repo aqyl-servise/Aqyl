@@ -1,38 +1,8 @@
 import { HttpException, HttpStatus, Injectable, Optional } from "@nestjs/common";
 import { AiUsageService, UserContext } from "../ai-usage/ai-usage.service";
 import { AiClientService } from "../../services/ai-client.service";
+import { buildPrompt } from "../../utils/prompt-builder";
 
-interface SectionContext {
-  subject?: string;
-  grade?: number;
-  topic?: string;
-  classroomName?: string;
-  studentCount?: number;
-  role?: string;
-}
-
-function buildSystemPrompt(section: string, context: SectionContext, language: string): string {
-  const lang = language === "kz" ? "казахском" : language === "en" ? "English" : "русском";
-  const base = `Ты — AI-ассистент образовательной платформы Aqyl для казахстанских школ. Отвечай на ${lang} языке. Будь краток и конкретен.`;
-
-  const sections: Record<string, string> = {
-    kmzh_generator: `${base} Помогаешь учителю составить краткосрочный план урока (КМЖ/КСП). Предмет: ${context.subject || "не указан"}, Класс: ${context.grade || "не указан"}, Тема: ${context.topic || "не указана"}.`,
-    task_generator: `${base} Помогаешь учителю создать задания для учеников. Предмет: ${context.subject || "не указан"}, Класс: ${context.grade || "не указан"}.`,
-    assignments: `${base} Помогаешь учителю управлять заданиями и анализировать успеваемость учеников.`,
-    analytics: `${base} Помогаешь анализировать успеваемость класса. Класс: ${context.classroomName || "не указан"}, Учеников: ${context.studentCount || "не указано"}.`,
-    open_lessons: `${base} Помогаешь учителю подготовить и оформить открытый урок.`,
-    gifted_students: `${base} Помогаешь работать с одарёнными учащимися: олимпиады, конкурсы, индивидуальные планы.`,
-    fl_tasks: `${base} Помогаешь создавать задания по функциональной грамотности в формате PISA/PIRLS/TIMSS. Предмет: ${context.subject || "не указан"}, Класс: ${context.grade || "не указан"}.`,
-    school_analytics: `${base} Помогаешь директору/завучу анализировать успеваемость школы, выявлять проблемные зоны.`,
-    attestation: `${base} Помогаешь с вопросами аттестации педагогов по казахстанским стандартам МОН РК.`,
-    modo: `${base} Помогаешь с документацией МОДО (мониторинг достижений образовательных организаций).`,
-    ktp_ksp: `${base} Помогаешь с календарно-тематическим планированием (КТП/КСП) по стандартам МОН РК.`,
-    sor_soch: `${base} Помогаешь с суммативным оцениванием за раздел (СОР) и суммативным оцениванием за четверть (СОЧ).`,
-    default: `${base} Помогаешь учителям и администраторам казахстанских школ с вопросами образования.`,
-  };
-
-  return sections[section] ?? sections.default;
-}
 
 const GENERATION_PROMPT = `Ты — AI-ассистент образовательной платформы Aqyl для казахстанских школ.
 Помогаешь учителям и администраторам. Отвечай чётко, практично и по делу. Избегай лишних предисловий.`;
@@ -62,7 +32,7 @@ export class AiChatService {
     message: string,
     history: { role: "user" | "assistant"; content: string }[],
     section: string,
-    context: SectionContext,
+    context: Record<string, unknown>,
     language: string,
     userCtx?: UserContext,
   ): Promise<{ reply: string; warning?: boolean; warningMessage?: string }> {
@@ -72,7 +42,10 @@ export class AiChatService {
 
     const check = await this.checkLimit(userCtx, "chat");
 
-    const systemPrompt = buildSystemPrompt(section, context, language);
+    const systemPrompt = buildPrompt('assistant', {
+      language: language || 'ru',
+      section_context: section || 'general',
+    });
     const limitedHistory = history.slice(-6);
 
     const result = await this.aiClientService.request({
@@ -126,18 +99,24 @@ export class AiChatService {
 
     const check = await this.checkLimit(userCtx, "fl_task");
 
-    const dirMap: Record<string, string> = { reading: "читательской грамотности", math: "математической грамотности", science: "естественнонаучной грамотности" };
-    const diffMap: Record<string, string> = { low: "низкой", medium: "средней", high: "высокой" };
     const isTest = params.taskType === "test";
     const jsonSchema = isTest
       ? `{"title":"...","description":"...","options":[{"text":"...","isCorrect":false},{"text":"...","isCorrect":true},{"text":"...","isCorrect":false},{"text":"...","isCorrect":false}]}`
       : `{"title":"...","description":"...","correctAnswer":"..."}`;
-    const prompt = `Создай задание по ${dirMap[params.direction] ?? params.direction} для ${params.grade} класса. Предмет: ${params.subject}. Тема: «${params.topic}». Сложность: ${diffMap[params.difficulty] ?? params.difficulty}. Тип: ${isTest ? "тест с 4 вариантами (один правильный)" : "открытый ответ"}.\nВерни ТОЛЬКО JSON (без markdown): ${jsonSchema}`;
+
+    const systemPrompt = buildPrompt('fl_task', {
+      subject: params.subject || '',
+      class: String(params.grade || ''),
+      direction: params.direction || '',
+      difficulty: params.difficulty || 'medium',
+      task_type: params.taskType || 'open',
+      language: 'ru',
+    });
 
     const result = await this.aiClientService.request({
       action: "fl_task_generate",
-      systemPrompt: GENERATION_PROMPT,
-      messages: [{ role: "user", content: prompt }],
+      systemPrompt,
+      messages: [{ role: "user", content: `Тема: «${params.topic}». Верни ТОЛЬКО JSON (без markdown): ${jsonSchema}` }],
     });
 
     await this.recordUsage(userCtx, "fl_task", { input_tokens: result.tokensIn, output_tokens: result.tokensOut });

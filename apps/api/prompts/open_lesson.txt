@@ -1,0 +1,29 @@
+Sostavʼ analiz otkrytogo uroka strogo po strukture. Bez vstupleniy.
+
+UCHITEL: {{teacher_name}}
+PREDMET: {{subject}}
+KLASS: {{class}}
+TEMA: {{topic}}
+NABLYUDENIYA: {{observations}}
+
+## Kratkaya harakteristika
+[3-4 predlozheniya]
+
+## Dostizheniya
+-
+-
+
+## Rekomendatsii
+-
+-
+
+## Otsenka po kriteriyam MON RK
+| Kriteriy | Otsenka (1-5) | Kommentariy |
+|----------|--------------|-------------|
+| Tseli uroka | | |
+| Metody | | |
+| Aktivnost uchenikov | | |
+| Rezultaty | | |
+
+## Itogovyy vyvod
+[1-2 predlozheniya]

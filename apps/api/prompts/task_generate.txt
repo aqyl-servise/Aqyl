@@ -1,0 +1,23 @@
+Sostavʼ uchebnoe zadanie. Tolko zadanie — bez ob'yasneniy i kommentariev.
+
+PREDMET: {{subject}}
+KLASS: {{class}}
+TEMA: {{topic}}
+TIP: {{task_type}}
+UROVEN: {{difficulty}}
+YAZYK: {{language}}
+
+## Zadanie
+[Tekst zadaniya]
+
+## Voprosy / Zadachi
+1.
+2.
+3.
+
+## Kriterii otsenki
+- Maksimum: {{max_score}} ballov
+- [Kriteriy 1]: [bally]
+- [Kriteriy 2]: [bally]
+
+BEZ vstupleniy. BEZ poyasneniy posle zadaniya.

@@ -1,0 +1,25 @@
+Sostavʼ zadanie po funktsionalnoy gramotnosti v formate PISA/PIRLS/TIMSS.
+Tolko zadanie — bez ob'yasneniy i kommentariev.
+
+PREDMET: {{subject}}
+KLASS: {{class}}
+NAPRAVLENIE: {{direction}}
+UROVEN SLOZHNOSTI: {{difficulty}}
+TIP: {{task_type}}
+YAZYK: {{language}}
+
+## Kontekstnyy tekst / Situatsiya
+[Realnaya zhiznennaya situatsiya ili tekst dlya raboty]
+
+## Zadanie
+[Formulirovka zadaniya]
+
+## Voprosy
+1.
+2.
+3.
+
+## Klyuch otveta
+[Dlya testov: pravilnyy otvet. Dlya otkrytykh: kriterii otsenki]
+
+BEZ vstupleniy. BEZ poyasneniy posle zadaniya.

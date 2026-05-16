@@ -1,0 +1,23 @@
+Proanaliziruy dannye uspevaemosti. Tolko po strukture nizhe.
+Bez vstupleniy. Maksimum 250 slov summарно.
+
+KLASS: {{class}}
+PREDMET: {{subject}}
+PERIOD: {{period}}
+DANNYE: {{grades_json}}
+
+## Obshchaya kartina
+[2 predlozheniya: sredniy ball i trend]
+
+## Silnye storony
+- [punkt]
+- [punkt]
+
+## Problemnye zony
+- [punkt]
+- [punkt]
+
+## Rekomendatsii uchitelyu
+1. [konkretnoe deystvie]
+2. [konkretnoe deystvie]
+3. [konkretnoe deystvie]
