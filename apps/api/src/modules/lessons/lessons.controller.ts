@@ -19,7 +19,7 @@ export class LessonsController {
 
   @Get("all")
   @UseGuards(RolesGuard)
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   getAll(@Req() req: ReqUser) {
     return this.service.getAll(req.user.schoolId);
   }
@@ -31,7 +31,7 @@ export class LessonsController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles("teacher", "admin", "class_teacher", "principal", "vice_principal")
+  @Roles("teacher", "admin", "class_teacher", "principal", "vice_principal", "vice_principal_academic")
   create(
     @Req() req: ReqUser,
     @Body() body: {
@@ -84,7 +84,7 @@ export class LessonsController {
 
   @Delete(":id")
   @UseGuards(RolesGuard)
-  @Roles("teacher", "admin", "class_teacher", "principal", "vice_principal")
+  @Roles("teacher", "admin", "class_teacher", "principal", "vice_principal", "vice_principal_academic")
   remove(@Param("id") id: string) {
     return this.service.remove(id);
   }
@@ -96,7 +96,7 @@ export class LessonsController {
 
   @Post(":id/analysis")
   @UseGuards(RolesGuard)
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   async saveAnalysis(
     @Param("id") id: string,
     @Req() req: ReqUser,

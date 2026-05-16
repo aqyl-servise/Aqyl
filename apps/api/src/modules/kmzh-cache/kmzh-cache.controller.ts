@@ -12,7 +12,7 @@ export class KmzhCacheController {
   constructor(private readonly svc: KmzhCacheService) {}
 
   @Get("stats")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   getStats(@Req() req: ReqUser) {
     return this.svc.getCacheStats(req.user.schoolId);
   }

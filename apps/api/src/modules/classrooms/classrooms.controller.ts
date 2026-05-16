@@ -8,7 +8,7 @@ interface ReqUser { user: { id: string; role: string; schoolId?: string | null }
 
 @Controller("classrooms")
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles("admin", "principal", "vice_principal", "teacher", "class_teacher")
+@Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher", "class_teacher")
 export class ClassroomsController {
   constructor(private readonly service: ClassroomsService) {}
 
@@ -23,13 +23,13 @@ export class ClassroomsController {
   }
 
   @Post()
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   create(@Req() req: ReqUser, @Body() dto: CreateClassroomDto) {
     return this.service.create(dto, req.user.schoolId);
   }
 
   @Patch(":id")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   update(@Param("id") id: string, @Body() dto: Partial<CreateClassroomDto>) {
     return this.service.update(id, dto);
   }

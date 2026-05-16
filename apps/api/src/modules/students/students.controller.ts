@@ -8,7 +8,7 @@ interface ReqUser { id: string; role: string; schoolId?: string | null }
 
 @Controller("students")
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles("admin", "principal", "vice_principal", "teacher", "class_teacher")
+@Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher", "class_teacher")
 export class StudentsController {
   constructor(private readonly service: StudentsService) {}
 
@@ -19,7 +19,7 @@ export class StudentsController {
     @Query("grades") grades?: string,
     @Query("schoolWide") schoolWide?: string,
   ) {
-    if (["admin", "principal", "vice_principal"].includes(req.user.role)) {
+    if (["admin", "principal", "vice_principal", "vice_principal_academic"].includes(req.user.role)) {
       return this.service.findAll(classroomId, req.user.schoolId);
     }
     if (schoolWide === "true" && grades) {
@@ -34,7 +34,7 @@ export class StudentsController {
 
   @Get("classrooms")
   getClassrooms(@Req() req: { user: ReqUser }) {
-    if (["admin", "principal", "vice_principal"].includes(req.user.role)) {
+    if (["admin", "principal", "vice_principal", "vice_principal_academic"].includes(req.user.role)) {
       return this.service.getClassrooms(req.user.schoolId);
     }
     return this.service.getTeacherClassrooms(req.user.id);
@@ -46,13 +46,13 @@ export class StudentsController {
   }
 
   @Post()
-  @Roles("admin", "principal", "vice_principal", "teacher")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher")
   create(@Body() dto: CreateStudentDto) {
     return this.service.create(dto);
   }
 
   @Patch(":id")
-  @Roles("admin", "principal", "vice_principal", "teacher")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher")
   update(@Param("id") id: string, @Body() dto: Partial<CreateStudentDto>) {
     return this.service.update(id, dto);
   }
@@ -64,7 +64,7 @@ export class StudentsController {
   }
 
   @Post(":id/transfer")
-  @Roles("admin", "principal", "vice_principal", "teacher")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher")
   transfer(
     @Param("id") id: string,
     @Body() body: { classroomId: string; note?: string },
@@ -73,7 +73,7 @@ export class StudentsController {
   }
 
   @Get(":id/transfers")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   getTransferHistory(@Param("id") id: string) {
     return this.service.getTransferHistory(id);
   }

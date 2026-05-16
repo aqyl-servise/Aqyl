@@ -7,8 +7,8 @@ import { ClassHourTopic } from "../schools/entities/class-hour.entity";
 
 interface ReqUser { user: { id: string; role: string; schoolId?: string | null; isClassTeacher?: boolean } }
 
-const ADMIN_ROLES = ["admin", "principal", "vice_principal"] as const;
-const WRITE_ROLES = ["class_teacher", "admin", "principal", "vice_principal"] as const;
+const ADMIN_ROLES = ["admin", "principal", "vice_principal", "vice_principal_academic"] as const;
+const WRITE_ROLES = ["class_teacher", "admin", "principal", "vice_principal", "vice_principal_academic"] as const;
 
 function assertCanWrite(user: ReqUser["user"]) {
   const ok = (WRITE_ROLES as readonly string[]).includes(user.role) ||

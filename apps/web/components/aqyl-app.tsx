@@ -138,7 +138,11 @@ export function AqylApp() {
   if (role === "teacher") {
     return <TeacherApp token={token} user={user} language={language} setLanguage={setLanguage} onLogout={logout} />;
   }
-  if (role === "admin" || role === "principal" || role === "vice_principal") {
+  if (
+    role === "admin" || role === "principal" ||
+    role === "vice_principal" || role === "vice_principal_academic" || role === "vice_principal_education" ||
+    role === "psychologist" || role === "social_pedagogue"
+  ) {
     return <AdminApp token={token} user={user} language={language} setLanguage={setLanguage} onLogout={logout} />;
   }
   if (role === "class_teacher") {
@@ -266,7 +270,11 @@ function LoginForm({ t, busy, error, onSubmit, onRegister, onForgot }: {
 const REGISTER_ROLES = [
   { value: "teacher", label: "Учитель / Мұғалім / Teacher" },
   { value: "class_teacher", label: "Классный руководитель / Сынып жетекшісі" },
-  { value: "vice_principal", label: "Завуч / Меңгеруші / Vice Principal" },
+  { value: "vice_principal", label: "Завуч / Меңгеруші" },
+  { value: "vice_principal_academic", label: "Завуч по УВР / ОӘЖ меңгерушісі" },
+  { value: "vice_principal_education", label: "Завуч по ВР / ТЖ меңгерушісі" },
+  { value: "psychologist", label: "Психолог / Психолог" },
+  { value: "social_pedagogue", label: "Социальный педагог / Әлеуметтік педагог" },
   { value: "principal", label: "Директор / Director" },
   { value: "student", label: "Ученик / Оқушы / Student" },
 ];

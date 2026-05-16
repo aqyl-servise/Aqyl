@@ -74,6 +74,13 @@ import { KmzhCacheModule } from "./modules/kmzh-cache/kmzh-cache.module";
 import { GeneratedPresentation } from "./modules/schools/entities/generated-presentation.entity";
 import { GeneratedIllustration } from "./modules/schools/entities/generated-illustration.entity";
 import { MaterialsModule } from "./modules/materials/materials.module";
+import { Questionnaire } from "./modules/schools/entities/questionnaire.entity";
+import { QuestionnaireResponse } from "./modules/schools/entities/questionnaire-response.entity";
+import { NutritionStudent } from "./modules/schools/entities/nutrition-student.entity";
+import { NutritionOrder } from "./modules/schools/entities/nutrition-order.entity";
+import { SpecialAttentionStudent } from "./modules/schools/entities/special-attention-student.entity";
+import { QuestionnairesModule } from "./modules/questionnaires/questionnaires.module";
+import { SocialPedagogueModule } from "./modules/social-pedagogue/social-pedagogue.module";
 
 @Module({
   imports: [
@@ -103,6 +110,8 @@ import { MaterialsModule } from "./modules/materials/materials.module";
           AiUsageDaily, AiUsageAlert,
           KmzhCache, KmzhCacheHit,
           GeneratedPresentation, GeneratedIllustration,
+          Questionnaire, QuestionnaireResponse,
+          NutritionStudent, NutritionOrder, SpecialAttentionStudent,
         ],
       }),
     }),
@@ -146,6 +155,8 @@ import { MaterialsModule } from "./modules/materials/materials.module";
     AiUsageModule,
     KmzhCacheModule,
     MaterialsModule,
+    QuestionnairesModule,
+    SocialPedagogueModule,
   ],
   providers: [
     SeedService,

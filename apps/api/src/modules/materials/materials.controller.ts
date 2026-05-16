@@ -15,7 +15,7 @@ export class MaterialsController {
   constructor(private readonly svc: MaterialsService) {}
 
   @Post("presentations")
-  @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal")
+  @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal", "vice_principal_academic")
   generatePresentation(
     @Body() body: { prompt: string; slideCount?: number; attachedText?: string },
     @Req() req: ReqUser,
@@ -30,7 +30,7 @@ export class MaterialsController {
   }
 
   @Get("presentations")
-  @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal")
+  @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal", "vice_principal_academic")
   getMyPresentations(@Req() req: ReqUser) {
     return this.svc.getMyPresentations(req.user.id);
   }
@@ -51,7 +51,7 @@ export class MaterialsController {
   }
 
   @Post("illustrations")
-  @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal")
+  @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal", "vice_principal_academic")
   generateIllustration(
     @Body() body: { prompt: string; attachedText?: string },
     @Req() req: ReqUser,
@@ -65,7 +65,7 @@ export class MaterialsController {
   }
 
   @Get("illustrations")
-  @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal")
+  @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal", "vice_principal_academic")
   getMyIllustrations(@Req() req: ReqUser) {
     return this.svc.getMyIllustrations(req.user.id);
   }

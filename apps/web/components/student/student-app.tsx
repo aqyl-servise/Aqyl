@@ -6,8 +6,11 @@ import { AppLayout } from "../layout/app-layout";
 import { StudentSchedulePanel } from "./student-schedule-panel";
 import { StudentAssignmentsPanel } from "./student-assignments-panel";
 import { FLStudentPanel } from "./fl-student-panel";
+import { StudentMyClassPanel } from "./student-my-class-panel";
+import { StudentMyTeachersPanel } from "./student-my-teachers-panel";
+import { StudentQuestionnairesPanel } from "./student-questionnaires-panel";
 
-type Section = "schedule" | "assignments" | "fl";
+type Section = "schedule" | "assignments" | "fl" | "my-class" | "my-teachers" | "questionnaires";
 
 export function StudentApp({
   token, user, language, setLanguage, onLogout,
@@ -22,6 +25,9 @@ export function StudentApp({
     { key: "schedule", label: t.nav_student_schedule, icon: "📅" },
     { key: "assignments", label: t.nav_student_assignments, icon: "📝" },
     { key: "fl", label: t.nav_fl ?? "Функц. грамотность", icon: "📚" },
+    { key: "my-class", label: t.nav_my_classmates ?? "Мой класс", icon: "👥" },
+    { key: "my-teachers", label: t.nav_my_subject_teachers ?? "Мои учителя", icon: "👨‍🏫" },
+    { key: "questionnaires", label: t.nav_student_questionnaires ?? "Анкеты", icon: "📋" },
   ];
 
   return (
@@ -32,6 +38,9 @@ export function StudentApp({
       {section === "schedule" && <StudentSchedulePanel token={token} t={t} />}
       {section === "assignments" && <StudentAssignmentsPanel token={token} t={t} />}
       {section === "fl" && <FLStudentPanel token={token} language={language} />}
+      {section === "my-class" && <StudentMyClassPanel token={token} t={t} />}
+      {section === "my-teachers" && <StudentMyTeachersPanel token={token} t={t} />}
+      {section === "questionnaires" && <StudentQuestionnairesPanel token={token} t={t} />}
     </AppLayout>
   );
 }

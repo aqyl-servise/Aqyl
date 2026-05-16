@@ -25,7 +25,7 @@ export class UsersController {
   }
 
   @Get("teachers")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   findTeachers(@Req() req: ReqUser) {
     return this.teachersService.findByRoleAndSchool("teacher", req.user.schoolId ?? undefined);
   }
@@ -37,7 +37,7 @@ export class UsersController {
   }
 
   @Get(":id")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   findOne(@Param("id") id: string) {
     return this.teachersService.findById(id);
   }
@@ -58,7 +58,7 @@ export class UsersController {
   }
 
   @Patch(":id")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   async update(
     @Param("id") id: string,
     @Body() body: Partial<{

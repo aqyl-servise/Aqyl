@@ -20,7 +20,7 @@ export class SorSochController {
     @Query("quarter") quarter?: string,
     @Query("teacherId") teacherId?: string,
   ) {
-    const isAdmin = ["admin", "principal", "vice_principal"].includes(req.user.role);
+    const isAdmin = ["admin", "principal", "vice_principal", "vice_principal_academic"].includes(req.user.role);
     return this.service.findAll({
       schoolId: req.user.schoolId ?? undefined,
       teacherId: isAdmin ? teacherId : req.user.id,
@@ -38,7 +38,7 @@ export class SorSochController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles("teacher", "admin", "principal", "vice_principal")
+  @Roles("teacher", "admin", "principal", "vice_principal", "vice_principal_academic")
   create(
     @Req() req: ReqUser,
     @Body() body: { title: string; type: "sor" | "soch"; subject?: string; classroomId?: string; quarter?: string; fileUrl?: string },
@@ -59,7 +59,7 @@ export class SorSochController {
 
   @Patch(":id")
   @UseGuards(RolesGuard)
-  @Roles("teacher", "admin", "principal", "vice_principal")
+  @Roles("teacher", "admin", "principal", "vice_principal", "vice_principal_academic")
   update(
     @Param("id") id: string,
     @Body() body: Partial<{ title: string; subject: string; classroomId: string; quarter: string; fileUrl: string }>,
@@ -69,7 +69,7 @@ export class SorSochController {
 
   @Delete(":id")
   @UseGuards(RolesGuard)
-  @Roles("teacher", "admin", "principal", "vice_principal")
+  @Roles("teacher", "admin", "principal", "vice_principal", "vice_principal_academic")
   remove(@Param("id") id: string) {
     return this.service.remove(id);
   }

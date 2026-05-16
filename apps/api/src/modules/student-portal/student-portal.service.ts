@@ -5,6 +5,9 @@ import { Student } from "../schools/entities/student.entity";
 import { Schedule } from "../schools/entities/schedule.entity";
 import { Assignment } from "../schools/entities/assignment.entity";
 import { TaskSubmission } from "../schools/entities/task-submission.entity";
+import { Questionnaire } from "../schools/entities/questionnaire.entity";
+import { QuestionnaireResponse } from "../schools/entities/questionnaire-response.entity";
+import { SubjectTeacherAssignment } from "../schools/entities/subject-teacher-assignment.entity";
 
 @Injectable()
 export class StudentPortalService {
@@ -13,6 +16,9 @@ export class StudentPortalService {
     @InjectRepository(Schedule) private readonly scheduleRepo: Repository<Schedule>,
     @InjectRepository(Assignment) private readonly assignmentRepo: Repository<Assignment>,
     @InjectRepository(TaskSubmission) private readonly submissionRepo: Repository<TaskSubmission>,
+    @InjectRepository(Questionnaire) private readonly questionnaireRepo: Repository<Questionnaire>,
+    @InjectRepository(QuestionnaireResponse) private readonly responseRepo: Repository<QuestionnaireResponse>,
+    @InjectRepository(SubjectTeacherAssignment) private readonly subjectTeacherRepo: Repository<SubjectTeacherAssignment>,
   ) {}
 
   async getStudentByUserId(userId: string) {
@@ -93,5 +99,61 @@ export class StudentPortalService {
 
   async getMyProfile(userId: string) {
     return this.getStudentByUserId(userId);
+  }
+
+  async getClassmates(userId: string) {
+    const student = await this.getStudentByUserId(userId);
+    return this.studentRepo.find({
+      where: { classroom: { id: student.classroom.id } },
+      order: { fullName: "ASC" },
+    });
+  }
+
+  async getMyTeachers(userId: string) {
+    const student = await this.getStudentByUserId(userId);
+    return this.subjectTeacherRepo.find({
+      where: { classroomId: student.classroom.id },
+      relations: ["teacher"],
+      order: { subject: "ASC" },
+    });
+  }
+
+  async getMyQuestionnaires(userId: string) {
+    const student = await this.getStudentByUserId(userId);
+    const classroomId = student.classroom.id;
+
+    const questionnaires = await this.questionnaireRepo
+      .createQueryBuilder("q")
+      .where("q.status IN (:...statuses)", { statuses: ["assigned", "completed"] })
+      .andWhere(`:cid = ANY(q."assignedClassroomIds")`, { cid: classroomId })
+      .orderBy("q.createdAt", "DESC")
+      .getMany();
+
+    const responses = await this.responseRepo.find({
+      where: { studentId: student.id },
+    });
+    const responseMap = new Map(responses.map(r => [r.questionnaireId, r]));
+
+    return questionnaires.map(q => ({
+      ...q,
+      myResponse: responseMap.get(q.id) ?? null,
+    }));
+  }
+
+  async submitQuestionnaireResponse(userId: string, questionnaireId: string, answers: unknown) {
+    const student = await this.getStudentByUserId(userId);
+    const existing = await this.responseRepo.findOne({
+      where: { questionnaireId, studentId: student.id },
+    });
+    if (existing) {
+      await this.responseRepo.update(existing.id, { answers: answers as never, submittedAt: new Date() });
+      return this.responseRepo.findOne({ where: { id: existing.id } });
+    }
+    return this.responseRepo.save(this.responseRepo.create({
+      questionnaireId,
+      studentId: student.id,
+      answers: answers as never,
+      submittedAt: new Date(),
+    }));
   }
 }

@@ -16,7 +16,7 @@ export class AttestationService {
   async findAll(schoolId?: string | null) {
     const baseWhere = { role: "teacher" as const };
     const schoolWhere = schoolId ? { ...baseWhere, schoolId } : baseWhere;
-    const roles = ["teacher", "principal", "vice_principal", "class_teacher"] as const;
+    const roles = ["teacher", "principal", "vice_principal", "vice_principal_academic", "class_teacher"] as const;
 
     const teachers = await this.teacherRepo.find({
       where: schoolId

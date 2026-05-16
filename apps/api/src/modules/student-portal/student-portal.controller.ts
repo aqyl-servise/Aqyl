@@ -40,4 +40,28 @@ export class StudentPortalController {
   getGrades(@Req() req: ReqUser) {
     return this.service.getGrades(req.user.id);
   }
+
+  @Get("classmates")
+  getClassmates(@Req() req: ReqUser) {
+    return this.service.getClassmates(req.user.id);
+  }
+
+  @Get("my-teachers")
+  getMyTeachers(@Req() req: ReqUser) {
+    return this.service.getMyTeachers(req.user.id);
+  }
+
+  @Get("questionnaires")
+  getQuestionnaires(@Req() req: ReqUser) {
+    return this.service.getMyQuestionnaires(req.user.id);
+  }
+
+  @Post("questionnaires/:id/respond")
+  respondQuestionnaire(
+    @Req() req: ReqUser,
+    @Param("id") id: string,
+    @Body() body: { answers: unknown },
+  ) {
+    return this.service.submitQuestionnaireResponse(req.user.id, id, body.answers);
+  }
 }

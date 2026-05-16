@@ -12,13 +12,13 @@ export class AiUsageController {
   constructor(private readonly svc: AiUsageService) {}
 
   @Get("my")
-  @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal")
+  @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal", "vice_principal_academic")
   getMyUsage(@Req() req: ReqUser) {
     return this.svc.getTodayUsage(req.user.id);
   }
 
   @Get("summary")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   getSummary(
     @Req() req: ReqUser,
     @Query("period") period?: "today" | "week" | "month",
@@ -27,19 +27,19 @@ export class AiUsageController {
   }
 
   @Get("by-teacher")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   getByTeacher(@Req() req: ReqUser, @Query("date") date?: string) {
     return this.svc.getTeacherBreakdown(req.user.schoolId ?? "", date);
   }
 
   @Get("chart")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   getChart(@Req() req: ReqUser, @Query("days") days?: string) {
     return this.svc.getChartData(req.user.schoolId ?? "", days ? Number(days) : 30);
   }
 
   @Get("most-active")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   getMostActive(@Req() req: ReqUser) {
     return this.svc.getMostActiveToday(req.user.schoolId ?? "");
   }

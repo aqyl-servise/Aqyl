@@ -29,7 +29,7 @@ const ALLOWED_MIME_TYPES = new Set([
   "text/csv",
 ]);
 
-const ADMIN_ROLES = new Set(["admin", "principal", "vice_principal"]);
+const ADMIN_ROLES = new Set(["admin", "principal", "vice_principal", "vice_principal_academic"]);
 
 interface ReqUser { user: { id: string; role: string; schoolId?: string | null } }
 interface MulterFile { originalname: string; mimetype: string; size: number; filename: string; path: string }

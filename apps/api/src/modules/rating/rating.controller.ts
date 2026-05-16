@@ -14,7 +14,7 @@ export class RatingController {
   constructor(private readonly svc: RatingService) {}
 
   @Post("calculate")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   calculateAll(
     @Req() req: ReqUser,
     @Body() body: { period?: RatingPeriod; periodNumber?: number; academicYear?: string },
@@ -28,7 +28,7 @@ export class RatingController {
   }
 
   @Get("school")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   getSchoolRatings(
     @Req() req: ReqUser,
     @Query("subject") subject?: string,
@@ -64,7 +64,7 @@ export class RatingController {
   }
 
   @Get("teacher/:teacherId")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   getTeacherRating(
     @Param("teacherId") teacherId: string,
     @Req() req: ReqUser,
@@ -82,7 +82,7 @@ export class RatingController {
   }
 
   @Get("history/:teacherId")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   getRatingHistory(@Param("teacherId") teacherId: string, @Req() req: ReqUser) {
     return this.svc.getRatingHistory(teacherId, req.user.schoolId ?? "");
   }
@@ -94,7 +94,7 @@ export class RatingController {
   }
 
   @Patch(":id/adjust")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   adjustRating(
     @Param("id") id: string,
     @Body() body: { manualAdjustment: number; manualComment?: string },
@@ -104,7 +104,7 @@ export class RatingController {
 
   // ── Violations ─────────────────────────────────────────────────────────────
   @Post("violations")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   createViolation(
     @Req() req: ReqUser,
     @Body() body: { teacherId: string; type: ViolationType; description: string; date: string; pointsDeducted: number },
@@ -113,13 +113,13 @@ export class RatingController {
   }
 
   @Get("violations/:teacherId")
-  @Roles("admin", "principal", "vice_principal", "teacher", "class_teacher")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher", "class_teacher")
   getViolations(@Param("teacherId") teacherId: string, @Req() req: ReqUser) {
     return this.svc.getViolations(teacherId, req.user.schoolId ?? "");
   }
 
   @Delete("violations/:id")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   deleteViolation(@Param("id") id: string) {
     return this.svc.deleteViolation(id);
   }

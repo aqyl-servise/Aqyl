@@ -10,7 +10,7 @@ export class SchoolsController {
   constructor(private readonly service: SchoolsService) {}
 
   @Get()
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   findAll() {
     return this.service.findAllWithStats();
   }

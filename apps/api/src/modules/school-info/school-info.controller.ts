@@ -13,7 +13,7 @@ export class SchoolInfoController {
   constructor(private readonly service: SchoolInfoService) {}
 
   @Get()
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   getInfo(@Req() req: ReqUser) {
     return this.service.getInfo(req.user.schoolId);
   }

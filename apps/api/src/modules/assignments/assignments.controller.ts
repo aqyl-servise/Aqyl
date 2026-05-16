@@ -18,7 +18,7 @@ export class AssignmentsController {
 
   @Get("all")
   @UseGuards(RolesGuard)
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   getAll() {
     return this.service.getAll();
   }

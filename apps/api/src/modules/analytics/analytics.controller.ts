@@ -9,7 +9,7 @@ import { AnalyticsService } from "./analytics.service";
 
 interface ReqUser { user: { id: string; role: string; classroomIds?: string[] } }
 
-const ADMIN_ROLES = ["admin", "principal", "vice_principal"];
+const ADMIN_ROLES = ["admin", "principal", "vice_principal", "vice_principal_academic"];
 
 @UseGuards(JwtAuthGuard)
 @Controller("analytics")
@@ -25,7 +25,7 @@ export class AnalyticsController {
 
   @Get("school")
   @UseGuards(RolesGuard)
-  @Roles("admin", "principal", "vice_principal", "teacher")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher")
   getSchool(@Req() req: ReqUser) {
     const isAdmin = ADMIN_ROLES.includes(req.user.role);
     return this.analyticsService.getSchoolStats(isAdmin ? undefined : (req.user.classroomIds ?? []));
@@ -33,7 +33,7 @@ export class AnalyticsController {
 
   @Get("classes")
   @UseGuards(RolesGuard)
-  @Roles("admin", "principal", "vice_principal", "teacher")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher")
   getClasses(@Req() req: ReqUser) {
     const isAdmin = ADMIN_ROLES.includes(req.user.role);
     return this.analyticsService.getClassesStats(isAdmin ? undefined : (req.user.classroomIds ?? []));
@@ -41,14 +41,14 @@ export class AnalyticsController {
 
   @Get("students")
   @UseGuards(RolesGuard)
-  @Roles("admin", "principal", "vice_principal", "teacher")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher")
   getStudents(@Query("q") q: string) {
     return this.analyticsService.getStudentsStats(q ?? "");
   }
 
   @Post("ai-analyze")
   @UseGuards(RolesGuard)
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   aiAnalyze(@Body() body: Record<string, unknown>) {
     return this.analyticsService.aiAnalyze(body);
   }

@@ -3,7 +3,11 @@ import { Classroom } from "../../schools/entities/classroom.entity";
 import { GeneratedDocument } from "../../schools/entities/generated-document.entity";
 import { School } from "../../schools/entities/school.entity";
 
-export type UserRole = "teacher" | "admin" | "principal" | "vice_principal" | "class_teacher" | "student";
+export type UserRole =
+  | "teacher" | "admin" | "principal"
+  | "vice_principal" | "vice_principal_academic" | "vice_principal_education"
+  | "psychologist" | "social_pedagogue"
+  | "class_teacher" | "student";
 export type UserStatus = "pending" | "active" | "rejected" | "inactive";
 
 @Entity()

@@ -11,7 +11,7 @@ export class RegisterDto {
   @MinLength(6)
   password!: string;
 
-  @IsIn(["teacher", "class_teacher", "vice_principal", "principal", "student"])
+  @IsIn(["teacher", "class_teacher", "vice_principal", "vice_principal_academic", "vice_principal_education", "psychologist", "social_pedagogue", "principal", "student"])
   role!: string;
 
   @IsString()

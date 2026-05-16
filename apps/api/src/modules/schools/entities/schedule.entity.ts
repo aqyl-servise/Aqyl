@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { Teacher } from "../../teachers/entities/teacher.entity";
 import { Classroom } from "./classroom.entity";
 
@@ -7,8 +7,11 @@ export class Schedule {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
+  @Column({ nullable: true })
+  schoolId?: string;
+
   @Column()
-  dayOfWeek!: number; // 1=Mon ... 5=Fri
+  dayOfWeek!: number; // 1=Mon ... 6=Sat
 
   @Column()
   period!: number; // 1-8
@@ -23,11 +26,20 @@ export class Schedule {
   endTime?: string; // "09:15"
 
   @Column({ nullable: true })
-  room?: string; // Physical room number, e.g. "201"
+  room?: string;
+
+  @Column({ nullable: true })
+  academicYear?: string;
+
+  @Column({ default: "main" })
+  version!: string;
 
   @ManyToOne(() => Classroom, (c) => c.schedules, { onDelete: "CASCADE" })
   classroom!: Classroom;
 
   @ManyToOne(() => Teacher, { nullable: true, onDelete: "SET NULL" })
   teacher?: Teacher;
+
+  @CreateDateColumn() createdAt!: Date;
+  @UpdateDateColumn() updatedAt!: Date;
 }

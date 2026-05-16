@@ -8,7 +8,7 @@ interface ReqUser { user: { schoolId?: string | null } }
 
 @Controller("final-attestation")
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles("admin", "principal", "vice_principal")
+@Roles("admin", "principal", "vice_principal", "vice_principal_academic")
 export class FinalAttestationController {
   constructor(private readonly service: FinalAttestationService) {}
 

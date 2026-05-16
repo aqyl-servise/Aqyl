@@ -9,18 +9,18 @@ interface ReqUser { user: { id: string; role: string; schoolId?: string | null }
 
 @Controller("ktp")
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles("admin", "principal", "vice_principal", "teacher", "class_teacher")
+@Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher", "class_teacher")
 export class KtpController {
   constructor(private readonly service: KtpService) {}
 
   @Get("files")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   getFiles(@Query("section") section: string, @Req() req: ReqUser) {
     return this.service.getFilesWithReviews(section ?? "", req.user.schoolId);
   }
 
   @Patch("reviews/:fileId")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   upsertReview(
     @Param("fileId") fileId: string,
     @Body() body: { status: KtpStatus; comment?: string },

@@ -8,7 +8,7 @@ interface ReqUser { user: { id: string; role: string } }
 
 @Controller("gifted")
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles("admin", "principal", "vice_principal", "teacher")
+@Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher")
 export class GiftedController {
   constructor(private readonly svc: GiftedService) {}
 
@@ -19,13 +19,13 @@ export class GiftedController {
   }
 
   @Post("plans")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   createPlan(@Body() body: { type: string; title: string; fileUrl?: string }, @Req() req: ReqUser) {
     return this.svc.createPlan({ ...body, uploadedById: req.user.id });
   }
 
   @Delete("plans/:id")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   removePlan(@Param("id") id: string) {
     return this.svc.removePlan(id);
   }
@@ -37,13 +37,13 @@ export class GiftedController {
   }
 
   @Post("students")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   markGifted(@Body() body: { studentId: string }) {
     return this.svc.markGifted(body.studentId);
   }
 
   @Delete("students/:id")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   removeGiftedStudent(@Param("id") id: string) {
     return this.svc.removeGiftedStudent(id);
   }
@@ -66,13 +66,13 @@ export class GiftedController {
   }
 
   @Post("teacher-assignments")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   addAssignment(@Body() body: { teacherId: string; studentId: string }) {
     return this.svc.addTeacherAssignment(body.teacherId, body.studentId);
   }
 
   @Delete("teacher-assignments/:id")
-  @Roles("admin", "principal", "vice_principal")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   removeAssignment(@Param("id") id: string) {
     return this.svc.removeTeacherAssignment(id);
   }
@@ -101,19 +101,19 @@ export class GiftedController {
 
   // ── Teacher-owned gifted students ─────────────────────────────────
   @Get("my-students")
-  @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal")
+  @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal", "vice_principal_academic")
   getMyGiftedStudents(@Req() req: ReqUser) {
     return this.svc.getMyGiftedStudents(req.user.id);
   }
 
   @Post("my-student")
-  @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal")
+  @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal", "vice_principal_academic")
   addMyGiftedStudent(@Body() body: { studentId: string }, @Req() req: ReqUser) {
     return this.svc.addMyGiftedStudent(req.user.id, body.studentId);
   }
 
   @Delete("my-student/:id")
-  @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal")
+  @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal", "vice_principal_academic")
   removeMyGiftedStudent(@Param("id") id: string, @Req() req: ReqUser) {
     return this.svc.removeMyGiftedStudent(id, req.user.id);
   }

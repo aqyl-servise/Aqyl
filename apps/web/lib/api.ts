@@ -1,6 +1,10 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
-export type UserRole = "teacher" | "admin" | "principal" | "vice_principal" | "class_teacher" | "student";
+export type UserRole =
+  | "teacher" | "admin" | "principal"
+  | "vice_principal" | "vice_principal_academic" | "vice_principal_education"
+  | "psychologist" | "social_pedagogue"
+  | "class_teacher" | "student";
 
 export type AuthUser = {
   id: string;
@@ -796,4 +800,70 @@ export const api = {
     request<void>(`/materials/illustrations/${id}`, { method: "DELETE" }, token),
   generateAiAssignment: (token: string, data: { subject: string; grade: string; topic: string; type: string }) =>
     request<{ content: string }>("/ai/generate-assignment", { method: "POST", body: JSON.stringify(data) }, token),
+
+  // Admin schedule
+  getAdminSchedule: (token: string, params?: { classroomId?: string; version?: string; academicYear?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.classroomId) q.set("classroomId", params.classroomId);
+    if (params?.version) q.set("version", params.version);
+    if (params?.academicYear) q.set("academicYear", params.academicYear);
+    const qs = q.toString();
+    return request<Array<{ id: string; dayOfWeek: number; period: number; subject: string; room?: string; version: string; academicYear?: string; teacher?: { id: string; fullName: string }; classroom?: { id: string; name: string } }>>(`/schedule/admin${qs ? "?" + qs : ""}`, undefined, token);
+  },
+  adminUpsertSchedule: (token: string, data: { classroomId: string; teacherId?: string; subject: string; dayOfWeek: number; period: number; room?: string; version?: string; academicYear?: string }) =>
+    request<{ id: string }>("/schedule/admin", { method: "POST", body: JSON.stringify(data) }, token),
+  adminDeleteSchedule: (token: string, id: string) =>
+    request<void>(`/schedule/admin/${id}`, { method: "DELETE" }, token),
+  getScheduleVersions: (token: string) =>
+    request<string[]>("/schedule/admin/versions", undefined, token),
+  createScheduleVersion: (token: string, name: string) =>
+    request<{ version: string }>("/schedule/admin/versions", { method: "POST", body: JSON.stringify({ name }) }, token),
+
+  // Questionnaires
+  getQuestionnaires: (token: string) =>
+    request<Array<{ id: string; title: string; description?: string; content: string; type: string; status: string; assignedClassroomIds: string[]; aiAnalysisResult?: string; createdAt: string }>>("/questionnaires", undefined, token),
+  createQuestionnaire: (token: string, data: { title: string; content: string; description?: string; type?: string; fileUrl?: string }) =>
+    request<{ id: string }>("/questionnaires", { method: "POST", body: JSON.stringify(data) }, token),
+  deleteQuestionnaire: (token: string, id: string) =>
+    request<void>(`/questionnaires/${id}`, { method: "DELETE" }, token),
+  assignQuestionnaire: (token: string, id: string, classroomIds: string[]) =>
+    request<{ id: string }>(`/questionnaires/${id}/assign`, { method: "POST", body: JSON.stringify({ classroomIds }) }, token),
+  generateQuestionnaire: (token: string, data: { topic: string; grade: number; questionCount: number; questionType: string }) =>
+    request<{ id: string; title: string; content: string; status: string; createdAt: string }>("/questionnaires/generate", { method: "POST", body: JSON.stringify(data) }, token),
+  analyzeQuestionnaire: (token: string, id: string) =>
+    request<{ analysis: string }>(`/questionnaires/${id}/analyze`, { method: "POST" }, token),
+  getQuestionnaireResponses: (token: string, id: string) =>
+    request<Array<{ id: string; studentId: string; answers: unknown; submittedAt?: string }>>(`/questionnaires/${id}/responses`, undefined, token),
+
+  // Social pedagogue
+  getNutritionStudents: (token: string, academicYear?: string) =>
+    request<Array<{ id: string; studentId: string; nutritionType: string; academicYear?: string; notes?: string; createdAt: string }>>(`/social-pedagogue/nutrition/students${academicYear ? `?academicYear=${academicYear}` : ""}`, undefined, token),
+  upsertNutritionStudent: (token: string, data: { studentId: string; nutritionType: string; academicYear?: string; notes?: string }) =>
+    request<{ id: string }>("/social-pedagogue/nutrition/students", { method: "POST", body: JSON.stringify(data) }, token),
+  removeNutritionStudent: (token: string, id: string) =>
+    request<void>(`/social-pedagogue/nutrition/students/${id}`, { method: "DELETE" }, token),
+  getNutritionOrders: (token: string) =>
+    request<Array<{ id: string; title: string; fileUrl?: string; createdAt: string }>>("/social-pedagogue/nutrition/orders", undefined, token),
+  createNutritionOrder: (token: string, data: { title: string; fileUrl?: string }) =>
+    request<{ id: string }>("/social-pedagogue/nutrition/orders", { method: "POST", body: JSON.stringify(data) }, token),
+  removeNutritionOrder: (token: string, id: string) =>
+    request<void>(`/social-pedagogue/nutrition/orders/${id}`, { method: "DELETE" }, token),
+  getSpecialAttentionStudents: (token: string) =>
+    request<Array<{ id: string; studentId: string; reason: string; documents: { title: string; fileUrl: string }[]; createdAt: string }>>("/social-pedagogue/special-attention", undefined, token),
+  upsertSpecialAttentionStudent: (token: string, data: { studentId: string; reason: string; documents?: { title: string; fileUrl: string }[] }) =>
+    request<{ id: string }>("/social-pedagogue/special-attention", { method: "POST", body: JSON.stringify(data) }, token),
+  removeSpecialAttentionStudent: (token: string, id: string) =>
+    request<void>(`/social-pedagogue/special-attention/${id}`, { method: "DELETE" }, token),
+  addSpecialDocument: (token: string, id: string, doc: { title: string; fileUrl: string }) =>
+    request<{ id: string }>(`/social-pedagogue/special-attention/${id}/documents`, { method: "POST", body: JSON.stringify(doc) }, token),
+
+  // Student portal additions
+  getMyClassmates: (token: string) =>
+    request<Array<{ id: string; fullName: string; orderNum?: number }>>("/student/classmates", undefined, token),
+  getMySubjectTeachers: (token: string) =>
+    request<Array<{ id: string; subject: string; teacher: { id: string; fullName: string; subject?: string; experience?: number; category?: string } }>>("/student/my-teachers", undefined, token),
+  getMyStudentQuestionnaires: (token: string) =>
+    request<Array<{ id: string; title: string; description?: string; status: string; myResponse: { id: string; submittedAt?: string } | null; createdAt: string }>>("/student/questionnaires", undefined, token),
+  submitStudentQuestionnaire: (token: string, id: string, answers: unknown) =>
+    request<{ id: string }>(`/student/questionnaires/${id}/respond`, { method: "POST", body: JSON.stringify({ answers }) }, token),
 };
