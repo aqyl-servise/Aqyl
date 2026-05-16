@@ -6,9 +6,10 @@ import { Student } from "../schools/entities/student.entity";
 import { Classroom } from "../schools/entities/classroom.entity";
 import { Assignment } from "../schools/entities/assignment.entity";
 import { TaskSubmission } from "../schools/entities/task-submission.entity";
+import { AiClientModule } from "../../services/ai-client.module";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Student, Classroom, Assignment, TaskSubmission])],
+  imports: [TypeOrmModule.forFeature([Student, Classroom, Assignment, TaskSubmission]), AiClientModule],
   controllers: [AnalyticsController],
   providers: [AnalyticsService],
 })

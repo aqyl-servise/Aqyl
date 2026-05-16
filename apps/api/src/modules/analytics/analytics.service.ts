@@ -1,13 +1,12 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { ILike, Repository } from "typeorm";
-import { ConfigService } from "@nestjs/config";
 import * as XLSX from "xlsx";
-import Anthropic from "@anthropic-ai/sdk";
 import { Student } from "../schools/entities/student.entity";
 import { Classroom } from "../schools/entities/classroom.entity";
 import { Assignment } from "../schools/entities/assignment.entity";
 import { TaskSubmission } from "../schools/entities/task-submission.entity";
+import { AiClientService } from "../../services/ai-client.service";
 
 type AnalyticsRow = {
   student: string; classroom: string; topic: string; score: number; maxScore: number;
@@ -15,8 +14,6 @@ type AnalyticsRow = {
 
 @Injectable()
 export class AnalyticsService {
-  private readonly ai?: Anthropic;
-
   constructor(
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
@@ -26,11 +23,8 @@ export class AnalyticsService {
     private readonly assignmentRepo: Repository<Assignment>,
     @InjectRepository(TaskSubmission)
     private readonly tsRepo: Repository<TaskSubmission>,
-    private readonly configService: ConfigService,
-  ) {
-    const key = this.configService.get<string>("ANTHROPIC_API_KEY");
-    if (key) this.ai = new Anthropic({ apiKey: key });
-  }
+    private readonly aiClientService: AiClientService,
+  ) {}
 
   // ── Existing Excel upload ────────────────────────────────────────────────
   parseWorkbook(buffer: Buffer) {
@@ -247,10 +241,10 @@ export class AnalyticsService {
 
   // ── AI analysis ──────────────────────────────────────────────────────────
   async aiAnalyze(stats: unknown): Promise<{ analysis: string }> {
-    if (!this.ai) {
+    if (!this.aiClientService.isConfigured) {
       return { analysis: "ИИ-анализ недоступен. Проверьте настройку ANTHROPIC_API_KEY." };
     }
-    const model = this.configService.get<string>("ANTHROPIC_MODEL") ?? "claude-haiku-4-5-20251001";
+
     const prompt = `Ты аналитик успеваемости казахстанской школы. Проанализируй данные и дай структурированный отчёт на русском языке.
 
 Данные успеваемости школы:
@@ -265,13 +259,12 @@ ${JSON.stringify(stats, null, 2)}
 
 Отвечай чётко, используй маркированные списки и заголовки. Максимум 600 слов.`;
 
-    const response = await this.ai.messages.create({
-      model,
-      max_tokens: 1500,
+    const result = await this.aiClientService.request({
+      action: "analysis_class",
+      systemPrompt: "",
       messages: [{ role: "user", content: prompt }],
     });
 
-    const analysis = response.content[0].type === "text" ? response.content[0].text : "Не удалось получить ответ.";
-    return { analysis };
+    return { analysis: result.content || "Не удалось получить ответ." };
   }
 }

@@ -1,30 +1,21 @@
 import { Injectable } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import Anthropic from "@anthropic-ai/sdk";
+import { AiClientService } from "../../services/ai-client.service";
 import { GenerateLessonPlanDto } from "./dto/generate-lesson-plan.dto";
 import { GenerateTaskSetDto } from "./dto/generate-task-set.dto";
 
+const SYSTEM_PROMPT = "You are a school teacher assistant. Respond ONLY with valid JSON, no markdown, no extra text.";
+
 @Injectable()
 export class AiService {
-  private readonly client?: Anthropic;
-  private readonly model: string;
-
-  constructor(private readonly configService: ConfigService) {
-    const apiKey = this.configService.get<string>("ANTHROPIC_API_KEY");
-    this.model = this.configService.get<string>("ANTHROPIC_MODEL") ?? "claude-haiku-4-5-20251001";
-    if (apiKey) {
-      this.client = new Anthropic({ apiKey });
-    }
-  }
+  constructor(private readonly aiClientService: AiClientService) {}
 
   async generateLessonPlan(input: GenerateLessonPlanDto) {
-    if (!this.client) return this.buildFallbackLessonPlan(input);
+    if (!this.aiClientService.isConfigured) return this.buildFallbackLessonPlan(input);
 
     try {
-      const response = await this.client.messages.create({
-        model: this.model,
-        max_tokens: 1024,
-        system: "You are a school teacher assistant. Respond ONLY with valid JSON, no markdown, no extra text.",
+      const result = await this.aiClientService.request({
+        action: "kmzh_generate",
+        systemPrompt: SYSTEM_PROMPT,
         messages: [
           {
             role: "user",
@@ -34,21 +25,19 @@ Return JSON with keys: title, subject, grade, duration, objectives(array), mater
         ],
       });
 
-      const text = response.content[0].type === "text" ? response.content[0].text : "";
-      return JSON.parse(text);
+      return JSON.parse(result.content);
     } catch {
       return this.buildFallbackLessonPlan(input);
     }
   }
 
   async generateTaskSet(input: GenerateTaskSetDto) {
-    if (!this.client) return this.buildFallbackTaskSet(input);
+    if (!this.aiClientService.isConfigured) return this.buildFallbackTaskSet(input);
 
     try {
-      const response = await this.client.messages.create({
-        model: this.model,
-        max_tokens: 1024,
-        system: "You are a school teacher assistant. Respond ONLY with valid JSON, no markdown, no extra text.",
+      const result = await this.aiClientService.request({
+        action: "task_generate",
+        systemPrompt: SYSTEM_PROMPT,
         messages: [
           {
             role: "user",
@@ -58,8 +47,7 @@ Return JSON with keys: title, topic, type, questions(array of {prompt, answer}).
         ],
       });
 
-      const text = response.content[0].type === "text" ? response.content[0].text : "";
-      return JSON.parse(text);
+      return JSON.parse(result.content);
     } catch {
       return this.buildFallbackTaskSet(input);
     }
