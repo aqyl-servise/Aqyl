@@ -780,4 +780,20 @@ export const api = {
     request<{ id: string; isActive: boolean }>(`/schools/${id}/activate`, { method: "PATCH" }, token),
   deactivateSchool: (token: string, id: string) =>
     request<{ id: string; isActive: boolean }>(`/schools/${id}/deactivate`, { method: "PATCH" }, token),
+
+  // Materials
+  generatePresentation: (token: string, data: { prompt: string; slideCount?: number; attachedText?: string }) =>
+    request<{ id: string; title: string; slideCount: number; fileUrl?: string; status: string; createdAt: string }>("/materials/presentations", { method: "POST", body: JSON.stringify(data) }, token),
+  getMyPresentations: (token: string) =>
+    request<Array<{ id: string; title: string; slideCount: number; fileUrl?: string; status: string; createdAt: string }>>("/materials/presentations", undefined, token),
+  deletePresentation: (token: string, id: string) =>
+    request<void>(`/materials/presentations/${id}`, { method: "DELETE" }, token),
+  generateIllustration: (token: string, data: { prompt: string; attachedText?: string }) =>
+    request<{ id: string; title: string; imageUrl?: string; status: string; createdAt: string }>("/materials/illustrations", { method: "POST", body: JSON.stringify(data) }, token),
+  getMyIllustrations: (token: string) =>
+    request<Array<{ id: string; title: string; imageUrl?: string; status: string; createdAt: string }>>("/materials/illustrations", undefined, token),
+  deleteIllustration: (token: string, id: string) =>
+    request<void>(`/materials/illustrations/${id}`, { method: "DELETE" }, token),
+  generateAiAssignment: (token: string, data: { subject: string; grade: string; topic: string; type: string }) =>
+    request<{ content: string }>("/ai/generate-assignment", { method: "POST", body: JSON.stringify(data) }, token),
 };

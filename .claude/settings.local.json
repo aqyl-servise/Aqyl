@@ -75,7 +75,12 @@
       "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\web\\\\app\" -Recurse -Force | Where-Object { $_.Name -match '\\\\.\\(tsx?|css\\)$' } | Select-Object FullName)",
       "PowerShell(head *)",
       "PowerShell(Get-ChildItem -Recurse C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\web\\\\src | Where-Object { $_.Extension -in \".tsx\", \".ts\" } | Select-Object -ExpandProperty FullName | Select-Object -First 80)",
-      "Bash(Select-Object -ExpandProperty FullName)"
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "PowerShell(Get-Content *)",
+      "PowerShell(New-Item *)",
+      "PowerShell(Set-Location \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\api\" && npx tsc --noEmit 2>&1; Write-Host \"Exit: $LASTEXITCODE\")",
+      "PowerShell(Set-Location \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\web\" && npx tsc --noEmit 2>&1; Write-Host \"Exit: $LASTEXITCODE\")"
     ]
   }
 }

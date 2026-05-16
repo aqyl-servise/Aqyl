@@ -16,6 +16,7 @@ import { ClassHoursSchedulePanel } from "../admin/class-hours-schedule";
 import { SorSochPanel } from "./sor-soch-panel";
 import { FLTeacherPanel } from "./fl-panel";
 import { MyRatingPanel } from "./my-rating-panel";
+import { MaterialsPanel } from "./materials-panel";
 
 const CONTACT_WHATSAPP = "77000000000";
 const CONTACT_EMAIL = "support@aqyl.kz";
@@ -74,8 +75,7 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
     { key: "assignments", label: t.nav_assignments, icon: "📋" },
     { key: "lessons", label: t.nav_lessons, icon: "🎓" },
     { key: "my-ktp-ksp", label: t.nav_my_ktp_ksp ?? "Мои КТП/КСП", icon: "📂" },
-    { key: "presentations", label: t.nav_presentations ?? "Генерация презентаций", icon: "🔒" },
-    { key: "illustrations", label: t.nav_illustrations ?? "Генерация иллюстраций", icon: "🔒" },
+    { key: "materials", label: t.nav_materials ?? "Учебные материалы", icon: "🎨" },
     ...(isClassTeacher ? [{ key: "my-class", label: t.nav_my_class ?? "Мой класс", icon: "🏫" }] : []),
     ...(isClassTeacher ? [{ key: "analytics", label: t.nav_analytics, icon: "📊" }] : []),
     ...(isClassTeacher ? [{ key: "class-hours", label: t.nav_class_hours, icon: "🕐" }] : []),
@@ -88,10 +88,6 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
   ];
 
   function handleNav(key: string) {
-    if (key === "presentations" || key === "illustrations") {
-      setPremiumModal(true);
-      return;
-    }
     setSection(key);
   }
 
@@ -133,6 +129,9 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
         <TeacherFinalSection token={token} userId={user.id} language={language} t={t} />
       )}
       {section === "gifted" && <TeacherGiftedSection token={token} userId={user.id} language={language} t={t} user={user} />}
+      {section === "materials" && <MaterialsPanel token={token} language={language} teacher={user} />}
+      {section === "presentations" && <MaterialsPanel token={token} language={language} teacher={user} initialTab="presentations" />}
+      {section === "illustrations" && <MaterialsPanel token={token} language={language} teacher={user} initialTab="illustrations" />}
       {section === "fl" && <FLTeacherPanel token={token} language={language} />}
       {section === "my-rating" && <MyRatingPanel token={token} language={language} />}
       {section === "sor-soch" && <SorSochPanel token={token} language={language} t={t} />}

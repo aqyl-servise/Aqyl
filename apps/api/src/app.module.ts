@@ -71,6 +71,9 @@ import { AiUsageModule } from "./modules/ai-usage/ai-usage.module";
 import { KmzhCache } from "./modules/kmzh-cache/entities/kmzh-cache.entity";
 import { KmzhCacheHit } from "./modules/kmzh-cache/entities/kmzh-cache-hit.entity";
 import { KmzhCacheModule } from "./modules/kmzh-cache/kmzh-cache.module";
+import { GeneratedPresentation } from "./modules/schools/entities/generated-presentation.entity";
+import { GeneratedIllustration } from "./modules/schools/entities/generated-illustration.entity";
+import { MaterialsModule } from "./modules/materials/materials.module";
 
 @Module({
   imports: [
@@ -99,6 +102,7 @@ import { KmzhCacheModule } from "./modules/kmzh-cache/kmzh-cache.module";
           TeacherRating, TeacherViolation,
           AiUsageDaily, AiUsageAlert,
           KmzhCache, KmzhCacheHit,
+          GeneratedPresentation, GeneratedIllustration,
         ],
       }),
     }),
@@ -141,6 +145,7 @@ import { KmzhCacheModule } from "./modules/kmzh-cache/kmzh-cache.module";
     RatingModule,
     AiUsageModule,
     KmzhCacheModule,
+    MaterialsModule,
   ],
   providers: [
     SeedService,
