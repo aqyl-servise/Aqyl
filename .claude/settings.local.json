@@ -74,7 +74,8 @@
       "Bash(Get-ChildItem *)",
       "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\web\\\\app\" -Recurse -Force | Where-Object { $_.Name -match '\\\\.\\(tsx?|css\\)$' } | Select-Object FullName)",
       "PowerShell(head *)",
-      "PowerShell(Get-ChildItem -Recurse C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\web\\\\src | Where-Object { $_.Extension -in \".tsx\", \".ts\" } | Select-Object -ExpandProperty FullName | Select-Object -First 80)"
+      "PowerShell(Get-ChildItem -Recurse C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\web\\\\src | Where-Object { $_.Extension -in \".tsx\", \".ts\" } | Select-Object -ExpandProperty FullName | Select-Object -First 80)",
+      "Bash(Select-Object -ExpandProperty FullName)"
     ]
   }
 }

@@ -235,6 +235,12 @@ export type TeacherViolation = {
 let _selectedSchoolId: string | null = null;
 export function setApiSchoolId(id: string | null) { _selectedSchoolId = id; }
 
+class ApiError extends Error {
+  constructor(public readonly status: number, message: string) {
+    super(message);
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit, token?: string): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
@@ -247,7 +253,7 @@ async function request<T>(path: string, init?: RequestInit, token?: string): Pro
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(text || "Request failed");
+    throw new ApiError(res.status, text || "Request failed");
   }
   const ct = res.headers.get("content-type") ?? "";
   if (ct.includes("application/pdf") || ct.includes("octet-stream")) return (await res.blob()) as T;
@@ -571,11 +577,23 @@ export const api = {
 
   // AI Chat
   aiChat: (token: string, body: { message: string; context?: string; pageContext?: string }) =>
-    request<{ reply: string }>("/ai/chat", { method: "POST", body: JSON.stringify(body) }, token),
+    request<{ reply: string; warning?: boolean; warningMessage?: string }>("/ai/chat", { method: "POST", body: JSON.stringify(body) }, token),
   aiGenerateAssignment: (token: string, body: { subject: string; grade: string; topic: string; type: string }) =>
-    request<{ content: string }>("/ai/generate-assignment", { method: "POST", body: JSON.stringify(body) }, token),
+    request<{ content: string; warning?: boolean; warningMessage?: string }>("/ai/generate-assignment", { method: "POST", body: JSON.stringify(body) }, token),
   aiGenerateLessonPlan: (token: string, body: { subject: string; grade: string; topic: string; duration: number }) =>
-    request<{ content: string }>("/ai/generate-lesson-plan", { method: "POST", body: JSON.stringify(body) }, token),
+    request<{ content: string; warning?: boolean; warningMessage?: string }>("/ai/generate-lesson-plan", { method: "POST", body: JSON.stringify(body) }, token),
+
+  // AI Usage
+  getAiUsage: (token: string) =>
+    request<{ count: number; limit: number; remaining: number; percentage: number }>("/ai-usage/my", undefined, token),
+  getAiUsageSummary: (token: string, period?: string) =>
+    request<{ totalCount: number; totalCostKzt: number; activeTeachers: number; period: string }>(`/ai-usage/summary${period ? `?period=${period}` : ""}`, undefined, token),
+  getAiUsageByTeacher: (token: string, date?: string) =>
+    request<Array<{ userId: string; teacherName: string; subject: string; todayCount: number; weekCount: number; monthCount: number; costKzt: number }>>(`/ai-usage/by-teacher${date ? `?date=${date}` : ""}`, undefined, token),
+  getAiUsageChart: (token: string, days?: number) =>
+    request<Array<{ date: string; totalCount: number; totalCostKzt: number }>>(`/ai-usage/chart${days ? `?days=${days}` : ""}`, undefined, token),
+  getAiMostActive: (token: string) =>
+    request<{ teacherName: string; count: number } | null>("/ai-usage/most-active", undefined, token),
 
   // Student portal
   getStudentMe: (token: string) =>

@@ -260,7 +260,7 @@ export class FLService {
   }
 
   // ── AI ─────────────────────────────────────────────────────────────────
-  async generateTask(body: { subject: string; grade: number; direction: string; difficulty: string; taskType: string; topic: string }) {
-    return this.aiService.generateFLTask(body);
+  async generateTask(body: { subject: string; grade: number; direction: string; difficulty: string; taskType: string; topic: string }, userCtx?: { userId: string; schoolId: string; role: string }) {
+    return this.aiService.generateFLTask(body, userCtx);
   }
 }

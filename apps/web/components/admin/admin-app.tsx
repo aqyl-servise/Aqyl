@@ -29,6 +29,7 @@ import { SchoolsPanel } from "./schools-panel";
 import { SorSochPanel } from "../teacher/sor-soch-panel";
 import { FLAdminPanel } from "./fl-panel";
 import { RatingAdminPanel } from "./rating-panel";
+import { AiUsagePanelAdmin } from "./ai-usage-panel";
 
 export function AdminApp(props: {
   token: string; user: AuthUser; language: Language;
@@ -60,6 +61,7 @@ function AdminAppContent({ token, user, language, setLanguage, onLogout }: {
     { key: "gifted", label: t.nav_gifted, icon: "⭐" },
     { key: "fl", label: t.nav_fl ?? "Функц. грамотность", icon: "📚" },
     { key: "rating", label: t.nav_rating ?? "Рейтинг учителей", icon: "🏆" },
+    { key: "ai-usage", label: t.nav_ai_usage ?? "Использование AI", icon: "🤖" },
     { key: "welfare", label: t.nav_education, icon: "🌱" },
     { key: "household", label: t.nav_household, icon: "🔧" },
     { key: "bbjm", label: t.nav_bbjm, icon: "📑" },
@@ -108,6 +110,7 @@ function AdminAppContent({ token, user, language, setLanguage, onLogout }: {
       {section === "sor-soch" && <SorSochPanel token={token} language={language} t={t} isAdmin={true} userRole={user.role} />}
       {section === "fl" && <FLAdminPanel token={token} language={language} userRole={user.role} />}
       {section === "rating" && <RatingAdminPanel token={token} language={language} userRole={user.role} />}
+      {section === "ai-usage" && <AiUsagePanelAdmin token={token} language={language} />}
     </AppLayout>
   );
 }

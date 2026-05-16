@@ -1,6 +1,7 @@
 "use client";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { api } from "../../lib/api";
+import { useAiUsage } from "../../contexts/ai-usage-context";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -29,6 +30,7 @@ export function AiChat({ token, currentSection, open, onClose }: AiChatProps) {
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { triggerWarning, refresh } = useAiUsage();
 
   useEffect(() => {
     if (open) {
@@ -52,8 +54,16 @@ export function AiChat({ token, currentSection, open, onClose }: AiChatProps) {
     try {
       const res = await api.aiChat(token, { message: trimmed, context: history, pageContext: currentSection });
       setMessages((prev) => [...prev, { role: "assistant", content: res.reply }]);
-    } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: "Произошла ошибка. Попробуйте ещё раз." }]);
+      if (res.warning && res.warningMessage) triggerWarning(res.warningMessage);
+      refresh();
+    } catch (err: unknown) {
+      const status = (err as { status?: number })?.status;
+      if (status === 429) {
+        setMessages((prev) => [...prev, { role: "assistant", content: "🚫 Дневной лимит AI-запросов исчерпан (20/20). Обновится в полночь." }]);
+      } else {
+        setMessages((prev) => [...prev, { role: "assistant", content: "Произошла ошибка. Попробуйте ещё раз." }]);
+      }
+      refresh();
     } finally {
       setLoading(false);
     }

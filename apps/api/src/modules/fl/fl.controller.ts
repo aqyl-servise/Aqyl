@@ -123,8 +123,8 @@ export class FLController {
   // ── AI ─────────────────────────────────────────────────────────────────
   @Post("ai/generate-task")
   @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal")
-  generateTask(@Body() body: { subject: string; grade: number; direction: string; difficulty: string; taskType: string; topic: string }) {
-    return this.svc.generateTask(body);
+  generateTask(@Req() req: ReqUser, @Body() body: { subject: string; grade: number; direction: string; difficulty: string; taskType: string; topic: string }) {
+    return this.svc.generateTask(body, { userId: req.user.id, schoolId: req.user.schoolId ?? "", role: req.user.role });
   }
 
   // ── Student portal ─────────────────────────────────────────────────────
