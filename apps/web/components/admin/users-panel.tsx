@@ -4,13 +4,33 @@ import { api, AuthUser, ClassroomOption, UserRole } from "../../lib/api";
 import { Language } from "../../lib/translations";
 import { PasswordInput } from "../ui/password-input";
 
-const ROLES: UserRole[] = ["teacher", "admin", "principal", "vice_principal", "class_teacher"];
+const ALL_ROLES: UserRole[] = [
+  "teacher", "class_teacher", "admin", "principal",
+  "vice_principal", "vice_principal_academic", "vice_principal_education",
+  "psychologist", "social_pedagogue",
+];
 
-function roleLabel(role: string, t: Record<string, string>): string {
-  return t[`role_${role}`] ?? role;
+function getRoleLabel(role: string, t: Record<string, string>): string {
+  const map: Record<string, string> = {
+    teacher: t.role_teacher ?? "Учитель",
+    class_teacher: t.role_class_teacher ?? "Классный руководитель",
+    admin: t.role_admin ?? "Администратор",
+    principal: t.role_principal ?? "Директор",
+    vice_principal: t.role_vice_principal ?? "Завуч",
+    vice_principal_academic: t.role_vice_principal_academic ?? "Завуч по учебной части",
+    vice_principal_education: t.role_vice_principal_education ?? "Завуч по воспитательной части",
+    psychologist: t.role_psychologist ?? "Психолог",
+    social_pedagogue: t.role_social_pedagogue ?? "Соц. педагог",
+    student: t.role_student ?? "Ученик",
+  };
+  return map[role] ?? role;
 }
 
-const SCHOOL_ROLES: UserRole[] = ["teacher", "principal", "vice_principal", "class_teacher"];
+const SCHOOL_ROLES: UserRole[] = [
+  "teacher", "class_teacher", "principal",
+  "vice_principal", "vice_principal_academic", "vice_principal_education",
+  "psychologist", "social_pedagogue",
+];
 
 type SchoolOption = { id: string; name: string };
 
@@ -152,13 +172,13 @@ export function UsersPanel({ token, language, t, currentUserId }: {
       <div className="filter-row">
         <input className="input" style={{ maxWidth: 260 }} placeholder={`🔍 ${t.search}...`}
           value={search} onChange={(e) => setSearch(e.target.value)} />
-        <div className="role-tabs">
-          {["all", ...ROLES].map((r) => (
-            <button key={r} className={`role-tab ${roleFilter === r ? "active" : ""}`} onClick={() => setRoleFilter(r)}>
-              {r === "all" ? t.all : roleLabel(r, t)}
-            </button>
+        <select className="input" style={{ minWidth: 200 }} value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+          <option value="all">{t.all}</option>
+          {ALL_ROLES.map((r) => (
+            <option key={r} value={r}>{getRoleLabel(r, t)}</option>
           ))}
-        </div>
+          <option value="student">{t.role_student ?? "Ученик"}</option>
+        </select>
       </div>
 
       {adding && (
@@ -179,7 +199,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
             <div className="field">
               <label className="field-label">{t.users_role}</label>
               <select name="role" className="input" required>
-                {ROLES.map((r) => <option key={r} value={r}>{roleLabel(r, t)}</option>)}
+                {ALL_ROLES.map((r) => <option key={r} value={r}>{getRoleLabel(r, t)}</option>)}
               </select>
             </div>
             <div className="form-row">
@@ -265,7 +285,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
                   <td className="muted" style={{ fontSize: 13 }}>{u.schoolName ?? "—"}</td>
                   <td>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
-                      <span className={`role-chip role-${u.role}`}>{roleLabel(u.role, t)}</span>
+                      <span className={`role-chip role-${u.role}`}>{getRoleLabel(u.role, t)}</span>
                       {u.role === "teacher" && u.isClassTeacher && u.managedClassroomName && (
                         <span style={{
                           fontSize: 11, fontWeight: 600,
@@ -381,7 +401,7 @@ function EditUserModal({ user, classrooms, schools, busy, t, onSubmit, onClose }
                 if (e.target.value !== "teacher") setIsClassTeacher(false);
               }}
             >
-              {ROLES.map((r) => <option key={r} value={r}>{roleLabel(r, t)}</option>)}
+              {ALL_ROLES.map((r) => <option key={r} value={r}>{getRoleLabel(r, t)}</option>)}
             </select>
           </div>
 
