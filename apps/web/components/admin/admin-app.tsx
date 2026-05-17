@@ -76,8 +76,8 @@ function AdminAppContent({ token, user, language, setLanguage, onLogout }: {
       {section === "psychologist" && <PsychologistPanel token={token} language={language} userRole={user.role} />}
       {section === "social-pedagogue" && <SocialPedagoguePanel token={token} language={language} userRole={user.role} />}
       {section === "school-info" && <SchoolInfoPanel token={token} language={language} userRole={user.role} />}
-      {section === "users" && user.role === "admin" && <UsersPanel token={token} language={language} t={t} currentUserId={user.id} />}
-      {section === "registrations" && user.role === "admin" && <RegistrationsPanel token={token} language={language} t={t} />}
+      {section === "users" && (user.role === "admin" || user.role === "principal") && <UsersPanel token={token} language={language} t={t} currentUserId={user.id} />}
+      {section === "registrations" && (user.role === "admin" || user.role === "principal") && <RegistrationsPanel token={token} language={language} t={t} />}
       {section === "schools" && user.role === "admin" && <SchoolsPanel token={token} language={language} t={t} />}
       {section === "sor-soch" && <SorSochPanel token={token} language={language} t={t} isAdmin={true} userRole={user.role} />}
       {section === "fl" && <FLAdminPanel token={token} language={language} userRole={user.role} />}
@@ -134,7 +134,11 @@ function getNavItemsForRole(role: string, t: Record<string, string>, isGlobalAdm
     return [dash, classrooms, students, teachers, schoolControl, socialPed];
   }
   if (role === "principal") {
-    return baseNav.filter(item => item.key !== "ai-usage");
+    return [
+      ...baseNav.filter(item => item.key !== "ai-usage"),
+      { key: "users", label: t.nav_users, icon: "👥" },
+      { key: "registrations", label: t.nav_registrations, icon: "📬" },
+    ];
   }
 
   if (role === "admin" && isGlobalAdmin) {

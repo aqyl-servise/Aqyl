@@ -135,14 +135,16 @@ export function AqylApp() {
 
   const role = user.role;
 
+  const ADMIN_ROLES = [
+    "admin", "principal",
+    "vice_principal", "vice_principal_academic", "vice_principal_education",
+    "psychologist", "social_pedagogue",
+  ];
+
   if (role === "teacher") {
     return <TeacherApp token={token} user={user} language={language} setLanguage={setLanguage} onLogout={logout} />;
   }
-  if (
-    role === "admin" || role === "principal" ||
-    role === "vice_principal" || role === "vice_principal_academic" || role === "vice_principal_education" ||
-    role === "psychologist" || role === "social_pedagogue"
-  ) {
+  if (ADMIN_ROLES.includes(role)) {
     return <AdminApp token={token} user={user} language={language} setLanguage={setLanguage} onLogout={logout} />;
   }
   if (role === "class_teacher") {
