@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, Query, Req, Res, UseGuards } from "@nestjs/common";
+import { Response } from "express";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -52,6 +53,14 @@ export class SocialPedagogueController {
     return this.service.removeNutritionOrder(id);
   }
 
+  @Get("nutrition/export")
+  async exportNutrition(@Req() req: ReqUser, @Res() res: Response) {
+    const csv = await this.service.exportNutritionCsv(req.user.schoolId ?? "");
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="nutrition.csv"`);
+    res.send(csv);
+  }
+
   // ── Special Attention Students ──────────────────────────────────────────
   @Get("special-attention")
   getSpecialAttention(@Req() req: ReqUser) {
@@ -77,5 +86,13 @@ export class SocialPedagogueController {
     @Body() body: { title: string; fileUrl: string },
   ) {
     return this.service.addDocument(id, body);
+  }
+
+  @Get("special-attention/export")
+  async exportSpecial(@Req() req: ReqUser, @Res() res: Response) {
+    const csv = await this.service.exportSpecialCsv(req.user.schoolId ?? "");
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="special-students.csv"`);
+    res.send(csv);
   }
 }

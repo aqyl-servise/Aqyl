@@ -105,11 +105,20 @@ function NutritionTab({ token, t, canEdit }: { token: string; t: Record<string, 
 
       {subTab === "students" && (
         <div>
-          {canEdit && (
-            <button className="btn btn-primary btn-sm" style={{ marginBottom: 12 }} onClick={() => setShowStudentForm(!showStudentForm)}>
-              + {t.nutrition_add}
-            </button>
-          )}
+          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+            {canEdit && (
+              <button className="btn btn-primary btn-sm" onClick={() => setShowStudentForm(!showStudentForm)}>
+                + {t.nutrition_add}
+              </button>
+            )}
+            <button className="btn btn-ghost btn-sm" onClick={async () => {
+              const blob = await api.exportNutritionCsv(token);
+              const link = document.createElement("a");
+              link.href = URL.createObjectURL(blob);
+              link.download = "nutrition.csv";
+              link.click();
+            }}>{t.nutrition_download ?? "Скачать Excel"}</button>
+          </div>
           {showStudentForm && (
             <div className="card" style={{ padding: 16, marginBottom: 12, maxWidth: 480 }}>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
@@ -249,11 +258,20 @@ function SpecialAttentionTab({ token, t, canEdit }: { token: string; t: Record<s
 
   return (
     <div>
-      {canEdit && (
-        <button className="btn btn-primary btn-sm" style={{ marginBottom: 12 }} onClick={() => setShowForm(!showForm)}>
-          + {t.special_add}
-        </button>
-      )}
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        {canEdit && (
+          <button className="btn btn-primary btn-sm" onClick={() => setShowForm(!showForm)}>
+            + {t.special_add}
+          </button>
+        )}
+        <button className="btn btn-ghost btn-sm" onClick={async () => {
+          const blob = await api.exportSpecialCsv(token);
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = "special-students.csv";
+          link.click();
+        }}>{t.nutrition_download ?? "Скачать Excel"}</button>
+      </div>
       {showForm && (
         <div className="card" style={{ padding: 16, marginBottom: 12, maxWidth: 480 }}>
           <div className="field">

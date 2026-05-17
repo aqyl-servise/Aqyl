@@ -89,4 +89,24 @@ export class SocialPedagogueService {
     record.documents = [...(record.documents ?? []), doc];
     return this.specialAttentionRepo.save(record);
   }
+
+  async exportNutritionCsv(schoolId: string): Promise<string> {
+    const rows = await this.getNutritionStudents(schoolId);
+    const BOM = "﻿";
+    const header = "ID ученика,Тип питания,Учебный год,Заметки\r\n";
+    const body = rows.map(r => [
+      r.studentId, r.nutritionType, r.academicYear ?? "", r.notes ?? "",
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+    return BOM + header + body;
+  }
+
+  async exportSpecialCsv(schoolId: string): Promise<string> {
+    const rows = await this.getSpecialAttentionStudents(schoolId);
+    const BOM = "﻿";
+    const header = "ID ученика,Причина,Кол-во документов\r\n";
+    const body = rows.map(r => [
+      r.studentId, r.reason, String(r.documents?.length ?? 0),
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+    return BOM + header + body;
+  }
 }

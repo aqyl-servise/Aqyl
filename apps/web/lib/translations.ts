@@ -515,6 +515,7 @@ const ru = {
   nutrition_add: "Добавить",
   nutrition_no_data: "Нет данных",
   nutrition_order_title: "Название приказа",
+  nutrition_download: "Скачать список Excel",
   // Special attention
   special_reason: "Причина",
   special_docs: "Документы",
@@ -1014,6 +1015,7 @@ const kz: TranslationShape = {
   nutrition_add: "Қосу",
   nutrition_no_data: "Деректер жоқ",
   nutrition_order_title: "Бұйрық атауы",
+  nutrition_download: "Excel тізімін жүктеу",
   special_reason: "Себебі",
   special_docs: "Құжаттар",
   special_add_doc: "Құжат қосу",
@@ -1509,6 +1511,7 @@ const en: TranslationShape = {
   nutrition_add: "Add",
   nutrition_no_data: "No data",
   nutrition_order_title: "Order Title",
+  nutrition_download: "Download Excel List",
   special_reason: "Reason",
   special_docs: "Documents",
   special_add_doc: "Add Document",

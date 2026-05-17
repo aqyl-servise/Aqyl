@@ -113,26 +113,30 @@ function getNavItemsForRole(role: string, t: Record<string, string>, isGlobalAdm
   const sorSoch = { key: "sor-soch", label: t.nav_sor_soch ?? "СОР/СОЧ", icon: "📄" };
   const scheduleAdmin = { key: "schedule-admin", label: t.nav_schedule_admin ?? "Расписание", icon: "📅" };
   const questionnaires = { key: "questionnaires", label: t.nav_questionnaires ?? "Анкеты", icon: "📋" };
-  const classHours = { key: "class-hours", label: t.nav_class_hours, icon: "⏱" };
-
-  if (role === "vice_principal_academic") {
-    return [dash, classrooms, students, teachers, analytics, openLessons, schoolControl, ktp, attest, finalAttest, sorSoch, scheduleAdmin];
-  }
-  if (role === "vice_principal_education") {
-    return [dash, classrooms, students, classHours, welfare, household, bbjm, questionnaires, socialPed];
-  }
-  if (role === "psychologist") {
-    return [dash, students, questionnaires, gifted];
-  }
-  if (role === "social_pedagogue") {
-    return [dash, students, socialPed];
-  }
 
   const baseNav = [
     dash, classrooms, students, teachers, analytics, openLessons, schoolControl,
     gifted, fl, rating, aiUsage, welfare, household, bbjm, ktp, attest, finalAttest,
     psychologist, socialPed, schoolInfo, sorSoch, scheduleAdmin, questionnaires,
   ];
+
+  if (role === "vice_principal" || role === "vice_principal_academic") {
+    return [dash, classrooms, students, teachers, analytics, openLessons, schoolControl,
+      gifted, fl, rating, bbjm, ktp, attest, finalAttest, sorSoch, scheduleAdmin];
+  }
+  if (role === "vice_principal_education") {
+    return [dash, classrooms, students, teachers, openLessons, schoolControl, rating, welfare, psychologist, socialPed];
+  }
+  if (role === "psychologist") {
+    return [dash, classrooms, students, teachers, openLessons, schoolControl, gifted, welfare, questionnaires];
+  }
+  if (role === "social_pedagogue") {
+    return [dash, classrooms, students, teachers, schoolControl, socialPed];
+  }
+  if (role === "principal") {
+    return baseNav.filter(item => item.key !== "ai-usage");
+  }
+
   if (role === "admin" && isGlobalAdmin) {
     return [...baseNav,
       { key: "users", label: t.nav_users, icon: "👥" },

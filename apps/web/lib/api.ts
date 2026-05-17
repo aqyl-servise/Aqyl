@@ -856,6 +856,14 @@ export const api = {
     request<void>(`/social-pedagogue/special-attention/${id}`, { method: "DELETE" }, token),
   addSpecialDocument: (token: string, id: string, doc: { title: string; fileUrl: string }) =>
     request<{ id: string }>(`/social-pedagogue/special-attention/${id}/documents`, { method: "POST", body: JSON.stringify(doc) }, token),
+  exportNutritionCsv: async (token: string) => {
+    const res = await fetch(`${API_URL}/social-pedagogue/nutrition/export`, { headers: { Authorization: `Bearer ${token}` } });
+    return res.blob();
+  },
+  exportSpecialCsv: async (token: string) => {
+    const res = await fetch(`${API_URL}/social-pedagogue/special-attention/export`, { headers: { Authorization: `Bearer ${token}` } });
+    return res.blob();
+  },
 
   // Student portal additions
   getMyClassmates: (token: string) =>
