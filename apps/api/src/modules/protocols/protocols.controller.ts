@@ -13,11 +13,15 @@ export class ProtocolsController {
   constructor(private readonly service: ProtocolsService) {}
 
   @Get()
+  @UseGuards(RolesGuard)
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "vice_principal_education", "teacher", "class_teacher", "psychologist", "social_pedagogue")
   getAll(@Req() req: ReqUser) {
     return this.service.getAll(req.user.schoolId);
   }
 
   @Get(":id")
+  @UseGuards(RolesGuard)
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "vice_principal_education", "teacher", "class_teacher", "psychologist", "social_pedagogue")
   findOne(@Param("id") id: string) {
     return this.service.findOne(id);
   }
