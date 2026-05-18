@@ -140,13 +140,33 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
 }
 
 // ── Мои КТП/КСП ─────────────────────────────────────────────────────────────
+type KtpReviewRow = { fileId: string; fileName: string; section: string | null; status: string; comment: string | null; reviewedAt: string | null };
+
+const STATUS_STYLE: Record<string, { bg: string; color: string; label: (t: Record<string, string>) => string }> = {
+  unchecked: { bg: "#f0f0f0", color: "#666", label: (t) => t.ktp_status_unchecked ?? "Не проверено" },
+  reviewing:  { bg: "#dbeafe", color: "#1d4ed8", label: (t) => t.ktp_status_reviewing ?? "На проверке" },
+  approved:   { bg: "#dcfce7", color: "#15803d", label: (t) => t.ktp_status_approved ?? "Одобрено" },
+  revision:   { bg: "#fee2e2", color: "#b91c1c", label: (t) => t.ktp_status_revision ?? "Требует доработки" },
+};
+
+function KtpReviewBadge({ status, t }: { status: string; t: Record<string, string> }) {
+  const s = STATUS_STYLE[status] ?? STATUS_STYLE.unchecked;
+  return (
+    <span style={{ display: "inline-block", padding: "2px 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, background: s.bg, color: s.color }}>
+      {s.label(t)}
+    </span>
+  );
+}
+
 function TeacherKtpKspSection({ token, userId, language, t }: {
   token: string; userId: string; language: Language; t: Record<string, string>;
 }) {
-  const [tab, setTab] = useState<"ktp" | "ksp">("ktp");
+  const [tab, setTab] = useState<"ktp" | "ksp" | "status">("ktp");
   const [classrooms, setClassrooms] = useState<ClassroomItem[]>([]);
   const [selectedClassrooms, setSelectedClassrooms] = useState<string[]>([]);
   const [showClassroomPicker, setShowClassroomPicker] = useState(false);
+  const [reviews, setReviews] = useState<KtpReviewRow[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
   const selectedRef = useRef<string[]>([]);
   const labels = fmLabels(t);
 
@@ -154,6 +174,15 @@ function TeacherKtpKspSection({ token, userId, language, t }: {
     if (tab !== "ksp" || classrooms.length > 0) return;
     api.getClassrooms(token).then(setClassrooms).catch(() => {});
   }, [tab, token, classrooms.length]);
+
+  useEffect(() => {
+    if (tab !== "status") return;
+    setReviewsLoading(true);
+    api.getMyKtpReviews(token)
+      .then(setReviews)
+      .catch(() => {})
+      .finally(() => setReviewsLoading(false));
+  }, [tab, token]);
 
   const toggleClassroom = (id: string) => {
     setSelectedClassrooms(prev => {
@@ -177,6 +206,9 @@ function TeacherKtpKspSection({ token, userId, language, t }: {
         </button>
         <button className={`sc-tab${tab === "ksp" ? " sc-tab-active" : ""}`} onClick={() => setTab("ksp")}>
           {t.ktp_tab_ksp}
+        </button>
+        <button className={`sc-tab${tab === "status" ? " sc-tab-active" : ""}`} onClick={() => setTab("status")}>
+          ✅ {t.ktp_my_reviews ?? "Статус проверки"}
         </button>
       </div>
       <div className="card" style={{ marginTop: 0 }}>
@@ -234,6 +266,44 @@ function TeacherKtpKspSection({ token, userId, language, t }: {
               getExtraUploadData={getExtraUploadData}
             />
           </>
+        )}
+        {tab === "status" && (
+          <div>
+            {reviewsLoading ? (
+              <p className="fm-empty">{t.loading ?? "Загрузка..."}</p>
+            ) : reviews.length === 0 ? (
+              <p className="fm-empty">{t.ktp_no_files ?? "Нет загруженных документов"}</p>
+            ) : (
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: "2px solid var(--border)", textAlign: "left" }}>
+                    <th style={{ padding: "8px 10px", fontWeight: 600 }}>{t.fm_uploaded_by ?? "Файл"}</th>
+                    <th style={{ padding: "8px 10px", fontWeight: 600 }}>{t.ktp_tab_review ?? "Статус"}</th>
+                    <th style={{ padding: "8px 10px", fontWeight: 600 }}>{t.ktp_comment_label ?? "Комментарий"}</th>
+                    <th style={{ padding: "8px 10px", fontWeight: 600 }}>{t.ktp_review_date ?? "Дата"}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reviews.map((r) => (
+                    <tr key={r.fileId} style={{ borderBottom: "1px solid var(--border)" }}>
+                      <td style={{ padding: "8px 10px", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <span title={r.fileName}>{r.fileName}</span>
+                      </td>
+                      <td style={{ padding: "8px 10px" }}>
+                        <KtpReviewBadge status={r.status} t={t} />
+                      </td>
+                      <td style={{ padding: "8px 10px", color: r.status === "revision" ? "#b91c1c" : "inherit", maxWidth: 260 }}>
+                        {r.comment ?? "—"}
+                      </td>
+                      <td style={{ padding: "8px 10px", color: "var(--muted)", whiteSpace: "nowrap" }}>
+                        {r.reviewedAt ? new Date(r.reviewedAt).toLocaleDateString() : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         )}
       </div>
     </div>

@@ -19,6 +19,12 @@ export class KtpController {
     return this.service.getFilesWithReviews(section ?? "", req.user.schoolId);
   }
 
+  @Get("my-reviews")
+  @Roles("teacher", "class_teacher")
+  getMyReviews(@Req() req: ReqUser) {
+    return this.service.getMyReviews(req.user.id);
+  }
+
   @Patch("reviews/:fileId")
   @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   upsertReview(

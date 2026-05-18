@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { In, Repository } from "typeorm";
+import { In, Like, Repository } from "typeorm";
 import { KtpReview, KtpStatus } from "../schools/entities/ktp-review.entity";
 import { UploadedFile } from "../schools/entities/uploaded-file.entity";
 import { Teacher } from "../teachers/entities/teacher.entity";
@@ -49,6 +49,35 @@ export class KtpService {
           }
         : null,
     }));
+  }
+
+  async getMyReviews(teacherId: string) {
+    const files = await this.fileRepo.find({
+      where: [
+        { uploadedBy: { id: teacherId }, section: Like("teacher-ktp-%") },
+        { uploadedBy: { id: teacherId }, section: Like("teacher-ksp-%") },
+      ],
+      order: { createdAt: "DESC" },
+    });
+
+    if (files.length === 0) return [];
+
+    const reviews = await this.reviewRepo.find({
+      where: { fileId: In(files.map((f) => f.id)) },
+    });
+    const reviewMap = new Map(reviews.map((r) => [r.fileId, r]));
+
+    return files.map((f) => {
+      const review = reviewMap.get(f.id);
+      return {
+        fileId: f.id,
+        fileName: f.originalName,
+        section: f.section ?? null,
+        status: review?.status ?? "unchecked",
+        comment: review?.comment ?? null,
+        reviewedAt: review?.updatedAt ?? null,
+      };
+    });
   }
 
   async upsertReview(fileId: string, data: { status: KtpStatus; comment?: string }, reviewerId: string) {

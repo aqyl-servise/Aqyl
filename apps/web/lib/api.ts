@@ -663,6 +663,11 @@ export const api = {
     }>>(`/ktp/files?section=${encodeURIComponent(section)}`, undefined, token),
   saveKtpReview: (token: string, fileId: string, data: { status: string; comment?: string }) =>
     request<{ id: string }>(`/ktp/reviews/${fileId}`, { method: "PATCH", body: JSON.stringify(data) }, token),
+  getMyKtpReviews: (token: string) =>
+    request<Array<{
+      fileId: string; fileName: string; section: string | null;
+      status: string; comment: string | null; reviewedAt: string | null;
+    }>>("/ktp/my-reviews", undefined, token),
 
   // School Info
   getSchoolInfo: (token: string) =>
