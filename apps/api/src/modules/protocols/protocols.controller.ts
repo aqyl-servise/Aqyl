@@ -28,7 +28,7 @@ export class ProtocolsController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "vice_principal_education")
   create(
     @Req() req: ReqUser,
     @Body() body: { title: string; type?: ProtocolType; date?: string; content?: string },
@@ -45,7 +45,7 @@ export class ProtocolsController {
 
   @Patch(":id")
   @UseGuards(RolesGuard)
-  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "vice_principal_education")
   update(@Param("id") id: string, @Body() body: Partial<{ title: string; content: string; fileUrls: string[] }>) {
     return this.service.update(id, body as never);
   }

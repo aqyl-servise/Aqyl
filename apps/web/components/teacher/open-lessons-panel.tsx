@@ -9,7 +9,10 @@ type Lesson = {
   id: string; subject: string; classroomId?: string; cabinet?: string; lessonTime?: string;
   date?: string; lessonTopic?: string; visitPurpose?: string; lessonPurpose?: string;
   equipment?: string; status: string; teacher?: { id: string; fullName: string };
+  hasAnalysis?: boolean; analysisIsDraft?: boolean;
 };
+
+type AnalysisFilter = "all" | "with_analysis" | "without_analysis";
 
 const STATUS_KEY: Record<string, string> = {
   planned: "planned",
@@ -37,6 +40,7 @@ export function OpenLessonsPanel({
   const [classrooms, setClassrooms] = useState<ClassroomOption[]>([]);
   const [view, setView] = useState<View>({ type: "list" });
   const [busy, setBusy] = useState(false);
+  const [analysisFilter, setAnalysisFilter] = useState<AnalysisFilter>("all");
 
   function reload() {
     const req = isAdmin ? api.getAllLessons(token) : api.getMyLessons(token);
@@ -78,6 +82,26 @@ export function OpenLessonsPanel({
   }
 
   if (view.type === "analysis") {
+    const hasReadyAnalysis = (view.lesson.hasAnalysis && !view.lesson.analysisIsDraft) || view.lesson.status === "analyzed";
+    if (!isAdmin && view.readOnly && !hasReadyAnalysis) {
+      return (
+        <div className="page">
+          <div className="page-header">
+            <button className="btn btn-ghost btn-sm" onClick={() => setView({ type: "list" })}>← {t.back}</button>
+            <h1 className="page-title">📋 {t.lesson_analysis_tab ?? "Анализ урока"}</h1>
+          </div>
+          <div className="card" style={{ textAlign: "center", padding: "48px 24px" }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
+            <p style={{ fontSize: 15, fontWeight: 600, color: "var(--text)", margin: "0 0 8px" }}>
+              {t.lesson_awaiting_analysis ?? "Ожидает анализа"}
+            </p>
+            <p className="muted" style={{ fontSize: 13, maxWidth: 360, margin: "0 auto" }}>
+              {t.lesson_no_analysis_yet ?? "Анализ ещё не проведён. Ожидайте обратной связи от завуча."}
+            </p>
+          </div>
+        </div>
+      );
+    }
     return (
       <LessonAnalysisForm
         token={token}
@@ -104,6 +128,12 @@ export function OpenLessonsPanel({
     );
   }
 
+  const filteredLessons = lessons.filter(l => {
+    if (analysisFilter === "with_analysis") return (l.hasAnalysis && !l.analysisIsDraft) || l.status === "analyzed";
+    if (analysisFilter === "without_analysis") return !(l.hasAnalysis && !l.analysisIsDraft) && l.status !== "analyzed";
+    return true;
+  });
+
   return (
     <div className="page">
       <div className="page-header">
@@ -113,8 +143,23 @@ export function OpenLessonsPanel({
         )}
       </div>
 
+      {/* Analysis filter — teacher only */}
+      {!isAdmin && (
+        <div className="role-tabs" style={{ marginBottom: 12 }}>
+          {(["all", "with_analysis", "without_analysis"] as AnalysisFilter[]).map(f => (
+            <button key={f}
+              className={`role-tab${analysisFilter === f ? " active" : ""}`}
+              onClick={() => setAnalysisFilter(f)}>
+              {f === "all" ? (t.all ?? "Все")
+                : f === "with_analysis" ? `✅ ${t.lesson_filter_with_analysis ?? "С анализом"}`
+                : `⏳ ${t.lesson_filter_without_analysis ?? "Без анализа"}`}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="card">
-        {lessons.length === 0 ? (
+        {filteredLessons.length === 0 ? (
           <p className="empty-state">{t.noData}</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
@@ -131,58 +176,82 @@ export function OpenLessonsPanel({
                 </tr>
               </thead>
               <tbody>
-                {lessons.map((l) => (
-                  <tr key={l.id}>
-                    <td>
-                      {l.date ? new Date(l.date).toLocaleDateString("ru-RU") : "—"}
-                      {l.lessonTime ? ` ${l.lessonTime}` : ""}
-                    </td>
-                    <td>{classroomName(l.classroomId)}</td>
-                    <td>{l.subject}</td>
-                    {isAdmin && <td>{l.teacher?.fullName ?? "—"}</td>}
-                    <td className="table-name">{l.lessonTopic ?? "—"}</td>
-                    <td>
-                      <span className={`score-chip ${STATUS_COLORS[l.status] ?? "badge"}`}>
-                        {t[STATUS_KEY[l.status]] ?? l.status}
-                      </span>
-                    </td>
-                    <td>
-                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                        <button className="btn btn-outline btn-sm"
-                          onClick={() => setView({ type: "materials", lesson: l })}>
-                          {t.lesson_materials_for}
-                        </button>
-                        {isAdmin && (
-                          <>
-                            {l.status === "analyzed" ? (
+                {filteredLessons.map((l) => {
+                  const analysisReady = (l.hasAnalysis && !l.analysisIsDraft) || l.status === "analyzed";
+                  return (
+                    <tr key={l.id}>
+                      <td>
+                        {l.date ? new Date(l.date).toLocaleDateString("ru-RU") : "—"}
+                        {l.lessonTime ? ` ${l.lessonTime}` : ""}
+                      </td>
+                      <td>{classroomName(l.classroomId)}</td>
+                      <td>{l.subject}</td>
+                      {isAdmin && <td>{l.teacher?.fullName ?? "—"}</td>}
+                      <td className="table-name">{l.lessonTopic ?? "—"}</td>
+                      <td>
+                        {!isAdmin ? (
+                          analysisReady ? (
+                            <span className="score-chip score-high" style={{ cursor: "pointer" }}
+                              onClick={() => setView({ type: "analysis", lesson: l, readOnly: true })}>
+                              👁 {t.lesson_analysis_ready ?? "Анализ готов"}
+                            </span>
+                          ) : l.status === "conducted" ? (
+                            <span className="score-chip badge">
+                              ⏳ {t.lesson_awaiting_analysis ?? "Ожидает анализа"}
+                            </span>
+                          ) : (
+                            <span className="score-chip score-mid">
+                              {t[STATUS_KEY[l.status]] ?? l.status}
+                            </span>
+                          )
+                        ) : (
+                          <span className={`score-chip ${STATUS_COLORS[l.status] ?? "badge"}`}>
+                            {t[STATUS_KEY[l.status]] ?? l.status}
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                          <button className="btn btn-outline btn-sm"
+                            onClick={() => setView({ type: "materials", lesson: l })}>
+                            {t.lesson_materials_for}
+                          </button>
+                          {isAdmin && (
+                            <>
+                              {l.status === "analyzed" ? (
+                                <button className="btn btn-outline btn-sm"
+                                  onClick={() => setView({ type: "analysis", lesson: l, readOnly: true })}>
+                                  {t.lesson_view}
+                                </button>
+                              ) : (
+                                <button className="btn btn-primary btn-sm"
+                                  onClick={() => setView({ type: "analysis", lesson: l, readOnly: false })}>
+                                  {t.lesson_analysis_btn}
+                                </button>
+                              )}
+                            </>
+                          )}
+                          {!isAdmin && (
+                            <>
+                              <button className="btn btn-ghost btn-sm"
+                                onClick={() => setView({ type: "form", lesson: l })}>
+                                {t.teacher_edit}
+                              </button>
+                              <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }}
+                                onClick={() => handleDelete(l.id)}>
+                                {t.teacher_delete}
+                              </button>
                               <button className="btn btn-outline btn-sm"
                                 onClick={() => setView({ type: "analysis", lesson: l, readOnly: true })}>
-                                {t.lesson_view}
+                                📋 {t.lesson_analysis_tab ?? "Анализ урока"}
                               </button>
-                            ) : (
-                              <button className="btn btn-primary btn-sm"
-                                onClick={() => setView({ type: "analysis", lesson: l, readOnly: false })}>
-                                {t.lesson_analysis_btn}
-                              </button>
-                            )}
-                          </>
-                        )}
-                        {!isAdmin && (
-                          <>
-                            <button className="btn btn-ghost btn-sm"
-                              onClick={() => setView({ type: "form", lesson: l })}>
-                              {t.teacher_edit}
-                            </button>
-                            <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }}
-                              onClick={() => handleDelete(l.id)}>
-                              {t.teacher_delete}
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

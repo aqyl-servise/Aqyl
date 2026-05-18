@@ -8,7 +8,7 @@ interface ReqUser { user: { id: string; role: string } }
 
 @Controller("gifted")
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher")
+@Roles("admin", "principal", "vice_principal", "vice_principal_academic", "psychologist", "teacher")
 export class GiftedController {
   constructor(private readonly svc: GiftedService) {}
 

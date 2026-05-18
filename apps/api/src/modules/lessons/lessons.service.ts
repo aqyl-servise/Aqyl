@@ -1,8 +1,9 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { In, Repository } from "typeorm";
 import { OpenLesson } from "../schools/entities/open-lesson.entity";
 import { LessonAnalysis } from "../schools/entities/lesson-analysis.entity";
+import { NotificationsService } from "../notifications/notifications.service";
 import PDFDocument = require("pdfkit");
 
 @Injectable()
@@ -12,12 +13,21 @@ export class LessonsService {
     private readonly repo: Repository<OpenLesson>,
     @InjectRepository(LessonAnalysis)
     private readonly analysisRepo: Repository<LessonAnalysis>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
-  getForTeacher(teacherId: string) {
-    return this.repo.find({
+  async getForTeacher(teacherId: string) {
+    const lessons = await this.repo.find({
       where: { teacher: { id: teacherId } },
       order: { date: "DESC" },
+    });
+    if (!lessons.length) return [];
+    const lessonIds = lessons.map(l => l.id);
+    const analyses = await this.analysisRepo.find({ where: { lessonId: In(lessonIds) } });
+    const analysisMap = new Map(analyses.map(a => [a.lessonId, a]));
+    return lessons.map(l => {
+      const analysis = analysisMap.get(l.id);
+      return { ...l, hasAnalysis: !!analysis, analysisIsDraft: analysis?.isDraft ?? false };
     });
   }
 
@@ -55,13 +65,32 @@ export class LessonsService {
   }
 
   async saveAnalysis(lessonId: string, analyzerId: string, data: Partial<LessonAnalysis>) {
-    const existing = await this.analysisRepo.findOne({ where: { lessonId } });
+    const [existing, lesson] = await Promise.all([
+      this.analysisRepo.findOne({ where: { lessonId } }),
+      this.findOne(lessonId),
+    ]);
+    const wasAlreadyFinal = !!(existing && !existing.isDraft);
+
+    let result: LessonAnalysis | null;
     if (existing) {
       await this.analysisRepo.update(existing.id, { ...data, lessonId, analyzerId } as never);
-      return this.analysisRepo.findOne({ where: { id: existing.id }, relations: { analyzer: true } });
+      result = await this.analysisRepo.findOne({ where: { id: existing.id }, relations: { analyzer: true } });
+    } else {
+      const created = this.analysisRepo.create({ ...data, lessonId, analyzerId, lesson: { id: lessonId } as never });
+      result = await this.analysisRepo.save(created);
     }
-    const created = this.analysisRepo.create({ ...data, lessonId, analyzerId, lesson: { id: lessonId } as never });
-    return this.analysisRepo.save(created);
+
+    if (!data.isDraft && !wasAlreadyFinal && lesson?.teacher?.id) {
+      await this.notificationsService.createNotification({
+        teacherId: lesson.teacher.id,
+        schoolId: lesson.schoolId,
+        type: "open_lesson_analyzed",
+        title: "Анализ открытого урока готов",
+        message: `Завуч добавил анализ вашего урока: ${lesson.lessonTopic ?? lesson.subject}`,
+      });
+    }
+
+    return result;
   }
 
   async generateAnalysisPdf(lessonId: string): Promise<Buffer> {

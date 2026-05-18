@@ -28,7 +28,7 @@ export class RatingController {
   }
 
   @Get("school")
-  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "vice_principal_education")
   getSchoolRatings(
     @Req() req: ReqUser,
     @Query("subject") subject?: string,

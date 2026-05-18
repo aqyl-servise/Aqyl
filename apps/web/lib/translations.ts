@@ -541,6 +541,14 @@ const ru = {
   my_violations: "Мои замечания",
   no_violations: "Замечаний нет",
   points_deducted: "Вычтено баллов",
+  // Lesson analysis feedback
+  lesson_analysis_ready: "Анализ готов",
+  lesson_awaiting_analysis: "Ожидает анализа",
+  lesson_no_analysis_yet: "Анализ ещё не проведён. Ожидайте обратной связи от завуча.",
+  lesson_observer_comment: "Комментарий наблюдателя",
+  lesson_filter_with_analysis: "С анализом",
+  lesson_filter_without_analysis: "Без анализа",
+  lesson_analysis_tab: "Анализ урока",
 };
 
 type TranslationShape = typeof ru;
@@ -1051,6 +1059,14 @@ const kz: TranslationShape = {
   my_violations: "Менің ескертулерім",
   no_violations: "Ескертулер жоқ",
   points_deducted: "Ұпай шегерілді",
+  // Lesson analysis feedback
+  lesson_analysis_ready: "Талдау дайын",
+  lesson_awaiting_analysis: "Талдау күтілуде",
+  lesson_no_analysis_yet: "Талдау әлі жүргізілмеді. Меңгерушінің кері байланысын күтіңіз.",
+  lesson_observer_comment: "Бақылаушы пікірі",
+  lesson_filter_with_analysis: "Талдаулы",
+  lesson_filter_without_analysis: "Талдаусыз",
+  lesson_analysis_tab: "Сабақ талдауы",
 };
 
 const en: TranslationShape = {
@@ -1559,6 +1575,14 @@ const en: TranslationShape = {
   my_violations: "My Violations",
   no_violations: "No violations",
   points_deducted: "Points deducted",
+  // Lesson analysis feedback
+  lesson_analysis_ready: "Analysis ready",
+  lesson_awaiting_analysis: "Awaiting analysis",
+  lesson_no_analysis_yet: "Analysis not yet done. Await feedback from vice principal.",
+  lesson_observer_comment: "Observer comment",
+  lesson_filter_with_analysis: "With analysis",
+  lesson_filter_without_analysis: "Without analysis",
+  lesson_analysis_tab: "Lesson Analysis",
 };
 
 export const translations: Record<Language, TranslationShape> = { ru, kz, en };

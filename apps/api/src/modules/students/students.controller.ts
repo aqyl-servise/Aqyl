@@ -3,12 +3,15 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { StudentsService, CreateStudentDto } from "./students.service";
+import { isStaffRole } from "../../common/roles.constants";
 
 interface ReqUser { id: string; role: string; schoolId?: string | null }
 
 @Controller("students")
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher", "class_teacher")
+@Roles("admin", "principal", "vice_principal", "vice_principal_academic",
+  "vice_principal_education", "psychologist", "social_pedagogue",
+  "teacher", "class_teacher")
 export class StudentsController {
   constructor(private readonly service: StudentsService) {}
 
@@ -19,7 +22,7 @@ export class StudentsController {
     @Query("grades") grades?: string,
     @Query("schoolWide") schoolWide?: string,
   ) {
-    if (["admin", "principal", "vice_principal", "vice_principal_academic"].includes(req.user.role)) {
+    if (isStaffRole(req.user.role)) {
       return this.service.findAll(classroomId, req.user.schoolId);
     }
     if (schoolWide === "true" && grades) {
@@ -34,7 +37,7 @@ export class StudentsController {
 
   @Get("classrooms")
   getClassrooms(@Req() req: { user: ReqUser }) {
-    if (["admin", "principal", "vice_principal", "vice_principal_academic"].includes(req.user.role)) {
+    if (isStaffRole(req.user.role)) {
       return this.service.getClassrooms(req.user.schoolId);
     }
     return this.service.getTeacherClassrooms(req.user.id);

@@ -431,7 +431,7 @@ export const api = {
     request<Array<{
       id: string; subject: string; classroomId?: string; cabinet?: string; lessonTime?: string;
       date?: string; lessonTopic?: string; visitPurpose?: string; lessonPurpose?: string;
-      equipment?: string; status: string;
+      equipment?: string; status: string; hasAnalysis?: boolean; analysisIsDraft?: boolean;
     }>>("/lessons", undefined, token),
   getAllLessons: (token: string) =>
     request<Array<{

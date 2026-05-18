@@ -3,6 +3,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { SorSochService } from "./sor-soch.service";
+import { isAdminRole } from "../../common/roles.constants";
 
 interface ReqUser { user: { id: string; role: string; schoolId?: string | null } }
 
@@ -23,7 +24,7 @@ export class SorSochController {
     @Query("quarter") quarter?: string,
     @Query("teacherId") teacherId?: string,
   ) {
-    const isAdmin = ["admin", "principal", "vice_principal", "vice_principal_academic"].includes(req.user.role);
+    const isAdmin = isAdminRole(req.user.role);
     return this.service.findAll({
       schoolId: req.user.schoolId ?? undefined,
       teacherId: isAdmin ? teacherId : req.user.id,

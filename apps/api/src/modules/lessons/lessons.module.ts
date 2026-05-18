@@ -4,9 +4,13 @@ import { OpenLesson } from "../schools/entities/open-lesson.entity";
 import { LessonAnalysis } from "../schools/entities/lesson-analysis.entity";
 import { LessonsService } from "./lessons.service";
 import { LessonsController } from "./lessons.controller";
+import { NotificationsModule } from "../notifications/notifications.module";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([OpenLesson, LessonAnalysis])],
+  imports: [
+    TypeOrmModule.forFeature([OpenLesson, LessonAnalysis]),
+    NotificationsModule,
+  ],
   providers: [LessonsService],
   controllers: [LessonsController],
 })

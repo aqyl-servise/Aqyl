@@ -4,10 +4,9 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { LessonsService } from "./lessons.service";
+import { isAdminRole } from "../../common/roles.constants";
 
 interface ReqUser { user: { id: string; role: string; schoolId?: string | null; fullName?: string } }
-
-const ADMIN_ROLES = ["admin", "principal", "vice_principal", "vice_principal_academic"] as const;
 
 @Controller("lessons")
 @UseGuards(JwtAuthGuard)
@@ -21,7 +20,7 @@ export class LessonsController {
 
   @Get("all")
   @UseGuards(RolesGuard)
-  @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "vice_principal_education")
   getAll(@Req() req: ReqUser) {
     return this.service.getAll(req.user.schoolId);
   }
@@ -85,7 +84,7 @@ export class LessonsController {
     }>,
   ) {
     const lesson = await this.service.findOne(id);
-    const isAdmin = (ADMIN_ROLES as readonly string[]).includes(req.user.role);
+    const isAdmin = isAdminRole(req.user.role);
     if (!isAdmin && lesson?.teacher?.id !== req.user.id) {
       throw new ForbiddenException("You can only edit your own lessons");
     }
@@ -99,7 +98,7 @@ export class LessonsController {
   @Roles("teacher", "admin", "class_teacher", "principal", "vice_principal", "vice_principal_academic")
   async remove(@Req() req: ReqUser, @Param("id") id: string) {
     const lesson = await this.service.findOne(id);
-    const isAdmin = (ADMIN_ROLES as readonly string[]).includes(req.user.role);
+    const isAdmin = isAdminRole(req.user.role);
     if (!isAdmin && lesson?.teacher?.id !== req.user.id) {
       throw new ForbiddenException("You can only delete your own lessons");
     }

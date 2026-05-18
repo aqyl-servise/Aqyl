@@ -14,6 +14,7 @@ import * as fs from "fs";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { UploadedFile as UploadedFileEntity } from "../schools/entities/uploaded-file.entity";
 import { FileFolder } from "../schools/entities/file-folder.entity";
+import { isAdminRole } from "../../common/roles.constants";
 
 const ALLOWED_MIME_TYPES = new Set([
   "application/pdf",
@@ -28,8 +29,6 @@ const ALLOWED_MIME_TYPES = new Set([
   "text/plain",
   "text/csv",
 ]);
-
-const ADMIN_ROLES = new Set(["admin", "principal", "vice_principal", "vice_principal_academic"]);
 
 interface ReqUser { user: { id: string; role: string; schoolId?: string | null } }
 interface MulterFile { originalname: string; mimetype: string; size: number; filename: string; path: string }
@@ -150,7 +149,7 @@ export class FilesController {
   @Delete("folder/:id")
   @UseGuards(JwtAuthGuard)
   async deleteFolder(@Param("id") id: string, @Req() req: ReqUser) {
-    if (!ADMIN_ROLES.has(req.user.role)) throw new ForbiddenException("Access denied");
+    if (!isAdminRole(req.user.role)) throw new ForbiddenException("Access denied");
     const folder = await this.folderRepo.findOne({ where: { id } });
     if (!folder) throw new NotFoundException("Folder not found");
     await this.deleteFolderRecursive(id);
@@ -162,7 +161,7 @@ export class FilesController {
   @Get("ksp-all")
   @UseGuards(JwtAuthGuard)
   async listAllKsp(@Req() req: ReqUser) {
-    if (!ADMIN_ROLES.has(req.user.role)) throw new ForbiddenException("Access denied");
+    if (!isAdminRole(req.user.role)) throw new ForbiddenException("Access denied");
     const where: Record<string, unknown> = { section: Like("teacher-ksp-%") };
     if (req.user.schoolId) where["schoolId"] = req.user.schoolId;
     return this.fileRepo.find({ where, order: { createdAt: "DESC" }, relations: ["uploadedBy"] });
@@ -186,7 +185,7 @@ export class FilesController {
     if (section) where["section"] = section;
     if (req.user.schoolId) {
       where["schoolId"] = req.user.schoolId;
-    } else if (!ADMIN_ROLES.has(req.user.role)) {
+    } else if (!isAdminRole(req.user.role)) {
       where["uploadedBy"] = { id: req.user.id };
     }
     return this.fileRepo.find({ where, order: { createdAt: "DESC" }, relations: ["uploadedBy"] });
@@ -199,7 +198,7 @@ export class FilesController {
   async renameFile(@Param("id") id: string, @Body() body: { originalName: string }, @Req() req: ReqUser) {
     const file = await this.fileRepo.findOne({ where: { id }, relations: ["uploadedBy"] });
     if (!file) throw new NotFoundException("File not found");
-    if (!ADMIN_ROLES.has(req.user.role) && file.uploadedBy?.id !== req.user.id) {
+    if (!isAdminRole(req.user.role) && file.uploadedBy?.id !== req.user.id) {
       throw new ForbiddenException("Access denied");
     }
     if (!body.originalName?.trim()) throw new BadRequestException("Name is required");
@@ -226,7 +225,7 @@ export class FilesController {
   async deleteFile(@Param("id") id: string, @Req() req: ReqUser) {
     const file = await this.fileRepo.findOne({ where: { id }, relations: ["uploadedBy"] });
     if (!file) throw new NotFoundException("File not found");
-    if (!ADMIN_ROLES.has(req.user.role) && file.uploadedBy?.id !== req.user.id) {
+    if (!isAdminRole(req.user.role) && file.uploadedBy?.id !== req.user.id) {
       throw new ForbiddenException("Access denied");
     }
     try { fs.unlinkSync(file.path); } catch {}

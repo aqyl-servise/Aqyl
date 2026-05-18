@@ -6,10 +6,9 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { AnalyticsService } from "./analytics.service";
+import { isStaffRole } from "../../common/roles.constants";
 
 interface ReqUser { user: { id: string; role: string; classroomIds?: string[]; schoolId?: string | null } }
-
-const ADMIN_ROLES = ["admin", "principal", "vice_principal", "vice_principal_academic"];
 
 @UseGuards(JwtAuthGuard)
 @Controller("analytics")
@@ -34,7 +33,7 @@ export class AnalyticsController {
   @UseGuards(RolesGuard)
   @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher")
   getSchool(@Req() req: ReqUser) {
-    const isAdmin = ADMIN_ROLES.includes(req.user.role);
+    const isAdmin = isStaffRole(req.user.role);
     return this.analyticsService.getSchoolStats(
       isAdmin ? undefined : (req.user.classroomIds ?? []),
       req.user.schoolId ?? undefined,
@@ -45,7 +44,7 @@ export class AnalyticsController {
   @UseGuards(RolesGuard)
   @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher")
   getClasses(@Req() req: ReqUser) {
-    const isAdmin = ADMIN_ROLES.includes(req.user.role);
+    const isAdmin = isStaffRole(req.user.role);
     return this.analyticsService.getClassesStats(
       isAdmin ? undefined : (req.user.classroomIds ?? []),
       req.user.schoolId ?? undefined,

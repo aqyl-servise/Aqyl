@@ -1,6 +1,6 @@
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from "typeorm";
 
-export type NotificationType = "violation" | "rating_updated" | "ktp_reviewed";
+export type NotificationType = "violation" | "rating_updated" | "ktp_reviewed" | "open_lesson_analyzed";
 
 @Entity("teacher_notification")
 export class TeacherNotification {

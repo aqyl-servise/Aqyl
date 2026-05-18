@@ -4,6 +4,7 @@ import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { ClassHoursService } from "./class-hours.service";
 import { ClassHourTopic } from "../schools/entities/class-hour.entity";
+import { isStaffRole } from "../../common/roles.constants";
 
 interface ReqUser { user: { id: string; role: string; schoolId?: string | null; isClassTeacher?: boolean } }
 
@@ -35,7 +36,7 @@ export class ClassHoursController {
 
   @Get("schedule")
   getSchedule(@Req() req: ReqUser) {
-    const isAdmin = (ADMIN_ROLES as readonly string[]).includes(req.user.role);
+    const isAdmin = isStaffRole(req.user.role);
     return this.service.getSchedule(req.user.id, req.user.schoolId, isAdmin);
   }
 

@@ -8,7 +8,9 @@ interface ReqUser { user: { id: string; role: string; schoolId?: string | null }
 
 @Controller("classrooms")
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher", "class_teacher")
+@Roles("admin", "principal", "vice_principal", "vice_principal_academic",
+  "vice_principal_education", "psychologist", "social_pedagogue",
+  "teacher", "class_teacher")
 export class ClassroomsController {
   constructor(private readonly service: ClassroomsService) {}
 
