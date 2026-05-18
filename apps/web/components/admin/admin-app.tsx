@@ -135,7 +135,7 @@ function getNavItemsForRole(role: string, t: Record<string, string>, isGlobalAdm
   }
   if (role === "principal") {
     return [
-      ...baseNav.filter(item => item.key !== "ai-usage"),
+      ...baseNav,
       { key: "users", label: t.nav_users, icon: "👥" },
       { key: "registrations", label: t.nav_registrations, icon: "📬" },
     ];
