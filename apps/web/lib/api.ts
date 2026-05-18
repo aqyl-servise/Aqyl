@@ -310,9 +310,14 @@ export const api = {
   getClassesStats: (token: string) =>
     request<Array<{
       id: string; name: string; grade: number; teacher: string; avgScore: number;
-      studentCount: number; submissionRate: number;
+      studentCount: number; submissionRate: number; flAvgScore: number | null;
       students: Array<{ id: string; fullName: string; iin?: string; avgScore: number; submitted: number; total: number }>;
     }>>("/analytics/classes", undefined, token),
+  getAnalyticsLiveSummary: (token: string) =>
+    request<{
+      totalStudents: number; totalTeachers: number; totalClassrooms: number;
+      avgScore: number; submissionRate: number; assignmentsThisMonth: number;
+    }>("/analytics/live-summary", undefined, token),
   getStudentsStats: (token: string, q: string) =>
     request<Array<{
       id: string; fullName: string; iin?: string; classroom: string; overallAvg: number;

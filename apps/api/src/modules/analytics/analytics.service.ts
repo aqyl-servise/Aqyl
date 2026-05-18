@@ -1,11 +1,14 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { ILike, Repository } from "typeorm";
+import { ILike, In, MoreThanOrEqual, Repository } from "typeorm";
 import * as XLSX from "xlsx";
 import { Student } from "../schools/entities/student.entity";
 import { Classroom } from "../schools/entities/classroom.entity";
 import { Assignment } from "../schools/entities/assignment.entity";
 import { TaskSubmission } from "../schools/entities/task-submission.entity";
+import { FLAssignment } from "../schools/entities/fl-assignment.entity";
+import { FLSubmission } from "../schools/entities/fl-submission.entity";
+import { Teacher } from "../teachers/entities/teacher.entity";
 import { AiClientService } from "../../services/ai-client.service";
 import { buildPrompt } from "../../utils/prompt-builder";
 
@@ -24,6 +27,12 @@ export class AnalyticsService {
     private readonly assignmentRepo: Repository<Assignment>,
     @InjectRepository(TaskSubmission)
     private readonly tsRepo: Repository<TaskSubmission>,
+    @InjectRepository(FLAssignment)
+    private readonly flAssignmentRepo: Repository<FLAssignment>,
+    @InjectRepository(FLSubmission)
+    private readonly flSubmissionRepo: Repository<FLSubmission>,
+    @InjectRepository(Teacher)
+    private readonly teacherRepo: Repository<Teacher>,
     private readonly aiClientService: AiClientService,
   ) {}
 
@@ -61,10 +70,10 @@ export class AnalyticsService {
   }
 
   // ── School-wide stats ────────────────────────────────────────────────────
-  async getSchoolStats(teacherClassroomIds?: string[]) {
+  async getSchoolStats(teacherClassroomIds?: string[], schoolId?: string) {
     const classroomWhere = teacherClassroomIds
       ? teacherClassroomIds.map((id) => ({ id }))
-      : undefined;
+      : schoolId ? { schoolId } : undefined;
 
     const classrooms = await this.classroomRepo.find({
       where: classroomWhere,
@@ -93,7 +102,6 @@ export class AnalyticsService {
     const topStudents = sorted.slice(0, 5);
     const bottomStudents = sorted.filter((s) => s.avg > 0).slice(-5).reverse();
 
-    // By subject (from TaskSubmissions)
     const subjectMap = new Map<string, { total: number; count: number }>();
     for (const cls of classrooms) {
       for (const s of cls.students) {
@@ -111,11 +119,16 @@ export class AnalyticsService {
       .map(([subject, v]) => ({ subject, avgScore: Math.round(v.total / v.count) }))
       .sort((a, b) => b.avgScore - a.avgScore);
 
-    // Submission completion rate
     const allAssignments = await this.assignmentRepo.count(
-      teacherClassroomIds ? { where: teacherClassroomIds.map((id) => ({ classroom: { id } })) } : undefined
+      teacherClassroomIds
+        ? { where: teacherClassroomIds.map((id) => ({ classroom: { id } })) }
+        : schoolId ? { where: { schoolId } } : undefined
     );
-    const submittedCount = await this.tsRepo.count({ where: [{ status: "submitted" }, { status: "graded" }] });
+    const submittedCount = await this.tsRepo.count({
+      where: schoolId
+        ? [{ status: "submitted", assignment: { schoolId } }, { status: "graded", assignment: { schoolId } }]
+        : [{ status: "submitted" }, { status: "graded" }],
+    });
     const submissionRate = allAssignments > 0 ? Math.round((submittedCount / (allAssignments * Math.max(allStudents.length, 1))) * 100) : 0;
 
     const byClass = classrooms.map((c) => {
@@ -144,16 +157,18 @@ export class AnalyticsService {
   }
 
   // ── Per-class stats ──────────────────────────────────────────────────────
-  async getClassesStats(teacherClassroomIds?: string[]) {
+  async getClassesStats(teacherClassroomIds?: string[], schoolId?: string) {
     const classroomWhere = teacherClassroomIds
       ? teacherClassroomIds.map((id) => ({ id }))
-      : undefined;
+      : schoolId ? { schoolId } : undefined;
 
     const classrooms = await this.classroomRepo.find({
       where: classroomWhere,
       relations: { students: { submissions: true, taskSubmissions: { assignment: true } }, teacher: true, classTeacher: true },
       order: { grade: "ASC", name: "ASC" },
     });
+
+    const flAvgMap = await this.getFlAvgByClassroom(classrooms.map((c) => c.id));
 
     return classrooms.map((c) => {
       const students = (c.students ?? []).map((s) => {
@@ -180,9 +195,44 @@ export class AnalyticsService {
         avgScore: classAvg,
         studentCount: students.length,
         submissionRate: totalAss > 0 ? Math.round((totalSub / totalAss) * 100) : 0,
+        flAvgScore: flAvgMap.get(c.id) ?? null,
         students: students.sort((a, b) => b.avgScore - a.avgScore),
       };
     });
+  }
+
+  // ── FL average score per classroom ───────────────────────────────────────
+  private async getFlAvgByClassroom(classroomIds: string[]): Promise<Map<string, number | null>> {
+    if (classroomIds.length === 0) return new Map();
+
+    const flAssignments = await this.flAssignmentRepo.find({
+      where: { classroomId: In(classroomIds) },
+      select: { id: true, classroomId: true },
+    });
+    if (flAssignments.length === 0) return new Map();
+
+    const assignmentIds = flAssignments.map((a) => a.id);
+    const submissions = await this.flSubmissionRepo.find({
+      where: { assignmentId: In(assignmentIds) },
+      select: { assignmentId: true, totalScore: true, maxScore: true, status: true },
+    });
+
+    const gradedSubs = submissions.filter(
+      (s) => (s.status === "submitted" || s.status === "graded") && s.totalScore != null && s.maxScore != null && Number(s.maxScore) > 0,
+    );
+
+    const assignmentToClassroom = new Map(flAssignments.map((a) => [a.id, a.classroomId]));
+    const classroomScores = new Map<string, { total: number; count: number }>();
+    for (const sub of gradedSubs) {
+      const cid = assignmentToClassroom.get(sub.assignmentId);
+      if (!cid) continue;
+      const cur = classroomScores.get(cid) ?? { total: 0, count: 0 };
+      cur.total += (Number(sub.totalScore!) / Number(sub.maxScore!)) * 100;
+      cur.count += 1;
+      classroomScores.set(cid, cur);
+    }
+
+    return new Map([...classroomScores.entries()].map(([id, v]) => [id, Math.round(v.total / v.count)]));
   }
 
   // ── Per-student search ───────────────────────────────────────────────────
@@ -238,6 +288,37 @@ export class AnalyticsService {
         })),
       };
     });
+  }
+
+  // ── Live summary for dashboard widgets ───────────────────────────────────
+  async getLiveSummary(schoolId?: string) {
+    const [totalClassrooms, totalTeachers] = await Promise.all([
+      this.classroomRepo.count({ where: schoolId ? { schoolId } : undefined }),
+      this.teacherRepo.count({
+        where: schoolId
+          ? [{ schoolId, role: "teacher" as const }, { schoolId, role: "class_teacher" as const }]
+          : [{ role: "teacher" as const }, { role: "class_teacher" as const }],
+      }),
+    ]);
+
+    const schoolStats = await this.getSchoolStats(undefined, schoolId);
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const assignmentsThisMonth = await this.assignmentRepo.count({
+      where: schoolId
+        ? { schoolId, createdAt: MoreThanOrEqual(monthStart) }
+        : { createdAt: MoreThanOrEqual(monthStart) },
+    });
+
+    return {
+      totalStudents: schoolStats.totalStudents,
+      totalTeachers,
+      totalClassrooms,
+      avgScore: schoolStats.avgScore,
+      submissionRate: schoolStats.submissionRate,
+      assignmentsThisMonth,
+    };
   }
 
   // ── AI analysis ──────────────────────────────────────────────────────────

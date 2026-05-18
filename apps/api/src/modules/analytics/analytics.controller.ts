@@ -7,7 +7,7 @@ import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { AnalyticsService } from "./analytics.service";
 
-interface ReqUser { user: { id: string; role: string; classroomIds?: string[] } }
+interface ReqUser { user: { id: string; role: string; classroomIds?: string[]; schoolId?: string | null } }
 
 const ADMIN_ROLES = ["admin", "principal", "vice_principal", "vice_principal_academic"];
 
@@ -23,12 +23,22 @@ export class AnalyticsController {
     return this.analyticsService.parseWorkbook(file.buffer);
   }
 
+  @Get("live-summary")
+  @UseGuards(RolesGuard)
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher", "class_teacher")
+  getLiveSummary(@Req() req: ReqUser) {
+    return this.analyticsService.getLiveSummary(req.user.schoolId ?? undefined);
+  }
+
   @Get("school")
   @UseGuards(RolesGuard)
   @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher")
   getSchool(@Req() req: ReqUser) {
     const isAdmin = ADMIN_ROLES.includes(req.user.role);
-    return this.analyticsService.getSchoolStats(isAdmin ? undefined : (req.user.classroomIds ?? []));
+    return this.analyticsService.getSchoolStats(
+      isAdmin ? undefined : (req.user.classroomIds ?? []),
+      req.user.schoolId ?? undefined,
+    );
   }
 
   @Get("classes")
@@ -36,7 +46,10 @@ export class AnalyticsController {
   @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher")
   getClasses(@Req() req: ReqUser) {
     const isAdmin = ADMIN_ROLES.includes(req.user.role);
-    return this.analyticsService.getClassesStats(isAdmin ? undefined : (req.user.classroomIds ?? []));
+    return this.analyticsService.getClassesStats(
+      isAdmin ? undefined : (req.user.classroomIds ?? []),
+      req.user.schoolId ?? undefined,
+    );
   }
 
   @Get("students")

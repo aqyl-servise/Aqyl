@@ -7,8 +7,10 @@ import { FileManager } from "../ui/file-manager";
 type SchoolStats = Awaited<ReturnType<typeof api.getSchoolStats>>;
 type ClassStats = Awaited<ReturnType<typeof api.getClassesStats>>[number];
 type StudentStat = Awaited<ReturnType<typeof api.getStudentsStats>>[number];
+type LiveSummary = Awaited<ReturnType<typeof api.getAnalyticsLiveSummary>>;
 
 type Tab = "dashboard" | "classes" | "students" | "ai" | "docs";
+type DataSource = "live" | "upload";
 
 interface Props { token: string; language: Language; t: Record<string, string> }
 
@@ -148,6 +150,13 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
   const labels = fmLabels(t);
 
   const [tab, setTab] = useState<Tab>("dashboard");
+  const [dataSource, setDataSource] = useState<DataSource>("live");
+  const [uploadResult, setUploadResult] = useState<Record<string, unknown> | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  // Live summary
+  const [liveSummary, setLiveSummary] = useState<LiveSummary | null>(null);
+  const [liveSummaryLoaded, setLiveSummaryLoaded] = useState(false);
 
   // Dashboard
   const [stats, setStats] = useState<SchoolStats | null>(null);
@@ -170,6 +179,14 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
   // AI
   const [aiResult, setAiResult] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+
+  // Load live summary once
+  useEffect(() => {
+    if (liveSummaryLoaded) return;
+    api.getAnalyticsLiveSummary(token)
+      .then((d) => { setLiveSummary(d); setLiveSummaryLoaded(true); })
+      .catch(console.error);
+  }, [token, liveSummaryLoaded]);
 
   // Load dashboard stats
   useEffect(() => {
@@ -224,6 +241,17 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
     }
   }
 
+  async function handleExcelUpload(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const file = fd.get("file");
+    if (!(file instanceof File)) return;
+    setUploading(true);
+    try { setUploadResult(await api.uploadAnalytics(token, file)); }
+    catch { setUploadResult(null); }
+    finally { setUploading(false); }
+  }
+
   const TABS: { key: Tab; label: string }[] = [
     { key: "dashboard", label: tl.san_tab_dashboard },
     { key: "classes", label: tl.san_tab_classes },
@@ -248,6 +276,61 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
       {/* ── DASHBOARD ── */}
       {tab === "dashboard" && (
         <div>
+          {/* Data source toggle */}
+          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 16 }}>
+            <span style={{ fontSize: 13, color: "var(--muted)" }}>{tl.analytics_live_summary ?? "Источник данных"}:</span>
+            <button
+              className={`sc-tab${dataSource === "live" ? " sc-tab-active" : ""}`}
+              onClick={() => setDataSource("live")}
+            >
+              📊 {tl.analytics_live ?? "Живые данные"}
+            </button>
+            <button
+              className={`sc-tab${dataSource === "upload" ? " sc-tab-active" : ""}`}
+              onClick={() => setDataSource("upload")}
+            >
+              📁 {tl.analytics_uploaded ?? "Загруженные данные"}
+            </button>
+          </div>
+
+          {/* Excel upload view */}
+          {dataSource === "upload" && (
+            <div className="card" style={{ maxWidth: 560, marginBottom: 16 }}>
+              <h3 className="card-title">📁 {tl.analytics_uploaded ?? "Загруженные данные"}</h3>
+              <form onSubmit={handleExcelUpload} className="form-stack">
+                <div className="file-drop-zone">
+                  <span>📁</span>
+                  <p>Excel / CSV — Student / Class / Topic / Score / MaxScore</p>
+                  <input name="file" type="file" accept=".xlsx,.xls,.csv" required className="input file-input" />
+                </div>
+                <button className="btn btn-primary" disabled={uploading}>
+                  {uploading ? <><span className="spinner" /> {t.loading}</> : `↑ ${t.uploadExcel}`}
+                </button>
+              </form>
+              {uploadResult && (() => {
+                const sum = uploadResult.summary as Record<string, unknown> | undefined;
+                const topics = (uploadResult.topicAnalytics as Array<{ topic: string; average: number }> | undefined) ?? [];
+                return (
+                  <div style={{ marginTop: 16 }}>
+                    {sum && (
+                      <div className="stats-row" style={{ marginBottom: 12 }}>
+                        <div className="stat-card stat-blue"><span className="stat-icon">📊</span><div><p className="stat-label">{t.averageScore}</p><p className="stat-value">{String(sum.averageScore)}%</p></div></div>
+                        <div className="stat-card stat-green"><span className="stat-icon">👩‍🎓</span><div><p className="stat-label">{t.students}</p><p className="stat-value">{String(sum.uniqueStudents)}</p></div></div>
+                        <div className="stat-card stat-purple"><span className="stat-icon">🏫</span><div><p className="stat-label">{t.classes}</p><p className="stat-value">{String(sum.uniqueClasses)}</p></div></div>
+                      </div>
+                    )}
+                    {topics.length > 0 && (
+                      <BarChart items={topics as unknown as Record<string, unknown>[]} labelKey="topic" valueKey="average" />
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* Live data view */}
+          {dataSource === "live" && (
+          <>
           {statsLoading && <p className="empty-state">{t.loading}</p>}
           {!statsLoading && !stats && !statsLoaded && <p className="empty-state">{t.noData}</p>}
           {stats && (
@@ -282,6 +365,18 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
                     </div>
                   </div>
                 </div>
+                {liveSummary && (
+                  <>
+                    <div className="stat-card stat-blue">
+                      <span className="stat-icon">👨‍🏫</span>
+                      <div><p className="stat-label">{tl.analytics_teachers ?? "Учителей"}</p><p className="stat-value">{liveSummary.totalTeachers}</p></div>
+                    </div>
+                    <div className="stat-card stat-green">
+                      <span className="stat-icon">📝</span>
+                      <div><p className="stat-label">{tl.analytics_this_month ?? "Заданий в этом месяце"}</p><p className="stat-value">{liveSummary.assignmentsThisMonth}</p></div>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
@@ -343,6 +438,8 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
               </div>
             </>
           )}
+          </>
+          )}
         </div>
       )}
 
@@ -388,7 +485,9 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
                     <tr>
                       <th>{t.classroom}</th><th>{t.nav_teachers}</th>
                       <th>{t.studentCount}</th><th>{t.averageScore}</th>
-                      <th>{tl.san_submission_rate}</th><th>{t.actions}</th>
+                      <th>{tl.san_submission_rate}</th>
+                      <th>{tl.analytics_fl_avg ?? "ФГ балл"}</th>
+                      <th>{t.actions}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -405,6 +504,11 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
                             <div className="progress-bar-fill" style={{ width: `${c.submissionRate}%`, background: barColor(c.submissionRate) }} />
                           </div>
                           <span style={{ fontSize: 11, color: "var(--muted)" }}>{c.submissionRate}%</span>
+                        </td>
+                        <td>
+                          {c.flAvgScore != null
+                            ? <span className={`score-chip ${scoreClass(c.flAvgScore)}`}>{c.flAvgScore}%</span>
+                            : <span className="muted" style={{ fontSize: 12 }}>—</span>}
                         </td>
                         <td>
                           <button className="btn btn-outline btn-sm" onClick={() => setSelectedClass(c)}>
