@@ -13,6 +13,7 @@ export class FinalAttestationController {
   constructor(private readonly service: FinalAttestationService) {}
 
   @Get("students")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher", "class_teacher")
   findAll(@Req() req: ReqUser, @Query("grade") grade: string) {
     return this.service.findAll(Number(grade), req.user.schoolId);
   }
