@@ -6,8 +6,11 @@ import { SorSochService } from "./sor-soch.service";
 
 interface ReqUser { user: { id: string; role: string; schoolId?: string | null } }
 
+const ALLOWED_ROLES = ["admin", "principal", "vice_principal", "vice_principal_academic", "teacher", "class_teacher"] as const;
+
 @Controller("sor-soch")
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(...ALLOWED_ROLES)
 export class SorSochController {
   constructor(private readonly service: SorSochService) {}
 
@@ -37,8 +40,6 @@ export class SorSochController {
   }
 
   @Post()
-  @UseGuards(RolesGuard)
-  @Roles("teacher", "admin", "principal", "vice_principal", "vice_principal_academic")
   create(
     @Req() req: ReqUser,
     @Body() body: { title: string; type: "sor" | "soch"; subject?: string; classroomId?: string; quarter?: string; fileUrl?: string },
@@ -58,8 +59,6 @@ export class SorSochController {
   }
 
   @Patch(":id")
-  @UseGuards(RolesGuard)
-  @Roles("teacher", "admin", "principal", "vice_principal", "vice_principal_academic")
   update(
     @Param("id") id: string,
     @Body() body: Partial<{ title: string; subject: string; classroomId: string; quarter: string; fileUrl: string }>,
@@ -68,8 +67,6 @@ export class SorSochController {
   }
 
   @Delete(":id")
-  @UseGuards(RolesGuard)
-  @Roles("teacher", "admin", "principal", "vice_principal", "vice_principal_academic")
   remove(@Param("id") id: string) {
     return this.service.remove(id);
   }
