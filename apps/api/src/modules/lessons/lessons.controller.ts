@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, ForbiddenException, Get, Param, Patch, Post, Req, Res, UseGuards } from "@nestjs/common";
 import { Response } from "express";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
@@ -6,6 +6,8 @@ import { Roles } from "../auth/decorators/roles.decorator";
 import { LessonsService } from "./lessons.service";
 
 interface ReqUser { user: { id: string; role: string; schoolId?: string | null; fullName?: string } }
+
+const ADMIN_ROLES = ["admin", "principal", "vice_principal", "vice_principal_academic"] as const;
 
 @Controller("lessons")
 @UseGuards(JwtAuthGuard)
@@ -25,6 +27,8 @@ export class LessonsController {
   }
 
   @Get(":id")
+  @UseGuards(RolesGuard)
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "vice_principal_education", "teacher", "class_teacher", "psychologist")
   findOne(@Param("id") id: string) {
     return this.service.findOne(id);
   }
@@ -62,7 +66,10 @@ export class LessonsController {
   }
 
   @Patch(":id")
-  update(
+  @UseGuards(RolesGuard)
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher", "class_teacher")
+  async update(
+    @Req() req: ReqUser,
     @Param("id") id: string,
     @Body() body: Partial<{
       subject: string;
@@ -77,6 +84,11 @@ export class LessonsController {
       status: "planned" | "conducted" | "analyzed";
     }>,
   ) {
+    const lesson = await this.service.findOne(id);
+    const isAdmin = (ADMIN_ROLES as readonly string[]).includes(req.user.role);
+    if (!isAdmin && lesson?.teacher?.id !== req.user.id) {
+      throw new ForbiddenException("You can only edit your own lessons");
+    }
     const data: Record<string, unknown> = { ...body };
     if (body.date) data.date = new Date(body.date);
     return this.service.update(id, data);
@@ -85,7 +97,12 @@ export class LessonsController {
   @Delete(":id")
   @UseGuards(RolesGuard)
   @Roles("teacher", "admin", "class_teacher", "principal", "vice_principal", "vice_principal_academic")
-  remove(@Param("id") id: string) {
+  async remove(@Req() req: ReqUser, @Param("id") id: string) {
+    const lesson = await this.service.findOne(id);
+    const isAdmin = (ADMIN_ROLES as readonly string[]).includes(req.user.role);
+    if (!isAdmin && lesson?.teacher?.id !== req.user.id) {
+      throw new ForbiddenException("You can only delete your own lessons");
+    }
     return this.service.remove(id);
   }
 
