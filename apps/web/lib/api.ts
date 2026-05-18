@@ -639,6 +639,12 @@ export const api = {
     }>>("/attestation", undefined, token),
   updateAttestation: (token: string, teacherId: string, data: Record<string, unknown>) =>
     request<{ id: string }>(`/attestation/${teacherId}`, { method: "PATCH", body: JSON.stringify(data) }, token),
+  getMyAttestation: (token: string) =>
+    request<{
+      id?: string; category?: string; categoryDate?: string; nextAttestationDate?: string;
+      ozpResult?: string; ozpFileUrl?: string; diplomaFileUrl?: string;
+      coursesFileUrls?: string[]; protocolsFileUrls?: string[];
+    }>("/attestation/my", undefined, token),
 
   // Final Attestation
   getFinalStudents: (token: string, grade: 9 | 11) =>

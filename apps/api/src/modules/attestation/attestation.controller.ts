@@ -4,13 +4,19 @@ import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { AttestationService } from "./attestation.service";
 
-interface ReqUser { user: { schoolId?: string | null } }
+interface ReqUser { user: { id: string; role: string; schoolId?: string | null } }
 
 @Controller("attestation")
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
 export class AttestationController {
   constructor(private readonly service: AttestationService) {}
+
+  @Get("my")
+  @Roles("teacher", "class_teacher")
+  async getMyAttestation(@Req() req: ReqUser) {
+    return (await this.service.findByTeacher(req.user.id)) ?? {};
+  }
 
   @Get()
   findAll(@Req() req: ReqUser) {

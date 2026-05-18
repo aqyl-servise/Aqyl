@@ -13,11 +13,18 @@ const CATEGORIES = [
   { value: "master", key: "attest_category_master" },
 ];
 
+type AttestationData = {
+  id?: string; category?: string; categoryDate?: string; nextAttestationDate?: string;
+  ozpResult?: string; ozpFileUrl?: string; diplomaFileUrl?: string;
+  coursesFileUrls?: string[]; protocolsFileUrls?: string[];
+};
+
 export function TeacherProfile({ token, user, language, t }: { token: string; user: AuthUser; language: Language; t: Record<string, string> }) {
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
+  const [attestation, setAttestation] = useState<AttestationData | null>(null);
   const isClassTeacher = user.isClassTeacher === true;
 
   useEffect(() => {
@@ -28,6 +35,10 @@ export function TeacherProfile({ token, user, language, t }: { token: string; us
       .catch(console.error)
       .finally(() => setLoadingStudents(false));
   }, [token, isClassTeacher, user.managedClassroomId]);
+
+  useEffect(() => {
+    api.getMyAttestation(token).then(setAttestation).catch(() => setAttestation({}));
+  }, [token]);
 
   async function handleSave(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -101,6 +112,8 @@ export function TeacherProfile({ token, user, language, t }: { token: string; us
         </form>
       </div>
 
+      <AttestationCard attestation={attestation} t={t} />
+
       {isClassTeacher && (
         <div className="card" style={{ maxWidth: 640, marginTop: 16 }}>
           <h3 className="card-title">
@@ -148,6 +161,68 @@ function Field({ label, name, type, defaultValue }: { label: string; name: strin
     <div className="field">
       <label className="field-label">{label}</label>
       <input name={name} type={type ?? "text"} defaultValue={defaultValue} className="input" />
+    </div>
+  );
+}
+
+function AttestationCard({ attestation, t }: { attestation: AttestationData | null; t: Record<string, string> }) {
+  if (attestation === null) return null;
+
+  const isEmpty = !attestation.id;
+  const categoryLabel = CATEGORIES.find(c => c.value === attestation.category)
+    ? t[CATEGORIES.find(c => c.value === attestation.category)!.key] ?? attestation.category
+    : attestation.category ?? "—";
+
+  return (
+    <div className="card" style={{ maxWidth: 640, marginTop: 16 }}>
+      <h3 className="card-title">🏅 {t.attest_info ?? "Данные аттестации"}</h3>
+      {isEmpty ? (
+        <p className="muted" style={{ fontSize: 14 }}>{t.attest_empty ?? "Данные аттестации не заполнены"}</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 14 }}>
+          <AttestRow label={t.attest_category ?? "Категория"} value={categoryLabel} />
+          <AttestRow label={t.attest_category_date ?? "Дата присвоения"} value={attestation.categoryDate ?? "—"} />
+          <AttestRow label={t.attest_next_date ?? "Следующая аттестация"} value={attestation.nextAttestationDate ?? "—"} />
+          <AttestRow label={t.attest_ozp_result ?? "Результат ОЗП"} value={attestation.ozpResult ?? "—"} />
+          {attestation.diplomaFileUrl && (
+            <AttestRow label={t.attest_diploma ?? "Диплом"}>
+              <a href={attestation.diplomaFileUrl} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">📄 {t.ktp_open_pdf ?? "Открыть"}</a>
+            </AttestRow>
+          )}
+          {attestation.ozpFileUrl && (
+            <AttestRow label={t.attest_ozp_doc ?? "ОЗП документ"}>
+              <a href={attestation.ozpFileUrl} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">📄 {t.ktp_open_pdf ?? "Открыть"}</a>
+            </AttestRow>
+          )}
+          {(attestation.coursesFileUrls ?? []).length > 0 && (
+            <AttestRow label={t.attest_courses ?? "Курсы ПК"}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {attestation.coursesFileUrls!.map((url, i) => (
+                  <a key={i} href={url} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">📄 {i + 1}</a>
+                ))}
+              </div>
+            </AttestRow>
+          )}
+          {(attestation.protocolsFileUrls ?? []).length > 0 && (
+            <AttestRow label={t.attest_files ?? "Документы аттестации"}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {attestation.protocolsFileUrls!.map((url, i) => (
+                  <a key={i} href={url} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">📄 {i + 1}</a>
+                ))}
+              </div>
+            </AttestRow>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AttestRow({ label, value, children }: { label: string; value?: string; children?: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+      <span style={{ minWidth: 200, color: "var(--muted)", flexShrink: 0 }}>{label}:</span>
+      {children ?? <span style={{ fontWeight: 500 }}>{value}</span>}
     </div>
   );
 }
