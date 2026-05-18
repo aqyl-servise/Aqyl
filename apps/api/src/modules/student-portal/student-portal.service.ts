@@ -1,6 +1,13 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
+
+function getCurrentAcademicYear(): string {
+  const now = new Date();
+  const month = now.getMonth() + 1; // 1-based
+  const year = now.getFullYear();
+  return month >= 9 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+}
 import { Student } from "../schools/entities/student.entity";
 import { Schedule } from "../schools/entities/schedule.entity";
 import { Assignment } from "../schools/entities/assignment.entity";
@@ -32,8 +39,20 @@ export class StudentPortalService {
 
   async getSchedule(userId: string) {
     const student = await this.getStudentByUserId(userId);
+    const classroomId = student.classroom.id;
+    const academicYear = getCurrentAcademicYear();
+
+    // Prefer admin-entered schedule for the current academic year (version="main")
+    const adminSchedule = await this.scheduleRepo.find({
+      where: { classroom: { id: classroomId }, version: "main", academicYear },
+      relations: ["teacher"],
+      order: { dayOfWeek: "ASC", period: "ASC" },
+    });
+    if (adminSchedule.length > 0) return adminSchedule;
+
+    // Fall back to any version="main" entries (legacy or undated entries)
     return this.scheduleRepo.find({
-      where: { classroom: { id: student.classroom.id } },
+      where: { classroom: { id: classroomId }, version: "main" },
       relations: ["teacher"],
       order: { dayOfWeek: "ASC", period: "ASC" },
     });
