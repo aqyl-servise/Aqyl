@@ -7,16 +7,18 @@ import { SocialPedagogueService } from "./social-pedagogue.service";
 
 interface ReqUser { user: { id: string; role: string; schoolId?: string } }
 
-const ALLOWED_ROLES = ["admin", "principal", "social_pedagogue", "vice_principal_education"] as const;
+const READ_ROLES = ["admin", "principal", "vice_principal", "vice_principal_academic", "vice_principal_education", "social_pedagogue"] as const;
+const WRITE_ROLES = ["admin", "principal", "vice_principal_education", "social_pedagogue"] as const;
 
 @Controller("social-pedagogue")
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(...ALLOWED_ROLES)
+@Roles(...WRITE_ROLES)
 export class SocialPedagogueController {
   constructor(private readonly service: SocialPedagogueService) {}
 
   // ── Nutrition Students ──────────────────────────────────────────────────
   @Get("nutrition/students")
+  @Roles(...READ_ROLES)
   getNutritionStudents(@Req() req: ReqUser, @Query("academicYear") academicYear?: string) {
     return this.service.getNutritionStudents(req.user.schoolId ?? "", academicYear);
   }
@@ -36,6 +38,7 @@ export class SocialPedagogueController {
 
   // ── Nutrition Orders ────────────────────────────────────────────────────
   @Get("nutrition/orders")
+  @Roles(...READ_ROLES)
   getNutritionOrders(@Req() req: ReqUser) {
     return this.service.getNutritionOrders(req.user.schoolId ?? "");
   }
@@ -54,6 +57,7 @@ export class SocialPedagogueController {
   }
 
   @Get("nutrition/export")
+  @Roles(...READ_ROLES)
   async exportNutrition(@Req() req: ReqUser, @Res() res: Response) {
     const csv = await this.service.exportNutritionCsv(req.user.schoolId ?? "");
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
@@ -63,6 +67,7 @@ export class SocialPedagogueController {
 
   // ── Special Attention Students ──────────────────────────────────────────
   @Get("special-attention")
+  @Roles(...READ_ROLES)
   getSpecialAttention(@Req() req: ReqUser) {
     return this.service.getSpecialAttentionStudents(req.user.schoolId ?? "");
   }
@@ -89,6 +94,7 @@ export class SocialPedagogueController {
   }
 
   @Get("special-attention/export")
+  @Roles(...READ_ROLES)
   async exportSpecial(@Req() req: ReqUser, @Res() res: Response) {
     const csv = await this.service.exportSpecialCsv(req.user.schoolId ?? "");
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
