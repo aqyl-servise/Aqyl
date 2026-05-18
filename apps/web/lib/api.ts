@@ -790,6 +790,18 @@ export const api = {
     request<TeacherViolation[]>(`/rating/violations/${teacherId}`, undefined, token),
   ratingDeleteViolation: (token: string, id: string) =>
     request<{ ok: boolean }>(`/rating/violations/${id}`, { method: "DELETE" }, token),
+  getMyViolations: (token: string) =>
+    request<TeacherViolation[]>("/rating/violations/my", undefined, token),
+
+  // Notifications
+  getMyNotifications: (token: string) =>
+    request<Array<{ id: string; teacherId: string; schoolId?: string; type: string; title: string; message: string; isRead: boolean; createdAt: string }>>("/notifications/my", undefined, token),
+  getUnreadNotificationCount: (token: string) =>
+    request<{ count: number }>("/notifications/my/count", undefined, token),
+  markNotificationRead: (token: string, id: string) =>
+    request<{ ok: boolean }>(`/notifications/${id}/read`, { method: "PATCH" }, token),
+  markAllNotificationsRead: (token: string) =>
+    request<{ ok: boolean }>("/notifications/mark-all-read", { method: "PATCH" }, token),
 
   // Schools (global admin)
   getSchools: (token: string) =>

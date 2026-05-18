@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, Between } from "typeorm";
+import { NotificationsService } from "../notifications/notifications.service";
 import { TeacherRating, RatingPeriod } from "../schools/entities/teacher-rating.entity";
 import { TeacherViolation, ViolationType } from "../schools/entities/teacher-violation.entity";
 import { Teacher } from "../teachers/entities/teacher.entity";
@@ -72,6 +73,7 @@ export class RatingService {
     @InjectRepository(FLTask) private flTaskRepo: Repository<FLTask>,
     @InjectRepository(FLAssignment) private flAssignRepo: Repository<FLAssignment>,
     @InjectRepository(FLSubmission) private flSubmissionRepo: Repository<FLSubmission>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async calculateTeacherScore(
@@ -365,14 +367,31 @@ export class RatingService {
     teacherId: string; schoolId: string; type: ViolationType;
     description: string; date: string; pointsDeducted: number; createdBy: string;
   }) {
-    return this.violationRepo.save(
+    const violation = await this.violationRepo.save(
       this.violationRepo.create({ ...data, teacher: { id: data.teacherId } as Teacher })
     );
+
+    await this.notificationsService.createNotification({
+      teacherId: data.teacherId,
+      schoolId: data.schoolId,
+      type: "violation",
+      title: "Зафиксировано замечание",
+      message: `К вашему профилю добавлено замечание: ${data.description}. Вычтено баллов: ${data.pointsDeducted}`,
+    });
+
+    return violation;
   }
 
   async getViolations(teacherId: string, schoolId: string) {
     return this.violationRepo.find({
       where: { teacher: { id: teacherId }, schoolId },
+      order: { date: "DESC" },
+    });
+  }
+
+  async getViolationsByTeacherId(teacherId: string) {
+    return this.violationRepo.find({
+      where: { teacher: { id: teacherId } },
       order: { date: "DESC" },
     });
   }

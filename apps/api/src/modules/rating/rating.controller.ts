@@ -103,6 +103,12 @@ export class RatingController {
   }
 
   // ── Violations ─────────────────────────────────────────────────────────────
+  @Get("violations/my")
+  @Roles("teacher", "class_teacher")
+  getMyViolations(@Req() req: ReqUser) {
+    return this.svc.getViolationsByTeacherId(req.user.id);
+  }
+
   @Post("violations")
   @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   createViolation(

@@ -14,6 +14,7 @@ import { FLAssignment } from "../schools/entities/fl-assignment.entity";
 import { FLSubmission } from "../schools/entities/fl-submission.entity";
 import { RatingService } from "./rating.service";
 import { RatingController } from "./rating.controller";
+import { NotificationsModule } from "../notifications/notifications.module";
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { RatingController } from "./rating.controller";
       FLAssignment,
       FLSubmission,
     ]),
+    NotificationsModule,
   ],
   providers: [RatingService],
   controllers: [RatingController],

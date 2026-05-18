@@ -81,6 +81,8 @@ import { NutritionOrder } from "./modules/schools/entities/nutrition-order.entit
 import { SpecialAttentionStudent } from "./modules/schools/entities/special-attention-student.entity";
 import { QuestionnairesModule } from "./modules/questionnaires/questionnaires.module";
 import { SocialPedagogueModule } from "./modules/social-pedagogue/social-pedagogue.module";
+import { TeacherNotification } from "./modules/notifications/teacher-notification.entity";
+import { NotificationsModule } from "./modules/notifications/notifications.module";
 
 @Module({
   imports: [
@@ -112,6 +114,7 @@ import { SocialPedagogueModule } from "./modules/social-pedagogue/social-pedagog
           GeneratedPresentation, GeneratedIllustration,
           Questionnaire, QuestionnaireResponse,
           NutritionStudent, NutritionOrder, SpecialAttentionStudent,
+          TeacherNotification,
         ],
       }),
     }),
@@ -157,6 +160,7 @@ import { SocialPedagogueModule } from "./modules/social-pedagogue/social-pedagog
     MaterialsModule,
     QuestionnairesModule,
     SocialPedagogueModule,
+    NotificationsModule,
   ],
   providers: [
     SeedService,

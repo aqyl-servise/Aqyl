@@ -533,6 +533,14 @@ const ru = {
   student_teachers_title: "Мои учителя-предметники",
   student_quest_title: "Доступные анкеты",
   student_quest_no_data: "Нет доступных анкет",
+  // Notifications
+  notifications_title: "Уведомления",
+  notifications_empty: "Нет новых уведомлений",
+  notifications_mark_all: "Отметить все прочитанными",
+  violation_recorded: "Зафиксировано замечание",
+  my_violations: "Мои замечания",
+  no_violations: "Замечаний нет",
+  points_deducted: "Вычтено баллов",
 };
 
 type TranslationShape = typeof ru;
@@ -1035,6 +1043,14 @@ const kz: TranslationShape = {
   student_teachers_title: "Менің пән мұғалімдерім",
   student_quest_title: "Қол жетімді анкеталар",
   student_quest_no_data: "Қол жетімді анкеталар жоқ",
+  // Notifications
+  notifications_title: "Хабарламалар",
+  notifications_empty: "Жаңа хабарламалар жоқ",
+  notifications_mark_all: "Барлығын оқылды деп белгілеу",
+  violation_recorded: "Ескерту тіркелді",
+  my_violations: "Менің ескертулерім",
+  no_violations: "Ескертулер жоқ",
+  points_deducted: "Ұпай шегерілді",
 };
 
 const en: TranslationShape = {
@@ -1535,6 +1551,14 @@ const en: TranslationShape = {
   student_teachers_title: "My subject teachers",
   student_quest_title: "Available Questionnaires",
   student_quest_no_data: "No questionnaires available",
+  // Notifications
+  notifications_title: "Notifications",
+  notifications_empty: "No new notifications",
+  notifications_mark_all: "Mark all as read",
+  violation_recorded: "Violation recorded",
+  my_violations: "My Violations",
+  no_violations: "No violations",
+  points_deducted: "Points deducted",
 };
 
 export const translations: Record<Language, TranslationShape> = { ru, kz, en };

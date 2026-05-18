@@ -55,23 +55,23 @@ export function MyRatingPanel({ token, language }: Props) {
     setLoading(true);
     (async () => {
       try {
-        const r = await api.ratingGetMy(token, { period, periodNumber, academicYear });
+        const [r, v] = await Promise.all([
+          api.ratingGetMy(token, { period, periodNumber, academicYear }),
+          api.getMyViolations(token),
+        ]);
         if (!active) return;
         setRating(r);
+        setViolations(v);
         if (r) {
-          const [v, h] = await Promise.all([
-            r.teacherId ? api.ratingGetViolations(token, r.teacherId) : Promise.resolve([]),
-            api.ratingGetMyHistory(token),
-          ]);
+          const h = await api.ratingGetMyHistory(token);
           if (!active) return;
-          setViolations(v);
           setHistory(h);
         }
       } catch { /* ignore */ }
       if (active) setLoading(false);
     })();
     return () => { active = false; };
-  }, [period, periodNumber, academicYear]);
+  }, [token, period, periodNumber, academicYear]);
 
   const TABS = [
     { key: "overview"   as const, label: t.rating_overview   ?? "Обзор",       icon: "📊" },
@@ -229,35 +229,43 @@ export function MyRatingPanel({ token, language }: Props) {
               {violations.length === 0 ? (
                 <div style={{ padding: 48, textAlign: "center" }}>
                   <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
-                  <p style={{ fontWeight: 600, color: "var(--success)", margin: "0 0 6px" }}>Нарушений нет</p>
+                  <p style={{ fontWeight: 600, color: "var(--success)", margin: "0 0 6px" }}>{t.no_violations ?? "Замечаний нет"}</p>
                   <p className="empty-state">Продолжайте в том же духе!</p>
                 </div>
               ) : (
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>{t.rating_violation_type ?? "Тип"}</th>
-                      <th>{t.rating_description ?? "Описание"}</th>
-                      <th>{t.rating_date ?? "Дата"}</th>
-                      <th style={{ textAlign: "center" }}>{t.rating_points_deducted ?? "Вычет"}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {violations.map(v => {
-                      const chip = violationLabel(v.type);
-                      return (
-                        <tr key={v.id}>
-                          <td><span className={chip.cls}>{chip.label}</span></td>
-                          <td style={{ maxWidth: 320 }}>{v.description}</td>
-                          <td className="muted">{v.date}</td>
-                          <td style={{ textAlign: "center" }}>
-                            <span className="score-chip score-low">−{v.pointsDeducted}</span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                <>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>{t.rating_violation_type ?? "Тип"}</th>
+                        <th>{t.rating_description ?? "Описание"}</th>
+                        <th>{t.rating_date ?? "Дата"}</th>
+                        <th style={{ textAlign: "center" }}>{t.points_deducted ?? "Вычтено баллов"}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {violations.map(v => {
+                        const chip = violationLabel(v.type);
+                        return (
+                          <tr key={v.id}>
+                            <td><span className={chip.cls}>{chip.label}</span></td>
+                            <td style={{ maxWidth: 320 }}>{v.description}</td>
+                            <td className="muted">{v.date}</td>
+                            <td style={{ textAlign: "center" }}>
+                              <span className="score-chip score-low">−{v.pointsDeducted}</span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <div style={{ padding: "10px 16px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 13, color: "var(--muted)" }}>{t.points_deducted ?? "Вычтено баллов"}:</span>
+                    <span className="score-chip score-low">
+                      −{violations.reduce((s, v) => s + (v.pointsDeducted ?? 0), 0)}
+                    </span>
+                  </div>
+                </>
               )}
             </div>
           )}
