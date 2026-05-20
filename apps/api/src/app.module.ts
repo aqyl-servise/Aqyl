@@ -175,7 +175,6 @@ import { TokensModule } from "./modules/tokens/tokens.module";
   providers: [
     SeedService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
-    { provide: APP_GUARD, useClass: SchoolIsolationGuard },
   ],
 })
 export class AppModule {}
