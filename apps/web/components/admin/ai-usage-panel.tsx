@@ -232,6 +232,13 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
           </>
         )}
       </div>
+      {/* Isolation status indicator */}
+      <div style={{ marginTop: 28, padding: "10px 16px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ color: "#16a34a", fontSize: 16 }}>🔒</span>
+        <span style={{ fontSize: 13, color: "#15803d", fontWeight: 500 }}>
+          Изоляция школьных данных: Активна ✓
+        </span>
+      </div>
     </div>
   );
 }

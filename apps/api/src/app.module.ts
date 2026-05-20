@@ -85,6 +85,7 @@ import { TeacherNotification } from "./modules/notifications/teacher-notificatio
 import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { SecurityAuditLog } from "./modules/schools/entities/security-audit-log.entity";
 import { GuardsModule } from "./guards/guards.module";
+import { SchoolIsolationGuard } from "./guards/school-isolation.guard";
 import { SchoolTokenPackage } from "./modules/tokens/entities/school-token-package.entity";
 import { TokenTransaction } from "./modules/tokens/entities/token-transaction.entity";
 import { TokensModule } from "./modules/tokens/tokens.module";
@@ -174,6 +175,7 @@ import { TokensModule } from "./modules/tokens/tokens.module";
   providers: [
     SeedService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: SchoolIsolationGuard },
   ],
 })
 export class AppModule {}

@@ -7,10 +7,12 @@ import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { TeachersService } from "../teachers/teachers.service";
+import { SkipIsolation } from "../../guards/skip-isolation.decorator";
 
 interface AuthUser { id: string; fullName: string; email: string; preferredLanguage: string; role: string; subject?: string }
 
 @Controller("auth")
+@SkipIsolation()
 export class AuthController {
   constructor(
     private readonly authService: AuthService,

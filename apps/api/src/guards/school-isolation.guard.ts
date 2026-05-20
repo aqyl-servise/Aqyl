@@ -1,16 +1,25 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { SecurityAuditLog } from "../modules/schools/entities/security-audit-log.entity";
+import { SKIP_ISOLATION_KEY } from "./skip-isolation.decorator";
 
 @Injectable()
 export class SchoolIsolationGuard implements CanActivate {
   constructor(
     @InjectRepository(SecurityAuditLog)
     private readonly auditRepo: Repository<SecurityAuditLog>,
+    private readonly reflector: Reflector,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const skipIsolation = this.reflector.getAllAndOverride<boolean>(SKIP_ISOLATION_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (skipIsolation) return true;
+
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
