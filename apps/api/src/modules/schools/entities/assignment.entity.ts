@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, Index, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Teacher } from "../../teachers/entities/teacher.entity";
 import { Classroom } from "./classroom.entity";
 import { TaskSubmission } from "./task-submission.entity";
@@ -26,6 +26,7 @@ export class Assignment {
   @Column({ default: "draft" })
   status!: "draft" | "published" | "active" | "closed";
 
+  @Index()
   @Column({ nullable: true })
   schoolId?: string;
 

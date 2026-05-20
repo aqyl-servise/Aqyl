@@ -81,7 +81,8 @@
       "PowerShell(New-Item *)",
       "PowerShell(Set-Location \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\api\" && npx tsc --noEmit 2>&1; Write-Host \"Exit: $LASTEXITCODE\")",
       "PowerShell(Set-Location \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\web\" && npx tsc --noEmit 2>&1; Write-Host \"Exit: $LASTEXITCODE\")",
-      "Bash(dir \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\web\\\\lib\")"
+      "Bash(dir \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\web\\\\lib\")",
+      "Bash(powershell *)"
     ]
   }
 }

@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, Index, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Teacher } from "../../teachers/entities/teacher.entity";
 import { Student } from "./student.entity";
 import { Schedule } from "./schedule.entity";
@@ -23,6 +23,7 @@ export class Classroom {
   @Column({ nullable: true })
   academicYear?: string;
 
+  @Index()
   @Column({ nullable: true })
   schoolId?: string;
 

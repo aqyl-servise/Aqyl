@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, Repository } from "typeorm";
 import { Student } from "../schools/entities/student.entity";
@@ -189,6 +189,12 @@ export class StudentsService {
     });
     if (!student) throw new NotFoundException("Student not found");
 
+    const targetClassroom = await this.classroomRepo.findOne({ where: { id: classroomId } });
+    if (!targetClassroom) throw new NotFoundException("Classroom not found");
+    if (targetClassroom.schoolId !== student.classroom?.schoolId) {
+      throw new ForbiddenException("Cannot transfer student to a classroom in a different school");
+    }
+
     await this.transferRepo.save(
       this.transferRepo.create({
         student: { id: studentId },
@@ -200,10 +206,7 @@ export class StudentsService {
 
     await this.studentRepo.update(studentId, { classroom: { id: classroomId } });
 
-    const toClassroom = await this.classroomRepo.findOne({ where: { id: classroomId } });
-    if (toClassroom) {
-      await this.maybeCreateAttestation(student.fullName, toClassroom.grade, student.iin, student.parentName, toClassroom.schoolId ?? undefined);
-    }
+    await this.maybeCreateAttestation(student.fullName, targetClassroom.grade, student.iin, student.parentName, targetClassroom.schoolId ?? undefined);
 
     return this.studentRepo.findOne({ where: { id: studentId }, relations: ["classroom", "classTeacher"] });
   }

@@ -1,8 +1,10 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { SchoolsService } from "./schools.service";
+
+interface ReqUser { user: { id: string; role: string; schoolId?: string | null } }
 
 @Controller("schools")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -11,8 +13,11 @@ export class SchoolsController {
 
   @Get()
   @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
-  findAll() {
-    return this.service.findAllWithStats();
+  findAll(@Req() req: ReqUser) {
+    if (!req.user.schoolId) {
+      return this.service.findAllWithStats();
+    }
+    return this.service.findOneWithStats(req.user.schoolId);
   }
 
   @Post()

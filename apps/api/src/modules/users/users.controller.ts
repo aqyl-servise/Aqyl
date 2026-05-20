@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, ForbiddenException, Get, NotFoundException, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
 import * as bcrypt from "bcryptjs";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
@@ -38,8 +38,13 @@ export class UsersController {
 
   @Get(":id")
   @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
-  findOne(@Param("id") id: string) {
-    return this.teachersService.findById(id);
+  async findOne(@Param("id") id: string, @Req() req: ReqUser) {
+    const targetUser = await this.teachersService.findById(id);
+    if (!targetUser) throw new NotFoundException();
+    if (req.user.role !== "admin" && targetUser.schoolId !== req.user.schoolId) {
+      throw new ForbiddenException("Access denied");
+    }
+    return targetUser;
   }
 
   @Post()

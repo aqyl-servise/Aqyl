@@ -225,6 +225,9 @@ export class FilesController {
   async deleteFile(@Param("id") id: string, @Req() req: ReqUser) {
     const file = await this.fileRepo.findOne({ where: { id }, relations: ["uploadedBy"] });
     if (!file) throw new NotFoundException("File not found");
+    if (!isAdminRole(req.user.role) && file.schoolId && file.schoolId !== req.user.schoolId) {
+      throw new ForbiddenException("Access denied");
+    }
     if (!isAdminRole(req.user.role) && file.uploadedBy?.id !== req.user.id) {
       throw new ForbiddenException("Access denied");
     }
@@ -233,10 +236,11 @@ export class FilesController {
     return { ok: true };
   }
 
-  // ── Serve file (public — UUID is unguessable) ───────────────────────────────
+  // ── Serve file ──────────────────────────────────────────────────────────────
 
   @Get(":filename")
-  serveFile(@Param("filename") filename: string, @Res() res: Response) {
+  @UseGuards(JwtAuthGuard)
+  async serveFile(@Param("filename") filename: string, @Res() res: Response, @Req() req: ReqUser) {
     if (!/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}\.[a-zA-Z0-9]{1,10}$/.test(filename)) {
       return res.status(400).json({ message: "Invalid filename" });
     }
@@ -244,6 +248,10 @@ export class FilesController {
     const filePath = normalize(join(uploadsDir, filename));
     if (!filePath.startsWith(uploadsDir + "/") && !filePath.startsWith(uploadsDir + "\\")) {
       return res.status(400).json({ message: "Invalid filename" });
+    }
+    const file = await this.fileRepo.findOne({ where: { filename } });
+    if (file?.schoolId && file.schoolId !== req.user.schoolId && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
     }
     res.sendFile(filePath);
   }

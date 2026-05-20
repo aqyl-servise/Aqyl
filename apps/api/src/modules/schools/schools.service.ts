@@ -39,6 +39,22 @@ export class SchoolsService {
     return result;
   }
 
+  async findOneWithStats(id: string) {
+    const school = await this.repo.findOne({ where: { id } });
+    if (!school) return [];
+    const userCount = await this.teacherRepo.count({ where: { schoolId: id } });
+    return [{
+      id: school.id,
+      name: school.name,
+      city: school.city ?? null,
+      region: school.region ?? null,
+      code: school.code ?? null,
+      isActive: school.isActive,
+      userCount,
+      createdAt: school.createdAt,
+    }];
+  }
+
   findById(id: string) {
     return this.repo.findOne({ where: { id } });
   }

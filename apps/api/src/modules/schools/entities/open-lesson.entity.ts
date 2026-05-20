@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, Index, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Teacher } from "../../teachers/entities/teacher.entity";
 
 @Entity()
@@ -36,6 +36,7 @@ export class OpenLesson {
   @Column({ default: "planned" })
   status!: "planned" | "conducted" | "analyzed";
 
+  @Index()
   @Column({ nullable: true })
   schoolId?: string;
 

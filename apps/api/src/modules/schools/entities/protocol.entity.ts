@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, Index, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Teacher } from "../../teachers/entities/teacher.entity";
 
 export type ProtocolType = "pedagogical-council" | "parent-meeting" | "educational" | "other";
@@ -23,6 +23,7 @@ export class Protocol {
   @Column({ type: "jsonb", default: "[]" })
   fileUrls!: string[];
 
+  @Index()
   @Column({ nullable: true })
   schoolId?: string;
 

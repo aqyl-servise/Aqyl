@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, Index, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Teacher } from "../../teachers/entities/teacher.entity";
 
 @Entity()
@@ -33,6 +33,7 @@ export class UploadedFile {
   @Column({ nullable: true })
   section?: string;
 
+  @Index()
   @Column({ nullable: true })
   schoolId?: string;
 
