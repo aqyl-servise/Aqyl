@@ -10,6 +10,7 @@ import { GeneratedDocument } from "../schools/entities/generated-document.entity
 import { OpenLesson } from "../schools/entities/open-lesson.entity";
 import { Protocol } from "../schools/entities/protocol.entity";
 import { School } from "../schools/entities/school.entity";
+import { SecurityAuditLog } from "../schools/entities/security-audit-log.entity";
 
 @Injectable()
 export class AdminService {
@@ -22,6 +23,7 @@ export class AdminService {
     @InjectRepository(OpenLesson) private readonly lessonRepo: Repository<OpenLesson>,
     @InjectRepository(Protocol) private readonly protocolRepo: Repository<Protocol>,
     @InjectRepository(School) private readonly schoolRepo: Repository<School>,
+    @InjectRepository(SecurityAuditLog) private readonly auditRepo: Repository<SecurityAuditLog>,
   ) {}
 
   async getOverview(schoolId?: string | null) {
@@ -188,5 +190,14 @@ export class AdminService {
     const passwordHash = await bcrypt.hash(newPassword, 10);
     await this.teacherRepo.update(id, { passwordHash });
     return { ok: true };
+  }
+
+  async getSecurityAuditLog(limit: number, eventType?: string) {
+    const where = eventType ? { eventType } : {};
+    return this.auditRepo.find({
+      where,
+      order: { createdAt: "DESC" },
+      take: limit,
+    });
   }
 }

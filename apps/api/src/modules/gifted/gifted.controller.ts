@@ -4,7 +4,7 @@ import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { GiftedService } from "./gifted.service";
 
-interface ReqUser { user: { id: string; role: string } }
+interface ReqUser { user: { id: string; role: string; schoolId?: string | null } }
 
 @Controller("gifted")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -32,8 +32,8 @@ export class GiftedController {
 
   // ── Gifted students (school-wide) ─────────────────────────────────
   @Get("students")
-  getGiftedStudents(@Query("classroomId") classroomId?: string) {
-    return this.svc.getGiftedStudents(classroomId);
+  getGiftedStudents(@Req() req: ReqUser, @Query("classroomId") classroomId?: string) {
+    return this.svc.getGiftedStudents(classroomId, req.user.schoolId ?? undefined);
   }
 
   @Post("students")

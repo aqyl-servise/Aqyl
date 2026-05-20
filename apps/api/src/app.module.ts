@@ -83,6 +83,8 @@ import { QuestionnairesModule } from "./modules/questionnaires/questionnaires.mo
 import { SocialPedagogueModule } from "./modules/social-pedagogue/social-pedagogue.module";
 import { TeacherNotification } from "./modules/notifications/teacher-notification.entity";
 import { NotificationsModule } from "./modules/notifications/notifications.module";
+import { SecurityAuditLog } from "./modules/schools/entities/security-audit-log.entity";
+import { GuardsModule } from "./guards/guards.module";
 
 @Module({
   imports: [
@@ -115,6 +117,7 @@ import { NotificationsModule } from "./modules/notifications/notifications.modul
           Questionnaire, QuestionnaireResponse,
           NutritionStudent, NutritionOrder, SpecialAttentionStudent,
           TeacherNotification,
+          SecurityAuditLog,
         ],
       }),
     }),
@@ -161,6 +164,7 @@ import { NotificationsModule } from "./modules/notifications/notifications.modul
     QuestionnairesModule,
     SocialPedagogueModule,
     NotificationsModule,
+    GuardsModule,
   ],
   providers: [
     SeedService,

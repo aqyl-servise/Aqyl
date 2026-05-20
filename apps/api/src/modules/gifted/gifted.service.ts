@@ -50,7 +50,7 @@ export class GiftedService {
   }
 
   // ── Gifted students (school-wide list) ──────────────────────────────
-  async getGiftedStudents(classroomId?: string) {
+  async getGiftedStudents(classroomId?: string, schoolId?: string) {
     const qb = this.giftedStudentRepo
       .createQueryBuilder("gs")
       .leftJoinAndSelect("gs.student", "student")
@@ -60,6 +60,8 @@ export class GiftedService {
 
     if (classroomId) {
       qb.where("classroom.id = :classroomId", { classroomId });
+    } else if (schoolId) {
+      qb.where("classroom.schoolId = :schoolId", { schoolId });
     }
     return qb.getMany();
   }

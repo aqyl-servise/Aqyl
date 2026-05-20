@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Query, Req, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -67,5 +67,14 @@ export class AdminController {
   @Roles("admin")
   changeUserPassword(@Param("id") id: string, @Body() body: { newPassword: string }, @Req() req: ReqUser) {
     return this.service.changeUserPassword(id, req.user.id, body?.newPassword ?? "");
+  }
+
+  @Get("security-audit")
+  @Roles("admin")
+  getSecurityAuditLog(
+    @Query("limit") limit = 50,
+    @Query("eventType") eventType?: string,
+  ) {
+    return this.service.getSecurityAuditLog(+limit, eventType);
   }
 }
