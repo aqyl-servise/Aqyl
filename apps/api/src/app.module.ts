@@ -85,6 +85,9 @@ import { TeacherNotification } from "./modules/notifications/teacher-notificatio
 import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { SecurityAuditLog } from "./modules/schools/entities/security-audit-log.entity";
 import { GuardsModule } from "./guards/guards.module";
+import { SchoolTokenPackage } from "./modules/tokens/entities/school-token-package.entity";
+import { TokenTransaction } from "./modules/tokens/entities/token-transaction.entity";
+import { TokensModule } from "./modules/tokens/tokens.module";
 
 @Module({
   imports: [
@@ -118,6 +121,7 @@ import { GuardsModule } from "./guards/guards.module";
           NutritionStudent, NutritionOrder, SpecialAttentionStudent,
           TeacherNotification,
           SecurityAuditLog,
+          SchoolTokenPackage, TokenTransaction,
         ],
       }),
     }),
@@ -165,6 +169,7 @@ import { GuardsModule } from "./guards/guards.module";
     SocialPedagogueModule,
     NotificationsModule,
     GuardsModule,
+    TokensModule,
   ],
   providers: [
     SeedService,

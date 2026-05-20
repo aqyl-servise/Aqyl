@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Optional } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { ILike, In, MoreThanOrEqual, Repository } from "typeorm";
 import * as XLSX from "xlsx";
@@ -11,6 +11,7 @@ import { FLSubmission } from "../schools/entities/fl-submission.entity";
 import { Teacher } from "../teachers/entities/teacher.entity";
 import { AiClientService } from "../../services/ai-client.service";
 import { buildPrompt } from "../../utils/prompt-builder";
+import { TokenService } from "../tokens/token.service";
 
 type AnalyticsRow = {
   student: string; classroom: string; topic: string; score: number; maxScore: number;
@@ -34,6 +35,7 @@ export class AnalyticsService {
     @InjectRepository(Teacher)
     private readonly teacherRepo: Repository<Teacher>,
     private readonly aiClientService: AiClientService,
+    @Optional() private readonly tokenService?: TokenService,
   ) {}
 
   // ── Existing Excel upload ────────────────────────────────────────────────
@@ -322,7 +324,7 @@ export class AnalyticsService {
   }
 
   // ── AI analysis ──────────────────────────────────────────────────────────
-  async aiAnalyze(stats: unknown): Promise<{ analysis: string }> {
+  async aiAnalyze(stats: unknown, userCtx?: { schoolId?: string | null; userId?: string | null }): Promise<{ analysis: string }> {
     if (!this.aiClientService.isConfigured) {
       return { analysis: "ИИ-анализ недоступен. Проверьте настройку ANTHROPIC_API_KEY." };
     }
@@ -339,6 +341,16 @@ export class AnalyticsService {
       systemPrompt,
       messages: [{ role: "user", content: "Выполни анализ." }],
     });
+
+    this.tokenService?.deductTokens({
+      schoolId: userCtx?.schoolId,
+      userId: userCtx?.userId,
+      inputTokens: result.tokensIn,
+      outputTokens: result.tokensOut,
+      actionType: "analytics_ai",
+      model: result.model,
+      costUsd: this.tokenService.calculateCost({ input_tokens: result.tokensIn, output_tokens: result.tokensOut }, result.model),
+    }).catch(() => {});
 
     return { analysis: result.content || "Не удалось получить ответ." };
   }

@@ -24,6 +24,6 @@ export class GeneratorsController {
     @Req() req: ReqUser,
     @Body() body: GenerateTaskSetDto,
   ) {
-    return this.generatorsService.generateTaskSet(req.user.id, body);
+    return this.generatorsService.generateTaskSet(req.user.id, body, req.user.schoolId);
   }
 }

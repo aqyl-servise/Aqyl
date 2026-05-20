@@ -8,6 +8,7 @@ type TeacherRow = { userId: string; teacherName: string; subject: string; todayC
 type ChartPoint = { date: string; totalCount: number; totalCostKzt: number };
 type MostActive = { teacherName: string; count: number } | null;
 type CacheStats = { totalEntries: number; hitRate: number; tokensSaved: number; mostUsed: Array<{ subject: string; classNumber: number; topic: string; useCount: number }> } | null;
+type TokenStatus = { hasTokens: boolean; remaining: number; total: number; usedPercent: number } | null;
 
 export function AiUsagePanelAdmin({ token, language, role }: { token: string; language: Language; role?: string }) {
   const t = translations[language];
@@ -17,6 +18,7 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
   const [chart, setChart] = useState<ChartPoint[]>([]);
   const [mostActive, setMostActive] = useState<MostActive>(null);
   const [cacheStats, setCacheStats] = useState<CacheStats>(null);
+  const [tokenStatus, setTokenStatus] = useState<TokenStatus>(null);
   const [clearing, setClearing] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -28,6 +30,7 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
       api.getAiUsageChart(token, 30).then(setChart).catch(() => {}),
       api.getAiMostActive(token).then(setMostActive).catch(() => {}),
       api.getKmzhCacheStats(token).then(setCacheStats).catch(() => {}),
+      api.getTokenStatus(token).then(setTokenStatus).catch(() => {}),
     ]).finally(() => setLoading(false));
   }, [token, period]);
 
@@ -47,9 +50,39 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
 
   const maxCount = chart.length > 0 ? Math.max(...chart.map((p) => p.totalCount), 1) : 1;
 
+  const tokenPct = tokenStatus?.usedPercent ?? 0;
+  const tokenColor = tokenPct >= 80 ? "#dc2626" : tokenPct >= 60 ? "#d97706" : "#16a34a";
+  const isPilot = tokenStatus && tokenStatus.total >= 999999;
+
   return (
     <div style={{ padding: "24px", maxWidth: 1100 }}>
       <h2 style={{ margin: "0 0 20px", fontSize: 22 }}>🤖 {t.nav_ai_usage}</h2>
+
+      {/* Token package status card */}
+      <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "16px 20px", marginBottom: 24 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <span style={{ fontWeight: 600, fontSize: 15 }}>🎯 Токены школы</span>
+          {loading ? (
+            <span style={{ color: "#94a3b8" }}>Загрузка...</span>
+          ) : isPilot ? (
+            <span style={{ color: "#16a34a", fontWeight: 600 }}>Неограниченно (пилот)</span>
+          ) : tokenStatus ? (
+            <span style={{ color: tokenColor, fontWeight: 600 }}>{tokenStatus.usedPercent}% использовано</span>
+          ) : null}
+        </div>
+        {!loading && tokenStatus && !isPilot && (
+          <>
+            <div style={{ background: "#e2e8f0", borderRadius: 6, height: 8, overflow: "hidden", marginBottom: 6 }}>
+              <div style={{ width: `${Math.min(tokenStatus.usedPercent, 100)}%`, height: "100%", background: tokenColor, borderRadius: 6, transition: "width 0.3s" }} />
+            </div>
+            <div style={{ color: "#64748b", fontSize: 13 }}>
+              Использовано {(tokenStatus.total - tokenStatus.remaining).toLocaleString()} / {tokenStatus.total.toLocaleString()} токенов
+              &nbsp;·&nbsp;
+              {!tokenStatus.hasTokens ? <span style={{ color: "#dc2626", fontWeight: 600 }}>Токены исчерпаны!</span> : `Осталось ${tokenStatus.remaining.toLocaleString()}`}
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Period selector */}
       <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>

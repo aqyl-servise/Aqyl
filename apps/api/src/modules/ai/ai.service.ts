@@ -2,6 +2,7 @@ import { HttpException, HttpStatus, Injectable, Optional } from "@nestjs/common"
 import { AiUsageService, UserContext } from "../ai-usage/ai-usage.service";
 import { AiClientService } from "../../services/ai-client.service";
 import { buildPrompt } from "../../utils/prompt-builder";
+import { TokenService } from "../tokens/token.service";
 
 
 const GENERATION_PROMPT = `Ты — AI-ассистент образовательной платформы Aqyl для казахстанских школ.
@@ -12,6 +13,7 @@ export class AiChatService {
   constructor(
     private readonly aiClientService: AiClientService,
     @Optional() private readonly aiUsageService: AiUsageService,
+    @Optional() private readonly tokenService: TokenService,
   ) {}
 
   private async checkLimit(userCtx: UserContext | undefined, actionType: string) {
@@ -58,6 +60,15 @@ export class AiChatService {
     });
 
     await this.recordUsage(userCtx, "chat", { input_tokens: result.tokensIn, output_tokens: result.tokensOut });
+    this.tokenService?.deductTokens({
+      schoolId: userCtx?.schoolId,
+      userId: userCtx?.userId,
+      inputTokens: result.tokensIn,
+      outputTokens: result.tokensOut,
+      actionType: "assistant_chat",
+      model: result.model,
+      costUsd: this.tokenService.calculateCost({ input_tokens: result.tokensIn, output_tokens: result.tokensOut }, result.model),
+    }).catch(() => {});
 
     return {
       reply: result.content || "Не удалось получить ответ.",
@@ -82,6 +93,15 @@ export class AiChatService {
     });
 
     await this.recordUsage(userCtx, "generate_assignment", { input_tokens: result.tokensIn, output_tokens: result.tokensOut });
+    this.tokenService?.deductTokens({
+      schoolId: userCtx?.schoolId,
+      userId: userCtx?.userId,
+      inputTokens: result.tokensIn,
+      outputTokens: result.tokensOut,
+      actionType: "task_generate",
+      model: result.model,
+      costUsd: this.tokenService.calculateCost({ input_tokens: result.tokensIn, output_tokens: result.tokensOut }, result.model),
+    }).catch(() => {});
 
     return {
       content: result.content,
@@ -120,6 +140,15 @@ export class AiChatService {
     });
 
     await this.recordUsage(userCtx, "fl_task", { input_tokens: result.tokensIn, output_tokens: result.tokensOut });
+    this.tokenService?.deductTokens({
+      schoolId: userCtx?.schoolId,
+      userId: userCtx?.userId,
+      inputTokens: result.tokensIn,
+      outputTokens: result.tokensOut,
+      actionType: "fl_task_generate",
+      model: result.model,
+      costUsd: this.tokenService.calculateCost({ input_tokens: result.tokensIn, output_tokens: result.tokensOut }, result.model),
+    }).catch(() => {});
 
     const raw = result.content || "{}";
     try {
@@ -152,6 +181,15 @@ export class AiChatService {
     });
 
     await this.recordUsage(userCtx, "generate_kmzh", { input_tokens: result.tokensIn, output_tokens: result.tokensOut });
+    this.tokenService?.deductTokens({
+      schoolId: userCtx?.schoolId,
+      userId: userCtx?.userId,
+      inputTokens: result.tokensIn,
+      outputTokens: result.tokensOut,
+      actionType: "kmzh_generate",
+      model: result.model,
+      costUsd: this.tokenService.calculateCost({ input_tokens: result.tokensIn, output_tokens: result.tokensOut }, result.model),
+    }).catch(() => {});
 
     return {
       content: result.content,

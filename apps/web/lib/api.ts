@@ -621,6 +621,12 @@ export const api = {
   clearKmzhCache: (token: string, body: { subject?: string; classNumber?: number }) =>
     request<{ ok: boolean }>("/kmzh-cache", { method: "DELETE", body: JSON.stringify(body) }, token),
 
+  // Token packages
+  getTokenStatus: (token: string) =>
+    request<{ hasTokens: boolean; remaining: number; total: number; usedPercent: number }>("/tokens/status", undefined, token),
+  getTokenUsage: (token: string, days?: number) =>
+    request<{ byAction: unknown[]; byDay: unknown[]; package: unknown }>(`/tokens/usage${days ? `?days=${days}` : ""}`, undefined, token),
+
   // Student portal
   getStudentMe: (token: string) =>
     request<StudentRow>("/student/me", undefined, token),

@@ -6,6 +6,7 @@ import { KmzhCacheService } from "../kmzh-cache/kmzh-cache.service";
 import { GenerateLessonPlanDto } from "./dto/generate-lesson-plan.dto";
 import { GenerateTaskSetDto } from "./dto/generate-task-set.dto";
 import { AiService } from "./ai.service";
+import { TokenService } from "../tokens/token.service";
 
 @Injectable()
 export class GeneratorsService {
@@ -14,12 +15,14 @@ export class GeneratorsService {
     @InjectRepository(GeneratedDocument)
     private readonly generatedDocumentRepository: Repository<GeneratedDocument>,
     @Optional() private readonly kmzhCacheService?: KmzhCacheService,
+    @Optional() private readonly tokenService?: TokenService,
   ) {}
 
   async generateLessonPlan(teacherId: string, schoolId: string | undefined, input: GenerateLessonPlanDto) {
     let payload: Record<string, unknown>;
     let fromCache = false;
     let useCount: number | undefined;
+    const userCtx = { schoolId, userId: teacherId };
 
     if (this.kmzhCacheService) {
       try {
@@ -33,16 +36,23 @@ export class GeneratorsService {
             schoolId,
             bypassCache: input.bypassCache ?? false,
           },
-          () => this.aiService.generateLessonPlan(input),
+          () => this.aiService.generateLessonPlan(input, userCtx),
         );
         payload = result.content;
         fromCache = result.fromCache;
         useCount = result.useCount;
+        if (fromCache) {
+          this.tokenService?.deductTokens({
+            schoolId, userId: teacherId,
+            inputTokens: 0, outputTokens: 0,
+            actionType: "kmzh_generate", model: "cache", fromCache: true,
+          }).catch(() => {});
+        }
       } catch {
-        payload = await this.aiService.generateLessonPlan(input);
+        payload = await this.aiService.generateLessonPlan(input, userCtx);
       }
     } else {
-      payload = await this.aiService.generateLessonPlan(input);
+      payload = await this.aiService.generateLessonPlan(input, userCtx);
     }
 
     const document = this.generatedDocumentRepository.create({
@@ -62,8 +72,8 @@ export class GeneratorsService {
     };
   }
 
-  async generateTaskSet(teacherId: string, input: GenerateTaskSetDto) {
-    const payload = await this.aiService.generateTaskSet(input);
+  async generateTaskSet(teacherId: string, input: GenerateTaskSetDto, schoolId?: string) {
+    const payload = await this.aiService.generateTaskSet(input, { schoolId, userId: teacherId });
     const document = this.generatedDocumentRepository.create({
       teacher: { id: teacherId },
       type: "task-set",

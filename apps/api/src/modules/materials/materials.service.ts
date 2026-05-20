@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, Optional } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { join } from "path";
@@ -6,6 +6,7 @@ import { existsSync, mkdirSync, writeFileSync, unlinkSync } from "fs";
 import { AiClientService } from "../../services/ai-client.service";
 import { GeneratedPresentation } from "../schools/entities/generated-presentation.entity";
 import { GeneratedIllustration } from "../schools/entities/generated-illustration.entity";
+import { TokenService } from "../tokens/token.service";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const PptxGenJS = require("pptxgenjs") as new () => PptxInstance;
@@ -43,6 +44,7 @@ export class MaterialsService {
     @InjectRepository(GeneratedIllustration)
     private readonly illusRepo: Repository<GeneratedIllustration>,
     private readonly aiClientService: AiClientService,
+    @Optional() private readonly tokenService?: TokenService,
   ) {
     this.presentationsDir = join(process.cwd(), "uploads", "presentations");
     this.illustrationsDir = join(process.cwd(), "uploads", "illustrations");
@@ -100,6 +102,16 @@ Return ONLY a JSON array of slides, no other text, no markdown code blocks:
         if (slide.speakerNotes) s.addNotes(slide.speakerNotes);
       }
 
+      this.tokenService?.deductTokens({
+        schoolId,
+        userId: teacherId,
+        inputTokens: result.tokensIn,
+        outputTokens: result.tokensOut,
+        actionType: "presentation_generate",
+        model: result.model,
+        costUsd: this.tokenService.calculateCost({ input_tokens: result.tokensIn, output_tokens: result.tokensOut }, result.model),
+      }).catch(() => {});
+
       const fileUrl = `uploads/presentations/${record.id}.pptx`;
       const buf = await pptx.write({ outputType: "nodebuffer" });
       writeFileSync(join(process.cwd(), fileUrl), buf as Buffer);
@@ -136,6 +148,16 @@ Use viewBox="0 0 800 600". Include proper colors and labels in Russian.`;
         }],
         maxTokens: 3000,
       });
+
+      this.tokenService?.deductTokens({
+        schoolId,
+        userId: teacherId,
+        inputTokens: result.tokensIn,
+        outputTokens: result.tokensOut,
+        actionType: "presentation_generate",
+        model: result.model,
+        costUsd: this.tokenService.calculateCost({ input_tokens: result.tokensIn, output_tokens: result.tokensOut }, result.model),
+      }).catch(() => {});
 
       let svgContent = result.content.trim();
       const svgMatch = svgContent.match(/<svg[\s\S]*<\/svg>/i);

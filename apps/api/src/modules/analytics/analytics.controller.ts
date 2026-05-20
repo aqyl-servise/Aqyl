@@ -61,7 +61,7 @@ export class AnalyticsController {
   @Post("ai-analyze")
   @UseGuards(RolesGuard)
   @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
-  aiAnalyze(@Body() body: Record<string, unknown>) {
-    return this.analyticsService.aiAnalyze(body);
+  aiAnalyze(@Body() body: Record<string, unknown>, @Req() req: ReqUser) {
+    return this.analyticsService.aiAnalyze(body, { schoolId: req.user.schoolId, userId: req.user.id });
   }
 }

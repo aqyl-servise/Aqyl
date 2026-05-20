@@ -1,14 +1,20 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Optional } from "@nestjs/common";
 import { AiClientService } from "../../services/ai-client.service";
 import { buildPrompt } from "../../utils/prompt-builder";
 import { GenerateLessonPlanDto } from "./dto/generate-lesson-plan.dto";
 import { GenerateTaskSetDto } from "./dto/generate-task-set.dto";
+import { TokenService } from "../tokens/token.service";
+
+interface UserCtx { schoolId?: string | null; userId?: string | null }
 
 @Injectable()
 export class AiService {
-  constructor(private readonly aiClientService: AiClientService) {}
+  constructor(
+    private readonly aiClientService: AiClientService,
+    @Optional() private readonly tokenService?: TokenService,
+  ) {}
 
-  async generateLessonPlan(input: GenerateLessonPlanDto) {
+  async generateLessonPlan(input: GenerateLessonPlanDto, userCtx?: UserCtx) {
     if (!this.aiClientService.isConfigured) return this.buildFallbackLessonPlan(input);
 
     try {
@@ -33,13 +39,23 @@ Respond ONLY with valid JSON, no markdown, no extra text. Keys: title, subject, 
         ],
       });
 
+      this.tokenService?.deductTokens({
+        schoolId: userCtx?.schoolId,
+        userId: userCtx?.userId,
+        inputTokens: result.tokensIn,
+        outputTokens: result.tokensOut,
+        actionType: "kmzh_generate",
+        model: result.model,
+        costUsd: this.tokenService.calculateCost({ input_tokens: result.tokensIn, output_tokens: result.tokensOut }, result.model),
+      }).catch(() => {});
+
       return JSON.parse(result.content);
     } catch {
       return this.buildFallbackLessonPlan(input);
     }
   }
 
-  async generateTaskSet(input: GenerateTaskSetDto) {
+  async generateTaskSet(input: GenerateTaskSetDto, userCtx?: UserCtx) {
     if (!this.aiClientService.isConfigured) return this.buildFallbackTaskSet(input);
 
     try {
@@ -64,6 +80,16 @@ Respond ONLY with valid JSON, no markdown, no extra text. Keys: title, topic, ty
           },
         ],
       });
+
+      this.tokenService?.deductTokens({
+        schoolId: userCtx?.schoolId,
+        userId: userCtx?.userId,
+        inputTokens: result.tokensIn,
+        outputTokens: result.tokensOut,
+        actionType: "task_generate",
+        model: result.model,
+        costUsd: this.tokenService.calculateCost({ input_tokens: result.tokensIn, output_tokens: result.tokensOut }, result.model),
+      }).catch(() => {});
 
       return JSON.parse(result.content);
     } catch {
