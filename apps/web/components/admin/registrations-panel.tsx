@@ -17,10 +17,19 @@ type SchoolOption = { id: string; name: string };
 
 const ROLE_LABELS: Record<string, string> = {
   teacher: "Учитель", class_teacher: "Классный руководитель",
-  vice_principal: "Завуч", principal: "Директор", student: "Ученик",
+  admin: "Администратор", principal: "Директор",
+  vice_principal: "Завуч",
+  vice_principal_academic: "Завуч по учебной части",
+  vice_principal_education: "Завуч по воспитательной части",
+  psychologist: "Психолог", social_pedagogue: "Соц. педагог",
+  student: "Ученик",
 };
 
-const SCHOOL_ROLES = new Set(["teacher", "principal", "vice_principal", "class_teacher"]);
+const SCHOOL_ROLES = new Set([
+  "teacher", "class_teacher", "principal",
+  "vice_principal", "vice_principal_academic", "vice_principal_education",
+  "psychologist", "social_pedagogue",
+]);
 
 export function RegistrationsPanel({ token, language, t }: {
   token: string; language: Language; t: Record<string, string>;
