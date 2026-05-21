@@ -83,7 +83,10 @@
       "PowerShell(Set-Location \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\web\" && npx tsc --noEmit 2>&1; Write-Host \"Exit: $LASTEXITCODE\")",
       "Bash(dir \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\web\\\\lib\")",
       "Bash(powershell *)",
-      "Bash(Test-Path \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\api\\\\src\\\\guards\")"
+      "Bash(Test-Path \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\api\\\\src\\\\guards\")",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\api\\\\src\\\\modules\" -Recurse | Where-Object { $_.PSIsContainer } | Select-Object -ExpandProperty FullName | ForEach-Object { $_ -replace [regex]::Escape\\(\"C:\\\\Users\\\\MI\\\\aqyl-teacher\"\\), \".\" })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\api\\\\src\\\\modules\" -Recurse -File | Select-Object -ExpandProperty FullName | ForEach-Object { $_ -replace [regex]::Escape\\(\"C:\\\\Users\\\\MI\\\\aqyl-teacher\"\\), \".\" } | Sort-Object)",
+      "Bash(xargs head -20)"
     ]
   }
 }

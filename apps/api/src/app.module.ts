@@ -74,6 +74,10 @@ import { KmzhCacheModule } from "./modules/kmzh-cache/kmzh-cache.module";
 import { GeneratedPresentation } from "./modules/schools/entities/generated-presentation.entity";
 import { GeneratedIllustration } from "./modules/schools/entities/generated-illustration.entity";
 import { MaterialsModule } from "./modules/materials/materials.module";
+import { KmzhModule } from "./modules/kmzh/kmzh.module";
+import { KmzhStageCache } from "./modules/kmzh/entities/kmzh-stage-cache.entity";
+import { KmzhGenerationSession } from "./modules/kmzh/entities/kmzh-generation-session.entity";
+import { KmzhSaved } from "./modules/kmzh/entities/kmzh-saved.entity";
 import { Questionnaire } from "./modules/schools/entities/questionnaire.entity";
 import { QuestionnaireResponse } from "./modules/schools/entities/questionnaire-response.entity";
 import { NutritionStudent } from "./modules/schools/entities/nutrition-student.entity";
@@ -117,6 +121,7 @@ import { TokensModule } from "./modules/tokens/tokens.module";
           TeacherRating, TeacherViolation,
           AiUsageDaily, AiUsageAlert,
           KmzhCache, KmzhCacheHit,
+          KmzhStageCache, KmzhGenerationSession, KmzhSaved,
           GeneratedPresentation, GeneratedIllustration,
           Questionnaire, QuestionnaireResponse,
           NutritionStudent, NutritionOrder, SpecialAttentionStudent,
@@ -165,6 +170,7 @@ import { TokensModule } from "./modules/tokens/tokens.module";
     RatingModule,
     AiUsageModule,
     KmzhCacheModule,
+    KmzhModule,
     MaterialsModule,
     QuestionnairesModule,
     SocialPedagogueModule,

@@ -17,6 +17,7 @@ import { SorSochPanel } from "./sor-soch-panel";
 import { FLTeacherPanel } from "./fl-panel";
 import { MyRatingPanel } from "./my-rating-panel";
 import { MaterialsPanel } from "./materials-panel";
+import { KmzhPanel } from "./kmzh-panel";
 
 const CONTACT_WHATSAPP = "77000000000";
 const CONTACT_EMAIL = "support@aqyl.kz";
@@ -232,6 +233,7 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
     { key: "fl", label: t.nav_fl ?? "Функц. грамотность", icon: "📚" },
     { key: "my-rating", label: t.nav_my_rating ?? "Мой рейтинг", icon: "🏆" },
     { key: "sor-soch", label: t.nav_sor_soch ?? "СОР/СОЧ", icon: "📄" },
+    { key: "kmzh-generator", label: t.nav_kmzh ?? "КМЖ Генератор", icon: "📋" },
   ];
 
   function handleNav(key: string) {
@@ -283,6 +285,7 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
       {section === "fl" && <FLTeacherPanel token={token} language={language} />}
       {section === "my-rating" && <MyRatingPanel token={token} language={language} />}
       {section === "sor-soch" && <SorSochPanel token={token} language={language} t={t} />}
+      {section === "kmzh-generator" && <KmzhPanel token={token} language={language} teacher={user} />}
     </AppLayout>
   );
 }

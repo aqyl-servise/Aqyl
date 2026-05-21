@@ -908,4 +908,16 @@ export const api = {
     request<Array<{ id: string; title: string; description?: string; status: string; myResponse: { id: string; submittedAt?: string } | null; createdAt: string }>>("/student/questionnaires", undefined, token),
   submitStudentQuestionnaire: (token: string, id: string, answers: unknown) =>
     request<{ id: string }>(`/student/questionnaires/${id}/respond`, { method: "POST", body: JSON.stringify({ answers }) }, token),
+
+  // KMZh — lesson plan generator
+  generateKmzh: (token: string, data: Record<string, unknown>) =>
+    request<unknown>("/kmzh/generate", { method: "POST", body: JSON.stringify(data) }, token),
+  regenerateKmzh: (token: string, data: Record<string, unknown>) =>
+    request<unknown>("/kmzh/regenerate", { method: "POST", body: JSON.stringify(data) }, token),
+  saveKmzh: (token: string, data: Record<string, unknown>) =>
+    request<{ id: string }>("/kmzh/save", { method: "POST", body: JSON.stringify(data) }, token),
+  getMySavedKmzh: (token: string) =>
+    request<Array<{ id: string; lessonTitle?: string; grade?: string; date?: string; createdAt: string }>>("/kmzh/saved", undefined, token),
+  getAdalaAzamatValues: (token: string, month: string, lang: string) =>
+    request<{ value: string } | Record<string, string>>(`/kmzh/values/${month}?lang=${lang}`, undefined, token),
 };
