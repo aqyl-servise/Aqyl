@@ -920,4 +920,12 @@ export const api = {
     request<Array<{ id: string; lessonTitle?: string; grade?: string; date?: string; createdAt: string }>>("/kmzh/saved", undefined, token),
   getAdalaAzamatValues: (token: string, month: string, lang: string) =>
     request<{ value: string } | Record<string, string>>(`/kmzh/values/${month}?lang=${lang}`, undefined, token),
+
+  // Malimet — class report generator
+  malimetPrefill: (token: string, quarter: number) =>
+    request<{ classroomId: string; academicYear: string }>("/malimet/prefill?quarter=" + quarter, undefined, token),
+  saveMalimet: (token: string, data: Record<string, unknown>) =>
+    request<{ id: string }>("/malimet/save", { method: "POST", body: JSON.stringify(data) }, token),
+  getMalimetList: (token: string, classroomId?: string) =>
+    request<Array<{ id: string; quarter: number; academicYear: string; lang: string; createdAt: string }>>("/malimet/list" + (classroomId ? "?classroomId=" + classroomId : ""), undefined, token),
 };

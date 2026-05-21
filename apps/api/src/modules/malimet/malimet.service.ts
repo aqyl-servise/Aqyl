@@ -277,8 +277,9 @@ export class MalimetService {
     });
 
     if (existing) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await this.repo.update(existing.id, {
-        formData: dto.formData,
+        formData: dto.formData as any,
         updatedAt: new Date(),
       });
       return this.repo.findOne({ where: { id: existing.id } });
@@ -290,7 +291,7 @@ export class MalimetService {
       teacherId,
       quarter: dto.formData.quarter,
       academicYear: dto.formData.academicYear,
-      formData: dto.formData,
+      formData: dto.formData as unknown as Record<string, unknown>,
       lang: dto.lang,
     });
   }

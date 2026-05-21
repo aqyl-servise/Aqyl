@@ -93,6 +93,7 @@ import { SchoolIsolationGuard } from "./guards/school-isolation.guard";
 import { SchoolTokenPackage } from "./modules/tokens/entities/school-token-package.entity";
 import { TokenTransaction } from "./modules/tokens/entities/token-transaction.entity";
 import { TokensModule } from "./modules/tokens/tokens.module";
+import { MalimetModule } from "./modules/malimet/malimet.module";
 
 @Module({
   imports: [
@@ -177,6 +178,7 @@ import { TokensModule } from "./modules/tokens/tokens.module";
     NotificationsModule,
     GuardsModule,
     TokensModule,
+    MalimetModule,
   ],
   providers: [
     SeedService,
