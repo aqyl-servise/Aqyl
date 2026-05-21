@@ -14,13 +14,13 @@ export class KmzhController {
 
   @Post('generate')
   @Roles('teacher', 'class_teacher', 'principal', 'admin')
-  async generate(@Body() dto: KmzhGenerateDto, @Req() req) {
+  async generate(@Body() dto: KmzhGenerateDto, @Req() req: { user: { sub: string; schoolId: string } }) {
     return this.kmzhService.generate(dto, req.user.sub, req.user.schoolId);
   }
 
   @Post('regenerate')
   @Roles('teacher', 'class_teacher', 'principal', 'admin')
-  async regenerate(@Body() dto: KmzhRegenerateDto, @Req() req) {
+  async regenerate(@Body() dto: KmzhRegenerateDto, @Req() req: { user: { sub: string; schoolId: string } }) {
     return this.kmzhService.regenerate(
       dto.sessionId, dto.kmzhInput, req.user.sub, req.user.schoolId
     );
@@ -28,13 +28,13 @@ export class KmzhController {
 
   @Post('save')
   @Roles('teacher', 'class_teacher')
-  async save(@Body() dto: KmzhSaveDto, @Req() req) {
+  async save(@Body() dto: KmzhSaveDto, @Req() req: { user: { sub: string; schoolId: string } }) {
     return this.kmzhService.save(dto, req.user.sub, req.user.schoolId);
   }
 
   @Get('saved')
   @Roles('teacher', 'class_teacher')
-  async getMySaved(@Req() req) {
+  async getMySaved(@Req() req: { user: { sub: string; schoolId: string } }) {
     return this.kmzhService.getMySaved(req.user.sub, req.user.schoolId);
   }
 

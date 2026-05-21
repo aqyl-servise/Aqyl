@@ -1,4 +1,4 @@
-import { Injectable, TooManyRequestsException } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { KmzhGenerationSession } from './entities/kmzh-generation-session.entity';
@@ -33,8 +33,9 @@ export class KmzhSessionService {
     const session = await this.sessionRepo.findOne({ where: { id: sessionId } });
     if (!session) throw new Error('Session not found');
     if (session.regenCount >= MAX_REGENERATIONS) {
-      throw new TooManyRequestsException(
-        'Максимальное количество перегенераций исчерпано (3/3)'
+      throw new HttpException(
+        'Максимальное количество перегенераций исчерпано (3/3)',
+        HttpStatus.TOO_MANY_REQUESTS,
       );
     }
     await this.sessionRepo.update(session.id, {
