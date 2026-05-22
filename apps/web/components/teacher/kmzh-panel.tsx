@@ -281,7 +281,7 @@ export function KmzhPanel({
         grade: form.grade,
         date: form.date,
       });
-      setSaveMsg("✓ " + (t.kmzh_save ?? "Сохранено"));
+      setSaveMsg("✓ " + t.success_saved);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -323,68 +323,68 @@ export function KmzhPanel({
         {/* ── LEFT: Input form ─────────────────────────────── */}
         <div style={{ flex: "0 0 360px", minWidth: 300, maxWidth: 400 }}>
           <div className="card" style={{ padding: "16px 14px" }}>
-            <h3 style={{ marginBottom: 14, fontSize: 14 }}>Параметры урока</h3>
+            <h3 style={{ marginBottom: 14, fontSize: 14 }}>{t.kmzh_params_title}</h3>
 
             <div style={fieldGroup}>
-              <label style={inputLabel}>Язык / Тіл / Language</label>
+              <label style={inputLabel}>{t.kmzh_lang_label}</label>
               <select
                 className="input"
                 value={form.lang}
                 onChange={e => setField("lang", e.target.value as "kz" | "ru" | "en")}
               >
-                <option value="ru">Русский (RU)</option>
-                <option value="kz">Қазақша (KZ)</option>
-                <option value="en">English (EN)</option>
+                <option value="ru">{t.kmzh_lang_ru}</option>
+                <option value="kz">{t.kmzh_lang_kz}</option>
+                <option value="en">{t.kmzh_lang_en}</option>
               </select>
             </div>
 
             <div style={fieldGroup}>
-              <label style={inputLabel}>ФИО учителя</label>
+              <label style={inputLabel}>{t.kmzh_teacher_name}</label>
               <input className="input" value={form.teacherName} onChange={e => setField("teacherName", e.target.value)} />
             </div>
 
             <div style={{ display: "flex", gap: 8 }}>
               <div style={{ ...fieldGroup, flex: 1 }}>
-                <label style={inputLabel}>Дата</label>
+                <label style={inputLabel}>{t.date}</label>
                 <input type="date" className="input" value={form.date} onChange={e => setField("date", e.target.value)} />
               </div>
               <div style={{ ...fieldGroup, width: 80 }}>
-                <label style={inputLabel}>Класс</label>
+                <label style={inputLabel}>{t.grade}</label>
                 <input className="input" placeholder="7А" value={form.grade} onChange={e => setField("grade", e.target.value)} />
               </div>
             </div>
 
             <div style={{ display: "flex", gap: 8 }}>
               <div style={{ ...fieldGroup, flex: 1 }}>
-                <label style={inputLabel}>№ урока</label>
+                <label style={inputLabel}>{t.kmzh_lesson_number}</label>
                 <input className="input" placeholder="15" value={form.lessonNumber} onChange={e => setField("lessonNumber", e.target.value)} />
               </div>
               <div style={{ ...fieldGroup, width: 80 }}>
-                <label style={inputLabel}>Присут.</label>
+                <label style={inputLabel}>{t.kmzh_present}</label>
                 <input type="number" className="input" value={form.presentCount} onChange={e => setField("presentCount", Number(e.target.value))} />
               </div>
               <div style={{ ...fieldGroup, width: 72 }}>
-                <label style={inputLabel}>Отсут.</label>
+                <label style={inputLabel}>{t.kmzh_absent}</label>
                 <input type="number" className="input" value={form.absentCount} onChange={e => setField("absentCount", Number(e.target.value))} />
               </div>
             </div>
 
             <div style={fieldGroup}>
-              <label style={inputLabel}>Тема раздела</label>
-              <input className="input" placeholder="Напр: Мир природы" value={form.unitTopic} onChange={e => setField("unitTopic", e.target.value)} />
+              <label style={inputLabel}>{t.kmzh_unit_topic}</label>
+              <input className="input" placeholder={t.kmzh_unit_topic_placeholder} value={form.unitTopic} onChange={e => setField("unitTopic", e.target.value)} />
             </div>
 
             <div style={fieldGroup}>
-              <label style={inputLabel}>Предмет / Название урока</label>
-              <input className="input" placeholder="Напр: Математика" value={form.lessonTitle} onChange={e => setField("lessonTitle", e.target.value)} />
+              <label style={inputLabel}>{t.kmzh_lesson_title}</label>
+              <input className="input" placeholder={t.kmzh_lesson_title_placeholder} value={form.lessonTitle} onChange={e => setField("lessonTitle", e.target.value)} />
             </div>
 
             <div style={fieldGroup}>
-              <label style={inputLabel}>Цели обучения (основной AI-ввод)</label>
+              <label style={inputLabel}>{t.kmzh_learning_objectives}</label>
               <textarea
                 className="input"
                 style={{ minHeight: 100, resize: "vertical" }}
-                placeholder="Напр: 7.1.2.1 — учащийся может..."
+                placeholder={t.kmzh_objectives_placeholder}
                 value={form.learningObjectives}
                 onChange={e => setField("learningObjectives", e.target.value)}
               />
@@ -396,7 +396,7 @@ export function KmzhPanel({
               onClick={handleGenerate}
               disabled={loading || !form.lessonTitle || !form.learningObjectives}
             >
-              {loading ? "⏳ Генерация..." : (t.kmzh_generate ?? "Сгенерировать")}
+              {loading ? t.kmzh_generating : (t.kmzh_generate ?? "Сгенерировать")}
             </button>
 
             {error && (
@@ -412,14 +412,14 @@ export function KmzhPanel({
           {!result && !loading && (
             <div className="card" style={{ padding: 32, textAlign: "center", color: "var(--muted)" }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
-              <p>Заполните форму слева и нажмите «{t.kmzh_generate ?? "Сгенерировать"}»</p>
+              <p>{t.kmzh_form_hint}</p>
             </div>
           )}
 
           {loading && (
             <div className="card" style={{ padding: 32, textAlign: "center", color: "var(--muted)" }}>
               <div style={{ fontSize: 36, marginBottom: 12 }}>⏳</div>
-              <p>Идёт генерация плана урока... Обычно 10–20 секунд.</p>
+              <p>{t.kmzh_generating_hint}</p>
             </div>
           )}
 
@@ -465,17 +465,17 @@ export function KmzhPanel({
 
               {/* Header card */}
               <div className="card" style={{ marginBottom: 12, padding: "14px 16px" }}>
-                <h3 style={{ marginBottom: 12, fontSize: 14 }}>Заголовок плана</h3>
+                <h3 style={{ marginBottom: 12, fontSize: 14 }}>{t.kmzh_header_title}</h3>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 16px", fontSize: 13 }}>
                   {[
-                    ["Учитель", "teacherName"],
-                    ["Дата", "date"],
-                    ["Класс", "grade"],
-                    ["№ урока", "lessonNumber"],
-                    ["Предмет", "lessonTitle"],
-                    ["Тема раздела", "unitTopic"],
-                    ["Присут.", "presentCount"],
-                    ["Отсут.", "absentCount"],
+                    [t.teacher_label, "teacherName"],
+                    [t.date, "date"],
+                    [t.grade, "grade"],
+                    [t.kmzh_lesson_number, "lessonNumber"],
+                    [t.subject, "lessonTitle"],
+                    [t.kmzh_unit_topic, "unitTopic"],
+                    [t.kmzh_present, "presentCount"],
+                    [t.kmzh_absent, "absentCount"],
                   ].map(([label, key]) => (
                     <div key={key}>
                       <span style={{ color: "var(--muted)", fontSize: 11 }}>{label}</span>
@@ -521,9 +521,9 @@ export function KmzhPanel({
 
               {/* Stages table */}
               <div className="card" style={{ marginBottom: 12, padding: "14px 16px", overflowX: "auto" }}>
-                <h3 style={{ marginBottom: 12, fontSize: 14 }}>Этапы урока</h3>
+                <h3 style={{ marginBottom: 12, fontSize: 14 }}>{t.kmzh_stages_title}</h3>
                 {stages.length === 0 ? (
-                  <p style={{ color: "var(--muted)", fontSize: 13 }}>Этапы не сгенерированы</p>
+                  <p style={{ color: "var(--muted)", fontSize: 13 }}>{t.kmzh_no_stages}</p>
                 ) : (
                   <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                     <SortableContext items={stages.map(s => s.id)} strategy={verticalListSortingStrategy}>
@@ -531,14 +531,14 @@ export function KmzhPanel({
                         <thead>
                           <tr style={{ borderBottom: "2px solid var(--border)" }}>
                             <th style={{ padding: "4px 4px", width: 24 }}></th>
-                            <th style={{ padding: "4px 6px", textAlign: "left", whiteSpace: "nowrap" }}>Этап</th>
-                            <th style={{ padding: "4px 6px", width: 56, textAlign: "center" }}>Мин</th>
-                            <th style={{ padding: "4px 6px", minWidth: 120, textAlign: "left" }}>Действия учителя</th>
-                            <th style={{ padding: "4px 6px", minWidth: 120, textAlign: "left" }}>Действия учеников</th>
-                            <th style={{ padding: "4px 6px", minWidth: 100, textAlign: "left" }}>Критерии оценки</th>
-                            <th style={{ padding: "4px 6px", width: 48, textAlign: "center" }}>Баллы</th>
-                            <th style={{ padding: "4px 6px", minWidth: 80, textAlign: "left" }}>Метод</th>
-                            <th style={{ padding: "4px 6px", minWidth: 80, textAlign: "left" }}>Ресурсы</th>
+                            <th style={{ padding: "4px 6px", textAlign: "left", whiteSpace: "nowrap" }}>{t.kmzh_stage}</th>
+                            <th style={{ padding: "4px 6px", width: 56, textAlign: "center" }}>{t.kmzh_min}</th>
+                            <th style={{ padding: "4px 6px", minWidth: 120, textAlign: "left" }}>{t.kmzh_teacher_actions}</th>
+                            <th style={{ padding: "4px 6px", minWidth: 120, textAlign: "left" }}>{t.kmzh_student_actions}</th>
+                            <th style={{ padding: "4px 6px", minWidth: 100, textAlign: "left" }}>{t.kmzh_assessment_criteria}</th>
+                            <th style={{ padding: "4px 6px", width: 48, textAlign: "center" }}>{t.kmzh_points_col}</th>
+                            <th style={{ padding: "4px 6px", minWidth: 80, textAlign: "left" }}>{t.kmzh_method}</th>
+                            <th style={{ padding: "4px 6px", minWidth: 80, textAlign: "left" }}>{t.kmzh_resources}</th>
                           </tr>
                         </thead>
                         <tbody>
