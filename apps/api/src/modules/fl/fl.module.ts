@@ -4,6 +4,7 @@ import { FLTask } from "../schools/entities/fl-task.entity";
 import { FLAssignment } from "../schools/entities/fl-assignment.entity";
 import { FLSubmission } from "../schools/entities/fl-submission.entity";
 import { FLResult } from "../schools/entities/fl-result.entity";
+import { FLAnalyticsCache } from "../schools/entities/fl-analytics-cache.entity";
 import { Student } from "../schools/entities/student.entity";
 import { Classroom } from "../schools/entities/classroom.entity";
 import { Teacher } from "../teachers/entities/teacher.entity";
@@ -13,7 +14,7 @@ import { FLController } from "./fl.controller";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([FLTask, FLAssignment, FLSubmission, FLResult, Student, Classroom, Teacher]),
+    TypeOrmModule.forFeature([FLTask, FLAssignment, FLSubmission, FLResult, FLAnalyticsCache, Student, Classroom, Teacher]),
     AiModule,
   ],
   providers: [FLService],

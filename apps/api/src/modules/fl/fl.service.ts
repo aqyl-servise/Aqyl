@@ -5,6 +5,7 @@ import { FLTask } from "../schools/entities/fl-task.entity";
 import { FLAssignment } from "../schools/entities/fl-assignment.entity";
 import { FLSubmission, FLAnswer } from "../schools/entities/fl-submission.entity";
 import { FLResult } from "../schools/entities/fl-result.entity";
+import { FLAnalyticsCache } from "../schools/entities/fl-analytics-cache.entity";
 import { Student } from "../schools/entities/student.entity";
 import { Classroom } from "../schools/entities/classroom.entity";
 import { Teacher } from "../teachers/entities/teacher.entity";
@@ -17,6 +18,7 @@ export class FLService {
     @InjectRepository(FLAssignment) private assignmentRepo: Repository<FLAssignment>,
     @InjectRepository(FLSubmission) private submissionRepo: Repository<FLSubmission>,
     @InjectRepository(FLResult) private resultRepo: Repository<FLResult>,
+    @InjectRepository(FLAnalyticsCache) private analyticsCacheRepo: Repository<FLAnalyticsCache>,
     @InjectRepository(Student) private studentRepo: Repository<Student>,
     @InjectRepository(Classroom) private classroomRepo: Repository<Classroom>,
     @InjectRepository(Teacher) private teacherRepo: Repository<Teacher>,
@@ -86,7 +88,9 @@ export class FLService {
   }
 
   async closeAssignment(id: string, teacherId: string) {
-    return this.updateAssignment(id, teacherId, { status: "closed" } as Partial<FLAssignment>);
+    const assignment = await this.updateAssignment(id, teacherId, { status: "closed" } as Partial<FLAssignment>);
+    await this.recalculateAnalytics(assignment.schoolId);
+    return assignment;
   }
 
   // ── Submissions ────────────────────────────────────────────────────────
@@ -115,7 +119,9 @@ export class FLService {
     sub.answers = answers as FLAnswer[];
     sub.status = "submitted";
     sub.submittedAt = new Date();
-    return this.submissionRepo.save(sub);
+    const result = await this.submissionRepo.save(sub);
+    await this.recalculateAnalytics(assignment.schoolId);
+    return result;
   }
 
   async gradeSubmission(id: string, data: {
@@ -131,11 +137,23 @@ export class FLService {
     if (data.totalScore !== undefined) sub.totalScore = data.totalScore;
     sub.status = "graded";
     sub.gradedAt = new Date();
-    return this.submissionRepo.save(sub);
+    const result = await this.submissionRepo.save(sub);
+    const assignment = await this.assignmentRepo.findOne({ where: { id: sub.assignmentId } });
+    if (assignment) await this.recalculateAnalytics(assignment.schoolId);
+    return result;
   }
 
   // ── Analytics ──────────────────────────────────────────────────────────
   async getSchoolAnalytics(schoolId: string) {
+    const cache = await this.analyticsCacheRepo.findOne({ where: { schoolId } });
+    if (cache) {
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      if (cache.updatedAt > fiveMinutesAgo) return cache.data;
+    }
+    return this.recalculateAnalytics(schoolId);
+  }
+
+  private async recalculateAnalytics(schoolId: string): Promise<object> {
     const [results, assignments] = await Promise.all([
       this.resultRepo.find({ where: { schoolId } }),
       this.assignmentRepo.find({ where: { schoolId } }),
@@ -175,15 +193,26 @@ export class FLService {
           .getMany()
       : [];
 
+    const totalAssignments = assignments.length;
+    const closedAssignments = assignments.filter(a => a.status === "closed").length;
+    const completionRate = totalAssignments > 0 ? Math.round(closedAssignments / totalAssignments * 100) : 0;
+
     const teacherStats = teacherIds.map(tid => {
       const teacher = teachers.find(t => t.id === tid);
       const ta = assignments.filter(a => a.teacherId === tid);
       const ts = submissions.filter(s => ta.some(a => a.id === s.assignmentId));
       const avg = ts.length > 0 ? ts.reduce((s, x) => s + (x.totalScore ?? 0), 0) / ts.length : 0;
       return { teacherId: tid, teacherName: teacher?.fullName ?? "—", assignmentsCount: ta.length, avgStudentScore: Math.round(avg * 10) / 10 };
-    });
+    }).sort((a, b) => b.assignmentsCount - a.assignmentsCount);
 
-    return { directionStats, classroomStats, teacherStats };
+    const data = { directionStats, classroomStats, teacherStats, completionRate, totalAssignments };
+
+    let cache = await this.analyticsCacheRepo.findOne({ where: { schoolId } });
+    if (!cache) cache = this.analyticsCacheRepo.create({ schoolId });
+    cache.data = data;
+    await this.analyticsCacheRepo.save(cache);
+
+    return data;
   }
 
   async getClassAnalytics(classroomId: string) {
