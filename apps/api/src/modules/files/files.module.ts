@@ -11,5 +11,6 @@ import { FilesController } from "./files.controller";
     MulterModule.register({ dest: "./uploads" }),
   ],
   controllers: [FilesController],
+  exports: [TypeOrmModule],
 })
 export class FilesModule {}

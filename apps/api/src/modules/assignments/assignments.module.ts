@@ -9,6 +9,6 @@ import { AssignmentsController } from "./assignments.controller";
   imports: [TypeOrmModule.forFeature([Assignment, TaskSubmission])],
   providers: [AssignmentsService],
   controllers: [AssignmentsController],
-  exports: [AssignmentsService],
+  exports: [AssignmentsService, TypeOrmModule],
 })
 export class AssignmentsModule {}

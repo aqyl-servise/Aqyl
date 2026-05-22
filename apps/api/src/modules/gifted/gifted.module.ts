@@ -21,5 +21,6 @@ import { GiftedController } from "./gifted.controller";
   ],
   providers: [GiftedService],
   controllers: [GiftedController],
+  exports: [GiftedService, TypeOrmModule],
 })
 export class GiftedModule {}

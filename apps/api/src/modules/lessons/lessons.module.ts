@@ -13,5 +13,6 @@ import { NotificationsModule } from "../notifications/notifications.module";
   ],
   providers: [LessonsService],
   controllers: [LessonsController],
+  exports: [LessonsService, TypeOrmModule],
 })
 export class LessonsModule {}

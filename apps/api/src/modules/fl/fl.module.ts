@@ -18,5 +18,6 @@ import { FLController } from "./fl.controller";
   ],
   providers: [FLService],
   controllers: [FLController],
+  exports: [FLService, TypeOrmModule],
 })
 export class FLModule {}
