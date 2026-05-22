@@ -3,6 +3,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { GiftedService } from "./gifted.service";
+import { ADMIN_ROLES, ALL_TEACHER_ROLES } from "../../common/roles.constants";
 
 interface ReqUser { user: { id: string; role: string; schoolId?: string | null } }
 
@@ -50,17 +51,20 @@ export class GiftedController {
 
   // ── Search all students ───────────────────────────────────────────
   @Get("all-students")
+  @Roles(...ADMIN_ROLES, ...ALL_TEACHER_ROLES, "psychologist")
   searchStudents(@Query("q") q?: string) {
     return this.svc.searchStudents(q);
   }
 
   // ── Teachers ──────────────────────────────────────────────────────
   @Get("teachers")
+  @Roles(...ADMIN_ROLES, ...ALL_TEACHER_ROLES, "psychologist")
   getTeachers() {
     return this.svc.getTeachers();
   }
 
   @Get("teachers/:id/students")
+  @Roles(...ADMIN_ROLES, ...ALL_TEACHER_ROLES, "psychologist")
   getTeacherStudents(@Param("id") id: string) {
     return this.svc.getTeacherStudents(id);
   }
@@ -79,16 +83,19 @@ export class GiftedController {
 
   // ── Materials ─────────────────────────────────────────────────────
   @Get("materials")
+  @Roles(...ADMIN_ROLES, ...ALL_TEACHER_ROLES)
   getMaterials(@Query("teacherId") teacherId: string, @Query("category") category?: string) {
     return this.svc.getMaterials(teacherId, category);
   }
 
   @Post("materials")
+  @Roles(...ADMIN_ROLES)
   addMaterial(@Body() body: { teacherId: string; category: string; title: string; fileUrl?: string; linkUrl?: string }) {
     return this.svc.addMaterial(body);
   }
 
   @Delete("materials/:id")
+  @Roles(...ADMIN_ROLES)
   removeMaterial(@Param("id") id: string) {
     return this.svc.removeMaterial(id);
   }
@@ -120,11 +127,13 @@ export class GiftedController {
 
   // ── Achievements ──────────────────────────────────────────────────
   @Post("achievements")
+  @Roles(...ALL_TEACHER_ROLES, ...ADMIN_ROLES)
   addAchievement(@Body() body: { studentId: string; title: string; date?: string; level: string; subject?: string; place?: string }) {
     return this.svc.addAchievement(body);
   }
 
   @Delete("achievements/:id")
+  @Roles(...ALL_TEACHER_ROLES, ...ADMIN_ROLES)
   removeAchievement(@Param("id") id: string) {
     return this.svc.removeAchievement(id);
   }

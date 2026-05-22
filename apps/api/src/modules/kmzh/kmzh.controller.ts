@@ -3,6 +3,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { KmzhService } from './kmzh.service';
+import { ALL_TEACHER_ROLES } from '../../common/roles.constants';
 import { KmzhGenerateDto } from './dto/kmzh-generate.dto';
 import { KmzhRegenerateDto } from './dto/kmzh-regenerate.dto';
 import { KmzhSaveDto } from './dto/kmzh-save.dto';
@@ -39,6 +40,7 @@ export class KmzhController {
   }
 
   @Get('values/:month')
+  @Roles(...ALL_TEACHER_ROLES)
   async getValues(@Param('month') month: string, @Query('lang') lang: string) {
     const values = this.kmzhService.getValuesByMonth(month);
     if (!values) return null;

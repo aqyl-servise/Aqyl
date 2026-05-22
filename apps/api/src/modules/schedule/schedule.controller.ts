@@ -4,6 +4,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { ScheduleService } from "./schedule.service";
+import { ADMIN_ROLES, ALL_TEACHER_ROLES } from "../../common/roles.constants";
 
 interface ReqUser { user: { id: string; role: string; schoolId?: string } }
 
@@ -13,6 +14,8 @@ export class ScheduleController {
   constructor(private readonly scheduleService: ScheduleService) {}
 
   @Get()
+  @UseGuards(RolesGuard)
+  @Roles(...ALL_TEACHER_ROLES, "student")
   getMySchedule(@Req() req: ReqUser) {
     return this.scheduleService.getForTeacher(req.user.id);
   }
@@ -25,6 +28,8 @@ export class ScheduleController {
   }
 
   @Get("classroom/:id")
+  @UseGuards(RolesGuard)
+  @Roles(...ALL_TEACHER_ROLES, ...ADMIN_ROLES)
   getForClassroom(@Param("id") id: string) {
     return this.scheduleService.getForClassroom(id);
   }

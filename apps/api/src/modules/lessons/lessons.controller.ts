@@ -4,9 +4,11 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { LessonsService } from "./lessons.service";
-import { isAdminRole } from "../../common/roles.constants";
+import { ADMIN_ROLES, ALL_TEACHER_ROLES, isAdminRole } from "../../common/roles.constants";
 
 interface ReqUser { user: { id: string; role: string; schoolId?: string | null; fullName?: string } }
+
+const ANALYSIS_ROLES = [...ADMIN_ROLES, "vice_principal_education", ...ALL_TEACHER_ROLES, "psychologist"] as const;
 
 @Controller("lessons")
 @UseGuards(JwtAuthGuard)
@@ -14,6 +16,8 @@ export class LessonsController {
   constructor(private readonly service: LessonsService) {}
 
   @Get()
+  @UseGuards(RolesGuard)
+  @Roles(...ALL_TEACHER_ROLES)
   getMyLessons(@Req() req: ReqUser) {
     return this.service.getForTeacher(req.user.id);
   }
@@ -25,9 +29,30 @@ export class LessonsController {
     return this.service.getAll(req.user.schoolId);
   }
 
+  // /:id/analysis routes declared before /:id to avoid route shadowing
+  @Get(":id/analysis")
+  @UseGuards(RolesGuard)
+  @Roles(...ANALYSIS_ROLES)
+  getAnalysis(@Param("id") id: string) {
+    return this.service.getAnalysis(id);
+  }
+
+  @Get(":id/analysis/pdf")
+  @UseGuards(RolesGuard)
+  @Roles(...ANALYSIS_ROLES)
+  async getAnalysisPdf(@Param("id") id: string, @Res() res: Response) {
+    const buffer = await this.service.generateAnalysisPdf(id);
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="analysis-${id}.pdf"`,
+      "Content-Length": buffer.length,
+    });
+    res.end(buffer);
+  }
+
   @Get(":id")
   @UseGuards(RolesGuard)
-  @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "vice_principal_education", "teacher", "class_teacher", "psychologist")
+  @Roles(...ANALYSIS_ROLES)
   findOne(@Param("id") id: string) {
     return this.service.findOne(id);
   }
@@ -105,11 +130,6 @@ export class LessonsController {
     return this.service.remove(id);
   }
 
-  @Get(":id/analysis")
-  getAnalysis(@Param("id") id: string) {
-    return this.service.getAnalysis(id);
-  }
-
   @Post(":id/analysis")
   @UseGuards(RolesGuard)
   @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
@@ -123,16 +143,5 @@ export class LessonsController {
       await this.service.update(id, { status: "analyzed" });
     }
     return analysis;
-  }
-
-  @Get(":id/analysis/pdf")
-  async getAnalysisPdf(@Param("id") id: string, @Res() res: Response) {
-    const buffer = await this.service.generateAnalysisPdf(id);
-    res.set({
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="analysis-${id}.pdf"`,
-      "Content-Length": buffer.length,
-    });
-    res.end(buffer);
   }
 }
