@@ -3,6 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Schedule } from "../schools/entities/schedule.entity";
 import { Classroom } from "../schools/entities/classroom.entity";
+import { ScheduleVersion } from "../schools/entities/schedule-version.entity";
 
 @Injectable()
 export class ScheduleService {
@@ -11,6 +12,8 @@ export class ScheduleService {
     private readonly scheduleRepo: Repository<Schedule>,
     @InjectRepository(Classroom)
     private readonly classroomRepo: Repository<Classroom>,
+    @InjectRepository(ScheduleVersion)
+    private readonly versionRepo: Repository<ScheduleVersion>,
   ) {}
 
   async getForTeacher(teacherId: string) {
@@ -96,6 +99,13 @@ export class ScheduleService {
       .where("s.schoolId = :schoolId", { schoolId })
       .getRawMany<{ version: string }>();
     return rows.map(r => r.version).filter(Boolean);
+  }
+
+  async saveVersion(schoolId: string, name: string, createdBy: string) {
+    const entries = await this.getAdminSchedule(schoolId);
+    return this.versionRepo.save(
+      this.versionRepo.create({ schoolId, name, createdBy, data: entries }),
+    );
   }
 
   async exportCsv(schoolId: string, classroomId?: string, version = "main"): Promise<string> {

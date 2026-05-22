@@ -24,7 +24,7 @@ export class LessonsController {
 
   @Get("all")
   @UseGuards(RolesGuard)
-  @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "vice_principal_education")
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "vice_principal_education", "psychologist")
   getAll(@Req() req: ReqUser) {
     return this.service.getAll(req.user.schoolId);
   }

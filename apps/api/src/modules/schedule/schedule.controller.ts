@@ -106,7 +106,7 @@ export class ScheduleController {
     @Req() req: ReqUser,
     @Body() body: { name: string },
   ) {
-    return { version: body.name };
+    return this.scheduleService.saveVersion(req.user.schoolId ?? "", body.name, req.user.id);
   }
 
   @Get("admin/export")

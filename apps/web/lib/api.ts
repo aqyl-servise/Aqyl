@@ -858,6 +858,8 @@ export const api = {
     request<Array<{ id: string; title: string; description?: string; content: string; type: string; status: string; assignedClassroomIds: string[]; aiAnalysisResult?: string; createdAt: string }>>("/questionnaires", undefined, token),
   createQuestionnaire: (token: string, data: { title: string; content: string; description?: string; type?: string; fileUrl?: string }) =>
     request<{ id: string }>("/questionnaires", { method: "POST", body: JSON.stringify(data) }, token),
+  updateQuestionnaire: (token: string, id: string, data: Record<string, unknown>) =>
+    request<{ id: string }>(`/questionnaires/${id}`, { method: "PATCH", body: JSON.stringify(data) }, token),
   deleteQuestionnaire: (token: string, id: string) =>
     request<void>(`/questionnaires/${id}`, { method: "DELETE" }, token),
   assignQuestionnaire: (token: string, id: string, classroomIds: string[]) =>
