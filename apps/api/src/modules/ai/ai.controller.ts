@@ -1,12 +1,18 @@
 import { Body, Controller, Post, Req, UseGuards } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RolesGuard } from "../auth/guards/roles.guard";
+import { Roles } from "../auth/decorators/roles.decorator";
 import { AiChatService } from "./ai.service";
+import { STAFF_ROLES, ALL_TEACHER_ROLES } from "../../common/roles.constants";
 
 interface ReqUser { user: { id: string; role: string; schoolId?: string } }
 
+const CHAT_ROLES = [...STAFF_ROLES, ...ALL_TEACHER_ROLES] as const;
+
 @Controller("ai")
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(...CHAT_ROLES)
 @Throttle({ short: { limit: 5, ttl: 60_000 } })
 export class AiController {
   constructor(private readonly aiChatService: AiChatService) {}
@@ -44,7 +50,9 @@ export class AiController {
     );
   }
 
+  // TODO: дублирует /generators/lesson-plan — объединить в следующем рефакторинге
   @Post("generate-lesson-plan")
+  @Roles(...ALL_TEACHER_ROLES)
   generateLessonPlan(@Req() req: ReqUser, @Body() body: { subject: string; grade: string; topic: string; duration: number }) {
     return this.aiChatService.generateLessonPlan(
       body.subject ?? "",
