@@ -46,13 +46,13 @@ export class AdminController {
   }
 
   @Patch("users/:id/deactivate")
-  @Roles("admin")
+  @Roles("admin", "principal")
   deactivateUser(@Param("id") id: string, @Req() req: ReqUser) {
     return this.service.deactivateUser(id, req.user.id);
   }
 
   @Patch("users/:id/activate")
-  @Roles("admin")
+  @Roles("admin", "principal")
   activateUser(@Param("id") id: string) {
     return this.service.activateUser(id);
   }
