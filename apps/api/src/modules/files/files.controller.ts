@@ -12,9 +12,14 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { IsNull, Like, Repository } from "typeorm";
 import * as fs from "fs";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RolesGuard } from "../auth/guards/roles.guard";
+import { Roles } from "../auth/decorators/roles.decorator";
 import { UploadedFile as UploadedFileEntity } from "../schools/entities/uploaded-file.entity";
 import { FileFolder } from "../schools/entities/file-folder.entity";
-import { isAdminRole } from "../../common/roles.constants";
+import { ADMIN_ROLES, ALL_TEACHER_ROLES, STAFF_ROLES, isAdminRole } from "../../common/roles.constants";
+
+// All authenticated staff except students — default for most file operations
+const UPLOAD_ROLES = [...STAFF_ROLES, ...ALL_TEACHER_ROLES] as const;
 
 const ALLOWED_MIME_TYPES = new Set([
   "application/pdf",
@@ -34,6 +39,8 @@ interface ReqUser { user: { id: string; role: string; schoolId?: string | null }
 interface MulterFile { originalname: string; mimetype: string; size: number; filename: string; path: string }
 
 @Controller("files")
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(...UPLOAD_ROLES)
 export class FilesController {
   constructor(
     @InjectRepository(UploadedFileEntity)
@@ -45,7 +52,6 @@ export class FilesController {
   // ── Upload ──────────────────────────────────────────────────────────────────
 
   @Post("upload")
-  @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FileInterceptor("file", {
       storage: diskStorage({
@@ -96,7 +102,6 @@ export class FilesController {
   // ── Folder CRUD (declared before :filename to avoid route shadowing) ────────
 
   @Post("folder")
-  @UseGuards(JwtAuthGuard)
   async createFolder(
     @Body() body: { name: string; parentId?: string; section?: string; teacherRefId?: string },
     @Req() req: ReqUser,
@@ -115,7 +120,6 @@ export class FilesController {
   }
 
   @Get("folders")
-  @UseGuards(JwtAuthGuard)
   async listFolders(
     @Req() req: ReqUser,
     @Query("parentId") parentId?: string,
@@ -135,7 +139,6 @@ export class FilesController {
   }
 
   @Get("folder/:id")
-  @UseGuards(JwtAuthGuard)
   async getFolderContents(@Param("id") id: string) {
     const folder = await this.folderRepo.findOne({ where: { id } });
     if (!folder) throw new NotFoundException("Folder not found");
@@ -147,7 +150,7 @@ export class FilesController {
   }
 
   @Delete("folder/:id")
-  @UseGuards(JwtAuthGuard)
+  @Roles(...ADMIN_ROLES)
   async deleteFolder(@Param("id") id: string, @Req() req: ReqUser) {
     if (!isAdminRole(req.user.role)) throw new ForbiddenException("Access denied");
     const folder = await this.folderRepo.findOne({ where: { id } });
@@ -159,7 +162,7 @@ export class FilesController {
   // ── All teachers' KSP files (admin) ────────────────────────────────────────
 
   @Get("ksp-all")
-  @UseGuards(JwtAuthGuard)
+  @Roles(...ADMIN_ROLES)
   async listAllKsp(@Req() req: ReqUser) {
     if (!isAdminRole(req.user.role)) throw new ForbiddenException("Access denied");
     const where: Record<string, unknown> = { section: Like("teacher-ksp-%") };
@@ -170,7 +173,6 @@ export class FilesController {
   // ── File list ───────────────────────────────────────────────────────────────
 
   @Get()
-  @UseGuards(JwtAuthGuard)
   async listFiles(
     @Req() req: ReqUser,
     @Query("folderId") folderId?: string,
@@ -194,7 +196,6 @@ export class FilesController {
   // ── Rename file ─────────────────────────────────────────────────────────────
 
   @Patch("file/:id")
-  @UseGuards(JwtAuthGuard)
   async renameFile(@Param("id") id: string, @Body() body: { originalName: string }, @Req() req: ReqUser) {
     const file = await this.fileRepo.findOne({ where: { id }, relations: ["uploadedBy"] });
     if (!file) throw new NotFoundException("File not found");
@@ -209,7 +210,6 @@ export class FilesController {
   // ── Rename folder ────────────────────────────────────────────────────────────
 
   @Patch("folder/:id")
-  @UseGuards(JwtAuthGuard)
   async renameFolder(@Param("id") id: string, @Body() body: { name: string }, @Req() req: ReqUser) {
     const folder = await this.folderRepo.findOne({ where: { id } });
     if (!folder) throw new NotFoundException("Folder not found");
@@ -221,7 +221,6 @@ export class FilesController {
   // ── Delete file by DB id ────────────────────────────────────────────────────
 
   @Delete("file/:id")
-  @UseGuards(JwtAuthGuard)
   async deleteFile(@Param("id") id: string, @Req() req: ReqUser) {
     const file = await this.fileRepo.findOne({ where: { id }, relations: ["uploadedBy"] });
     if (!file) throw new NotFoundException("File not found");
@@ -239,7 +238,6 @@ export class FilesController {
   // ── Serve file ──────────────────────────────────────────────────────────────
 
   @Get(":filename")
-  @UseGuards(JwtAuthGuard)
   async serveFile(@Param("filename") filename: string, @Res() res: Response, @Req() req: ReqUser) {
     if (!/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}\.[a-zA-Z0-9]{1,10}$/.test(filename)) {
       return res.status(400).json({ message: "Invalid filename" });
