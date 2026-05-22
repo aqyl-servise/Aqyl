@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
-import { APP_GUARD } from "@nestjs/core";
+import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
+import { SchoolIsolationInterceptor } from "./common/interceptors/school-isolation.interceptor";
 import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
@@ -183,6 +184,7 @@ import { MalimetModule } from "./modules/malimet/malimet.module";
   providers: [
     SeedService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_INTERCEPTOR, useClass: SchoolIsolationInterceptor },
   ],
 })
 export class AppModule {}
