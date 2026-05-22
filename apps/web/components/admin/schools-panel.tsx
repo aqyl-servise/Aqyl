@@ -51,7 +51,7 @@ export function SchoolsPanel({ token, language, t }: {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name.trim()) { setFormError("Введите название школы"); return; }
+    if (!form.name.trim()) { setFormError(t.school_create_error_required); return; }
     setFormError("");
     setFormBusy(true);
     try {
@@ -64,9 +64,9 @@ export function SchoolsPanel({ token, language, t }: {
       let display = raw;
       try { display = JSON.parse(raw)?.message ?? raw; } catch {}
       if (display.includes("уже существует") || display.includes("conflict") || display.includes("Conflict")) {
-        display = "Школа с таким названием уже существует";
+        display = t.school_create_error_exists;
       }
-      setFormError(display || "Ошибка при создании");
+      setFormError(display || t.school_create_error_generic);
     } finally {
       setFormBusy(false);
     }
@@ -95,19 +95,19 @@ export function SchoolsPanel({ token, language, t }: {
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">🏫 Школы</h1>
+        <h1 className="page-title">🏫 {t.nav_schools}</h1>
         <button className="btn btn-primary" onClick={() => { setShowForm(true); setFormError(""); }}>
-          + Добавить школу
+          {t.school_add_btn}
         </button>
       </div>
 
       {/* Stats row */}
       <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
         {[
-          { label: "Всего школ", value: schools.length, color: "var(--primary)" },
-          { label: "Активных", value: activeCount, color: "var(--success, #22c55e)" },
-          { label: "Деактивированных", value: schools.length - activeCount, color: "var(--danger, #ef4444)" },
-          { label: "Пользователей", value: schools.reduce((s, x) => s + x.userCount, 0), color: "var(--accent, #8b5cf6)" },
+          { label: t.school_stat_total, value: schools.length, color: "var(--primary)" },
+          { label: t.school_stat_active, value: activeCount, color: "var(--success, #22c55e)" },
+          { label: t.school_stat_deactivated, value: schools.length - activeCount, color: "var(--danger, #ef4444)" },
+          { label: t.school_stat_users, value: schools.reduce((s, x) => s + x.userCount, 0), color: "var(--accent, #8b5cf6)" },
         ].map((stat) => (
           <div key={stat.label} className="card" style={{ flex: "1 1 140px", minWidth: 130, padding: "14px 18px", textAlign: "center" }}>
             <div style={{ fontSize: 26, fontWeight: 700, color: stat.color }}>{stat.value}</div>
@@ -123,15 +123,15 @@ export function SchoolsPanel({ token, language, t }: {
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           <div className="card" style={{ width: "100%", maxWidth: 440, padding: 28 }}>
-            <h2 style={{ marginBottom: 20, fontSize: 18, fontWeight: 600 }}>Новая школа</h2>
+            <h2 style={{ marginBottom: 20, fontSize: 18, fontWeight: 600 }}>{t.school_modal_title}</h2>
             <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
                 <label style={{ fontSize: 13, fontWeight: 500, display: "block", marginBottom: 4 }}>
-                  Название школы *
+                  {t.schoolName} *
                 </label>
                 <input
                   className="input"
-                  placeholder="КГУ «Средняя школа №1»"
+                  placeholder={t.school_name_placeholder}
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   autoFocus
@@ -139,38 +139,38 @@ export function SchoolsPanel({ token, language, t }: {
               </div>
               <div>
                 <label style={{ fontSize: 13, fontWeight: 500, display: "block", marginBottom: 4 }}>
-                  Город / Населённый пункт
+                  {t.school_city_label}
                 </label>
                 <input
                   className="input"
-                  placeholder="Алматы"
+                  placeholder={t.school_city_placeholder}
                   value={form.city}
                   onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
                 />
               </div>
               <div>
                 <label style={{ fontSize: 13, fontWeight: 500, display: "block", marginBottom: 4 }}>
-                  Область / Регион
+                  {t.school_region_label}
                 </label>
                 <select
                   className="input"
                   value={form.region}
                   onChange={(e) => setForm((f) => ({ ...f, region: e.target.value }))}
                 >
-                  <option value="">— не указано —</option>
+                  <option value="">{t.school_region_none}</option>
                   {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
               <div style={{ background: "var(--surface-raised, #f0f4ff)", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "var(--muted)" }}>
-                Код школы будет сгенерирован автоматически из названия города
+                {t.school_code_hint}
               </div>
               {formError && <div style={{ color: "var(--danger)", fontSize: 13 }}>{formError}</div>}
               <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 4 }}>
                 <button type="button" className="btn btn-ghost" onClick={() => setShowForm(false)}>
-                  Отмена
+                  {t.cancel}
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={formBusy}>
-                  {formBusy ? <span className="spinner" /> : "Создать"}
+                  {formBusy ? <span className="spinner" /> : t.btn_create}
                 </button>
               </div>
             </form>
@@ -183,7 +183,7 @@ export function SchoolsPanel({ token, language, t }: {
         <input
           className="input"
           style={{ maxWidth: 320 }}
-          placeholder="Поиск по названию, городу, коду..."
+          placeholder={t.school_search_placeholder}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -191,24 +191,24 @@ export function SchoolsPanel({ token, language, t }: {
 
       {/* Table */}
       {loading ? (
-        <div className="card"><p className="empty-state">Загрузка...</p></div>
+        <div className="card"><p className="empty-state">{t.loading}</p></div>
       ) : filtered.length === 0 ? (
         <div className="card"><p className="empty-state">
-          {schools.length === 0 ? "Школ пока нет. Добавьте первую." : "Ничего не найдено."}
+          {schools.length === 0 ? t.school_empty : t.school_not_found}
         </p></div>
       ) : (
         <div className="card" style={{ padding: 0, overflow: "hidden" }}>
           <table className="data-table">
             <thead>
               <tr>
-                <th>Код</th>
-                <th>Название</th>
-                <th>Город</th>
-                <th>Область</th>
-                <th style={{ textAlign: "center" }}>Пользователи</th>
-                <th>Дата создания</th>
-                <th style={{ textAlign: "center" }}>Статус</th>
-                <th style={{ textAlign: "center" }}>Действия</th>
+                <th>{t.school_col_code}</th>
+                <th>{t.school_col_name}</th>
+                <th>{t.school_col_city}</th>
+                <th>{t.school_col_region}</th>
+                <th style={{ textAlign: "center" }}>{t.school_col_users}</th>
+                <th>{t.school_col_created}</th>
+                <th style={{ textAlign: "center" }}>{t.status}</th>
+                <th style={{ textAlign: "center" }}>{t.actions}</th>
               </tr>
             </thead>
             <tbody>
@@ -235,7 +235,7 @@ export function SchoolsPanel({ token, language, t }: {
                     </span>
                   </td>
                   <td className="muted" style={{ whiteSpace: "nowrap" }}>
-                    {new Date(school.createdAt).toLocaleDateString("ru-RU")}
+                    {new Date(school.createdAt).toLocaleDateString(language === "kz" ? "kk-KZ" : language === "en" ? "en-US" : "ru-RU")}
                   </td>
                   <td style={{ textAlign: "center" }}>
                     <span style={{
@@ -244,7 +244,7 @@ export function SchoolsPanel({ token, language, t }: {
                       background: school.isActive ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
                       color: school.isActive ? "#16a34a" : "#dc2626",
                     }}>
-                      {school.isActive ? "Активна" : "Деактивирована"}
+                      {school.isActive ? t.school_status_active : t.school_status_inactive}
                     </span>
                   </td>
                   <td style={{ textAlign: "center" }}>
@@ -256,7 +256,7 @@ export function SchoolsPanel({ token, language, t }: {
                     >
                       {busy === school.id
                         ? <span className="spinner" />
-                        : school.isActive ? "Деактивировать" : "Активировать"}
+                        : school.isActive ? t.users_deactivate : t.users_activate}
                     </button>
                   </td>
                 </tr>

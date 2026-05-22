@@ -58,7 +58,7 @@ export function AqylApp() {
         if (body.message === "PENDING") { setError(t.accountPending); return; }
         if (body.message === "REJECTED") { setError(t.accountRejected); return; }
       } catch { /* not JSON */ }
-      setError("Ошибка входа. Проверьте email и пароль.");
+      setError(t.app_login_error);
     } finally {
       setBusy(false);
     }
@@ -88,9 +88,9 @@ export function AqylApp() {
       const msg = err instanceof Error ? err.message : "";
       try {
         const body = JSON.parse(msg) as { message?: string };
-        setError(typeof body.message === "string" ? body.message : "Ошибка регистрации");
+        setError(typeof body.message === "string" ? body.message : t.app_register_error);
       } catch {
-        setError("Ошибка регистрации");
+        setError(t.app_register_error);
       }
     } finally {
       setBusy(false);
@@ -156,8 +156,8 @@ export function AqylApp() {
 
   return (
     <div style={{ padding: 40, textAlign: "center" }}>
-      <h2>Роль «{role}» пока не поддерживается в интерфейсе</h2>
-      <button className="btn btn-ghost" onClick={logout}>Выйти</button>
+      <h2>{t.app_role_unsupported.replace("{role}", role)}</h2>
+      <button className="btn btn-ghost" onClick={logout}>{t.logout}</button>
     </div>
   );
 }
@@ -166,6 +166,7 @@ export function AqylApp() {
 function AuthShell({ language, setLanguage, children }: {
   language: Language; setLanguage: (l: Language) => void; children: React.ReactNode;
 }) {
+  const t = translations[language];
   useEffect(() => {
     const html = document.documentElement;
     const prev = html.getAttribute("data-theme") ?? "light";
@@ -194,19 +195,19 @@ function AuthShell({ language, setLanguage, children }: {
             <rect x="335" y="228" width="10" height="2.5" rx="1.25" fill="#1D9E75"/>
             <rect x="349" y="228" width="10" height="2.5" rx="1.25" fill="#EF9F27"/>
           </svg>
-          <p className="login-tagline">Цифровая образовательная платформа</p>
+          <p className="login-tagline">{t.app_tagline}</p>
           <div className="login-modules">
             <span className="login-module">
               <span className="login-module-dot" style={{ background: "#7F77DD" }} />
-              ДАННЫЕ ШКОЛЫ
+              {t.app_module_school_data}
             </span>
             <span className="login-module">
               <span className="login-module-dot" style={{ background: "#3DB88E" }} />
-              АНАЛИТИКА И ИИ
+              {t.app_module_analytics_ai}
             </span>
             <span className="login-module">
               <span className="login-module-dot" style={{ background: "#F5A623" }} />
-              ИНТЕРАКТИВНОСТЬ
+              {t.app_module_interactive}
             </span>
           </div>
         </div>
@@ -269,30 +270,30 @@ function LoginForm({ t, busy, error, onSubmit, onRegister, onForgot }: {
 }
 
 /* ─── Register form ─────────────────────────────────────────────────── */
-const REGISTER_ROLES = [
-  { value: "teacher", label: "Учитель / Мұғалім / Teacher" },
-  { value: "class_teacher", label: "Классный руководитель / Сынып жетекшісі" },
-  { value: "vice_principal", label: "Завуч / Меңгеруші" },
-  { value: "vice_principal_academic", label: "Завуч по УВР / ОӘЖ меңгерушісі" },
-  { value: "vice_principal_education", label: "Завуч по ВР / ТЖ меңгерушісі" },
-  { value: "psychologist", label: "Психолог / Психолог" },
-  { value: "social_pedagogue", label: "Социальный педагог / Әлеуметтік педагог" },
-  { value: "principal", label: "Директор / Director" },
-  { value: "student", label: "Ученик / Оқушы / Student" },
-];
-
 function RegisterForm({ t, busy, error, onSubmit, onBack }: {
   t: Record<string, string>; busy: boolean; error: string | null;
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
   onBack: () => void;
 }) {
+  const REGISTER_ROLES = [
+    { value: "teacher", label: t.role_teacher },
+    { value: "class_teacher", label: t.role_class_teacher },
+    { value: "vice_principal", label: t.role_vice_principal },
+    { value: "vice_principal_academic", label: t.role_vice_principal_academic },
+    { value: "vice_principal_education", label: t.role_vice_principal_education },
+    { value: "psychologist", label: t.role_psychologist },
+    { value: "social_pedagogue", label: t.role_social_pedagogue },
+    { value: "principal", label: t.role_principal },
+    { value: "student", label: t.role_student },
+  ];
+
   return (
     <>
       <h2 className="login-title">{t.registerTitle}</h2>
       <form onSubmit={onSubmit} className="login-form">
         <div className="field">
           <label className="field-label">{t.fullNameLabel}</label>
-          <input name="fullName" type="text" required className="input" placeholder="Иванов Иван Иванович" />
+          <input name="fullName" type="text" required className="input" placeholder={t.app_fullname_placeholder} />
         </div>
         <div className="field">
           <label className="field-label">{t.email}</label>
@@ -317,7 +318,7 @@ function RegisterForm({ t, busy, error, onSubmit, onBack }: {
         </div>
         <div className="field">
           <label className="field-label">{t.schoolName}</label>
-          <input name="schoolName" type="text" required className="input" placeholder="НИШ Алматы" />
+          <input name="schoolName" type="text" required className="input" placeholder={t.app_school_placeholder} />
         </div>
         {error && <div className="alert alert-error"><span>⚠</span> {error}</div>}
         <button className="btn btn-primary btn-full" type="submit" disabled={busy}>
@@ -360,7 +361,7 @@ function ForgotPasswordView({ t, onBack }: { t: Record<string, string>; onBack: 
       await api.forgotPassword(String(fd.get("email") ?? ""));
       setSent(true);
     } catch {
-      setError("Ошибка отправки. Попробуйте позже.");
+      setError(t.app_forgot_send_error);
     } finally {
       setBusy(false);
     }

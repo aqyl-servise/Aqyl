@@ -1,11 +1,13 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { api } from "../../lib/api";
+import { Language, translations } from "../../lib/translations";
 import { useSchool } from "../../contexts/school-context";
 
 type SchoolOption = { id: string; name: string; city?: string | null; isActive?: boolean };
 
-export function SchoolSwitcher({ token }: { token: string }) {
+export function SchoolSwitcher({ token, language }: { token: string; language: Language }) {
+  const t = translations[language];
   const { selectedSchoolId, selectedSchoolName, setSelectedSchool } = useSchool();
   const [schools, setSchools] = useState<SchoolOption[]>([]);
   const [open, setOpen] = useState(false);
@@ -39,7 +41,7 @@ export function SchoolSwitcher({ token }: { token: string }) {
     <div ref={ref} style={{ position: "relative", width: "100%", marginBottom: 6 }}>
       <button
         onClick={() => { setOpen((v) => !v); setSearch(""); }}
-        title="Переключить школу"
+        title={t.school_switch_title}
         style={{
           display: "flex", alignItems: "center", gap: 6, width: "100%",
           padding: "7px 10px", borderRadius: 8,
@@ -67,7 +69,7 @@ export function SchoolSwitcher({ token }: { token: string }) {
             <div style={{ padding: "8px 8px 4px", borderBottom: "1px solid var(--border, rgba(255,255,255,0.08))" }}>
               <input
                 autoFocus
-                placeholder="Поиск школы..."
+                placeholder={t.school_switch_search}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 style={{
@@ -81,7 +83,7 @@ export function SchoolSwitcher({ token }: { token: string }) {
           )}
           <div style={{ overflowY: "auto", maxHeight: 260 }}>
             <button
-              onClick={() => { setSelectedSchool(null, "Все школы"); setOpen(false); setSearch(""); }}
+              onClick={() => { setSelectedSchool(null, t.school_switch_all); setOpen(false); setSearch(""); }}
               style={{
                 display: "flex", alignItems: "center", gap: 8, width: "100%",
                 padding: "9px 12px", border: "none",
@@ -91,7 +93,7 @@ export function SchoolSwitcher({ token }: { token: string }) {
               }}
             >
               <span>🌐</span>
-              <span style={{ flex: 1 }}>Все школы</span>
+              <span style={{ flex: 1 }}>{t.school_switch_all}</span>
               {selectedSchoolId === null && <span style={{ color: "var(--primary, #6366f1)", fontWeight: 700 }}>✓</span>}
             </button>
             {filtered.map((school) => (
@@ -122,7 +124,7 @@ export function SchoolSwitcher({ token }: { token: string }) {
             ))}
             {filtered.length === 0 && (
               <div style={{ padding: "14px 12px", textAlign: "center", fontSize: 12, opacity: 0.5 }}>
-                Ничего не найдено
+                {t.school_not_found}
               </div>
             )}
           </div>

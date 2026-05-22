@@ -57,7 +57,7 @@ function AdminAppContent({ token, user, language, setLanguage, onLogout }: {
   return (
     <AppLayout user={user} token={token} language={language} setLanguage={setLanguage}
       onLogout={onLogout} navItems={navItems} activeSection={section} onNav={setSection}
-      schoolSwitcher={isGlobalAdmin ? <SchoolSwitcher token={token} /> : undefined}>
+      schoolSwitcher={isGlobalAdmin ? <SchoolSwitcher token={token} language={language} /> : undefined}>
       {section === "dashboard" && <AdminDashboard token={token} language={language} t={t} />}
       {section === "classrooms" && <ClassroomsPanel token={token} language={language} t={t} userRole={user.role} />}
       {section === "students" && <StudentsPanel token={token} language={language} t={t} userRole={user.role} />}
