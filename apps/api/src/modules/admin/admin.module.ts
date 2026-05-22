@@ -9,11 +9,15 @@ import { OpenLesson } from "../schools/entities/open-lesson.entity";
 import { Protocol } from "../schools/entities/protocol.entity";
 import { School } from "../schools/entities/school.entity";
 import { SecurityAuditLog } from "../schools/entities/security-audit-log.entity";
+import { NotificationsModule } from "../notifications/notifications.module";
 import { AdminService } from "./admin.service";
 import { AdminController } from "./admin.controller";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Teacher, Classroom, Student, Submission, GeneratedDocument, OpenLesson, Protocol, School, SecurityAuditLog])],
+  imports: [
+    TypeOrmModule.forFeature([Teacher, Classroom, Student, Submission, GeneratedDocument, OpenLesson, Protocol, School, SecurityAuditLog]),
+    NotificationsModule,
+  ],
   providers: [AdminService],
   controllers: [AdminController],
 })

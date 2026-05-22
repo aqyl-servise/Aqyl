@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as nodemailer from "nodemailer";
 import { Transporter } from "nodemailer";
+import { SmsService } from "../notifications/sms.service";
 
 type Lang = "ru" | "kz" | "en";
 
@@ -71,7 +72,10 @@ export class MailService {
   private readonly from: string;
   private readonly logger = new Logger(MailService.name);
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly smsService: SmsService,
+  ) {
     this.from = config.get<string>("SMTP_FROM") ?? "Aqyl <noreply@aqyl.kz>";
 
     this.transporter = nodemailer.createTransport({
@@ -85,7 +89,7 @@ export class MailService {
     });
   }
 
-  async sendPasswordReset(email: string, resetUrl: string, lang: Lang = "ru"): Promise<void> {
+  async sendPasswordReset(email: string, resetUrl: string, lang: Lang = "ru", phone?: string): Promise<void> {
     const i18n = getResetI18n(lang);
     const html = `
 <!DOCTYPE html>
@@ -148,6 +152,9 @@ export class MailService {
     } catch (err) {
       this.logger.error(`Failed to send password reset email to ${maskedEmail}`, err);
       throw err;
+    }
+    if (phone) {
+      await this.smsService.sendPasswordReset(phone, resetUrl, lang);
     }
   }
 }

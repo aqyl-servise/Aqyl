@@ -11,6 +11,7 @@ import { OpenLesson } from "../schools/entities/open-lesson.entity";
 import { Protocol } from "../schools/entities/protocol.entity";
 import { School } from "../schools/entities/school.entity";
 import { SecurityAuditLog } from "../schools/entities/security-audit-log.entity";
+import { SmsService } from "../notifications/sms.service";
 
 @Injectable()
 export class AdminService {
@@ -24,6 +25,7 @@ export class AdminService {
     @InjectRepository(Protocol) private readonly protocolRepo: Repository<Protocol>,
     @InjectRepository(School) private readonly schoolRepo: Repository<School>,
     @InjectRepository(SecurityAuditLog) private readonly auditRepo: Repository<SecurityAuditLog>,
+    private readonly smsService: SmsService,
   ) {}
 
   async getOverview(schoolId?: string | null) {
@@ -145,6 +147,9 @@ export class AdminService {
     }
     await this.teacherRepo.update(id, update);
     const t = await this.teacherRepo.findOne({ where: { id } });
+    if (t?.phone) {
+      await this.smsService.sendRegistrationApproved(t.phone, t.fullName, t.preferredLanguage as "ru" | "kz" | "en");
+    }
     return t ? this.serializeTeacher(t) : null;
   }
 

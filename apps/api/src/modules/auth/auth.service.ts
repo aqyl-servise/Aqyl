@@ -87,7 +87,8 @@ export class AuthService {
 
     const frontendUrl = this.configService.get<string>("FRONTEND_URL") ?? "http://localhost:3000";
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
-    await this.mailService.sendPasswordReset(email, resetUrl);
+    const lang = (teacher.preferredLanguage ?? "ru") as "ru" | "kz" | "en";
+    await this.mailService.sendPasswordReset(email, resetUrl, lang, teacher.phone);
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
