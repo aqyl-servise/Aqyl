@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
+import { Language, translations } from "../../lib/translations";
 
 type Lesson = {
   id: string; subject: string; classroomId?: string; cabinet?: string; lessonTime?: string;
@@ -18,18 +19,33 @@ type Analysis = {
 
 interface Props {
   token: string;
+  language: Language;
   lesson: Lesson;
   classroomName?: string;
   readOnly?: boolean;
   onClose: () => void;
 }
 
-const SURVEY_COLS = ["1 топ", "2 топ", "3 топ", "4 топ"];
-const PROGRESS_COLS = ["Сабақ кезеңдері", "Оқытудың түрлері мен әдістері", "Мұғалім іс-әрекеті", "Оқушы іс-әрекеті", "Ұсыныстар"];
-
 function emptyRow(len: number): string[] { return Array(len).fill(""); }
 
-export function LessonAnalysisForm({ token, lesson, classroomName, readOnly, onClose }: Props) {
+export function LessonAnalysisForm({ token, language, lesson, classroomName, readOnly, onClose }: Props) {
+  const t = translations[language];
+
+  const SURVEY_COLS = [
+    t.lesson_analysis_group_1,
+    t.lesson_analysis_group_2,
+    t.lesson_analysis_group_3,
+    t.lesson_analysis_group_4,
+  ];
+
+  const PROGRESS_COLS = [
+    t.lesson_analysis_stages_col,
+    t.lesson_analysis_methods_col,
+    t.kmzh_teacher_actions,
+    t.kmzh_student_actions,
+    t.lesson_analysis_recommendations_col,
+  ];
+
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -132,7 +148,7 @@ export function LessonAnalysisForm({ token, lesson, classroomName, readOnly, onC
   if (loading) {
     return (
       <div className="page">
-        <p className="muted" style={{ textAlign: "center", padding: 40 }}>Жүктелуде...</p>
+        <p className="muted" style={{ textAlign: "center", padding: 40 }}>{t.loading}</p>
       </div>
     );
   }
@@ -142,21 +158,21 @@ export function LessonAnalysisForm({ token, lesson, classroomName, readOnly, onC
   return (
     <div className="page">
       <div className="page-header">
-        <button className="btn btn-ghost btn-sm" onClick={onClose}>← Назад</button>
-        <h1 className="page-title">📋 САБАҚТЫ ТАЛДАУ СЫЗБАСЫ</h1>
+        <button className="btn btn-ghost btn-sm" onClick={onClose}>← {t.back}</button>
+        <h1 className="page-title">📋 {t.lesson_analysis_title}</h1>
         <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
           {!readOnly && (
             <>
               <button className="btn btn-outline btn-sm" disabled={saving} onClick={() => handleSave(true)}>
-                Черновик
+                {t.status_draft}
               </button>
               <button className="btn btn-primary btn-sm" disabled={saving} onClick={() => handleSave(false)}>
-                {saving ? <span className="spinner" /> : "Сохранить"}
+                {saving ? <span className="spinner" /> : t.btn_save}
               </button>
             </>
           )}
           {analysis && !analysis.isDraft && (
-            <button className="btn btn-outline btn-sm" onClick={handlePdf}>📄 PDF</button>
+            <button className="btn btn-outline btn-sm" onClick={handlePdf}>📄 {t.exportPdf}</button>
           )}
         </div>
       </div>
@@ -165,44 +181,44 @@ export function LessonAnalysisForm({ token, lesson, classroomName, readOnly, onC
         {/* Header block */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 16px", marginBottom: 16 }}>
           <div className="field">
-            <label className="field-label">Күні</label>
+            <label className="field-label">{t.date}</label>
             <input className="input" readOnly value={dateStr} />
           </div>
           <div className="field">
-            <label className="field-label">Уақыты</label>
+            <label className="field-label">{t.lesson_analysis_time}</label>
             <input className="input" readOnly value={lesson.lessonTime ?? "—"} />
           </div>
           <div className="field">
-            <label className="field-label">Сынып</label>
+            <label className="field-label">{t.grade}</label>
             <input className="input" readOnly value={classroomName ?? lesson.classroomId ?? "—"} />
           </div>
           <div className="field">
-            <label className="field-label">Кабинет</label>
+            <label className="field-label">{t.room}</label>
             <input className="input" readOnly value={lesson.cabinet ?? "—"} />
           </div>
           <div className="field" style={{ gridColumn: "1 / -1" }}>
-            <label className="field-label">Мұғалімнің аты-жөні</label>
+            <label className="field-label">{t.kmzh_teacher_name}</label>
             <input className="input" readOnly value={lesson.teacher?.fullName ?? "—"} />
           </div>
         </div>
 
         <div className="field" style={{ marginBottom: 10 }}>
-          <label className="field-label">Сабаққа қатынасу мақсаты</label>
+          <label className="field-label">{t.lesson_visit_purpose}</label>
           <textarea className="textarea" rows={2} value={visitPurpose}
             onChange={(e) => setVisitPurpose(e.target.value)} readOnly={readOnly} />
         </div>
         <div className="field" style={{ marginBottom: 10 }}>
-          <label className="field-label">Сабақ тақырыбы</label>
+          <label className="field-label">{t.lesson_topic_col}</label>
           <input className="input" value={lessonTopic}
             onChange={(e) => setLessonTopic(e.target.value)} readOnly={readOnly} />
         </div>
         <div className="field" style={{ marginBottom: 10 }}>
-          <label className="field-label">Сабақтың мақсаты</label>
+          <label className="field-label">{t.lesson_purpose}</label>
           <textarea className="textarea" rows={2} value={lessonPurpose}
             onChange={(e) => setLessonPurpose(e.target.value)} readOnly={readOnly} />
         </div>
         <div className="field" style={{ marginBottom: 20 }}>
-          <label className="field-label">Сабақтың жабдықталуы</label>
+          <label className="field-label">{t.lesson_equipment}</label>
           <textarea className="textarea" rows={2} value={equipment}
             onChange={(e) => setEquipment(e.target.value)} readOnly={readOnly} />
         </div>
@@ -210,10 +226,10 @@ export function LessonAnalysisForm({ token, lesson, classroomName, readOnly, onC
         {/* Table 1 */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-            <strong>Оқушыларды сұраудың схемалық кестесі</strong>
+            <strong>{t.lesson_analysis_survey_title}</strong>
             {!readOnly && (
               <button className="btn btn-outline btn-sm"
-                onClick={() => setSurveyRows((r) => [...r, emptyRow(4)])}>+ Жол</button>
+                onClick={() => setSurveyRows((r) => [...r, emptyRow(4)])}>{t.lesson_analysis_add_row}</button>
             )}
           </div>
           <div style={{ overflowX: "auto" }}>
@@ -247,10 +263,10 @@ export function LessonAnalysisForm({ token, lesson, classroomName, readOnly, onC
         {/* Table 2 */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-            <strong>Сабақтың барысы</strong>
+            <strong>{t.lesson_analysis_progress_title}</strong>
             {!readOnly && (
               <button className="btn btn-outline btn-sm"
-                onClick={() => setProgressRows((r) => [...r, emptyRow(5)])}>+ Жол</button>
+                onClick={() => setProgressRows((r) => [...r, emptyRow(5)])}>{t.lesson_analysis_add_row}</button>
             )}
           </div>
           <div style={{ overflowX: "auto" }}>
@@ -283,12 +299,12 @@ export function LessonAnalysisForm({ token, lesson, classroomName, readOnly, onC
 
         {/* Conclusion */}
         <div className="field" style={{ marginBottom: 10 }}>
-          <label className="field-label">Қорытынды</label>
+          <label className="field-label">{t.lesson_analysis_conclusion}</label>
           <textarea className="textarea" rows={4} value={conclusion}
             onChange={(e) => setConclusion(e.target.value)} readOnly={readOnly} />
         </div>
         <div className="field" style={{ marginBottom: 20 }}>
-          <label className="field-label">Сабақты жақсарту мақсатындағы ұсыныстар</label>
+          <label className="field-label">{t.lesson_analysis_improvement_recs}</label>
           <textarea className="textarea" rows={4} value={recommendations}
             onChange={(e) => setRecommendations(e.target.value)} readOnly={readOnly} />
         </div>
@@ -297,22 +313,24 @@ export function LessonAnalysisForm({ token, lesson, classroomName, readOnly, onC
         <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16, marginBottom: 16 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 16px" }}>
             <div className="field">
-              <label className="field-label">Қорытынды және ұсыныспен танысқан мұғалім</label>
+              <label className="field-label">{t.lesson_analysis_teacher_reviewed}</label>
               <input className="input" value={teacherSignature}
-                onChange={(e) => setTeacherSignature(e.target.value)} readOnly={readOnly} placeholder="Қолы" />
+                onChange={(e) => setTeacherSignature(e.target.value)} readOnly={readOnly}
+                placeholder={t.lesson_analysis_signature} />
             </div>
             <div className="field">
-              <label className="field-label">Күні</label>
+              <label className="field-label">{t.date}</label>
               <input className="input" type="date" value={teacherSignDate}
                 onChange={(e) => setTeacherSignDate(e.target.value)} readOnly={readOnly} />
             </div>
             <div className="field">
-              <label className="field-label">Сабаққа қатысушы</label>
+              <label className="field-label">{t.lesson_analysis_observer}</label>
               <input className="input" value={analyzerSignature}
-                onChange={(e) => setAnalyzerSignature(e.target.value)} readOnly={readOnly} placeholder="Қолы" />
+                onChange={(e) => setAnalyzerSignature(e.target.value)} readOnly={readOnly}
+                placeholder={t.lesson_analysis_signature} />
             </div>
             <div className="field">
-              <label className="field-label">Күні</label>
+              <label className="field-label">{t.date}</label>
               <input className="input" type="date" value={analyzerSignDate}
                 onChange={(e) => setAnalyzerSignDate(e.target.value)} readOnly={readOnly} />
             </div>
@@ -324,17 +342,17 @@ export function LessonAnalysisForm({ token, lesson, classroomName, readOnly, onC
           {!readOnly && (
             <>
               <button className="btn btn-primary" disabled={saving} onClick={() => handleSave(false)}>
-                {saving ? <span className="spinner" /> : "Сохранить"}
+                {saving ? <span className="spinner" /> : t.btn_save}
               </button>
               <button className="btn btn-outline" disabled={saving} onClick={() => handleSave(true)}>
-                Черновик
+                {t.status_draft}
               </button>
             </>
           )}
           {analysis && !analysis.isDraft && (
-            <button className="btn btn-outline" onClick={handlePdf}>📄 Экспорт в PDF</button>
+            <button className="btn btn-outline" onClick={handlePdf}>📄 {t.exportPdf}</button>
           )}
-          <button className="btn btn-ghost" onClick={onClose}>← Назад</button>
+          <button className="btn btn-ghost" onClick={onClose}>← {t.back}</button>
         </div>
       </div>
     </div>

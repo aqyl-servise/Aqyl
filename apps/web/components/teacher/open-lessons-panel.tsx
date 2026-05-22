@@ -105,6 +105,7 @@ export function OpenLessonsPanel({
     return (
       <LessonAnalysisForm
         token={token}
+        language={language}
         lesson={view.lesson}
         classroomName={classroomName(view.lesson.classroomId)}
         readOnly={view.readOnly}
