@@ -5,7 +5,13 @@ import { Language, translations } from "../../lib/translations";
 
 interface Props { token: string; language: Language; userRole: string; }
 
-const DAYS = ["", "Пн", "Вт", "Ср", "Чт", "Пт"];
+const DAYS_IDX: Record<number, string> = {
+  1: "day_mon", 2: "day_tue", 3: "day_wed", 4: "day_thu", 5: "day_fri",
+};
+function dayLabel(t: Record<string, string>, d: number): string {
+  const key = DAYS_IDX[d];
+  return key ? (t[key] ?? key) : "";
+}
 const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 type ScheduleEntry = { id: string; dayOfWeek: number; period: number; subject: string; room?: string; version: string; teacher?: { id: string; fullName: string }; classroom?: { id: string; name: string } };
@@ -161,7 +167,7 @@ export function ScheduleAdminPanel({ token, language, userRole }: Props) {
                 <tr>
                   <th style={thStyle}>{t.period}</th>
                   {[1,2,3,4,5].map(d => (
-                    <th key={d} style={thStyle}>{DAYS[d]}</th>
+                    <th key={d} style={thStyle}>{dayLabel(t, d)}</th>
                   ))}
                 </tr>
               </thead>
@@ -195,7 +201,7 @@ export function ScheduleAdminPanel({ token, language, userRole }: Props) {
       {modal && (
         <div className="modal-overlay" onClick={() => setModal(null)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
-            <h3 style={{ margin: "0 0 16px" }}>{DAYS[modal.day]}, {t.period} {modal.period}</h3>
+            <h3 style={{ margin: "0 0 16px" }}>{dayLabel(t, modal.day)}, {t.period} {modal.period}</h3>
 
             <div className="field">
               <label className="field-label">{t.schedule_subject_label}</label>
