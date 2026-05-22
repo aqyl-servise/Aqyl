@@ -7,6 +7,26 @@ import { Teacher } from "../teachers/entities/teacher.entity";
 export const CURRENT_DAILY_LIMIT = 20;
 const WARNING_THRESHOLD = 16; // 80% of 20
 
+type Lang = "ru" | "kz" | "en";
+
+const AI_MSGS: Record<Lang, {
+  limitExhausted: (limit: number) => string;
+  warningLeft: (remaining: number) => string;
+}> = {
+  ru: {
+    limitExhausted: (l) => `Дневной лимит AI-запросов исчерпан (${l}/${l}). Обновится в полночь.`,
+    warningLeft: (r) => `Осталось ${r} AI-запроса на сегодня`,
+  },
+  kz: {
+    limitExhausted: (l) => `Күнделікті AI сұраулар лимиті таусылды (${l}/${l}). Түнгі 12-де жаңарады.`,
+    warningLeft: (r) => `Бүгін ${r} AI сұрауы қалды`,
+  },
+  en: {
+    limitExhausted: (l) => `Daily AI request limit reached (${l}/${l}). Resets at midnight.`,
+    warningLeft: (r) => `${r} AI requests left today`,
+  },
+};
+
 export interface UserContext {
   userId: string;
   schoolId: string;
@@ -29,7 +49,7 @@ export class AiUsageService {
     return role === "teacher" || role === "class_teacher";
   }
 
-  async checkAndIncrement(userId: string, schoolId: string, actionType: string): Promise<{
+  async checkAndIncrement(userId: string, schoolId: string, actionType: string, lang: Lang = "ru"): Promise<{
     allowed: boolean;
     warning?: boolean;
     message?: string;
@@ -49,7 +69,7 @@ export class AiUsageService {
     if (currentTotal >= CURRENT_DAILY_LIMIT) {
       return {
         allowed: false,
-        message: `Дневной лимит AI-запросов исчерпан (${CURRENT_DAILY_LIMIT}/${CURRENT_DAILY_LIMIT}). Обновится в полночь.`,
+        message: AI_MSGS[lang].limitExhausted(CURRENT_DAILY_LIMIT),
       };
     }
 
@@ -68,7 +88,7 @@ export class AiUsageService {
       return {
         allowed: true,
         warning: true,
-        message: `Осталось ${CURRENT_DAILY_LIMIT - newTotal} AI-запроса на сегодня`,
+        message: AI_MSGS[lang].warningLeft(CURRENT_DAILY_LIMIT - newTotal),
         currentCount: newTotal,
         limit: CURRENT_DAILY_LIMIT,
       };

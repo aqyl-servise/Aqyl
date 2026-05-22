@@ -1,6 +1,26 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, Between } from "typeorm";
+
+type Lang = "ru" | "kz" | "en";
+
+const VIOLATION_NOTIFS: Record<Lang, {
+  title: string;
+  message: (description: string, points: number) => string;
+}> = {
+  ru: {
+    title: "Зафиксировано замечание",
+    message: (d, p) => `К вашему профилю добавлено замечание: ${d}. Вычтено баллов: ${p}`,
+  },
+  kz: {
+    title: "Ескерту тіркелді",
+    message: (d, p) => `Профиліңізге ескерту қосылды: ${d}. Шегерілген баллдар: ${p}`,
+  },
+  en: {
+    title: "Violation Recorded",
+    message: (d, p) => `A violation has been added to your profile: ${d}. Points deducted: ${p}`,
+  },
+};
 import { NotificationsService } from "../notifications/notifications.service";
 import { TeacherRating, RatingPeriod } from "../schools/entities/teacher-rating.entity";
 import { TeacherViolation, ViolationType } from "../schools/entities/teacher-violation.entity";
@@ -366,17 +386,19 @@ export class RatingService {
   async createViolation(data: {
     teacherId: string; schoolId: string; type: ViolationType;
     description: string; date: string; pointsDeducted: number; createdBy: string;
+    lang?: Lang;
   }) {
     const violation = await this.violationRepo.save(
       this.violationRepo.create({ ...data, teacher: { id: data.teacherId } as Teacher })
     );
 
+    const n = VIOLATION_NOTIFS[data.lang ?? "ru"];
     await this.notificationsService.createNotification({
       teacherId: data.teacherId,
       schoolId: data.schoolId,
       type: "violation",
-      title: "Зафиксировано замечание",
-      message: `К вашему профилю добавлено замечание: ${data.description}. Вычтено баллов: ${data.pointsDeducted}`,
+      title: n.title,
+      message: n.message(data.description, data.pointsDeducted),
     });
 
     return violation;

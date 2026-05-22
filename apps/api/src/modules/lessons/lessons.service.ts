@@ -6,6 +6,26 @@ import { LessonAnalysis } from "../schools/entities/lesson-analysis.entity";
 import { NotificationsService } from "../notifications/notifications.service";
 import PDFDocument = require("pdfkit");
 
+type Lang = "ru" | "kz" | "en";
+
+const LESSON_NOTIFS: Record<Lang, {
+  analysisReadyTitle: string;
+  analysisReadyMsg: (topic: string) => string;
+}> = {
+  ru: {
+    analysisReadyTitle: "Анализ открытого урока готов",
+    analysisReadyMsg: (topic) => `Завуч добавил анализ вашего урока: ${topic}`,
+  },
+  kz: {
+    analysisReadyTitle: "Ашық сабақтың талдауы дайын",
+    analysisReadyMsg: (topic) => `Мектеп меңгерушісі сіздің сабағыңыздың талдауын қосты: ${topic}`,
+  },
+  en: {
+    analysisReadyTitle: "Open Lesson Analysis Ready",
+    analysisReadyMsg: (topic) => `The vice-principal has added an analysis of your lesson: ${topic}`,
+  },
+};
+
 @Injectable()
 export class LessonsService {
   constructor(
@@ -64,7 +84,7 @@ export class LessonsService {
     });
   }
 
-  async saveAnalysis(lessonId: string, analyzerId: string, data: Partial<LessonAnalysis>) {
+  async saveAnalysis(lessonId: string, analyzerId: string, data: Partial<LessonAnalysis>, lang: Lang = "ru") {
     const [existing, lesson] = await Promise.all([
       this.analysisRepo.findOne({ where: { lessonId } }),
       this.findOne(lessonId),
@@ -81,12 +101,13 @@ export class LessonsService {
     }
 
     if (!data.isDraft && !wasAlreadyFinal && lesson?.teacher?.id) {
+      const n = LESSON_NOTIFS[lang];
       await this.notificationsService.createNotification({
         teacherId: lesson.teacher.id,
         schoolId: lesson.schoolId,
         type: "open_lesson_analyzed",
-        title: "Анализ открытого урока готов",
-        message: `Завуч добавил анализ вашего урока: ${lesson.lessonTopic ?? lesson.subject}`,
+        title: n.analysisReadyTitle,
+        message: n.analysisReadyMsg(lesson.lessonTopic ?? lesson.subject),
       });
     }
 
