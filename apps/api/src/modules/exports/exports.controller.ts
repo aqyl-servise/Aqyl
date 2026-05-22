@@ -1,11 +1,15 @@
 import { Body, Controller, Header, Post, Res, UseGuards } from "@nestjs/common";
 import { Response } from "express";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RolesGuard } from "../auth/guards/roles.guard";
+import { Roles } from "../auth/decorators/roles.decorator";
 import { ExportPdfDto } from "./dto/export-pdf.dto";
 import { ExportsService } from "./exports.service";
+import { STAFF_ROLES, ALL_TEACHER_ROLES } from "../../common/roles.constants";
 
-@UseGuards(JwtAuthGuard)
 @Controller("exports")
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(...STAFF_ROLES, ...ALL_TEACHER_ROLES)
 export class ExportsController {
   constructor(private readonly exportsService: ExportsService) {}
 

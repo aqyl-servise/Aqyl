@@ -3,8 +3,14 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { AssignmentsService } from "./assignments.service";
+import { ADMIN_ROLES, ALL_TEACHER_ROLES } from "../../common/roles.constants";
 
 interface ReqUser { user: { id: string; role: string } }
+
+// teacher + class_teacher + admin tier (read access to specific assignment data)
+const TEACHER_AND_ADMIN = [...ALL_TEACHER_ROLES, ...ADMIN_ROLES] as const;
+// teacher + class_teacher + student (personal assignment views)
+const TEACHER_AND_STUDENT = [...ALL_TEACHER_ROLES, "student"] as const;
 
 @Controller("assignments")
 @UseGuards(JwtAuthGuard)
@@ -12,6 +18,8 @@ export class AssignmentsController {
   constructor(private readonly service: AssignmentsService) {}
 
   @Get()
+  @UseGuards(RolesGuard)
+  @Roles(...TEACHER_AND_STUDENT)
   getMyAssignments(@Req() req: ReqUser) {
     return this.service.getForTeacher(req.user.id);
   }
@@ -24,18 +32,25 @@ export class AssignmentsController {
   }
 
   @Get("classroom/:id")
+  @UseGuards(RolesGuard)
+  @Roles(...TEACHER_AND_ADMIN)
   getForClassroom(@Param("id") id: string) {
     return this.service.getForClassroom(id);
   }
 
-  @Get(":id")
-  findOne(@Param("id") id: string) {
-    return this.service.findOne(id);
-  }
-
+  // /:id/submissions must be declared before /:id to avoid route shadowing
   @Get(":id/submissions")
+  @UseGuards(RolesGuard)
+  @Roles(...TEACHER_AND_ADMIN)
   getSubmissions(@Param("id") id: string) {
     return this.service.getSubmissionsForAssignment(id);
+  }
+
+  @Get(":id")
+  @UseGuards(RolesGuard)
+  @Roles(...TEACHER_AND_STUDENT)
+  findOne(@Param("id") id: string) {
+    return this.service.findOne(id);
   }
 
   @Post()
@@ -89,6 +104,8 @@ export class AssignmentsController {
   }
 
   @Post(":id/submit")
+  @UseGuards(RolesGuard)
+  @Roles("student")
   submitWork(
     @Param("id") assignmentId: string,
     @Body() body: { studentId: string; content?: string; fileUrl?: string },
