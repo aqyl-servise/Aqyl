@@ -89,7 +89,10 @@
       "Bash(xargs head -20)",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); deps={**d.get\\('dependencies',{}\\), **d.get\\('devDependencies',{}\\)}; [print\\(k,v\\) for k in ['docx','puppeteer','handlebars','@handlebars/allow-prototype-access'] if k in deps or print\\(k,'NOT FOUND'\\)]\")",
       "PowerShell(cd \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\api\" && npx tsc --noEmit 2>&1 | Where-Object { $_ -match \"malimet\" })",
-      "PowerShell(cd \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\api\" && npx tsc --noEmit 2>&1 | Where-Object { $_ -notmatch \"spec\\\\.ts|kmzh\\\\.controller|kmzh\\\\.session\" } | Select-Object -First 30)"
+      "PowerShell(cd \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\api\" && npx tsc --noEmit 2>&1 | Where-Object { $_ -notmatch \"spec\\\\.ts|kmzh\\\\.controller|kmzh\\\\.session\" } | Select-Object -First 30)",
+      "Bash(pm2 restart *)",
+      "Bash(pm2 logs *)",
+      "PowerShell(pm2 *)"
     ]
   }
 }

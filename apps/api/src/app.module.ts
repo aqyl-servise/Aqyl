@@ -142,6 +142,7 @@ import { MalimetModule } from "./modules/malimet/malimet.module";
       SubjectTeacherAssignment,
       FLTask, FLAssignment, FLSubmission, FLResult,
       TeacherRating, TeacherViolation,
+      SecurityAuditLog,
     ]),
     TeachersModule,
     AuthModule,
