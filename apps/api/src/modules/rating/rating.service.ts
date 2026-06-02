@@ -279,26 +279,33 @@ export class RatingService {
       where: { schoolId, status: "active" },
     });
 
-    const results = await Promise.all(
+    if (teachers.length === 0) return { calculated: 0, period, periodNumber, academicYear };
+
+    // Optimized: replaced N findOne + N save with one bulk load + one bulk save
+    const existingRatings = await this.ratingRepo.find({
+      where: { schoolId, period, periodNumber, academicYear },
+      relations: { teacher: true },
+    });
+    const existingMap = new Map(existingRatings.map(r => [r.teacher.id, r]));
+
+    const ratingsToSave = await Promise.all(
       teachers.map(async (teacher) => {
         const scores = await this.calculateTeacherScore(teacher, schoolId, period, periodNumber, academicYear);
-        let existing = await this.ratingRepo.findOne({
-          where: { teacher: { id: teacher.id }, schoolId, period, periodNumber, academicYear },
-        });
+        const existing = existingMap.get(teacher.id);
         const manualAdj = existing?.manualAdjustment ?? 0;
         const manualComment = existing?.manualComment;
         const totalWithAdj = Math.round(clamp(scores.totalScore + manualAdj, 0, 100) * 10) / 10;
 
         if (existing) {
           Object.assign(existing, { ...scores, manualAdjustment: manualAdj, manualComment, totalScore: totalWithAdj });
-          return this.ratingRepo.save(existing);
+          return existing;
         }
-        const newRating = this.ratingRepo.create({ ...scores, totalScore: totalWithAdj, teacher: { id: teacher.id } as Teacher });
-        return this.ratingRepo.save(newRating);
+        return this.ratingRepo.create({ ...scores, totalScore: totalWithAdj, teacher: { id: teacher.id } as Teacher });
       })
     );
 
-    return { calculated: results.length, period, periodNumber, academicYear };
+    await this.ratingRepo.save(ratingsToSave);
+    return { calculated: ratingsToSave.length, period, periodNumber, academicYear };
   }
 
   async getSchoolRatings(schoolId: string, filters: {

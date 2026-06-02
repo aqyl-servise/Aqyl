@@ -51,38 +51,63 @@ export class AdminService {
     const studentWhere = schoolId ? { classroom: { schoolId } } : {};
     const students = await this.studentRepo.count({ where: studentWhere });
 
-    const submissions = await this.submissionRepo.find({
-      ...(schoolId ? { where: { schoolId } } : {}),
-    });
-
-    const avgScore = submissions.length
-      ? Math.round(submissions.reduce((s, sub) => s + Number(sub.score) / Number(sub.maxScore), 0) / submissions.length * 100)
-      : 0;
+    // Optimized: replaced full table scan + JS reduce with AVG aggregate in DB
+    const avgQb = this.submissionRepo
+      .createQueryBuilder('sub')
+      .select('AVG(CAST(sub.score AS float) / NULLIF(CAST(sub.maxScore AS float), 0))', 'avgRatio');
+    if (schoolId) avgQb.where('sub.schoolId = :schoolId', { schoolId });
+    const { avgRatio } = await avgQb.getRawOne<{ avgRatio: string | null }>() ?? { avgRatio: null };
+    const avgScore = avgRatio != null ? Math.round(parseFloat(avgRatio) * 100) : 0;
 
     return { teachers, classrooms, students, avgScore, documents, openLessons, protocols, pendingCount };
   }
 
   async getSchoolAnalytics(schoolId?: string | null) {
     const where = schoolId ? { schoolId } : {};
+    // Optimized: load classrooms with teacher only (no students/submissions in memory)
     const classrooms = await this.classroomRepo.find({
       where,
-      relations: { students: { submissions: true }, teacher: true },
+      relations: { teacher: true },
       order: { grade: "ASC", name: "ASC" },
     });
 
+    if (classrooms.length === 0) return [];
+    const classroomIds = classrooms.map(c => c.id);
+
+    // Optimized: student counts per classroom via COUNT in DB
+    const studentCountsRaw = await this.studentRepo
+      .createQueryBuilder('s')
+      .innerJoin('s.classroom', 'c')
+      .select('c.id', 'classroomId')
+      .addSelect('COUNT(s.id)', 'count')
+      .where('c.id IN (:...classroomIds)', { classroomIds })
+      .groupBy('c.id')
+      .getRawMany<{ classroomId: string; count: string }>();
+
+    // Optimized: avg score per classroom via AVG in DB (sub → student → classroom)
+    const avgScoresRaw = await this.submissionRepo
+      .createQueryBuilder('sub')
+      .innerJoin('sub.student', 's')
+      .innerJoin('s.classroom', 'c')
+      .select('c.id', 'classroomId')
+      .addSelect('AVG(CAST(sub.score AS float) / NULLIF(CAST(sub.maxScore AS float), 0))', 'avgRatio')
+      .where('c.id IN (:...classroomIds)', { classroomIds })
+      .groupBy('c.id')
+      .getRawMany<{ classroomId: string; avgRatio: string }>();
+
+    const countMap = new Map(studentCountsRaw.map(r => [r.classroomId, parseInt(r.count)]));
+    const avgMap = new Map(avgScoresRaw.map(r => [r.classroomId, r.avgRatio]));
+
     return classrooms.map((cls) => {
-      const allSubs = cls.students.flatMap((s) => s.submissions);
-      const avg = allSubs.length
-        ? Math.round(allSubs.reduce((s, sub) => s + Number(sub.score) / Number(sub.maxScore), 0) / allSubs.length * 100)
-        : 0;
+      const rawAvg = avgMap.get(cls.id);
       return {
         id: cls.id,
         name: cls.name,
         grade: cls.grade,
         subject: cls.subject,
         teacher: cls.teacher?.fullName ?? "—",
-        studentCount: cls.students.length,
-        avgScore: avg,
+        studentCount: countMap.get(cls.id) ?? 0,
+        avgScore: rawAvg != null ? Math.round(parseFloat(rawAvg) * 100) : 0,
       };
     });
   }
@@ -92,17 +117,57 @@ export class AdminService {
       ? { role: "teacher" as const, schoolId }
       : { role: "teacher" as const };
 
+    // Optimized: replaced 4-level JOIN (teacher→classroom→student→submission) with
+    // basic teacher load + 3 separate aggregated queries
     const teachers = await this.teacherRepo.find({
       where,
-      relations: { classrooms: { students: { submissions: true } }, generatedDocuments: true },
       order: { fullName: "ASC" },
     });
 
+    if (teachers.length === 0) return [];
+    const teacherIds = teachers.map(t => t.id);
+
+    // Class + student counts per teacher via GROUP BY
+    const classStatsRaw = await this.classroomRepo
+      .createQueryBuilder('c')
+      .innerJoin('c.teacher', 't')
+      .leftJoin('c.students', 's')
+      .select('t.id', 'teacherId')
+      .addSelect('COUNT(DISTINCT c.id)', 'classCount')
+      .addSelect('COUNT(DISTINCT s.id)', 'studentCount')
+      .where('t.id IN (:...teacherIds)', { teacherIds })
+      .groupBy('t.id')
+      .getRawMany<{ teacherId: string; classCount: string; studentCount: string }>();
+
+    // Avg submission score per teacher via AVG in DB
+    const scoreStatsRaw = await this.submissionRepo
+      .createQueryBuilder('sub')
+      .innerJoin('sub.student', 's')
+      .innerJoin('s.classroom', 'c')
+      .innerJoin('c.teacher', 't')
+      .select('t.id', 'teacherId')
+      .addSelect('AVG(CAST(sub.score AS float) / NULLIF(CAST(sub.maxScore AS float), 0))', 'avgRatio')
+      .where('t.id IN (:...teacherIds)', { teacherIds })
+      .groupBy('t.id')
+      .getRawMany<{ teacherId: string; avgRatio: string }>();
+
+    // Document count per teacher via COUNT in DB
+    const docStatsRaw = await this.docRepo
+      .createQueryBuilder('d')
+      .innerJoin('d.teacher', 't')
+      .select('t.id', 'teacherId')
+      .addSelect('COUNT(d.id)', 'docCount')
+      .where('t.id IN (:...teacherIds)', { teacherIds })
+      .groupBy('t.id')
+      .getRawMany<{ teacherId: string; docCount: string }>();
+
+    const classMap = new Map(classStatsRaw.map(r => [r.teacherId, r]));
+    const scoreMap = new Map(scoreStatsRaw.map(r => [r.teacherId, r.avgRatio]));
+    const docMap = new Map(docStatsRaw.map(r => [r.teacherId, parseInt(r.docCount)]));
+
     return teachers.map((t) => {
-      const allSubs = t.classrooms.flatMap((c) => c.students.flatMap((s) => s.submissions));
-      const avg = allSubs.length
-        ? Math.round(allSubs.reduce((s, sub) => s + Number(sub.score) / Number(sub.maxScore), 0) / allSubs.length * 100)
-        : 0;
+      const cs = classMap.get(t.id);
+      const rawAvg = scoreMap.get(t.id);
       return {
         id: t.id,
         fullName: t.fullName,
@@ -110,10 +175,10 @@ export class AdminService {
         subject: t.subject,
         experience: t.experience,
         category: t.category,
-        classCount: t.classrooms.length,
-        studentCount: t.classrooms.reduce((s, c) => s + c.students.length, 0),
-        avgScore: avg,
-        docCount: t.generatedDocuments.length,
+        classCount: cs ? parseInt(cs.classCount) : 0,
+        studentCount: cs ? parseInt(cs.studentCount) : 0,
+        avgScore: rawAvg != null ? Math.round(parseFloat(rawAvg) * 100) : 0,
+        docCount: docMap.get(t.id) ?? 0,
       };
     });
   }
