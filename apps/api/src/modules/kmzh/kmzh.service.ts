@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { KmzhGenerateDto } from './dto/kmzh-generate.dto';
 import { KmzhSaveDto } from './dto/kmzh-save.dto';
-import { KmzhCacheService } from './kmzh.cache.service';
+import { KmzhStageCacheService } from './kmzh.cache.service';
 import { KmzhSessionService } from './kmzh.session.service';
 import { KmzhSaved } from './entities/kmzh-saved.entity';
 import { ADAL_AZAMAT_VALUES } from './constants/adal-azamat.constants';
@@ -19,7 +19,7 @@ export class KmzhService {
   private readonly logger = new Logger(KmzhService.name);
 
   constructor(
-    private readonly cacheService: KmzhCacheService,
+    private readonly cacheService: KmzhStageCacheService,
     private readonly sessionService: KmzhSessionService,
     private readonly tokenService: TokenService,
     private readonly aiClientService: AiClientService,

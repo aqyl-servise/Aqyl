@@ -52,7 +52,7 @@ export class AdminService {
     const students = await this.studentRepo.count({ where: studentWhere });
 
     const submissions = await this.submissionRepo.find({
-      ...(schoolId ? { where: { student: { classroom: { schoolId } } } } : {}),
+      ...(schoolId ? { where: { schoolId } } : {}),
     });
 
     const avgScore = submissions.length

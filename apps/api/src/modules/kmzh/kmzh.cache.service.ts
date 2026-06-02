@@ -7,8 +7,8 @@ import { CURRENT_PROMPT_VERSION } from './constants/prompt-version.constants';
 import { KmzhGenerateDto } from './dto/kmzh-generate.dto';
 
 @Injectable()
-export class KmzhCacheService {
-  private readonly logger = new Logger(KmzhCacheService.name);
+export class KmzhStageCacheService {
+  private readonly logger = new Logger(KmzhStageCacheService.name);
 
   constructor(
     @InjectRepository(KmzhStageCache)

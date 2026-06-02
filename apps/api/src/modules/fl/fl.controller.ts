@@ -78,8 +78,8 @@ export class FLController {
 
   @Get("assignments/:id/submissions")
   @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal", "vice_principal_academic")
-  getSubmissions(@Param("id") assignmentId: string) {
-    return this.svc.getSubmissions(assignmentId);
+  getSubmissions(@Param("id") assignmentId: string, @Req() req: ReqUser) {
+    return this.svc.getSubmissions(assignmentId, req.user.schoolId);
   }
 
   @Post("assignments/:id/submit")

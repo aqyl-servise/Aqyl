@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, Index, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Student } from "./student.entity";
 
 @Entity()
@@ -10,6 +10,10 @@ export class Submission {
     onDelete: "CASCADE",
   })
   student!: Student;
+
+  @Index()
+  @Column({ nullable: true })
+  schoolId?: string;
 
   @Column()
   topic!: string;
