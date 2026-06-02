@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
@@ -23,6 +23,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload) {
     const teacher = await this.teachersService.findById(payload.sub);
     if (!teacher) return null;
+    if (teacher.role !== "admin" && !teacher.schoolId) {
+      throw new UnauthorizedException("Учитель не привязан к школе. Обратитесь к администратору.");
+    }
     return {
       id: teacher.id,
       fullName: teacher.fullName,

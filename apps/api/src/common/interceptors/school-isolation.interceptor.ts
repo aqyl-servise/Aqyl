@@ -45,6 +45,11 @@ export class SchoolIsolationInterceptor implements NestInterceptor {
       return next.handle();
     }
 
+    // Non-admin without a school assignment cannot pass school isolation
+    if (!user.schoolId) {
+      throw new ForbiddenException("School context required");
+    }
+
     const requestedSchoolId = this.extractSchoolId(request);
 
     if (requestedSchoolId && user.schoolId && requestedSchoolId !== user.schoolId) {

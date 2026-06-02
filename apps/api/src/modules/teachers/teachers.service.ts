@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Teacher, UserRole } from "./entities/teacher.entity";
@@ -46,6 +46,9 @@ export class TeachersService {
   }
 
   create(data: Partial<Teacher>) {
+    if (data.role !== "admin" && data.status !== "pending" && !data.schoolId) {
+      throw new BadRequestException("Необходимо указать школу");
+    }
     return this.teachersRepository.save(this.teachersRepository.create(data));
   }
 
