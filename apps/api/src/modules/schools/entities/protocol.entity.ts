@@ -30,6 +30,7 @@ export class Protocol {
   @CreateDateColumn()
   createdAt!: Date;
 
+  @Index()
   @ManyToOne(() => Teacher, { onDelete: "CASCADE" })
   createdBy!: Teacher;
 }

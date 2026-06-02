@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, Index, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { Teacher } from "../../teachers/entities/teacher.entity";
 import { Classroom } from "./classroom.entity";
 
@@ -7,6 +7,7 @@ export class Schedule {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
+  @Index()
   @Column({ nullable: true })
   schoolId?: string;
 

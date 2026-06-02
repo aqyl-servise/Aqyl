@@ -36,6 +36,7 @@ export class Assignment {
   @CreateDateColumn()
   createdAt!: Date;
 
+  @Index()
   @ManyToOne(() => Teacher, { onDelete: "CASCADE" })
   teacher!: Teacher;
 

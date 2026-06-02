@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity("final_attestation_student")
 export class FinalAttestationStudent {
@@ -26,6 +26,7 @@ export class FinalAttestationStudent {
   @Column({ nullable: true })
   parentName?: string;
 
+  @Index()
   @Column({ nullable: true })
   schoolId?: string;
 
