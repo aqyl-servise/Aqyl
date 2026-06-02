@@ -163,37 +163,4 @@ export class AiChatService {
     }
   }
 
-  async generateLessonPlan(subject: string, grade: string, topic: string, duration: number, userCtx?: UserContext): Promise<{ content: string; warning?: boolean; warningMessage?: string }> {
-    if (!this.aiClientService.isConfigured) {
-      return { content: `КМЖ: ${subject}, ${grade} класс, тема: «${topic}», ${duration} мин.` };
-    }
-
-    const check = await this.checkLimit(userCtx, "generate_kmzh");
-
-    const result = await this.aiClientService.request({
-      action: "kmzh_generate",
-      systemPrompt: GENERATION_PROMPT,
-      messages: [{
-        role: "user",
-        content: `Составь краткосрочный поурочный план (КМЖ/ҚМЖ) по формату МОН РК для ${grade} класса, предмет «${subject}», тема «${topic}», продолжительность ${duration} минут.
-Включи: цели урока (по таксономии Блума), ожидаемые результаты, ресурсы, этапы урока (начало/середина/конец) с временем и описанием деятельности учителя и учеников, критерии оценивания, рефлексию.`,
-      }],
-    });
-
-    await this.recordUsage(userCtx, "generate_kmzh", { input_tokens: result.tokensIn, output_tokens: result.tokensOut });
-    this.tokenService?.deductTokens({
-      schoolId: userCtx?.schoolId,
-      userId: userCtx?.userId,
-      inputTokens: result.tokensIn,
-      outputTokens: result.tokensOut,
-      actionType: "kmzh_generate",
-      model: result.model,
-      costUsd: this.tokenService.calculateCost({ input_tokens: result.tokensIn, output_tokens: result.tokensOut }, result.model),
-    }).catch(() => {});
-
-    return {
-      content: result.content,
-      ...(check?.warning ? { warning: true, warningMessage: check.message } : {}),
-    };
-  }
 }

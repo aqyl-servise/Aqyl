@@ -596,7 +596,7 @@ export const api = {
   aiGenerateAssignment: (token: string, body: { subject: string; grade: string; topic: string; type: string }) =>
     request<{ content: string; warning?: boolean; warningMessage?: string }>("/ai/generate-assignment", { method: "POST", body: JSON.stringify(body) }, token),
   aiGenerateLessonPlan: (token: string, body: { subject: string; grade: string; topic: string; duration: number }) =>
-    request<{ content: string; warning?: boolean; warningMessage?: string }>("/ai/generate-lesson-plan", { method: "POST", body: JSON.stringify(body) }, token),
+    request<{ content: string; warning?: boolean; warningMessage?: string }>("/generators/lesson-plan", { method: "POST", body: JSON.stringify(body) }, token),
 
   // AI Usage
   getAiUsage: (token: string) =>

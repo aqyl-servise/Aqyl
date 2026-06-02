@@ -50,16 +50,4 @@ export class AiController {
     );
   }
 
-  // TODO: дублирует /generators/lesson-plan — объединить в следующем рефакторинге
-  @Post("generate-lesson-plan")
-  @Roles(...ALL_TEACHER_ROLES)
-  generateLessonPlan(@Req() req: ReqUser, @Body() body: { subject: string; grade: string; topic: string; duration: number }) {
-    return this.aiChatService.generateLessonPlan(
-      body.subject ?? "",
-      body.grade ?? "",
-      body.topic ?? "",
-      body.duration ?? 45,
-      { userId: req.user.id, schoolId: req.user.schoolId ?? "", role: req.user.role },
-    );
-  }
 }
