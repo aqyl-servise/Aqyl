@@ -5,6 +5,7 @@ import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { LessonsService } from "./lessons.service";
 import { ADMIN_ROLES, ALL_TEACHER_ROLES, isAdminRole } from "../../common/roles.constants";
+import { SaveAnalysisDto } from "./dto/save-analysis.dto";
 
 interface ReqUser { user: { id: string; role: string; schoolId?: string | null; fullName?: string } }
 
@@ -136,7 +137,7 @@ export class LessonsController {
   async saveAnalysis(
     @Param("id") id: string,
     @Req() req: ReqUser,
-    @Body() body: Record<string, unknown>,
+    @Body() body: SaveAnalysisDto,
   ) {
     const analysis = await this.service.saveAnalysis(id, req.user.id, body as never);
     if (!body.isDraft) {

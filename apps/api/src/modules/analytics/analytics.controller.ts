@@ -7,6 +7,7 @@ import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { AnalyticsService } from "./analytics.service";
 import { isStaffRole } from "../../common/roles.constants";
+import { AiAnalyzeDto } from "./dto/ai-analyze.dto";
 
 interface ReqUser { user: { id: string; role: string; classroomIds?: string[]; schoolId?: string | null } }
 
@@ -61,7 +62,7 @@ export class AnalyticsController {
   @Post("ai-analyze")
   @UseGuards(RolesGuard)
   @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
-  aiAnalyze(@Body() body: Record<string, unknown>, @Req() req: ReqUser) {
-    return this.analyticsService.aiAnalyze(body, { schoolId: req.user.schoolId, userId: req.user.id });
+  aiAnalyze(@Body() dto: AiAnalyzeDto, @Req() req: ReqUser) {
+    return this.analyticsService.aiAnalyze(dto, { schoolId: req.user.schoolId, userId: req.user.id });
   }
 }

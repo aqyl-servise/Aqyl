@@ -3,6 +3,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { QuestionnairesService } from "./questionnaires.service";
+import { UpdateQuestionnaireDto } from "./dto/update-questionnaire.dto";
 
 interface ReqUser { user: { id: string; role: string; schoolId?: string } }
 
@@ -31,8 +32,8 @@ export class QuestionnairesController {
 
   @Put(":id")
   @Roles("admin", "principal", "vice_principal_academic", "vice_principal_education", "psychologist")
-  update(@Param("id") id: string, @Body() body: Record<string, unknown>) {
-    return this.service.update(id, body as never);
+  update(@Param("id") id: string, @Body() dto: UpdateQuestionnaireDto) {
+    return this.service.update(id, dto as never);
   }
 
   @Delete(":id")

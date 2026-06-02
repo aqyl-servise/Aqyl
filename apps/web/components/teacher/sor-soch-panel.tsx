@@ -58,7 +58,9 @@ export function SorSochPanel({ token, language, t, isAdmin, userRole }: {
   useEffect(() => {
     setLoading(true);
     reload().catch(err => handleError(err, 'Не удалось загрузить СОР/СОЧ')).finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Намеренно: filterSubject/filterClassroom/filterQuarter не в deps —
+    // фильтры применяются только по кнопке «Применить», не при каждом изменении.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, tab]);
 
   async function handleCreate(e: FormEvent<HTMLFormElement>) {

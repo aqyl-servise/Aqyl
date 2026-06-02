@@ -5,6 +5,7 @@ import { Roles } from "../auth/decorators/roles.decorator";
 import { ClassHoursService } from "./class-hours.service";
 import { ClassHourTopic } from "../schools/entities/class-hour.entity";
 import { isStaffRole } from "../../common/roles.constants";
+import { UpdateClassHourDto } from "./dto/update-class-hour.dto";
 
 interface ReqUser { user: { id: string; role: string; schoolId?: string | null; isClassTeacher?: boolean } }
 
@@ -82,15 +83,13 @@ export class ClassHoursController {
   update(
     @Param("id") id: string,
     @Req() req: ReqUser,
-    @Body() body: Record<string, unknown>,
+    @Body() dto: UpdateClassHourDto,
   ) {
     assertCanWrite(req.user);
-    const changeDesc = typeof body.changeDescription === "string" ? body.changeDescription : undefined;
-    const { changeDescription: _cd, ...updateData } = body;
-    if (updateData.date && typeof updateData.date === "string") {
-      updateData.date = new Date(updateData.date) as never;
-    }
-    return this.service.update(id, updateData, req.user.id, changeDesc);
+    const { changeDescription, date, ...rest } = dto;
+    const updateData: Record<string, unknown> = { ...rest };
+    if (date) updateData.date = new Date(date);
+    return this.service.update(id, updateData, req.user.id, changeDescription);
   }
 
   @Delete(":id")

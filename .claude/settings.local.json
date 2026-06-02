@@ -102,7 +102,8 @@
       "Bash(Head -30)",
       "PowerShell(Set-Location \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\api\"; npx tsc --noEmit 2>&1 | Where-Object { $_ -match \"dashboard\" })",
       "PowerShell(Set-Location \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\api\"; $result = npx tsc --noEmit 2>&1; $result | ForEach-Object { if \\($_ -match \"dashboard\"\\) { Write-Output $_ } }; Write-Output \"--- dashboard check done ---\")",
-      "PowerShell(Set-Location *)"
+      "PowerShell(Set-Location *)",
+      "PowerShell(@\\(\"lessons\",\"attestation\",\"questionnaires\",\"class-hours\",\"analytics\"\\) | ForEach-Object { $p = \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\api\\\\src\\\\modules\\\\$_\\\\dto\"; if \\(!\\(Test-Path $p\\)\\) { New-Item -ItemType Directory -Path $p | Out-Null; \"created: $p\" } else { \"exists: $p\" } })"
     ]
   }
 }
