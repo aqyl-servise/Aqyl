@@ -1,6 +1,6 @@
 "use client";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { api, AssignmentWithSubmission } from "../../lib/api";
+import { api, API_URL, AssignmentWithSubmission } from "../../lib/api";
 
 type Filter = "all" | "new" | "submitted" | "graded";
 
@@ -17,6 +17,19 @@ function getStatus(a: AssignmentWithSubmission): string {
     return "new";
   }
   return "new";
+}
+
+async function openSubmittedFile(fileUrl: string, token: string) {
+  if (!fileUrl.startsWith("/files/")) {
+    window.open(fileUrl, "_blank", "noopener,noreferrer");
+    return;
+  }
+  const res = await fetch(`${API_URL}${fileUrl}`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) return;
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank", "noopener,noreferrer");
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 export function StudentAssignmentsPanel({ token, t }: { token: string; t: Record<string, string> }) {
@@ -198,7 +211,7 @@ export function StudentAssignmentsPanel({ token, t }: { token: string; t: Record
                 )}
                 {a.submission?.fileUrl && (
                   <div style={{ marginTop: 6, fontSize: 13 }}>
-                    📎 <a href={a.submission.fileUrl} target="_blank" rel="noreferrer">Прикреплённый файл</a>
+                    📎 <button className="btn btn-ghost btn-sm" onClick={() => openSubmittedFile(a.submission!.fileUrl!, token)}>Прикреплённый файл</button>
                   </div>
                 )}
               </div>

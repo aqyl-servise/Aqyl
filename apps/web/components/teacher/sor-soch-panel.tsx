@@ -1,11 +1,24 @@
 "use client";
 import { FormEvent, useEffect, useState } from "react";
-import { api, SorSochDoc } from "../../lib/api";
+import { api, API_URL, SorSochDoc } from "../../lib/api";
 import { Language } from "../../lib/translations";
 
 type Classroom = { id: string; name: string };
 
 const QUARTER_NUMS = ["1", "2", "3", "4"];
+
+async function openFileUrl(fileUrl: string, token: string) {
+  if (!fileUrl.startsWith("/files/")) {
+    window.open(fileUrl, "_blank", "noopener,noreferrer");
+    return;
+  }
+  const res = await fetch(`${API_URL}${fileUrl}`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) return;
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank", "noopener,noreferrer");
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
 
 export function SorSochPanel({ token, language, t, isAdmin, userRole }: {
   token: string;
@@ -207,7 +220,7 @@ export function SorSochPanel({ token, language, t, isAdmin, userRole }: {
                   <td>
                     <div style={{ display: "flex", gap: 4 }}>
                       {doc.fileUrl && (
-                        <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">⬇</a>
+                        <button className="btn btn-ghost btn-sm" onClick={() => openFileUrl(doc.fileUrl!, token)}>⬇</button>
                       )}
                       {!isAdmin && (
                         <>

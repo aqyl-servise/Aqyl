@@ -44,6 +44,21 @@ function formatSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+async function openFile(filename: string, originalName: string, token: string) {
+  const res = await fetch(`${API_URL}/files/${filename}`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) return;
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, "_blank", "noopener,noreferrer");
+  if (!win) {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = originalName;
+    a.click();
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
 function GradeGrid({ onSelect, t }: { onSelect: (g: number) => void; t: Record<string, string> }) {
   return (
     <div className="card" style={{ marginTop: 0 }}>
@@ -114,7 +129,6 @@ function ReviewPane({
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {files.map((f) => {
         const isPdf = f.mimetype === "application/pdf";
-        const fileUrl = `${API_URL}/files/${f.filename}`;
         const rev = localReviews[f.id] ?? { status: "unchecked", comment: "" };
 
         return (
@@ -133,9 +147,9 @@ function ReviewPane({
               </div>
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
                 {statusBadge(rev.status, t)}
-                <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm">
+                <button className="btn btn-outline btn-sm" onClick={() => openFile(f.filename, f.originalName, token)}>
                   {isPdf ? `👁 ${t.ktp_open_pdf}` : `⬇ ${t.fm_download}`}
-                </a>
+                </button>
               </div>
             </div>
 
@@ -191,10 +205,11 @@ function ReviewPane({
 }
 
 // Custom KSP file list with classroom tags
-function KspFileList({ files, classroomsMap, t }: {
+function KspFileList({ files, classroomsMap, t, token }: {
   files: KspFileItem[];
   classroomsMap: Record<string, string>;
   t: Record<string, string>;
+  token: string;
 }) {
   if (files.length === 0) return <p className="fm-empty">{t.ktp_no_files}</p>;
   return (
@@ -218,15 +233,13 @@ function KspFileList({ files, classroomsMap, t }: {
               </div>
             )}
           </div>
-          <a
-            href={`${API_URL}/files/${f.filename}`}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={() => openFile(f.filename, f.originalName, token)}
             className="btn btn-outline btn-sm"
             style={{ flexShrink: 0 }}
           >
             ↓ {t.fm_download}
-          </a>
+          </button>
         </div>
       ))}
     </div>
@@ -309,7 +322,7 @@ function AllKspTab({ token, t }: { token: string; t: Record<string, string> }) {
             <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 10, color: "var(--primary, #2563eb)" }}>
               👤 {group.teacher} <span style={{ color: "var(--muted)", fontWeight: 400 }}>({group.files.length})</span>
             </h3>
-            <KspFileList files={group.files} classroomsMap={classroomsMap} t={t} />
+            <KspFileList files={group.files} classroomsMap={classroomsMap} t={t} token={token} />
           </div>
         ))
       )}
@@ -366,7 +379,7 @@ function TeacherUploadsTab({ token, language, t }: { token: string; language: La
         {subTab === "ksp" && (
           kspLoading
             ? <p className="fm-empty">{t.loading}</p>
-            : <KspFileList files={kspFiles} classroomsMap={classroomsMap} t={t} />
+            : <KspFileList files={kspFiles} classroomsMap={classroomsMap} t={t} token={token} />
         )}
       </div>
     );

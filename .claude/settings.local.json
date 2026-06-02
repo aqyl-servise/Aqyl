@@ -92,7 +92,13 @@
       "PowerShell(cd \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\api\" && npx tsc --noEmit 2>&1 | Where-Object { $_ -notmatch \"spec\\\\.ts|kmzh\\\\.controller|kmzh\\\\.session\" } | Select-Object -First 30)",
       "Bash(pm2 restart *)",
       "Bash(pm2 logs *)",
-      "PowerShell(pm2 *)"
+      "PowerShell(pm2 *)",
+      "Bash(node_modules\\\\.bin\\\\next build *)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\web\\\\components\" -Directory | ForEach-Object { Write-Output $_.Name })",
+      "Bash(dir /s /b \"C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\api\\\\src\\\\*.controller.ts\")",
+      "Bash(sed \"s/.*@Controller\\('\\\\?//\")",
+      "Bash(sed \"s/'\\\\?.*//\")",
+      "Bash(grep -v \"^--$\")"
     ]
   }
 }

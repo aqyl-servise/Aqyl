@@ -15,15 +15,15 @@ export class KmzhController {
 
   @Post('generate')
   @Roles('teacher', 'class_teacher', 'principal', 'admin')
-  async generate(@Body() dto: KmzhGenerateDto, @Req() req: { user: { sub: string; schoolId: string } }) {
-    return this.kmzhService.generate(dto, req.user.sub, req.user.schoolId);
+  async generate(@Body() dto: KmzhGenerateDto, @Req() req: { user: { sub: string; schoolId: string; role: string } }) {
+    return this.kmzhService.generate(dto, { userId: req.user.sub, schoolId: req.user.schoolId, role: req.user.role });
   }
 
   @Post('regenerate')
   @Roles('teacher', 'class_teacher', 'principal', 'admin')
-  async regenerate(@Body() dto: KmzhRegenerateDto, @Req() req: { user: { sub: string; schoolId: string } }) {
+  async regenerate(@Body() dto: KmzhRegenerateDto, @Req() req: { user: { sub: string; schoolId: string; role: string } }) {
     return this.kmzhService.regenerate(
-      dto.sessionId, dto.kmzhInput, req.user.sub, req.user.schoolId
+      dto.sessionId, dto.kmzhInput, { userId: req.user.sub, schoolId: req.user.schoolId, role: req.user.role }
     );
   }
 

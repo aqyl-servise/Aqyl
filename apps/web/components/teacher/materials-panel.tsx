@@ -38,6 +38,39 @@ async function downloadFile(url: string, filename: string, token: string) {
   URL.revokeObjectURL(a.href);
 }
 
+function AuthImage({ url, token, alt, style }: { url: string; token: string; alt: string; style: React.CSSProperties }) {
+  const [src, setSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    let cancelled = false;
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => {
+        if (!res.ok) throw new Error("Image request failed");
+        return res.blob();
+      })
+      .then(blob => {
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setSrc(objectUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setSrc(null);
+      });
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [url, token]);
+
+  if (!src) {
+    return <div style={{ ...style, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)" }}>...</div>;
+  }
+
+  return <img src={src} alt={alt} style={style} />;
+}
+
 // ─── Presentations Tab ──────────────────────────────────────────────────────
 
 function PresentationsTab({ token, t }: { token: string; t: Record<string, string> }) {
@@ -328,8 +361,9 @@ function IllustrationsTab({ token, t }: { token: string; t: Record<string, strin
               ✅ {t.mat_ready ?? "Готово!"} — {result.title}
             </div>
             <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", marginBottom: 12, background: "#fff" }}>
-              <img
-                src={`${API_URL}/${result.imageUrl}`}
+              <AuthImage
+                url={`${API_URL}/materials/illustrations/${result.id}/download`}
+                token={token}
                 alt={result.title}
                 style={{ width: "100%", maxHeight: 300, objectFit: "contain" }}
               />
@@ -367,8 +401,9 @@ function IllustrationsTab({ token, t }: { token: string; t: Record<string, strin
               {myIllus.map(il => (
                 <div key={il.id} style={{ borderRadius: 8, border: "1px solid var(--border)", overflow: "hidden", background: "var(--surface)" }}>
                   {il.imageUrl && il.status === "ready" ? (
-                    <img
-                      src={`${API_URL}/${il.imageUrl}`}
+                    <AuthImage
+                      url={`${API_URL}/materials/illustrations/${il.id}/download`}
+                      token={token}
                       alt={il.title}
                       style={{ width: "100%", height: 70, objectFit: "cover", display: "block", background: "#fff" }}
                     />

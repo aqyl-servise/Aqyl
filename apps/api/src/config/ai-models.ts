@@ -1,10 +1,11 @@
 export const AI_MODELS = {
-  SONNET: 'claude-sonnet-4-20250514',
+  SONNET: 'claude-sonnet-4-6',
   HAIKU: 'claude-haiku-4-5-20251001',
 } as const;
 
 export const ACTION_MODEL_MAP: Record<string, keyof typeof AI_MODELS> = {
   kmzh_generate: 'SONNET',
+  kmzh_objectives: 'HAIKU',
   presentation_generate: 'SONNET',
   task_generate: 'HAIKU',
   analysis_class: 'HAIKU',
@@ -16,6 +17,7 @@ export const ACTION_MODEL_MAP: Record<string, keyof typeof AI_MODELS> = {
 
 export const MAX_TOKENS_MAP: Record<string, number> = {
   kmzh_generate: 2000,
+  kmzh_objectives: 300,
   presentation_generate: 1500,
   task_generate: 800,
   analysis_class: 600,

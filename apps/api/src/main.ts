@@ -1,7 +1,6 @@
 import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
-import { join } from "path";
 import * as path from "path";
 import * as fs from "fs";
 import helmet from "helmet";
@@ -26,8 +25,6 @@ async function bootstrap() {
   app.useGlobalInterceptors(new SchoolSwitchInterceptor());
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
-
-  app.useStaticAssets(join(process.cwd(), "uploads"), { prefix: "/uploads" });
 
   const seedService = app.get(SeedService);
   await seedService.seed();

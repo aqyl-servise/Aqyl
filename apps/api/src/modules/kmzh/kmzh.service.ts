@@ -1,7 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import Anthropic from '@anthropic-ai/sdk';
 import { KmzhGenerateDto } from './dto/kmzh-generate.dto';
 import { KmzhSaveDto } from './dto/kmzh-save.dto';
 import { KmzhCacheService } from './kmzh.cache.service';
@@ -11,29 +10,49 @@ import { ADAL_AZAMAT_VALUES } from './constants/adal-azamat.constants';
 import { buildObjectivesPrompt } from './prompts/objectives.prompt';
 import { buildStagesPrompt } from './prompts/stages.prompt';
 import { TokenService } from '../tokens/token.service';
+import { AiClientService } from '../../services/ai-client.service';
+import { AiUsageService, UserContext } from '../ai-usage/ai-usage.service';
+import { AI_MODELS } from '../../config/ai-models';
 
 @Injectable()
 export class KmzhService {
   private readonly logger = new Logger(KmzhService.name);
-  private readonly anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   constructor(
     private readonly cacheService: KmzhCacheService,
     private readonly sessionService: KmzhSessionService,
     private readonly tokenService: TokenService,
+    private readonly aiClientService: AiClientService,
+    @Optional() private readonly aiUsageService: AiUsageService,
     @InjectRepository(KmzhSaved)
     private readonly savedRepo: Repository<KmzhSaved>,
   ) {}
 
-  async generate(dto: KmzhGenerateDto, userId: string, schoolId: string) {
-    const sessionId = dto.sessionId || (await this.sessionService.createSession(userId, schoolId));
+  private async checkLimit(userCtx: UserContext, actionType: string) {
+    if (!this.aiUsageService?.isLimitedRole(userCtx.role)) return null;
+    const check = await this.aiUsageService.checkAndIncrement(userCtx.userId, userCtx.schoolId, actionType);
+    if (!check.allowed) {
+      throw new HttpException({ message: check.message, limitReached: true }, HttpStatus.TOO_MANY_REQUESTS);
+    }
+    return check;
+  }
+
+  private recordUsage(userCtx: UserContext, actionType: string, tokensIn: number, tokensOut: number) {
+    if (!this.aiUsageService?.isLimitedRole(userCtx.role)) return;
+    this.aiUsageService.recordTokens(userCtx.userId, userCtx.schoolId, actionType, tokensIn, tokensOut).catch(() => {});
+  }
+
+  async generate(dto: KmzhGenerateDto, userCtx: UserContext) {
+    await this.checkLimit(userCtx, 'kmzh_generate');
+
+    const sessionId = dto.sessionId || (await this.sessionService.createSession(userCtx.userId, userCtx.schoolId));
     const regenCount = await this.sessionService.getRegenCount(sessionId);
 
     const month = dto.valueMonth || new Date(dto.date).toISOString().slice(5, 7);
     const valueLink = ADAL_AZAMAT_VALUES[month]?.[dto.lang] || '';
 
-    const lessonObjectives = await this.generateObjectives(dto, userId, schoolId);
-    const { stages, fromCache } = await this.generateStages(dto, lessonObjectives, userId, schoolId);
+    const lessonObjectives = await this.generateObjectives(dto, userCtx);
+    const { stages, fromCache } = await this.generateStages(dto, lessonObjectives, userCtx);
 
     const totalMinutes = stages.reduce((sum: number, s: any) => sum + (s.duration || 0), 0);
     const totalPoints = stages.reduce((sum: number, s: any) => sum + (s.totalPoints || 0), 0);
@@ -53,14 +72,16 @@ export class KmzhService {
     };
   }
 
-  async regenerate(sessionId: string, dto: KmzhGenerateDto, userId: string, schoolId: string) {
+  async regenerate(sessionId: string, dto: KmzhGenerateDto, userCtx: UserContext) {
+    await this.checkLimit(userCtx, 'kmzh_generate');
+
     const regenCount = await this.sessionService.incrementRegen(sessionId);
 
     const month = dto.valueMonth || new Date(dto.date).toISOString().slice(5, 7);
     const valueLink = ADAL_AZAMAT_VALUES[month]?.[dto.lang] || '';
 
-    const lessonObjectives = await this.generateObjectives(dto, userId, schoolId);
-    const { stages } = await this.generateStagesForced(dto, lessonObjectives, userId, schoolId);
+    const lessonObjectives = await this.generateObjectives(dto, userCtx);
+    const { stages } = await this.generateStagesForced(dto, lessonObjectives, userCtx);
 
     const totalMinutes = stages.reduce((sum: number, s: any) => sum + (s.duration || 0), 0);
     const totalPoints = stages.reduce((sum: number, s: any) => sum + (s.totalPoints || 0), 0);
@@ -80,47 +101,49 @@ export class KmzhService {
     };
   }
 
-  private async generateObjectives(dto: KmzhGenerateDto, userId: string, schoolId: string) {
+  private async generateObjectives(dto: KmzhGenerateDto, userCtx: UserContext) {
     const prompt = buildObjectivesPrompt(
       dto.learningObjectives, dto.grade, dto.lessonTitle, dto.lang
     );
 
-    const response = await this.anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 300,
+    const result = await this.aiClientService.request({
+      action: 'kmzh_objectives',
+      systemPrompt: '',
       messages: [{ role: 'user', content: prompt }],
     });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : '{}';
-    const usage = response.usage;
+    this.recordUsage(userCtx, 'kmzh_objectives', result.tokensIn, result.tokensOut);
 
     await this.tokenService.deductTokens({
-      schoolId, userId,
-      inputTokens: usage.input_tokens,
-      outputTokens: usage.output_tokens,
+      schoolId: userCtx.schoolId,
+      userId: userCtx.userId,
+      inputTokens: result.tokensIn,
+      outputTokens: result.tokensOut,
       actionType: 'kmzh_objectives',
-      model: 'claude-haiku-4-5-20251001',
+      model: result.model,
       fromCache: false,
     }).catch(err => this.logger.warn('Token deduction failed: ' + err.message));
 
     try {
-      return JSON.parse(text.trim());
-    } catch {
-      return { all: '', most: '', some: '' };
+      return JSON.parse(result.content.trim());
+    } catch (err) {
+      this.logger.error('Failed to parse objectives JSON', err);
+      throw new HttpException('Ошибка генерации целей урока. Попробуйте позже.', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
   private async generateStages(
     dto: KmzhGenerateDto,
     lessonObjectives: any,
-    userId: string,
-    schoolId: string,
+    userCtx: UserContext,
   ) {
     const cached = await this.cacheService.getCached(dto);
     if (cached) {
       await this.tokenService.deductTokens({
-        schoolId, userId,
-        inputTokens: 0, outputTokens: 0,
+        schoolId: userCtx.schoolId,
+        userId: userCtx.userId,
+        inputTokens: 0,
+        outputTokens: 0,
         actionType: 'kmzh_generate',
         model: 'cache_hit',
         fromCache: true,
@@ -128,7 +151,7 @@ export class KmzhService {
       return { stages: cached, fromCache: true };
     }
 
-    const stages = await this.callSonnetForStages(dto, lessonObjectives, userId, schoolId);
+    const stages = await this.callSonnetForStages(dto, lessonObjectives, userCtx);
     await this.cacheService.saveCache(dto, stages);
     return { stages, fromCache: false };
   }
@@ -136,15 +159,16 @@ export class KmzhService {
   private async generateStagesForced(
     dto: KmzhGenerateDto,
     lessonObjectives: any,
-    userId: string,
-    schoolId: string,
+    userCtx: UserContext,
   ) {
-    const stages = await this.callSonnetForStages(dto, lessonObjectives, userId, schoolId);
+    const stages = await this.callSonnetForStages(dto, lessonObjectives, userCtx);
     await this.tokenService.deductTokens({
-      schoolId, userId,
-      inputTokens: 100, outputTokens: 100,
+      schoolId: userCtx.schoolId,
+      userId: userCtx.userId,
+      inputTokens: 100,
+      outputTokens: 100,
       actionType: 'kmzh_regen_penalty',
-      model: 'claude-sonnet-4-20250514',
+      model: AI_MODELS.SONNET,
       fromCache: false,
     }).catch(() => {});
     await this.cacheService.saveCache(dto, stages);
@@ -154,38 +178,37 @@ export class KmzhService {
   private async callSonnetForStages(
     dto: KmzhGenerateDto,
     lessonObjectives: any,
-    userId: string,
-    schoolId: string,
+    userCtx: UserContext,
   ) {
     const prompt = buildStagesPrompt(
       dto.lang, dto.lessonTitle, dto.grade,
       dto.unitTopic, dto.learningObjectives, lessonObjectives
     );
 
-    const response = await this.anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2000,
-      system: 'Ты опытный учитель-методист казахстанской школы. Отвечай ТОЛЬКО валидным JSON, без markdown, без пояснений.',
+    const result = await this.aiClientService.request({
+      action: 'kmzh_generate',
+      systemPrompt: 'Ты опытный учитель-методист казахстанской школы. Отвечай ТОЛЬКО валидным JSON, без markdown, без пояснений.',
       messages: [{ role: 'user', content: prompt }],
     });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : '[]';
-    const usage = response.usage;
+    this.recordUsage(userCtx, 'kmzh_generate', result.tokensIn, result.tokensOut);
 
     await this.tokenService.deductTokens({
-      schoolId, userId,
-      inputTokens: usage.input_tokens,
-      outputTokens: usage.output_tokens,
+      schoolId: userCtx.schoolId,
+      userId: userCtx.userId,
+      inputTokens: result.tokensIn,
+      outputTokens: result.tokensOut,
       actionType: 'kmzh_generate',
-      model: 'claude-sonnet-4-20250514',
+      model: result.model,
       fromCache: false,
     }).catch(err => this.logger.warn('Token deduction failed: ' + err.message));
 
     try {
-      const cleaned = text.trim().replace(/^```json?\n?/, '').replace(/\n?```$/, '');
+      const cleaned = result.content.trim().replace(/^```json?\n?/, '').replace(/\n?```$/, '');
       return JSON.parse(cleaned);
-    } catch {
-      return [];
+    } catch (err) {
+      this.logger.error('Failed to parse stages JSON', err);
+      throw new HttpException('Ошибка генерации этапов урока. Попробуйте позже.', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 

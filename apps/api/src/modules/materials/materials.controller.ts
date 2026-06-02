@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, NotFoundException, Param, Post, Req, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, ForbiddenException, Get, NotFoundException, Param, Post, Req, Res, UseGuards } from "@nestjs/common";
 import { Response } from "express";
 import { join } from "path";
 import { existsSync } from "fs";
@@ -6,8 +6,11 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { MaterialsService } from "./materials.service";
+import { ADMIN_ROLES, ALL_TEACHER_ROLES, isAdminRole } from "../../common/roles.constants";
 
 interface ReqUser { user: { id: string; role: string; schoolId?: string } }
+type GeneratedMaterial = { teacherId: string; schoolId: string; title: string };
+const MATERIAL_ROLES = [...ALL_TEACHER_ROLES, ...ADMIN_ROLES] as const;
 
 @Controller("materials")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -42,11 +45,15 @@ export class MaterialsController {
   }
 
   @Get("presentations/:id/download")
-  async downloadPresentation(@Param("id") id: string, @Res() res: Response) {
+  @Roles(...MATERIAL_ROLES)
+  async downloadPresentation(@Param("id") id: string, @Req() req: ReqUser, @Res() res: Response) {
     const pres = await this.svc.getPresentation(id);
+    this.assertMaterialAccess(pres, req.user);
     if (!pres.fileUrl) throw new NotFoundException("File not generated yet");
     const filePath = join(process.cwd(), pres.fileUrl);
     if (!existsSync(filePath)) throw new NotFoundException("File not found");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Cache-Control", "private, no-store");
     res.download(filePath, `${pres.title}.pptx`);
   }
 
@@ -77,11 +84,26 @@ export class MaterialsController {
   }
 
   @Get("illustrations/:id/download")
-  async downloadIllustration(@Param("id") id: string, @Res() res: Response) {
+  @Roles(...MATERIAL_ROLES)
+  async downloadIllustration(@Param("id") id: string, @Req() req: ReqUser, @Res() res: Response) {
     const illus = await this.svc.getIllustration(id);
+    this.assertMaterialAccess(illus, req.user);
     if (!illus.imageUrl) throw new NotFoundException("File not generated yet");
     const filePath = join(process.cwd(), illus.imageUrl);
     if (!existsSync(filePath)) throw new NotFoundException("File not found");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
+    res.setHeader("Cache-Control", "private, no-store");
     res.download(filePath, `${illus.title}.svg`);
+  }
+
+  private assertMaterialAccess(material: GeneratedMaterial, user: ReqUser["user"]) {
+    if (isAdminRole(user.role) && !user.schoolId) return;
+    if (material.schoolId && material.schoolId !== user.schoolId) {
+      throw new ForbiddenException("Access denied");
+    }
+    if (!isAdminRole(user.role) && material.teacherId !== user.id) {
+      throw new ForbiddenException("Access denied");
+    }
   }
 }

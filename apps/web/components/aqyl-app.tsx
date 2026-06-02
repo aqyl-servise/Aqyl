@@ -25,7 +25,10 @@ export function AqylApp() {
     const tok = localStorage.getItem("aqyl-token");
     const lang = localStorage.getItem("aqyl-lang") as Language | null;
     if (lang) setLanguage(lang);
-    if (tok) setToken(tok);
+    if (tok) {
+      setToken(tok);
+      document.cookie = `aqyl-token=${tok}; path=/; max-age=86400; SameSite=Strict`;
+    }
   }, []);
 
   useEffect(() => { localStorage.setItem("aqyl-lang", language); }, [language]);
@@ -37,6 +40,7 @@ export function AqylApp() {
       setLanguage((u.preferredLanguage as Language) || "ru");
     }).catch(() => {
       localStorage.removeItem("aqyl-token");
+      document.cookie = 'aqyl-token=; path=/; max-age=0';
       setToken(null);
     });
   }, [token]);
@@ -48,6 +52,7 @@ export function AqylApp() {
     try {
       const res = await api.login(String(fd.get("email")), String(fd.get("password")));
       localStorage.setItem("aqyl-token", res.accessToken);
+      document.cookie = `aqyl-token=${res.accessToken}; path=/; max-age=86400; SameSite=Strict`;
       setToken(res.accessToken);
       setUser(res.user);
       setLanguage((res.user.preferredLanguage as Language) || "ru");
@@ -99,6 +104,7 @@ export function AqylApp() {
 
   function logout() {
     localStorage.removeItem("aqyl-token");
+    document.cookie = 'aqyl-token=; path=/; max-age=0';
     setToken(null); setUser(null);
   }
 
