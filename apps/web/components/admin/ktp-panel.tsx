@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { api, API_URL, ClassroomItem } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 import { FileManager } from "../ui/file-manager";
+import { handleError } from "../../lib/handle-error";
 
 type KtpFile = Awaited<ReturnType<typeof api.getKtpFiles>>[number];
 type KtpStatus = "unchecked" | "reviewing" | "approved" | "revision";
@@ -102,7 +103,7 @@ function ReviewPane({
         });
         setLocalReviews(init);
       })
-      .catch(console.error)
+      .catch(err => handleError(err, 'Не удалось загрузить файлы КТП'))
       .finally(() => setLoading(false));
   }, [token, section]);
 
@@ -114,7 +115,7 @@ function ReviewPane({
       await api.saveKtpReview(token, fileId, { status: rev.status, comment: rev.comment || undefined });
       setSaved((s) => ({ ...s, [fileId]: true }));
       setTimeout(() => setSaved((s) => ({ ...s, [fileId]: false })), 2000);
-    } catch (e) { console.error(e); }
+    } catch (e) { handleError(e, 'Не удалось сохранить ревью'); }
     finally { setSaving((s) => ({ ...s, [fileId]: false })); }
   }
 
@@ -259,7 +260,7 @@ function AllKspTab({ token, t }: { token: string; t: Record<string, string> }) {
       api.getAllKspFiles(token),
       api.getClassrooms(token),
     ]).then(([f, c]) => { setFiles(f); setClassrooms(c); })
-      .catch(console.error)
+      .catch(err => handleError(err, 'Не удалось загрузить файлы КСП'))
       .finally(() => setLoading(false));
   }, [token]);
 
@@ -345,7 +346,7 @@ function TeacherUploadsTab({ token, language, t }: { token: string; language: La
       api.getAdminTeachers(token),
       api.getClassrooms(token),
     ]).then(([tc, cl]) => { setTeachers(tc); setClassrooms(cl); })
-      .catch(console.error)
+      .catch(err => handleError(err, 'Не удалось загрузить список учителей'))
       .finally(() => setLoading(false));
   }, [token]);
 
@@ -355,7 +356,7 @@ function TeacherUploadsTab({ token, language, t }: { token: string; language: La
     setKspFiles([]);
     api.listFilesInFolder(token, null, `teacher-ksp-${selected.id}`)
       .then(setKspFiles)
-      .catch(console.error)
+      .catch(err => handleError(err, 'Не удалось загрузить файлы КСП учителя'))
       .finally(() => setKspLoading(false));
   }, [selected, subTab, token]);
 

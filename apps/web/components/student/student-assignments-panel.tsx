@@ -1,6 +1,7 @@
 "use client";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { api, API_URL, AssignmentWithSubmission } from "../../lib/api";
+import { handleError } from "../../lib/handle-error";
 
 type Filter = "all" | "new" | "submitted" | "graded";
 
@@ -51,7 +52,7 @@ export function StudentAssignmentsPanel({ token, t }: { token: string; t: Record
   }, [token]);
 
   function refresh() {
-    api.getStudentAssignments(token).then(setAssignments).catch(console.error);
+    api.getStudentAssignments(token).then(setAssignments).catch(err => handleError(err, 'Не удалось обновить задания'));
   }
 
   const filtered = assignments.filter((a) => {
@@ -82,7 +83,7 @@ export function StudentAssignmentsPanel({ token, t }: { token: string; t: Record
       } catch {
         setBusy(false);
         setUploadProgress(false);
-        alert("Ошибка загрузки файла");
+        handleError(new Error('Ошибка загрузки файла'), 'Не удалось загрузить файл');
         return;
       }
       setUploadProgress(false);
@@ -94,7 +95,7 @@ export function StudentAssignmentsPanel({ token, t }: { token: string; t: Record
       setSubmitting(null);
       refresh();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Ошибка");
+      handleError(err, 'Не удалось отправить задание');
     } finally {
       setBusy(false);
     }

@@ -2,6 +2,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { api, API_URL, SorSochDoc } from "../../lib/api";
 import { Language } from "../../lib/translations";
+import { handleError } from "../../lib/handle-error";
 
 type Classroom = { id: string; name: string };
 
@@ -56,7 +57,7 @@ export function SorSochPanel({ token, language, t, isAdmin, userRole }: {
 
   useEffect(() => {
     setLoading(true);
-    reload().catch(console.error).finally(() => setLoading(false));
+    reload().catch(err => handleError(err, 'Не удалось загрузить СОР/СОЧ')).finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, tab]);
 

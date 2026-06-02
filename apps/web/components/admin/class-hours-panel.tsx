@@ -2,6 +2,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import { Language } from "../../lib/translations";
+import { handleError } from "../../lib/handle-error";
 
 type ClassHour = Awaited<ReturnType<typeof api.getAllClassHours>>[number];
 type MyClassHour = Awaited<ReturnType<typeof api.getMyClassHours>>[number];
@@ -22,9 +23,9 @@ export function ClassHoursPanel({ token, language, t, isAdmin }: { token: string
 
   useEffect(() => {
     const fetch = isAdmin ? api.getAllClassHours(token) : api.getMyClassHours(token);
-    fetch.then(setHours).catch(console.error);
+    fetch.then(setHours).catch(err => handleError(err, 'Не удалось загрузить классные часы'));
     if (!isAdmin) {
-      api.getDashboard(token).then((d) => setClassrooms(d.classes)).catch(console.error);
+      api.getDashboard(token).then((d) => setClassrooms(d.classes)).catch(err => handleError(err, 'Не удалось загрузить классы'));
     }
   }, [token, isAdmin]);
 

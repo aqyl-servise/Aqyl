@@ -4,6 +4,7 @@ import { api, ClassroomOption } from "../../lib/api";
 import { Language } from "../../lib/translations";
 import { FileManager } from "../ui/file-manager";
 import { LessonAnalysisForm } from "./lesson-analysis-form";
+import { handleError } from "../../lib/handle-error";
 
 type Lesson = {
   id: string; subject: string; classroomId?: string; cabinet?: string; lessonTime?: string;
@@ -44,12 +45,12 @@ export function OpenLessonsPanel({
 
   function reload() {
     const req = isAdmin ? api.getAllLessons(token) : api.getMyLessons(token);
-    req.then((l) => setLessons(l as Lesson[])).catch(console.error);
+    req.then((l) => setLessons(l as Lesson[])).catch(err => handleError(err, 'Не удалось загрузить уроки'));
   }
 
   useEffect(() => {
     reload();
-    api.getClassroomsForDropdown(token).then(setClassrooms).catch(console.error);
+    api.getClassroomsForDropdown(token).then(setClassrooms).catch(err => handleError(err, 'Не удалось загрузить классы'));
   }, [token, isAdmin]);
 
   async function handleDelete(id: string) {

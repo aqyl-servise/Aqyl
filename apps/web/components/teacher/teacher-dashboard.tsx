@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import { Language } from "../../lib/translations";
+import { handleError } from "../../lib/handle-error";
 
 type DashData = Awaited<ReturnType<typeof api.getDashboard>>;
 
@@ -9,7 +10,7 @@ export function TeacherDashboard({ token, language, t }: { token: string; langua
   const [data, setData] = useState<DashData | null>(null);
 
   useEffect(() => {
-    api.getDashboard(token).then(setData).catch(console.error);
+    api.getDashboard(token).then(setData).catch(err => handleError(err, 'Не удалось загрузить данные дашборда'));
   }, [token]);
 
   if (!data) return <div className="page-loading">{t.loading}</div>;

@@ -23,13 +23,14 @@ export class DashboardService {
       order: { grade: "ASC", name: "ASC" },
     });
 
-    const submissions = await this.submissionRepository.find({
-      relations: { student: { classroom: { teacher: true } } },
-      order: { submittedAt: "DESC" },
-    });
-    const filteredSubmissions = submissions.filter(
-      (item) => item.student.classroom.teacher?.id === teacherId,
-    );
+    const filteredSubmissions = await this.submissionRepository
+      .createQueryBuilder('sub')
+      .innerJoinAndSelect('sub.student', 'student')
+      .innerJoin('student.classroom', 'classroom')
+      .where('classroom.teacherId = :teacherId', { teacherId })
+      .orderBy('sub.submittedAt', 'DESC')
+      .take(500)
+      .getMany();
 
     const generatedDocuments = await this.generatedDocumentRepository.find({
       where: { teacher: { id: teacherId } },

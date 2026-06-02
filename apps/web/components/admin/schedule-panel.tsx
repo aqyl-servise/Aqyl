@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { api } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
+import { handleError } from "../../lib/handle-error";
 
 interface Props { token: string; language: Language; userRole: string; }
 
@@ -45,7 +46,7 @@ export function ScheduleAdminPanel({ token, language, userRole }: Props) {
       setTeachers(tchs.map(t => ({ id: t.id, fullName: t.fullName })));
       const vList = vers.length ? vers : ["main"];
       setVersions(vList);
-    }).catch(() => {});
+    }).catch(err => handleError(err, 'Не удалось загрузить расписание'));
   }, [token]);
 
   const loadEntries = useCallback(async () => {
@@ -110,15 +111,20 @@ export function ScheduleAdminPanel({ token, language, userRole }: Props) {
   }
 
   async function handleExport() {
-    const q = new URLSearchParams({ version });
-    if (selectedClassroom) q.set("classroomId", selectedClassroom);
-    const url = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"}/schedule/admin/export?${q}`;
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    const blob = await res.blob();
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "schedule.csv";
-    link.click();
+    try {
+      const q = new URLSearchParams({ version });
+      if (selectedClassroom) q.set("classroomId", selectedClassroom);
+      const url = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"}/schedule/admin/export?${q}`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error('Ошибка экспорта расписания');
+      const blob = await res.blob();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "schedule.csv";
+      link.click();
+    } catch (err) {
+      handleError(err, 'Не удалось экспортировать расписание');
+    }
   }
 
   return (

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import { Language } from "../../lib/translations";
+import { handleError } from "../../lib/handle-error";
 
 type Overview = Awaited<ReturnType<typeof api.getAdminOverview>>;
 
@@ -9,7 +10,7 @@ export function AdminDashboard({ token, language, t }: { token: string; language
   const [data, setData] = useState<Overview | null>(null);
 
   useEffect(() => {
-    api.getAdminOverview(token).then(setData).catch(console.error);
+    api.getAdminOverview(token).then(setData).catch(err => handleError(err, 'Не удалось загрузить данные дашборда'));
   }, [token]);
 
   if (!data) return <div className="page-loading">{t.loading}</div>;

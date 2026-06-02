@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { api, API_URL, AuthUser, ClassroomItem } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
+import { handleError } from "../../lib/handle-error";
 
 type TabType = "presentations" | "illustrations" | "tasks";
 
@@ -29,13 +30,18 @@ function fmtDate(iso: string) {
 }
 
 async function downloadFile(url: string, filename: string, token: string) {
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  const blob = await res.blob();
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(a.href);
+  try {
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error('Ошибка скачивания файла');
+    const blob = await res.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch (err) {
+    handleError(err, 'Не удалось скачать файл');
+  }
 }
 
 function AuthImage({ url, token, alt, style }: { url: string; token: string; alt: string; style: React.CSSProperties }) {
@@ -89,7 +95,7 @@ function PresentationsTab({ token, t }: { token: string; t: Record<string, strin
     setListLoading(true);
     api.getMyPresentations(token)
       .then(data => setMyPres(data as Presentation[]))
-      .catch(() => {})
+      .catch(err => handleError(err, 'Не удалось загрузить презентации'))
       .finally(() => setListLoading(false));
   }, [token]);
 
@@ -270,7 +276,7 @@ function IllustrationsTab({ token, t }: { token: string; t: Record<string, strin
     setListLoading(true);
     api.getMyIllustrations(token)
       .then(data => setMyIllus(data as Illustration[]))
-      .catch(() => {})
+      .catch(err => handleError(err, 'Не удалось загрузить иллюстрации'))
       .finally(() => setListLoading(false));
   }, [token]);
 
@@ -473,7 +479,7 @@ function TasksTab({ token, t, teacher }: { token: string; t: Record<string, stri
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.getClassrooms(token).then(setClassrooms).catch(() => {});
+    api.getClassrooms(token).then(setClassrooms).catch(err => handleError(err, 'Не удалось загрузить классы'));
   }, [token]);
 
   async function handleGenerate() {

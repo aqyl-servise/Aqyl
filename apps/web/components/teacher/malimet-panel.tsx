@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { api, AuthUser, API_URL } from "../../lib/api";
 import { Language } from "../../lib/translations";
+import { handleError } from "../../lib/handle-error";
 
 interface StudentRef {
   id: string;
@@ -144,7 +145,7 @@ export function MalimetPanel({ token, language, teacher }: {
         startCount: students.length,
         endCount: students.length,
       }));
-    }).catch(console.error).finally(() => setLoading(false));
+    }).catch(err => handleError(err, 'Не удалось загрузить данные')).finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, teacher.managedClassroomId]);
 
@@ -232,7 +233,7 @@ export function MalimetPanel({ token, language, teacher }: {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ formData: buildFormData(), format, lang: state.lang }),
       });
-      if (!res.ok) { alert("Ошибка генерации документа"); return; }
+      if (!res.ok) { handleError(new Error('Ошибка генерации документа'), 'Ошибка генерации документа'); return; }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -240,7 +241,7 @@ export function MalimetPanel({ token, language, teacher }: {
       a.download = `malimet_${state.classroomName.replace(/\s/g, "")}_Q${state.quarter}.${format === "pdf" ? "pdf" : "docx"}`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch { alert("Ошибка загрузки"); }
+    } catch (err) { handleError(err, 'Не удалось скачать документ'); }
     setDownloading(null);
   }
 
