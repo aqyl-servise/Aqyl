@@ -13,7 +13,11 @@ export class RolesGuard implements CanActivate {
       context.getClass(),
     ]);
     if (!requiredRoles) return true;
-    const { user } = context.switchToHttp().getRequest<{ user: { role: UserRole } }>();
-    return requiredRoles.includes(user?.role);
+    const { user } = context.switchToHttp().getRequest<{ user: { role: UserRole; isClassTeacher?: boolean } }>();
+    if (requiredRoles.includes(user?.role)) return true;
+    // class_teacher is stored as role='teacher' + isClassTeacher=true in DB/JWT,
+    // not as a separate role value. Map the flag to the virtual role here.
+    if (user?.isClassTeacher && requiredRoles.includes("class_teacher")) return true;
+    return false;
   }
 }
