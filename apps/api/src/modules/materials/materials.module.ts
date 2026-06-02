@@ -3,6 +3,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { GeneratedPresentation } from "../schools/entities/generated-presentation.entity";
 import { GeneratedIllustration } from "../schools/entities/generated-illustration.entity";
 import { AiClientModule } from "../../services/ai-client.module";
+import { AiUsageModule } from "../ai-usage/ai-usage.module";
 import { MaterialsService } from "./materials.service";
 import { MaterialsController } from "./materials.controller";
 
@@ -10,6 +11,7 @@ import { MaterialsController } from "./materials.controller";
   imports: [
     TypeOrmModule.forFeature([GeneratedPresentation, GeneratedIllustration]),
     AiClientModule,
+    AiUsageModule,
   ],
   providers: [MaterialsService],
   controllers: [MaterialsController],

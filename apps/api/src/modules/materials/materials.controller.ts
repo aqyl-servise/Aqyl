@@ -26,6 +26,7 @@ export class MaterialsController {
     return this.svc.generatePresentation(
       req.user.id,
       req.user.schoolId ?? "",
+      req.user.role,
       body.prompt,
       body.slideCount ?? 10,
       body.attachedText,
@@ -66,6 +67,7 @@ export class MaterialsController {
     return this.svc.generateIllustration(
       req.user.id,
       req.user.schoolId ?? "",
+      req.user.role,
       body.prompt,
       body.attachedText,
     );

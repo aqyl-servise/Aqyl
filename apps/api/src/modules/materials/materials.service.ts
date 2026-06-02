@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Optional } from "@nestjs/common";
+import { HttpException, HttpStatus, Injectable, NotFoundException, Optional } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { join } from "path";
@@ -7,6 +7,7 @@ import { AiClientService } from "../../services/ai-client.service";
 import { GeneratedPresentation } from "../schools/entities/generated-presentation.entity";
 import { GeneratedIllustration } from "../schools/entities/generated-illustration.entity";
 import { TokenService } from "../tokens/token.service";
+import { AiUsageService } from "../ai-usage/ai-usage.service";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const PptxGenJS = require("pptxgenjs") as new () => PptxInstance;
@@ -45,6 +46,7 @@ export class MaterialsService {
     private readonly illusRepo: Repository<GeneratedIllustration>,
     private readonly aiClientService: AiClientService,
     @Optional() private readonly tokenService?: TokenService,
+    @Optional() private readonly aiUsageService?: AiUsageService,
   ) {
     this.presentationsDir = join(process.cwd(), "uploads", "presentations");
     this.illustrationsDir = join(process.cwd(), "uploads", "illustrations");
@@ -52,13 +54,30 @@ export class MaterialsService {
     if (!existsSync(this.illustrationsDir)) mkdirSync(this.illustrationsDir, { recursive: true });
   }
 
+  private async checkLimit(teacherId: string, schoolId: string, role: string): Promise<void> {
+    if (!this.aiUsageService) return;
+    if (!this.aiUsageService.isLimitedRole(role)) return;
+    const check = await this.aiUsageService.checkAndIncrement(teacherId, schoolId, 'ai_generate');
+    if (!check.allowed) {
+      throw new HttpException({ message: check.message, limitReached: true }, HttpStatus.TOO_MANY_REQUESTS);
+    }
+  }
+
+  private recordUsage(teacherId: string, schoolId: string, role: string, actionType: string, tokensIn: number, tokensOut: number): void {
+    if (!this.aiUsageService || !this.aiUsageService.isLimitedRole(role)) return;
+    this.aiUsageService.recordTokens(teacherId, schoolId, actionType, tokensIn, tokensOut).catch(() => {});
+  }
+
   async generatePresentation(
     teacherId: string,
     schoolId: string,
+    role: string,
     prompt: string,
     slideCount = 10,
     attachedText?: string,
   ): Promise<GeneratedPresentation> {
+    await this.checkLimit(teacherId, schoolId, role);
+
     const title = prompt.slice(0, 100);
     const record = await this.presRepo.save({ teacherId, schoolId, title, prompt, slideCount, status: "generating" });
 
@@ -102,6 +121,8 @@ Return ONLY a JSON array of slides, no other text, no markdown code blocks:
         if (slide.speakerNotes) s.addNotes(slide.speakerNotes);
       }
 
+      this.recordUsage(teacherId, schoolId, role, 'presentation_generate', result.tokensIn, result.tokensOut);
+
       this.tokenService?.deductTokens({
         schoolId,
         userId: teacherId,
@@ -127,9 +148,12 @@ Return ONLY a JSON array of slides, no other text, no markdown code blocks:
   async generateIllustration(
     teacherId: string,
     schoolId: string,
+    role: string,
     prompt: string,
     attachedText?: string,
   ): Promise<GeneratedIllustration> {
+    await this.checkLimit(teacherId, schoolId, role);
+
     const title = prompt.slice(0, 100);
     const record = await this.illusRepo.save({ teacherId, schoolId, title, prompt, status: "generating" });
 
@@ -149,12 +173,14 @@ Use viewBox="0 0 800 600". Include proper colors and labels in Russian.`;
         maxTokens: 3000,
       });
 
+      this.recordUsage(teacherId, schoolId, role, 'illustration_generate', result.tokensIn, result.tokensOut);
+
       this.tokenService?.deductTokens({
         schoolId,
         userId: teacherId,
         inputTokens: result.tokensIn,
         outputTokens: result.tokensOut,
-        actionType: "presentation_generate",
+        actionType: "illustration_generate",
         model: result.model,
         costUsd: this.tokenService.calculateCost({ input_tokens: result.tokensIn, output_tokens: result.tokensOut }, result.model),
       }).catch(() => {});

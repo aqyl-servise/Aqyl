@@ -7,7 +7,7 @@ import { GenerateTaskSetDto } from "./dto/generate-task-set.dto";
 import { GeneratorsService } from "./generators.service";
 import { ALL_TEACHER_ROLES } from "../../common/roles.constants";
 
-interface ReqUser { user: { id: string; schoolId?: string } }
+interface ReqUser { user: { id: string; role: string; schoolId?: string } }
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(...ALL_TEACHER_ROLES)
@@ -20,7 +20,7 @@ export class GeneratorsController {
     @Req() req: ReqUser,
     @Body() body: GenerateLessonPlanDto,
   ) {
-    return this.generatorsService.generateLessonPlan(req.user.id, req.user.schoolId, body);
+    return this.generatorsService.generateLessonPlan(req.user.id, req.user.schoolId, body, req.user.role);
   }
 
   @Post("task-set")
@@ -28,6 +28,6 @@ export class GeneratorsController {
     @Req() req: ReqUser,
     @Body() body: GenerateTaskSetDto,
   ) {
-    return this.generatorsService.generateTaskSet(req.user.id, body, req.user.schoolId);
+    return this.generatorsService.generateTaskSet(req.user.id, body, req.user.schoolId, req.user.role);
   }
 }

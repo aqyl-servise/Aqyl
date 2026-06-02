@@ -1,21 +1,40 @@
-import { Injectable, Optional } from "@nestjs/common";
+import { HttpException, HttpStatus, Injectable, Optional } from "@nestjs/common";
 import { AiClientService } from "../../services/ai-client.service";
 import { buildPrompt } from "../../utils/prompt-builder";
 import { GenerateLessonPlanDto } from "./dto/generate-lesson-plan.dto";
 import { GenerateTaskSetDto } from "./dto/generate-task-set.dto";
 import { TokenService } from "../tokens/token.service";
+import { AiUsageService } from "../ai-usage/ai-usage.service";
 
-interface UserCtx { schoolId?: string | null; userId?: string | null }
+interface UserCtx { schoolId?: string | null; userId?: string | null; role?: string | null }
 
 @Injectable()
 export class AiService {
   constructor(
     private readonly aiClientService: AiClientService,
     @Optional() private readonly tokenService?: TokenService,
+    @Optional() private readonly aiUsageService?: AiUsageService,
   ) {}
+
+  private async checkLimit(userCtx?: UserCtx): Promise<void> {
+    if (!this.aiUsageService || !userCtx?.userId || !userCtx?.schoolId || !userCtx?.role) return;
+    if (!this.aiUsageService.isLimitedRole(userCtx.role)) return;
+    const check = await this.aiUsageService.checkAndIncrement(userCtx.userId, userCtx.schoolId, 'ai_generate');
+    if (!check.allowed) {
+      throw new HttpException({ message: check.message, limitReached: true }, HttpStatus.TOO_MANY_REQUESTS);
+    }
+  }
+
+  private recordUsage(userCtx: UserCtx | undefined, actionType: string, tokensIn: number, tokensOut: number): void {
+    if (!this.aiUsageService || !userCtx?.userId || !userCtx?.schoolId || !userCtx?.role) return;
+    if (!this.aiUsageService.isLimitedRole(userCtx.role)) return;
+    this.aiUsageService.recordTokens(userCtx.userId, userCtx.schoolId, actionType, tokensIn, tokensOut).catch(() => {});
+  }
 
   async generateLessonPlan(input: GenerateLessonPlanDto, userCtx?: UserCtx) {
     if (!this.aiClientService.isConfigured) return this.buildFallbackLessonPlan(input);
+
+    await this.checkLimit(userCtx);
 
     try {
       const systemPrompt = buildPrompt('kmzh', {
@@ -39,6 +58,8 @@ Respond ONLY with valid JSON, no markdown, no extra text. Keys: title, subject, 
         ],
       });
 
+      this.recordUsage(userCtx, 'kmzh_generate', result.tokensIn, result.tokensOut);
+
       this.tokenService?.deductTokens({
         schoolId: userCtx?.schoolId,
         userId: userCtx?.userId,
@@ -57,6 +78,8 @@ Respond ONLY with valid JSON, no markdown, no extra text. Keys: title, subject, 
 
   async generateTaskSet(input: GenerateTaskSetDto, userCtx?: UserCtx) {
     if (!this.aiClientService.isConfigured) return this.buildFallbackTaskSet(input);
+
+    await this.checkLimit(userCtx);
 
     try {
       const systemPrompt = buildPrompt('task_generate', {
@@ -80,6 +103,8 @@ Respond ONLY with valid JSON, no markdown, no extra text. Keys: title, topic, ty
           },
         ],
       });
+
+      this.recordUsage(userCtx, 'task_generate', result.tokensIn, result.tokensOut);
 
       this.tokenService?.deductTokens({
         schoolId: userCtx?.schoolId,

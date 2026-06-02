@@ -18,11 +18,11 @@ export class GeneratorsService {
     @Optional() private readonly tokenService?: TokenService,
   ) {}
 
-  async generateLessonPlan(teacherId: string, schoolId: string | undefined, input: GenerateLessonPlanDto) {
+  async generateLessonPlan(teacherId: string, schoolId: string | undefined, input: GenerateLessonPlanDto, role?: string) {
     let payload: Record<string, unknown>;
     let fromCache = false;
     let useCount: number | undefined;
-    const userCtx = { schoolId, userId: teacherId };
+    const userCtx = { schoolId, userId: teacherId, role: role ?? '' };
 
     if (this.kmzhCacheService) {
       try {
@@ -72,8 +72,8 @@ export class GeneratorsService {
     };
   }
 
-  async generateTaskSet(teacherId: string, input: GenerateTaskSetDto, schoolId?: string) {
-    const payload = await this.aiService.generateTaskSet(input, { schoolId, userId: teacherId });
+  async generateTaskSet(teacherId: string, input: GenerateTaskSetDto, schoolId?: string, role?: string) {
+    const payload = await this.aiService.generateTaskSet(input, { schoolId, userId: teacherId, role: role ?? '' });
     const document = this.generatedDocumentRepository.create({
       teacher: { id: teacherId },
       type: "task-set",
