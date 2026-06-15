@@ -1,20 +1,16 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { api, AuthUser } from "../lib/api";
+import { useRouter } from "next/navigation";
+import { api } from "../lib/api";
 import { Language, translations } from "../lib/translations";
 import { PasswordInput } from "./ui/password-input";
-import { TeacherApp } from "./teacher/teacher-app";
-import { AdminApp } from "./admin/admin-app";
-import { ClassTeacherApp } from "./class-teacher/class-teacher-app";
-import { StudentApp } from "./student/student-app";
 
 type View = "login" | "register" | "success" | "forgot";
 
-export function AqylApp() {
+export function LoginApp() {
+  const router = useRouter();
   const [language, setLanguage] = useState<Language>("ru");
-  const [token, setToken] = useState<string | null>(null);
-  const [user, setUser] = useState<AuthUser | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<View>("login");
@@ -22,28 +18,17 @@ export function AqylApp() {
   const t = translations[language];
 
   useEffect(() => {
-    const tok = localStorage.getItem("aqyl-token");
     const lang = localStorage.getItem("aqyl-lang") as Language | null;
     if (lang) setLanguage(lang);
+    // Already authenticated → go straight to the app.
+    const tok = localStorage.getItem("aqyl-token");
     if (tok) {
-      setToken(tok);
       document.cookie = `aqyl-token=${tok}; path=/; max-age=86400; SameSite=Strict`;
+      router.replace("/dashboard");
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => { localStorage.setItem("aqyl-lang", language); }, [language]);
-
-  useEffect(() => {
-    if (!token) return;
-    api.getMe(token).then((u) => {
-      setUser(u);
-      setLanguage((u.preferredLanguage as Language) || "ru");
-    }).catch(() => {
-      localStorage.removeItem("aqyl-token");
-      document.cookie = 'aqyl-token=; path=/; max-age=0';
-      setToken(null);
-    });
-  }, [token]);
 
   async function handleLogin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -52,10 +37,9 @@ export function AqylApp() {
     try {
       const res = await api.login(String(fd.get("email")), String(fd.get("password")));
       localStorage.setItem("aqyl-token", res.accessToken);
+      localStorage.setItem("aqyl-lang", (res.user.preferredLanguage as Language) || "ru");
       document.cookie = `aqyl-token=${res.accessToken}; path=/; max-age=86400; SameSite=Strict`;
-      setToken(res.accessToken);
-      setUser(res.user);
-      setLanguage((res.user.preferredLanguage as Language) || "ru");
+      router.replace("/dashboard");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       try {
@@ -102,69 +86,33 @@ export function AqylApp() {
     }
   }
 
-  function logout() {
-    localStorage.removeItem("aqyl-token");
-    document.cookie = 'aqyl-token=; path=/; max-age=0';
-    setToken(null); setUser(null);
-  }
-
-  if (!token || !user) {
-    return (
-      <AuthShell language={language} setLanguage={setLanguage}>
-        {view === "login" && (
-          <LoginForm
-            t={t} busy={busy} error={error}
-            onSubmit={handleLogin}
-            onRegister={() => { setView("register"); setError(null); }}
-            onForgot={() => { setView("forgot"); setError(null); }}
-          />
-        )}
-        {view === "register" && (
-          <RegisterForm
-            t={t} busy={busy} error={error}
-            onSubmit={handleRegister}
-            onBack={() => { setView("login"); setError(null); }}
-          />
-        )}
-        {view === "success" && (
-          <SuccessView t={t} onBack={() => { setView("login"); setError(null); }} />
-        )}
-        {view === "forgot" && (
-          <ForgotPasswordView
-            t={t}
-            onBack={() => { setView("login"); setError(null); }}
-          />
-        )}
-      </AuthShell>
-    );
-  }
-
-  const role = user.role;
-
-  const ADMIN_ROLES = [
-    "admin", "principal",
-    "vice_principal", "vice_principal_academic", "vice_principal_education",
-    "psychologist", "social_pedagogue",
-  ];
-
-  if (role === "teacher") {
-    return <TeacherApp token={token} user={user} language={language} setLanguage={setLanguage} onLogout={logout} />;
-  }
-  if (ADMIN_ROLES.includes(role)) {
-    return <AdminApp token={token} user={user} language={language} setLanguage={setLanguage} onLogout={logout} />;
-  }
-  if (role === "class_teacher") {
-    return <ClassTeacherApp token={token} user={user} language={language} setLanguage={setLanguage} onLogout={logout} />;
-  }
-  if (role === "student") {
-    return <StudentApp token={token} user={user} language={language} setLanguage={setLanguage} onLogout={logout} />;
-  }
-
   return (
-    <div style={{ padding: 40, textAlign: "center" }}>
-      <h2>{t.app_role_unsupported.replace("{role}", role)}</h2>
-      <button className="btn btn-ghost" onClick={logout}>{t.logout}</button>
-    </div>
+    <AuthShell language={language} setLanguage={setLanguage}>
+      {view === "login" && (
+        <LoginForm
+          t={t} busy={busy} error={error}
+          onSubmit={handleLogin}
+          onRegister={() => { setView("register"); setError(null); }}
+          onForgot={() => { setView("forgot"); setError(null); }}
+        />
+      )}
+      {view === "register" && (
+        <RegisterForm
+          t={t} busy={busy} error={error}
+          onSubmit={handleRegister}
+          onBack={() => { setView("login"); setError(null); }}
+        />
+      )}
+      {view === "success" && (
+        <SuccessView t={t} onBack={() => { setView("login"); setError(null); }} />
+      )}
+      {view === "forgot" && (
+        <ForgotPasswordView
+          t={t}
+          onBack={() => { setView("login"); setError(null); }}
+        />
+      )}
+    </AuthShell>
   );
 }
 

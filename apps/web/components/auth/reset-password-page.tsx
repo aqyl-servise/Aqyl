@@ -63,7 +63,7 @@ export function ResetPasswordPage() {
             <p className="muted" style={{ textAlign: "center", marginBottom: 20 }}>
               Ссылка для сброса пароля отсутствует или недействительна.
             </p>
-            <a href="/" className="btn btn-primary btn-full" style={{ textAlign: "center", textDecoration: "none" }}>
+            <a href="/login" className="btn btn-primary btn-full" style={{ textAlign: "center", textDecoration: "none" }}>
               Вернуться ко входу
             </a>
           </>
@@ -97,7 +97,7 @@ export function ResetPasswordPage() {
             <p className="muted" style={{ textAlign: "center", marginBottom: 24 }}>
               Ваш пароль успешно обновлён. Теперь вы можете войти в систему.
             </p>
-            <a href="/" className="btn btn-primary btn-full" style={{ textAlign: "center", textDecoration: "none" }}>
+            <a href="/login" className="btn btn-primary btn-full" style={{ textAlign: "center", textDecoration: "none" }}>
               Войти
             </a>
           </>
