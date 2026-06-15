@@ -1,112 +1,273 @@
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Aqyl — цифровая платформа для школ",
-  description:
-    "Aqyl автоматизирует школьные документы, аналитику и взаимодействие — меньше бумаги, больше времени на учеников.",
+import { useState } from "react";
+
+type Lang = "ru" | "kz" | "en";
+type Theme = "dark" | "light";
+
+const T: Record<Lang, Record<string, string>> = {
+  ru: {
+    nav_home: "Главная",
+    nav_features: "Функции",
+    nav_contacts: "Контакты",
+    nav_enter: "Войти",
+
+    hero_badge: "ИИ для казахстанских школ",
+    hero_title_1: "Меньше документов.",
+    hero_title_2: "Больше времени на учеников.",
+    hero_sub:
+      "Aqyl — платформа с искусственным интеллектом, которая берёт на себя школьную рутину: планы, отчёты, аналитику и материалы. Всё в одном месте.",
+    hero_cta_start: "Начать работу",
+    hero_cta_more: "Узнать больше",
+
+    problem_title: "Сколько времени уходит на бумаги?",
+    problem_1_num: "до 3 часов в день",
+    problem_1_text: "учитель тратит на оформление документов",
+    problem_2_num: "40+ документов",
+    problem_2_text: "в год приходится на одного педагога",
+    problem_3_num: "20% времени",
+    problem_3_text: "уходит на рутину вместо работы с учениками",
+
+    features_title: "Возможности платформы",
+    features_sub: "Всё необходимое для работы школы — в одном решении",
+    f1_title: "AI-генерация КМЖ",
+    f1_text: "Краткосрочные планы уроков за секунды по готовым шаблонам.",
+    f2_title: "Аналитика школы",
+    f2_text: "Успеваемость, рейтинги педагогов и отчёты в реальном времени.",
+    f3_title: "СОР / СОЧ и аттестация",
+    f3_text: "Суммативное оценивание и аттестация — всё в одном месте.",
+    f4_title: "Функциональная грамотность",
+    f4_text: "Задачи, тесты и аналитика для развития функциональной грамотности.",
+    f5_title: "Файловый менеджер",
+    f5_text: "КТП, материалы и папки — удобно организованы и всегда под рукой.",
+    f6_title: "Уведомления",
+    f6_text: "Важные события и напоминания в реальном времени.",
+
+    numbers_1_num: "3+",
+    numbers_1_text: "школы в пилоте",
+    numbers_2_num: "100+",
+    numbers_2_text: "учителей используют платформу",
+    numbers_3_num: "1000+",
+    numbers_3_text: "документов сгенерировано",
+
+    contacts_title: "Свяжитесь с нами",
+    contacts_sub: "Готовы показать Aqyl вашей школе — напишите удобным способом",
+    footer_rights: "© 2026 Aqyl. Все права защищены.",
+    footer_privacy: "Политика конфиденциальности",
+  },
+  kz: {
+    nav_home: "Басты бет",
+    nav_features: "Мүмкіндіктер",
+    nav_contacts: "Байланыс",
+    nav_enter: "Кіру",
+
+    hero_badge: "Қазақстан мектептеріне арналған ЖИ",
+    hero_title_1: "Құжат аз.",
+    hero_title_2: "Оқушыларға уақыт көп.",
+    hero_sub:
+      "Aqyl — мектеп жұмысын жеңілдететін жасанды интеллект платформасы: жоспарлар, есептер, аналитика және материалдар. Барлығы бір жерде.",
+    hero_cta_start: "Жұмысты бастау",
+    hero_cta_more: "Толығырақ",
+
+    problem_title: "Құжаттарға қанша уақыт кетеді?",
+    problem_1_num: "күніне 3 сағатқа дейін",
+    problem_1_text: "мұғалім құжаттарды рәсімдеуге жұмсайды",
+    problem_2_num: "40+ құжат",
+    problem_2_text: "бір педагогке жылына келеді",
+    problem_3_num: "уақыттың 20%-ы",
+    problem_3_text: "оқушылардың орнына күнделікті жұмысқа кетеді",
+
+    features_title: "Платформа мүмкіндіктері",
+    features_sub: "Мектеп жұмысына қажеттінің бәрі — бір шешімде",
+    f1_title: "ҚМЖ-ны ЖИ генерациясы",
+    f1_text: "Қысқа мерзімді сабақ жоспарлары секундтарда дайын үлгілермен.",
+    f2_title: "Мектеп аналитикасы",
+    f2_text: "Үлгерім, педагогтер рейтингі және есептер нақты уақытта.",
+    f3_title: "БЖБ / ТЖБ және аттестаттау",
+    f3_text: "Жиынтық бағалау мен аттестаттау — барлығы бір жерде.",
+    f4_title: "Функционалдық сауаттылық",
+    f4_text: "Функционалдық сауаттылықты дамытуға арналған тапсырмалар, тесттер, аналитика.",
+    f5_title: "Файл менеджері",
+    f5_text: "КТЖ, материалдар және қалталар — ыңғайлы ұйымдастырылған.",
+    f6_title: "Хабарламалар",
+    f6_text: "Маңызды оқиғалар мен еске салулар нақты уақытта.",
+
+    numbers_1_num: "3+",
+    numbers_1_text: "пилоттағы мектеп",
+    numbers_2_num: "100+",
+    numbers_2_text: "мұғалім платформаны қолданады",
+    numbers_3_num: "1000+",
+    numbers_3_text: "құжат жасалды",
+
+    contacts_title: "Бізбен байланысыңыз",
+    contacts_sub: "Aqyl-ды мектебіңізге көрсетуге дайынбыз — ыңғайлы тәсілмен жазыңыз",
+    footer_rights: "© 2026 Aqyl. Барлық құқықтар қорғалған.",
+    footer_privacy: "Құпиялылық саясаты",
+  },
+  en: {
+    nav_home: "Home",
+    nav_features: "Features",
+    nav_contacts: "Contacts",
+    nav_enter: "Sign in",
+
+    hero_badge: "AI for Kazakhstani schools",
+    hero_title_1: "Less paperwork.",
+    hero_title_2: "More time for students.",
+    hero_sub:
+      "Aqyl is an AI-powered platform that takes over school routine: plans, reports, analytics and materials. Everything in one place.",
+    hero_cta_start: "Get started",
+    hero_cta_more: "Learn more",
+
+    problem_title: "How much time goes into paperwork?",
+    problem_1_num: "up to 3 hours a day",
+    problem_1_text: "a teacher spends preparing documents",
+    problem_2_num: "40+ documents",
+    problem_2_text: "per teacher every year",
+    problem_3_num: "20% of time",
+    problem_3_text: "is spent on routine instead of students",
+
+    features_title: "Platform capabilities",
+    features_sub: "Everything a school needs — in a single solution",
+    f1_title: "AI lesson plan generation",
+    f1_text: "Short-term lesson plans in seconds from ready-made templates.",
+    f2_title: "School analytics",
+    f2_text: "Performance, teacher ratings and reports in real time.",
+    f3_title: "Assessments & certification",
+    f3_text: "Summative assessment and certification — all in one place.",
+    f4_title: "Functional literacy",
+    f4_text: "Tasks, tests and analytics to develop functional literacy.",
+    f5_title: "File manager",
+    f5_text: "Long-term plans, materials and folders — neatly organized.",
+    f6_title: "Notifications",
+    f6_text: "Important events and reminders in real time.",
+
+    numbers_1_num: "3+",
+    numbers_1_text: "schools in the pilot",
+    numbers_2_num: "100+",
+    numbers_2_text: "teachers use the platform",
+    numbers_3_num: "1000+",
+    numbers_3_text: "documents generated",
+
+    contacts_title: "Get in touch",
+    contacts_sub: "Ready to show Aqyl to your school — reach out any way you like",
+    footer_rights: "© 2026 Aqyl. All rights reserved.",
+    footer_privacy: "Privacy policy",
+  },
 };
 
-const FEATURES = [
-  {
-    icon: "🗂️",
-    title: "Документы без рутины",
-    text: "Планы уроков, отчёты и характеристики формируются автоматически по готовым шаблонам.",
-  },
-  {
-    icon: "🤖",
-    title: "ИИ-ассистент",
-    text: "Генерация материалов, презентаций и заданий с помощью искусственного интеллекта.",
-  },
-  {
-    icon: "📊",
-    title: "Аналитика школы",
-    text: "Успеваемость, нагрузка и рейтинг педагогов — наглядно и в реальном времени.",
-  },
-  {
-    icon: "👩‍🏫",
-    title: "Роли для всех",
-    text: "Администрация, учителя, классные руководители и ученики — каждому свой кабинет.",
-  },
-  {
-    icon: "🧩",
-    title: "Функциональная грамотность",
-    text: "Готовые модули для развития и оценки функциональной грамотности учеников.",
-  },
-  {
-    icon: "🔒",
-    title: "Данные под защитой",
-    text: "Изоляция данных каждой школы и безопасное хранение информации.",
-  },
-];
-
-const NUMBERS = [
-  { value: "50+", label: "школ на платформе" },
-  { value: "1 200+", label: "учителей работают каждый день" },
-  { value: "85 000+", label: "документов сформировано" },
-];
+const LANGS: Lang[] = ["ru", "kz", "en"];
 
 export default function LandingPage() {
+  const [lang, setLang] = useState<Lang>("ru");
+  const [theme, setTheme] = useState<Theme>("dark");
+  const t = T[lang];
+
+  const problems = [
+    { icon: "📄", num: t.problem_1_num, text: t.problem_1_text },
+    { icon: "📋", num: t.problem_2_num, text: t.problem_2_text },
+    { icon: "⏰", num: t.problem_3_num, text: t.problem_3_text },
+  ];
+
+  const features = [
+    { icon: "🤖", title: t.f1_title, text: t.f1_text },
+    { icon: "📊", title: t.f2_title, text: t.f2_text },
+    { icon: "📝", title: t.f3_title, text: t.f3_text },
+    { icon: "🎯", title: t.f4_title, text: t.f4_text },
+    { icon: "📁", title: t.f5_title, text: t.f5_text },
+    { icon: "🔔", title: t.f6_title, text: t.f6_text },
+  ];
+
+  const numbers = [
+    { num: t.numbers_1_num, text: t.numbers_1_text },
+    { num: t.numbers_2_num, text: t.numbers_2_text },
+    { num: t.numbers_3_num, text: t.numbers_3_text },
+  ];
+
   return (
-    <div className="lp">
+    <div className={`lp lp-${theme}`}>
       {/* HEADER */}
       <header className="lp-header">
         <div className="lp-container lp-header-inner">
-          <a href="/" className="lp-logo" aria-label="Aqyl">
-            <span className="lp-logo-mark">✦</span>
+          <a href="#" className="lp-logo">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icon.png" alt="Aqyl" className="lp-logo-img" width={32} height={32} />
             <span className="lp-logo-text">Aqyl</span>
           </a>
-          <a href="/login" className="lp-btn lp-btn-primary lp-btn-sm">
-            Войти
-          </a>
+
+          <nav className="lp-nav">
+            <a href="#" className="lp-nav-link">{t.nav_home}</a>
+            <a href="#features" className="lp-nav-link">{t.nav_features}</a>
+            <a href="#contacts" className="lp-nav-link">{t.nav_contacts}</a>
+          </nav>
+
+          <div className="lp-header-actions">
+            <div className="lp-lang">
+              {LANGS.map((l) => (
+                <button
+                  key={l}
+                  className={`lp-lang-btn${l === lang ? " lp-lang-active" : ""}`}
+                  onClick={() => setLang(l)}
+                  aria-pressed={l === lang}
+                >
+                  {l.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            <button
+              className="lp-theme-btn"
+              onClick={() => setTheme((th) => (th === "dark" ? "light" : "dark"))}
+              aria-label="Toggle theme"
+            >
+              {theme === "dark" ? "☀️" : "🌙"}
+            </button>
+            <a href="/login" className="lp-btn lp-btn-primary lp-btn-sm">{t.nav_enter}</a>
+          </div>
         </div>
       </header>
 
       {/* HERO */}
-      <section className="lp-hero">
-        <div className="lp-container">
-          <p className="lp-eyebrow">Цифровая школа</p>
+      <section className="lp-hero" id="top">
+        <div className="lp-blob lp-blob-1" />
+        <div className="lp-blob lp-blob-2" />
+        <div className="lp-blob lp-blob-3" />
+        <div className="lp-container lp-hero-inner">
+          <span className="lp-badge">{t.hero_badge}</span>
           <h1 className="lp-hero-title">
-            Меньше документов.<br />
-            <span className="lp-accent">Больше времени на учеников.</span>
+            <span className="lp-hero-line">{t.hero_title_1}</span>
+            <span className="lp-hero-line lp-gradient">{t.hero_title_2}</span>
           </h1>
-          <p className="lp-hero-sub">
-            Aqyl — платформа, которая автоматизирует школьную рутину: планы,
-            отчёты, аналитику и материалы. Всё в одном месте, с поддержкой ИИ.
-          </p>
+          <p className="lp-hero-sub">{t.hero_sub}</p>
           <div className="lp-cta-row">
-            <a href="/login" className="lp-btn lp-btn-primary lp-btn-lg">
-              Начать работу
-            </a>
-            <a href="#features" className="lp-btn lp-btn-ghost lp-btn-lg">
-              Узнать больше
-            </a>
+            <a href="/login" className="lp-btn lp-btn-primary lp-btn-lg">{t.hero_cta_start}</a>
+            <a href="#features" className="lp-btn lp-btn-outline lp-btn-lg">{t.hero_cta_more}</a>
           </div>
         </div>
       </section>
 
       {/* PROBLEM */}
-      <section className="lp-section">
-        <div className="lp-container lp-problem">
-          <h2 className="lp-section-title">Сколько времени уходит на документы?</h2>
-          <p className="lp-section-lead">
-            Учителя тратят до <span className="lp-accent">15 часов в неделю</span> на
-            бумажную работу — планы, отчёты, характеристики и таблицы. Это время,
-            которое можно вернуть детям.
-          </p>
-          <p className="lp-section-lead">
-            Aqyl берёт рутину на себя: шаблоны, автозаполнение и ИИ сокращают
-            работу с документами в разы.
-          </p>
+      <section className="lp-section" id="problem">
+        <div className="lp-container">
+          <h2 className="lp-section-title">{t.problem_title}</h2>
+          <div className="lp-grid lp-grid-3">
+            {problems.map((p) => (
+              <div key={p.text} className="lp-card lp-card-center">
+                <div className="lp-card-icon">{p.icon}</div>
+                <div className="lp-card-num lp-gradient">{p.num}</div>
+                <p className="lp-card-text">{p.text}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* FEATURES */}
       <section className="lp-section" id="features">
         <div className="lp-container">
-          <h2 className="lp-section-title lp-center">Возможности платформы</h2>
-          <div className="lp-features">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="lp-card">
+          <h2 className="lp-section-title">{t.features_title}</h2>
+          <p className="lp-section-sub">{t.features_sub}</p>
+          <div className="lp-grid lp-grid-3 lp-features">
+            {features.map((f) => (
+              <div key={f.title} className="lp-card lp-card-hover">
                 <div className="lp-card-icon">{f.icon}</div>
                 <h3 className="lp-card-title">{f.title}</h3>
                 <p className="lp-card-text">{f.text}</p>
@@ -117,39 +278,39 @@ export default function LandingPage() {
       </section>
 
       {/* NUMBERS */}
-      <section className="lp-section lp-numbers-section">
-        <div className="lp-container lp-numbers">
-          {NUMBERS.map((n) => (
-            <div key={n.label} className="lp-number">
-              <div className="lp-number-value">{n.value}</div>
-              <div className="lp-number-label">{n.label}</div>
-            </div>
-          ))}
+      <section className="lp-section" id="numbers">
+        <div className="lp-container">
+          <div className="lp-numbers">
+            {numbers.map((n) => (
+              <div key={n.text} className="lp-number">
+                <div className="lp-number-num lp-gradient">{n.num}</div>
+                <div className="lp-number-text">{n.text}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* CONTACTS */}
       <section className="lp-section" id="contacts">
-        <div className="lp-container lp-center">
-          <h2 className="lp-section-title">Свяжитесь с нами</h2>
-          <p className="lp-section-lead">
-            Готовы показать Aqyl вашей школе. Напишите удобным способом.
-          </p>
-          <div className="lp-contacts">
-            <a className="lp-contact" href="https://wa.me/77000000000" target="_blank" rel="noopener noreferrer">
-              <span className="lp-contact-icon">💬</span>
-              <span className="lp-contact-label">WhatsApp</span>
-              <span className="lp-contact-value">+7 (700) 000-00-00</span>
+        <div className="lp-container">
+          <h2 className="lp-section-title">{t.contacts_title}</h2>
+          <p className="lp-section-sub">{t.contacts_sub}</p>
+          <div className="lp-grid lp-grid-3">
+            <a className="lp-card lp-card-hover lp-card-center lp-contact" href="tel:+77000000000">
+              <div className="lp-card-icon">📱</div>
+              <div className="lp-contact-label">WhatsApp</div>
+              <div className="lp-contact-value">+7 (700) 000-00-00</div>
             </a>
-            <a className="lp-contact" href="https://t.me/aqyl_platform" target="_blank" rel="noopener noreferrer">
-              <span className="lp-contact-icon">✈️</span>
-              <span className="lp-contact-label">Telegram</span>
-              <span className="lp-contact-value">@aqyl_platform</span>
+            <a className="lp-card lp-card-hover lp-card-center lp-contact" href="https://t.me/aqyl_platform" target="_blank" rel="noopener noreferrer">
+              <div className="lp-card-icon">✈️</div>
+              <div className="lp-contact-label">Telegram</div>
+              <div className="lp-contact-value">@aqyl_platform</div>
             </a>
-            <a className="lp-contact" href="mailto:info@aqyl-service.kz">
-              <span className="lp-contact-icon">✉️</span>
-              <span className="lp-contact-label">Email</span>
-              <span className="lp-contact-value">info@aqyl-service.kz</span>
+            <a className="lp-card lp-card-hover lp-card-center lp-contact" href="mailto:info@aqyl-service.kz">
+              <div className="lp-card-icon">📧</div>
+              <div className="lp-contact-label">Email</div>
+              <div className="lp-contact-value">info@aqyl-service.kz</div>
             </a>
           </div>
         </div>
@@ -158,36 +319,58 @@ export default function LandingPage() {
       {/* FOOTER */}
       <footer className="lp-footer">
         <div className="lp-container lp-footer-inner">
-          <span className="lp-logo-text">Aqyl</span>
-          <span className="lp-footer-copy">
-            © {new Date().getFullYear()} Aqyl. Все права защищены.
-          </span>
+          <a href="#" className="lp-logo">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icon.png" alt="Aqyl" className="lp-logo-img" width={28} height={28} />
+            <span className="lp-logo-text">Aqyl</span>
+          </a>
+          <span className="lp-footer-copy">{t.footer_rights}</span>
+          <a href="#" className="lp-footer-link">{t.footer_privacy}</a>
         </div>
       </footer>
 
-      {/* Scoped styles — this project does not use Tailwind, so the landing
-          ships its own minimal dark theme via a scoped stylesheet. */}
       <style>{`
+        html { scroll-behavior: smooth; }
+
         .lp {
-          --lp-bg: #0f1117;
-          --lp-bg-soft: #161922;
-          --lp-card: #1a1e29;
-          --lp-border: #262b38;
-          --lp-text: #e8eaf0;
-          --lp-muted: #9aa0b4;
-          --lp-accent: #7c6cf6;
-          --lp-accent-2: #4f8cff;
+          /* Brand palette */
+          --lp-purple: #6B5CE7;
+          --lp-blue: #4A90D9;
+          --lp-green: #2DC08E;
+          --lp-orange: #F5A623;
+          --lp-gradient: linear-gradient(100deg, var(--lp-purple), var(--lp-blue) 45%, var(--lp-green));
+
+          min-height: 100vh;
           background: var(--lp-bg);
           color: var(--lp-text);
-          min-height: 100vh;
           font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
           line-height: 1.6;
+          transition: background .3s ease, color .3s ease;
         }
-        .lp a { text-decoration: none; color: inherit; }
-        .lp-container { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 24px; }
-        .lp-center { text-align: center; }
-        .lp-accent {
-          background: linear-gradient(90deg, var(--lp-accent), var(--lp-accent-2));
+        /* Theme tokens */
+        .lp-dark {
+          --lp-bg: #0D0E1A;
+          --lp-text: #F0F0FF;
+          --lp-muted: #9A9ACB;
+          --lp-card: #161728;
+          --lp-card-2: #1C1D31;
+          --lp-border: #262741;
+          --lp-header-bg: rgba(13,14,26,0.72);
+        }
+        .lp-light {
+          --lp-bg: #F5F5FF;
+          --lp-text: #1A1A2E;
+          --lp-muted: #5A5A7A;
+          --lp-card: #FFFFFF;
+          --lp-card-2: #FFFFFF;
+          --lp-border: #E4E4F5;
+          --lp-header-bg: rgba(245,245,255,0.72);
+        }
+
+        .lp a { color: inherit; text-decoration: none; }
+        .lp-container { width: 100%; max-width: 1140px; margin: 0 auto; padding: 0 24px; }
+        .lp-gradient {
+          background: var(--lp-gradient);
           -webkit-background-clip: text; background-clip: text;
           -webkit-text-fill-color: transparent; color: transparent;
         }
@@ -195,120 +378,116 @@ export default function LandingPage() {
         /* Buttons */
         .lp-btn {
           display: inline-flex; align-items: center; justify-content: center;
-          border-radius: 10px; font-weight: 600; cursor: pointer;
-          transition: transform .12s ease, opacity .12s ease, background .12s ease;
-          border: 1px solid transparent;
+          border-radius: 12px; font-weight: 600; cursor: pointer;
+          border: 1px solid transparent; white-space: nowrap;
+          transition: all .3s ease;
         }
-        .lp-btn:hover { transform: translateY(-1px); }
         .lp-btn-sm { padding: 9px 18px; font-size: 14px; }
-        .lp-btn-lg { padding: 14px 28px; font-size: 16px; }
-        .lp-btn-primary {
-          background: linear-gradient(90deg, var(--lp-accent), var(--lp-accent-2));
-          color: #fff;
-        }
-        .lp-btn-ghost {
-          background: transparent; color: var(--lp-text);
-          border-color: var(--lp-border);
-        }
-        .lp-btn-ghost:hover { background: var(--lp-bg-soft); }
+        .lp-btn-lg { padding: 15px 30px; font-size: 16px; }
+        .lp-btn-primary { background: var(--lp-purple); color: #fff; box-shadow: 0 6px 20px rgba(107,92,231,0.35); }
+        .lp-btn-primary:hover { background: #5a4bd6; transform: translateY(-2px); box-shadow: 0 10px 28px rgba(107,92,231,0.45); }
+        .lp-btn-outline { background: transparent; color: var(--lp-text); border-color: var(--lp-border); }
+        .lp-btn-outline:hover { border-color: var(--lp-purple); transform: translateY(-2px); }
 
         /* Header */
         .lp-header {
-          position: sticky; top: 0; z-index: 10;
-          backdrop-filter: blur(10px);
-          background: rgba(15,17,23,0.8);
+          position: sticky; top: 0; z-index: 50;
+          background: var(--lp-header-bg);
+          backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
           border-bottom: 1px solid var(--lp-border);
+          transition: background .3s ease, border-color .3s ease;
         }
-        .lp-header-inner {
-          display: flex; align-items: center; justify-content: space-between;
-          height: 64px;
+        .lp-header-inner { display: flex; align-items: center; justify-content: space-between; height: 66px; gap: 16px; }
+        .lp-logo { display: inline-flex; align-items: center; gap: 9px; }
+        .lp-logo-img { border-radius: 8px; display: block; }
+        .lp-logo-text { font-size: 20px; font-weight: 800; letter-spacing: .3px; }
+        .lp-nav { display: flex; gap: 28px; }
+        .lp-nav-link { color: var(--lp-muted); font-size: 15px; font-weight: 500; transition: color .3s ease; }
+        .lp-nav-link:hover { color: var(--lp-text); }
+        .lp-header-actions { display: flex; align-items: center; gap: 12px; }
+        .lp-lang { display: inline-flex; background: var(--lp-card); border: 1px solid var(--lp-border); border-radius: 10px; padding: 3px; }
+        .lp-lang-btn {
+          border: none; background: transparent; color: var(--lp-muted);
+          font-size: 12px; font-weight: 700; padding: 5px 9px; border-radius: 7px; cursor: pointer;
+          transition: all .3s ease;
         }
-        .lp-logo { display: inline-flex; align-items: center; gap: 8px; }
-        .lp-logo-mark { color: var(--lp-accent); font-size: 20px; }
-        .lp-logo-text { font-size: 20px; font-weight: 700; letter-spacing: .5px; }
+        .lp-lang-active { background: var(--lp-purple); color: #fff; }
+        .lp-theme-btn {
+          width: 38px; height: 38px; border-radius: 10px; cursor: pointer;
+          background: var(--lp-card); border: 1px solid var(--lp-border);
+          font-size: 16px; line-height: 1; transition: all .3s ease;
+        }
+        .lp-theme-btn:hover { border-color: var(--lp-purple); }
 
         /* Hero */
-        .lp-hero { padding: 96px 0 72px; text-align: center; position: relative; overflow: hidden; }
-        .lp-hero::before {
-          content: ""; position: absolute; top: -180px; left: 50%;
-          transform: translateX(-50%);
-          width: 680px; height: 680px; border-radius: 50%;
-          background: radial-gradient(circle, rgba(124,108,246,0.18), transparent 60%);
-          pointer-events: none;
+        .lp-hero { position: relative; min-height: 100vh; display: flex; align-items: center; overflow: hidden; }
+        .lp-hero-inner { position: relative; z-index: 2; text-align: center; padding: 80px 24px; }
+        .lp-blob { position: absolute; border-radius: 50%; filter: blur(100px); z-index: 1; pointer-events: none; }
+        .lp-blob-1 { width: 460px; height: 460px; background: var(--lp-purple); opacity: .20; top: -80px; left: -60px; }
+        .lp-blob-2 { width: 420px; height: 420px; background: var(--lp-blue); opacity: .16; top: 20%; right: -80px; }
+        .lp-blob-3 { width: 480px; height: 480px; background: var(--lp-green); opacity: .15; bottom: -120px; left: 35%; }
+        .lp-badge {
+          display: inline-block; padding: 8px 18px; border-radius: 999px;
+          background: var(--lp-card); border: 1px solid var(--lp-border);
+          color: var(--lp-muted); font-size: 14px; font-weight: 600; margin-bottom: 28px;
         }
-        .lp-eyebrow {
-          display: inline-block; color: var(--lp-accent);
-          font-size: 13px; font-weight: 600; letter-spacing: 2px;
-          text-transform: uppercase; margin-bottom: 16px;
-        }
-        .lp-hero-title {
-          font-size: clamp(34px, 6vw, 60px); font-weight: 800;
-          line-height: 1.1; margin: 0 0 20px;
-        }
-        .lp-hero-sub {
-          max-width: 620px; margin: 0 auto 36px;
-          font-size: 18px; color: var(--lp-muted);
-        }
-        .lp-cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+        .lp-hero-title { font-size: clamp(36px, 7vw, 68px); font-weight: 800; line-height: 1.08; margin: 0 0 24px; }
+        .lp-hero-line { display: block; }
+        .lp-hero-sub { max-width: 640px; margin: 0 auto 38px; font-size: clamp(16px, 2.2vw, 19px); color: var(--lp-muted); }
+        .lp-cta-row { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
 
         /* Sections */
-        .lp-section { padding: 72px 0; border-top: 1px solid var(--lp-border); }
-        .lp-section-title { font-size: clamp(26px, 4vw, 38px); font-weight: 700; margin: 0 0 20px; }
-        .lp-section-lead { font-size: 18px; color: var(--lp-muted); max-width: 720px; margin: 0 auto 14px; }
-        .lp-problem { max-width: 760px; }
+        .lp-section { padding: 90px 0; }
+        .lp-section-title { font-size: clamp(28px, 4.5vw, 42px); font-weight: 800; text-align: center; margin: 0 0 14px; }
+        .lp-section-sub { text-align: center; color: var(--lp-muted); font-size: 18px; max-width: 640px; margin: 0 auto 50px; }
+        .lp-section-title + .lp-grid { margin-top: 50px; }
 
-        /* Features grid */
-        .lp-features {
-          display: grid; gap: 20px; margin-top: 40px;
-          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        }
+        /* Grid + cards */
+        .lp-grid { display: grid; gap: 22px; }
+        .lp-grid-3 { grid-template-columns: repeat(3, 1fr); }
         .lp-card {
           background: var(--lp-card); border: 1px solid var(--lp-border);
-          border-radius: 16px; padding: 28px;
-          transition: border-color .15s ease, transform .15s ease;
+          border-radius: 18px; padding: 30px;
+          transition: all .3s ease;
         }
-        .lp-card:hover { border-color: var(--lp-accent); transform: translateY(-3px); }
-        .lp-card-icon { font-size: 28px; margin-bottom: 14px; }
-        .lp-card-title { font-size: 18px; font-weight: 700; margin: 0 0 8px; }
+        .lp-card-center { text-align: center; }
+        .lp-card-hover:hover { border-color: var(--lp-purple); transform: translateY(-5px); box-shadow: 0 14px 34px rgba(107,92,231,0.12); }
+        .lp-card-icon { font-size: 32px; margin-bottom: 14px; }
+        .lp-card-num { font-size: clamp(24px, 3vw, 32px); font-weight: 800; margin-bottom: 8px; }
+        .lp-card-title { font-size: 19px; font-weight: 700; margin: 0 0 8px; }
         .lp-card-text { font-size: 15px; color: var(--lp-muted); margin: 0; }
 
-        /* Numbers */
-        .lp-numbers-section { background: var(--lp-bg-soft); }
+        /* Numbers block */
         .lp-numbers {
-          display: grid; gap: 24px; text-align: center;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          background: var(--lp-card-2); border: 1px solid var(--lp-border);
+          border-radius: 24px; padding: 56px 32px;
+          display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; text-align: center;
         }
-        .lp-number-value {
-          font-size: clamp(36px, 5vw, 52px); font-weight: 800;
-          background: linear-gradient(90deg, var(--lp-accent), var(--lp-accent-2));
-          -webkit-background-clip: text; background-clip: text;
-          -webkit-text-fill-color: transparent; color: transparent;
-        }
-        .lp-number-label { color: var(--lp-muted); font-size: 15px; margin-top: 6px; }
+        .lp-number-num { font-size: clamp(40px, 6vw, 60px); font-weight: 800; line-height: 1; }
+        .lp-number-text { color: var(--lp-muted); font-size: 16px; margin-top: 10px; }
 
         /* Contacts */
-        .lp-contacts {
-          display: grid; gap: 20px; margin-top: 36px;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        }
-        .lp-contact {
-          display: flex; flex-direction: column; align-items: center; gap: 6px;
-          background: var(--lp-card); border: 1px solid var(--lp-border);
-          border-radius: 16px; padding: 28px 20px;
-          transition: border-color .15s ease, transform .15s ease;
-        }
-        .lp-contact:hover { border-color: var(--lp-accent); transform: translateY(-3px); }
-        .lp-contact-icon { font-size: 26px; }
-        .lp-contact-label { font-size: 13px; color: var(--lp-muted); text-transform: uppercase; letter-spacing: 1px; }
-        .lp-contact-value { font-size: 16px; font-weight: 600; }
+        .lp-contact { display: flex; flex-direction: column; align-items: center; }
+        .lp-contact-label { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--lp-muted); margin-bottom: 4px; }
+        .lp-contact-value { font-size: 17px; font-weight: 700; }
 
         /* Footer */
-        .lp-footer { border-top: 1px solid var(--lp-border); padding: 28px 0; }
-        .lp-footer-inner {
-          display: flex; align-items: center; justify-content: space-between;
-          flex-wrap: wrap; gap: 12px;
-        }
+        .lp-footer { border-top: 1px solid var(--lp-border); padding: 30px 0; }
+        .lp-footer-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
         .lp-footer-copy { color: var(--lp-muted); font-size: 14px; }
+        .lp-footer-link { color: var(--lp-muted); font-size: 14px; transition: color .3s ease; }
+        .lp-footer-link:hover { color: var(--lp-text); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+          .lp-nav { display: none; }
+          .lp-grid-3 { grid-template-columns: 1fr; }
+          .lp-numbers { grid-template-columns: 1fr; gap: 36px; padding: 44px 24px; }
+          .lp-section { padding: 64px 0; }
+          .lp-header-actions { gap: 8px; }
+          .lp-lang-btn { padding: 5px 7px; }
+          .lp-footer-inner { justify-content: center; text-align: center; }
+        }
       `}</style>
     </div>
   );
