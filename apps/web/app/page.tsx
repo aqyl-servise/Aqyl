@@ -157,24 +157,91 @@ const T: Record<Lang, Record<string, string>> = {
 
 const LANGS: Lang[] = ["ru", "kz", "en"];
 
+/* Inline stroke-based icons (24×24, strokeWidth 1.5, currentColor). */
+function Icon({ name, size = 24 }: { name: string; size?: number }) {
+  const p = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.5,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+  switch (name) {
+    case "file":
+      return (
+        <svg {...p}><path d="M6 2h7l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" /><path d="M13 2v5h5" /></svg>
+      );
+    case "clipboard":
+      return (
+        <svg {...p}><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1H9z" /><path d="M8.5 10h7M8.5 14h7M8.5 18h4" /></svg>
+      );
+    case "clock":
+      return (
+        <svg {...p}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+      );
+    case "chip":
+      return (
+        <svg {...p}><rect x="7" y="7" width="10" height="10" rx="1.5" /><rect x="10" y="10" width="4" height="4" rx="0.5" /><path d="M10 3v3M14 3v3M10 18v3M14 18v3M3 10h3M3 14h3M18 10h3M18 14h3" /></svg>
+      );
+    case "chart":
+      return (
+        <svg {...p}><path d="M4 20h16" /><rect x="6" y="10" width="3" height="8" rx="0.5" /><rect x="11" y="6" width="3" height="12" rx="0.5" /><rect x="16" y="13" width="3" height="5" rx="0.5" /></svg>
+      );
+    case "edit":
+      return (
+        <svg {...p}><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" /></svg>
+      );
+    case "target":
+      return (
+        <svg {...p}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.5" /></svg>
+      );
+    case "folder":
+      return (
+        <svg {...p}><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" /></svg>
+      );
+    case "bell":
+      return (
+        <svg {...p}><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></svg>
+      );
+    case "phone":
+      return (
+        <svg {...p}><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8.1 9.6a16 16 0 0 0 6 6l1.2-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z" /></svg>
+      );
+    case "send":
+      return (
+        <svg {...p}><path d="M22 2L11 13" /><path d="M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+      );
+    case "mail":
+      return (
+        <svg {...p}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" /></svg>
+      );
+    default:
+      return null;
+  }
+}
+
 export default function LandingPage() {
   const [lang, setLang] = useState<Lang>("ru");
   const [theme, setTheme] = useState<Theme>("dark");
   const t = T[lang];
 
   const problems = [
-    { icon: "📄", num: t.problem_1_num, text: t.problem_1_text },
-    { icon: "📋", num: t.problem_2_num, text: t.problem_2_text },
-    { icon: "⏰", num: t.problem_3_num, text: t.problem_3_text },
+    { icon: "file", num: t.problem_1_num, text: t.problem_1_text },
+    { icon: "clipboard", num: t.problem_2_num, text: t.problem_2_text },
+    { icon: "clock", num: t.problem_3_num, text: t.problem_3_text },
   ];
 
   const features = [
-    { icon: "🤖", title: t.f1_title, text: t.f1_text },
-    { icon: "📊", title: t.f2_title, text: t.f2_text },
-    { icon: "📝", title: t.f3_title, text: t.f3_text },
-    { icon: "🎯", title: t.f4_title, text: t.f4_text },
-    { icon: "📁", title: t.f5_title, text: t.f5_text },
-    { icon: "🔔", title: t.f6_title, text: t.f6_text },
+    { icon: "chip", title: t.f1_title, text: t.f1_text },
+    { icon: "chart", title: t.f2_title, text: t.f2_text },
+    { icon: "edit", title: t.f3_title, text: t.f3_text },
+    { icon: "target", title: t.f4_title, text: t.f4_text },
+    { icon: "folder", title: t.f5_title, text: t.f5_text },
+    { icon: "bell", title: t.f6_title, text: t.f6_text },
   ];
 
   const numbers = [
@@ -251,7 +318,7 @@ export default function LandingPage() {
           <div className="lp-grid lp-grid-3">
             {problems.map((p) => (
               <div key={p.text} className="lp-card lp-card-center">
-                <div className="lp-card-icon">{p.icon}</div>
+                <div className="lp-card-icon"><Icon name={p.icon} size={40} /></div>
                 <div className="lp-card-num lp-gradient">{p.num}</div>
                 <p className="lp-card-text">{p.text}</p>
               </div>
@@ -268,7 +335,7 @@ export default function LandingPage() {
           <div className="lp-grid lp-grid-3 lp-features">
             {features.map((f) => (
               <div key={f.title} className="lp-card lp-card-hover">
-                <div className="lp-card-icon">{f.icon}</div>
+                <div className="lp-card-icon"><Icon name={f.icon} size={32} /></div>
                 <h3 className="lp-card-title">{f.title}</h3>
                 <p className="lp-card-text">{f.text}</p>
               </div>
@@ -298,17 +365,17 @@ export default function LandingPage() {
           <p className="lp-section-sub">{t.contacts_sub}</p>
           <div className="lp-grid lp-grid-3">
             <a className="lp-card lp-card-hover lp-card-center lp-contact" href="tel:+77000000000">
-              <div className="lp-card-icon">📱</div>
+              <div className="lp-card-icon"><Icon name="phone" size={40} /></div>
               <div className="lp-contact-label">WhatsApp</div>
               <div className="lp-contact-value">+7 (700) 000-00-00</div>
             </a>
             <a className="lp-card lp-card-hover lp-card-center lp-contact" href="https://t.me/aqyl_platform" target="_blank" rel="noopener noreferrer">
-              <div className="lp-card-icon">✈️</div>
+              <div className="lp-card-icon"><Icon name="send" size={40} /></div>
               <div className="lp-contact-label">Telegram</div>
               <div className="lp-contact-value">@aqyl_platform</div>
             </a>
             <a className="lp-card lp-card-hover lp-card-center lp-contact" href="mailto:info@aqyl-service.kz">
-              <div className="lp-card-icon">📧</div>
+              <div className="lp-card-icon"><Icon name="mail" size={40} /></div>
               <div className="lp-contact-label">Email</div>
               <div className="lp-contact-value">info@aqyl-service.kz</div>
             </a>
@@ -421,7 +488,7 @@ export default function LandingPage() {
 
         /* Hero */
         .lp-hero { position: relative; min-height: 100vh; display: flex; align-items: center; overflow: hidden; }
-        .lp-hero-inner { position: relative; z-index: 2; text-align: center; padding: 80px 24px; }
+        .lp-hero-inner { position: relative; z-index: 2; text-align: center; padding: 80px 24px 64px; }
         .lp-blob { position: absolute; border-radius: 50%; filter: blur(100px); z-index: 1; pointer-events: none; }
         .lp-blob-1 { width: 460px; height: 460px; background: var(--lp-purple); opacity: .20; top: -80px; left: -60px; }
         .lp-blob-2 { width: 420px; height: 420px; background: var(--lp-blue); opacity: .16; top: 20%; right: -80px; }
@@ -437,10 +504,10 @@ export default function LandingPage() {
         .lp-cta-row { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
 
         /* Sections */
-        .lp-section { padding: 90px 0; }
-        .lp-section-title { font-size: clamp(28px, 4.5vw, 42px); font-weight: 800; text-align: center; margin: 0 0 14px; }
-        .lp-section-sub { text-align: center; color: var(--lp-muted); font-size: 18px; max-width: 640px; margin: 0 auto 50px; }
-        .lp-section-title + .lp-grid { margin-top: 50px; }
+        .lp-section { padding: 48px 0; }
+        .lp-section-title { font-size: clamp(28px, 4.5vw, 42px); font-weight: 800; text-align: center; margin: 0 0 12px; }
+        .lp-section-sub { text-align: center; color: var(--lp-muted); font-size: 18px; max-width: 640px; margin: 0 auto 36px; }
+        .lp-section-title + .lp-grid { margin-top: 32px; }
 
         /* Grid + cards */
         .lp-grid { display: grid; gap: 22px; }
@@ -452,7 +519,8 @@ export default function LandingPage() {
         }
         .lp-card-center { text-align: center; }
         .lp-card-hover:hover { border-color: var(--lp-purple); transform: translateY(-5px); box-shadow: 0 14px 34px rgba(107,92,231,0.12); }
-        .lp-card-icon { font-size: 32px; margin-bottom: 14px; }
+        .lp-card-icon { color: var(--lp-purple); line-height: 0; margin-bottom: 14px; }
+        .lp-card-center .lp-card-icon { display: flex; justify-content: center; }
         .lp-card-num { font-size: clamp(24px, 3vw, 32px); font-weight: 800; margin-bottom: 8px; }
         .lp-card-title { font-size: 19px; font-weight: 700; margin: 0 0 8px; }
         .lp-card-text { font-size: 15px; color: var(--lp-muted); margin: 0; }
@@ -460,7 +528,7 @@ export default function LandingPage() {
         /* Numbers block */
         .lp-numbers {
           background: var(--lp-card-2); border: 1px solid var(--lp-border);
-          border-radius: 24px; padding: 56px 32px;
+          border-radius: 24px; padding: 44px 32px;
           display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; text-align: center;
         }
         .lp-number-num { font-size: clamp(40px, 6vw, 60px); font-weight: 800; line-height: 1; }
@@ -482,8 +550,8 @@ export default function LandingPage() {
         @media (max-width: 768px) {
           .lp-nav { display: none; }
           .lp-grid-3 { grid-template-columns: 1fr; }
-          .lp-numbers { grid-template-columns: 1fr; gap: 36px; padding: 44px 24px; }
-          .lp-section { padding: 64px 0; }
+          .lp-numbers { grid-template-columns: 1fr; gap: 32px; padding: 36px 24px; }
+          .lp-section { padding: 40px 0; }
           .lp-header-actions { gap: 8px; }
           .lp-lang-btn { padding: 5px 7px; }
           .lp-footer-inner { justify-content: center; text-align: center; }
