@@ -7,8 +7,12 @@ import { TeachersModule } from "../teachers/teachers.module";
 import { MailModule } from "../mail/mail.module";
 import { PasswordReset } from "../schools/entities/password-reset.entity";
 import { School } from "../schools/entities/school.entity";
+import { Teacher } from "../teachers/entities/teacher.entity";
+import { RefreshToken } from "./entities/refresh-token.entity";
+import { EmailVerification } from "./entities/email-verification.entity";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
+import { B2cAuthService } from "./b2c-auth.service";
 import { JwtStrategy } from "./strategies/jwt.strategy";
 
 @Module({
@@ -16,22 +20,21 @@ import { JwtStrategy } from "./strategies/jwt.strategy";
     TeachersModule,
     PassportModule,
     MailModule,
-    TypeOrmModule.forFeature([PasswordReset, School]),
+    TypeOrmModule.forFeature([PasswordReset, School, Teacher, RefreshToken, EmailVerification]),
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>("JWT_SECRET"),
-        // TODO: ADD_REFRESH_TOKEN — there is no refresh-token mechanism, so the access token
-        // lifetime is kept long (1d) to avoid logging users out mid-session. Once refresh tokens
-        // exist, shorten the access token to 15m–1h. Lifetime is env-overridable via JWT_EXPIRES_IN.
+        // Default access-token lifetime (15m). B2G login() and generateTokens() pass an explicit
+        // expiresIn, so this default is only a fallback. Refresh tokens (30d) are issued separately.
         signOptions: {
-          expiresIn: (configService.get<string>("JWT_EXPIRES_IN") ?? "1d") as JwtSignOptions["expiresIn"],
+          expiresIn: (configService.get<string>("JWT_ACCESS_EXPIRES") ?? "15m") as JwtSignOptions["expiresIn"],
         },
       }),
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [JwtModule, PassportModule],
+  providers: [AuthService, B2cAuthService, JwtStrategy],
+  exports: [JwtModule, PassportModule, AuthService],
 })
 export class AuthModule {}

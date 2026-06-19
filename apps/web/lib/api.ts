@@ -21,7 +21,20 @@ export type AuthUser = {
   managedClassroomName?: string | null;
 };
 
-export type LoginResponse = { accessToken: string; user: AuthUser };
+export type LoginResponse = { accessToken: string; refreshToken?: string; user: AuthUser };
+
+export type TokenPair = { accessToken: string; refreshToken: string };
+export type B2CAuthResponse = { accessToken: string; refreshToken: string; user: AuthUser };
+export type RegisterB2CInput = {
+  email: string; password: string; firstName: string; lastName: string;
+  subject?: string; region?: string;
+};
+export type B2CProfile = AuthUser & {
+  registrationSource: string;
+  isEmailVerified: boolean;
+  subscriptionStatus: "trial" | "active" | "expired" | "none";
+  trialEndsAt: string | null;
+};
 
 export type PendingUser = {
   id: string;
@@ -277,6 +290,23 @@ export const api = {
     request<{ message: string }>("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
   resetPassword: (token: string, password: string) =>
     request<{ message: string }>("/auth/reset-password", { method: "POST", body: JSON.stringify({ token, password }) }),
+
+  // Refresh tokens
+  refreshToken: (refreshToken: string) =>
+    request<TokenPair>("/auth/refresh", { method: "POST", body: JSON.stringify({ refreshToken }) }),
+  logout: (token: string, refreshToken: string) =>
+    request<{ success: boolean }>("/auth/logout", { method: "POST", body: JSON.stringify({ refreshToken }) }, token),
+
+  // B2C (individual teacher)
+  sendVerificationCode: (email: string) =>
+    request<{ success: boolean }>("/auth/b2c/send-code", { method: "POST", body: JSON.stringify({ email }) }),
+  verifyCode: (email: string, code: string) =>
+    request<{ verified: boolean }>("/auth/b2c/verify-code", { method: "POST", body: JSON.stringify({ email, code }) }),
+  registerB2C: (dto: RegisterB2CInput) =>
+    request<B2CAuthResponse>("/auth/b2c/register", { method: "POST", body: JSON.stringify(dto) }),
+  loginB2C: (email: string, password: string) =>
+    request<B2CAuthResponse>("/auth/b2c/login", { method: "POST", body: JSON.stringify({ email, password }) }),
+  getB2CMe: (token: string) => request<B2CProfile>("/auth/b2c/me", undefined, token),
 
   // Dashboard (teacher)
   getDashboard: (token: string) =>

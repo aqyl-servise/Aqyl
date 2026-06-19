@@ -95,6 +95,8 @@ import { SchoolTokenPackage } from "./modules/tokens/entities/school-token-packa
 import { TokenTransaction } from "./modules/tokens/entities/token-transaction.entity";
 import { TokensModule } from "./modules/tokens/tokens.module";
 import { MalimetModule } from "./modules/malimet/malimet.module";
+import { RefreshToken } from "./modules/auth/entities/refresh-token.entity";
+import { EmailVerification } from "./modules/auth/entities/email-verification.entity";
 
 @Module({
   imports: [
@@ -137,6 +139,7 @@ import { MalimetModule } from "./modules/malimet/malimet.module";
           TeacherNotification,
           SecurityAuditLog,
           SchoolTokenPackage, TokenTransaction,
+          RefreshToken, EmailVerification,
         ],
       }),
     }),

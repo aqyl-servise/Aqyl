@@ -157,4 +157,32 @@ export class MailService {
       await this.smsService.sendPasswordReset(phone, resetUrl, lang);
     }
   }
+
+  /** B2C email-verification 6-digit code. */
+  async sendVerificationCode(email: string, code: string): Promise<void> {
+    const html = `
+<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+  <h2 style="color: #6B5CE7;">Aqyl</h2>
+  <p>Ваш код подтверждения:</p>
+  <div style="font-size: 36px; font-weight: bold; color: #6B5CE7; letter-spacing: 8px; margin: 24px 0;">
+    ${code}
+  </div>
+  <p style="color: #666;">Код действителен 15 минут. Не передавайте его никому.</p>
+</div>`;
+
+    const maskedEmail = email.replace(/(.{2}).+(@.+)/, "$1***$2");
+    try {
+      await this.transporter.sendMail({
+        from: this.from,
+        to: email,
+        subject: "Aqyl — код подтверждения",
+        html,
+        text: `Ваш код подтверждения Aqyl: ${code}. Код действителен 15 минут.`,
+      });
+      this.logger.log(`Verification code email sent to ${maskedEmail}`);
+    } catch (err) {
+      this.logger.error(`Failed to send verification code email to ${maskedEmail}`, err);
+      throw err;
+    }
+  }
 }

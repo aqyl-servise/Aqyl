@@ -41,6 +41,19 @@ export class Teacher {
   @Column({ nullable: true })
   schoolId?: string;
 
+  // ── B2C (individual teacher) registration fields ──────────────────────────
+  @Column({ default: false })
+  isEmailVerified!: boolean;
+
+  @Column({ default: "b2g" })
+  registrationSource!: string; // 'b2g' | 'b2c'
+
+  @Column({ default: "active" })
+  subscriptionStatus!: string; // 'trial' | 'active' | 'expired' | 'none'
+
+  @Column({ type: "timestamp", nullable: true })
+  trialEndsAt?: Date | null; // 14 days from B2C registration
+
   @ManyToOne(() => School, (s) => s.teachers, { nullable: true, onDelete: "SET NULL" })
   school?: School;
 

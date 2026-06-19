@@ -3,7 +3,7 @@ import { jwtVerify } from 'jose'
 
 const COOKIE_NAME = 'aqyl-token'
 // Routes that never require authentication.
-const PUBLIC_PATHS = ['/', '/login', '/reset-password']
+const PUBLIC_PATHS = ['/', '/login', '/login-teacher', '/register', '/reset-password']
 // Routes that require a valid session.
 const PROTECTED_PATHS = ['/dashboard']
 
@@ -53,11 +53,13 @@ export async function middleware(request: NextRequest) {
 
   // Protected routes require a valid session.
   if (matches(pathname, PROTECTED_PATHS)) {
+    // B2C teachers have their own login screen.
+    const loginPath = pathname.startsWith('/dashboard/b2c') ? '/login-teacher' : '/login'
     if (!token) {
-      return NextResponse.redirect(new URL('/login', request.url))
+      return NextResponse.redirect(new URL(loginPath, request.url))
     }
     if (!valid) {
-      const response = NextResponse.redirect(new URL('/login', request.url))
+      const response = NextResponse.redirect(new URL(loginPath, request.url))
       response.cookies.delete(COOKIE_NAME)
       return response
     }

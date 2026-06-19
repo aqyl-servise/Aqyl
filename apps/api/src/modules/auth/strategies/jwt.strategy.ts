@@ -23,7 +23,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload) {
     const teacher = await this.teachersService.findById(payload.sub);
     if (!teacher) return null;
-    if (teacher.role !== "admin" && !teacher.schoolId) {
+    // B2C teachers belong to no school by design — they must not be rejected here.
+    if (teacher.role !== "admin" && teacher.registrationSource !== "b2c" && !teacher.schoolId) {
       throw new UnauthorizedException("Учитель не привязан к школе. Обратитесь к администратору.");
     }
     return {
@@ -34,6 +35,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       role: teacher.role,
       subject: teacher.subject,
       schoolId: teacher.schoolId ?? null,
+      registrationSource: teacher.registrationSource,
+      subscriptionStatus: teacher.subscriptionStatus,
+      trialEndsAt: teacher.trialEndsAt ?? null,
       isClassTeacher: teacher.isClassTeacher ?? false,
       managedClassroomId: teacher.managedClassroomId ?? null,
       managedClassroomName: teacher.managedClassroomName ?? null,

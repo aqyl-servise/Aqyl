@@ -1,17 +1,24 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { JwtService } from "@nestjs/jwt";
-import { Repository } from "typeorm";
+import { JwtService, JwtSignOptions } from "@nestjs/jwt";
+import { LessThan, Repository } from "typeorm";
 import * as bcrypt from "bcryptjs";
+import * as crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 import { Teacher } from "../teachers/entities/teacher.entity";
 import { TeachersService } from "../teachers/teachers.service";
 import { PasswordReset } from "../schools/entities/password-reset.entity";
 import { School } from "../schools/entities/school.entity";
+import { RefreshToken } from "./entities/refresh-token.entity";
 import { MailService } from "../mail/mail.service";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
 import { ConfigService } from "@nestjs/config";
+
+export interface TokenPair {
+  accessToken: string;
+  refreshToken: string;
+}
 
 @Injectable()
 export class AuthService {
@@ -22,7 +29,73 @@ export class AuthService {
     private readonly configService: ConfigService,
     @InjectRepository(PasswordReset) private readonly resetRepo: Repository<PasswordReset>,
     @InjectRepository(School) private readonly schoolRepo: Repository<School>,
+    @InjectRepository(RefreshToken) private readonly refreshRepo: Repository<RefreshToken>,
   ) {}
+
+  // ── Token helpers ──────────────────────────────────────────────────────────
+
+  private hashToken(raw: string): string {
+    return crypto.createHash("sha256").update(raw).digest("hex");
+  }
+
+  /** Parse a duration string like "30d", "15m", "12h", "45s" into milliseconds. */
+  private durationToMs(value: string, fallbackMs: number): number {
+    const m = /^(\d+)\s*([smhd])$/.exec(value.trim());
+    if (!m) return fallbackMs;
+    const n = parseInt(m[1], 10);
+    const unit = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 }[m[2]] ?? 1;
+    return n * unit;
+  }
+
+  /** Create + persist a refresh token (hashed). Returns the raw token for the client. */
+  async createRefreshToken(userId: string, userType: string): Promise<string> {
+    const raw = crypto.randomBytes(40).toString("hex");
+    const refreshExpires = this.configService.get<string>("JWT_REFRESH_EXPIRES") ?? "30d";
+    const expiresAt = new Date(Date.now() + this.durationToMs(refreshExpires, 30 * 86_400_000));
+    await this.refreshRepo.save(
+      this.refreshRepo.create({ token: this.hashToken(raw), userId, userType, expiresAt, isRevoked: false }),
+    );
+    return raw;
+  }
+
+  /** Issue a short-lived access token (15m default) + a 30d refresh token. */
+  async generateTokens(userId: string, userType: string, role: string): Promise<TokenPair> {
+    const accessExpires = (this.configService.get<string>("JWT_ACCESS_EXPIRES") ?? "15m") as JwtSignOptions["expiresIn"];
+    const accessToken = await this.jwtService.signAsync(
+      { sub: userId, role, userType },
+      { expiresIn: accessExpires },
+    );
+    const refreshToken = await this.createRefreshToken(userId, userType);
+    return { accessToken, refreshToken };
+  }
+
+  /** Validate a refresh token, rotate it (revoke old, issue new pair). */
+  async refreshTokens(rawRefresh: string): Promise<TokenPair> {
+    if (!rawRefresh) throw new UnauthorizedException("Invalid refresh token");
+    const record = await this.refreshRepo.findOne({ where: { token: this.hashToken(rawRefresh) } });
+    if (!record || record.isRevoked || record.expiresAt < new Date()) {
+      throw new UnauthorizedException("Invalid refresh token");
+    }
+    // Rotate: revoke the used token so it can't be replayed.
+    record.isRevoked = true;
+    await this.refreshRepo.save(record);
+
+    const teacher = await this.teachersService.findById(record.userId);
+    const role = teacher?.role ?? "teacher";
+    return this.generateTokens(record.userId, record.userType, role);
+  }
+
+  async revokeRefreshToken(rawRefresh: string): Promise<void> {
+    if (!rawRefresh) return;
+    await this.refreshRepo.update({ token: this.hashToken(rawRefresh) }, { isRevoked: true });
+  }
+
+  /** Remove expired refresh tokens. Call from a cron once @nestjs/schedule is added. */
+  async cleanupExpiredTokens(): Promise<void> {
+    await this.refreshRepo.delete({ expiresAt: LessThan(new Date()) });
+  }
+
+  // ── B2G login (unchanged behaviour, now also returns a refresh token) ───────
 
   async login(loginDto: LoginDto) {
     const teacher = await this.teachersService.findById_withSchool(loginDto.email);
@@ -35,8 +108,11 @@ export class AuthService {
     if (teacher.status === "rejected") throw new ForbiddenException("REJECTED");
     if (teacher.status === "inactive") throw new ForbiddenException("INACTIVE");
 
-    return {
-      accessToken: await this.jwtService.signAsync({
+    // B2G access token keeps its existing 1d lifetime (the cookie/middleware flow has no
+    // refresh wiring), so existing sessions keep working. A refresh token is added on top.
+    const b2gAccessExpires = (this.configService.get<string>("JWT_B2G_ACCESS_EXPIRES") ?? "1d") as JwtSignOptions["expiresIn"];
+    const accessToken = await this.jwtService.signAsync(
+      {
         sub: teacher.id,
         email: teacher.email,
         role: teacher.role,
@@ -44,7 +120,14 @@ export class AuthService {
         isClassTeacher: teacher.isClassTeacher ?? false,
         managedClassroomId: teacher.managedClassroomId ?? null,
         managedClassroomName: teacher.managedClassroomName ?? null,
-      }),
+      },
+      { expiresIn: b2gAccessExpires },
+    );
+    const refreshToken = await this.createRefreshToken(teacher.id, teacher.role === "admin" ? "admin" : "teacher");
+
+    return {
+      accessToken,
+      refreshToken,
       user: this.serialize(teacher),
     };
   }
