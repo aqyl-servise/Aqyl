@@ -1,10 +1,11 @@
-import { Column, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity("school_info")
 export class SchoolInfo {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
+  @Index()
   @Column({ nullable: true })
   schoolId?: string;
 

@@ -17,7 +17,25 @@ export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Post("upload")
-  @UseInterceptors(FileInterceptor("file"))
+  @UseGuards(RolesGuard)
+  @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher", "class_teacher")
+  @UseInterceptors(
+    FileInterceptor("file", {
+      // Bound in-memory upload size to avoid RAM exhaustion under load (10MB).
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const allowed = new Set([
+          "application/vnd.ms-excel",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "text/csv",
+        ]);
+        if (!allowed.has(file.mimetype)) {
+          return cb(new BadRequestException(`File type ${file.mimetype} is not allowed`), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
   upload(@UploadedFile() file?: Express.Multer.File) {
     if (!file) throw new BadRequestException("Excel file is required");
     return this.analyticsService.parseWorkbook(file.buffer);

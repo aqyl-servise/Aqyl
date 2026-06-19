@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, Index, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Teacher } from "../../teachers/entities/teacher.entity";
 import { Classroom } from "./classroom.entity";
 
@@ -10,9 +10,11 @@ export class SubjectTeacherAssignment {
   @Column()
   subject!: string;
 
+  @Index()
   @Column()
   teacherId!: string;
 
+  @Index()
   @Column()
   classroomId!: string;
 

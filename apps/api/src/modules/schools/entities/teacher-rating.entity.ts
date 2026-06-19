@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, Index, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { Teacher } from "../../teachers/entities/teacher.entity";
 
 export type RatingPeriod = "quarter" | "semester" | "year";
@@ -6,8 +6,8 @@ export type RatingPeriod = "quarter" | "semester" | "year";
 @Entity("teacher_rating")
 export class TeacherRating {
   @PrimaryGeneratedColumn("uuid") id!: string;
-  @ManyToOne(() => Teacher, { onDelete: "CASCADE", eager: false }) teacher!: Teacher;
-  @Column() schoolId!: string;
+  @Index() @ManyToOne(() => Teacher, { onDelete: "CASCADE", eager: false }) teacher!: Teacher;
+  @Index() @Column() schoolId!: string;
   @Column({ default: "year" }) period!: RatingPeriod;
   @Column({ default: 0 }) periodNumber!: number;
   @Column({ default: "2025-2026" }) academicYear!: string;

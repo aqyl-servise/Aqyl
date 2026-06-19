@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 type Lang = "ru" | "kz" | "en";
 type Theme = "dark" | "light";
@@ -256,8 +257,7 @@ export default function LandingPage() {
       <header className="lp-header">
         <div className="lp-container lp-header-inner">
           <a href="#" className="lp-logo">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icon.png" alt="Aqyl" className="lp-logo-img" width={32} height={32} />
+            <Image src="/icon.png" alt="Aqyl" className="lp-logo-img" width={32} height={32} />
             <span className="lp-logo-text">Aqyl</span>
           </a>
 
@@ -387,8 +387,7 @@ export default function LandingPage() {
       <footer className="lp-footer">
         <div className="lp-container lp-footer-inner">
           <a href="#" className="lp-logo">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icon.png" alt="Aqyl" className="lp-logo-img" width={28} height={28} />
+            <Image src="/icon.png" alt="Aqyl" className="lp-logo-img" width={28} height={28} />
             <span className="lp-logo-text">Aqyl</span>
           </a>
           <span className="lp-footer-copy">{t.footer_rights}</span>

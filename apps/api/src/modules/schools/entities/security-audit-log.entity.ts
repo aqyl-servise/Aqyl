@@ -1,16 +1,19 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from "typeorm";
 
 @Entity("security_audit_log")
 export class SecurityAuditLog {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
+  @Index()
   @Column()
   eventType!: string;
 
+  @Index()
   @Column({ nullable: true })
   userId?: string;
 
+  @Index()
   @Column({ nullable: true })
   schoolId?: string;
 

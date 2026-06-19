@@ -1,12 +1,12 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
 
 export type NotificationType = "violation" | "rating_updated" | "ktp_reviewed" | "open_lesson_analyzed";
 
 @Entity("teacher_notification")
 export class TeacherNotification {
   @PrimaryGeneratedColumn("uuid") id!: string;
-  @Column() teacherId!: string;
-  @Column({ nullable: true }) schoolId?: string;
+  @Index() @Column() teacherId!: string;
+  @Index() @Column({ nullable: true }) schoolId?: string;
   @Column({ default: "violation" }) type!: NotificationType;
   @Column({ length: 255 }) title!: string;
   @Column("text") message!: string;

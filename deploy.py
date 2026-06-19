@@ -109,7 +109,7 @@ FRONTEND_URL=*"""
     # Step 11: Start with PM2
     print("=== Step 11: Start API with PM2 ===")
     ssh_exec(client, "pm2 delete aqyl-api 2>/dev/null; echo 'ok'", 10)
-    ssh_exec(client, "cd /root/Aqyl/apps/api && pm2 start dist/main.js --name aqyl-api", 30)
+    ssh_exec(client, "cd /root/Aqyl/apps/api && pm2 start dist/main.js --name aqyl-api --max-memory-restart 512M", 30)
     ssh_exec(client, "pm2 status", 10)
     ssh_exec(client, "pm2 logs aqyl-api --lines 20 --nostream", 15)
 

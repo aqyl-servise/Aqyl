@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, Index, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Teacher } from "../../teachers/entities/teacher.entity";
 
 export type ViolationType = "reprimand" | "parent_complaint" | "other";
@@ -6,8 +6,8 @@ export type ViolationType = "reprimand" | "parent_complaint" | "other";
 @Entity("teacher_violation")
 export class TeacherViolation {
   @PrimaryGeneratedColumn("uuid") id!: string;
-  @ManyToOne(() => Teacher, { onDelete: "CASCADE", eager: false }) teacher!: Teacher;
-  @Column() schoolId!: string;
+  @Index() @ManyToOne(() => Teacher, { onDelete: "CASCADE", eager: false }) teacher!: Teacher;
+  @Index() @Column() schoolId!: string;
   @Column({ default: "other" }) type!: ViolationType;
   @Column("text") description!: string;
   @Column({ type: "date" }) date!: string;

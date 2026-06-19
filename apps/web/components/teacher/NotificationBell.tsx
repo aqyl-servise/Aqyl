@@ -20,6 +20,9 @@ export function NotificationBell({ token, t }: { token: string; t: Record<string
 
   useEffect(() => {
     fetchCount();
+    // TODO: REPLACE_WITH_WEBSOCKET — at scale, 30s polling of the unread count from every
+    // open client is wasteful. Push unread updates over a WebSocket instead. 30s is the
+    // minimum acceptable interval until then.
     const id = setInterval(fetchCount, 30_000);
     return () => clearInterval(id);
   }, [fetchCount]);

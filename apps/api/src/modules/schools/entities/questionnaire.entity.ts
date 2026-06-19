@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 export type QuestionnaireType = "uploaded" | "ai_generated";
 export type QuestionnaireStatus = "draft" | "assigned" | "completed";
@@ -6,7 +6,7 @@ export type QuestionnaireStatus = "draft" | "assigned" | "completed";
 @Entity("questionnaire")
 export class Questionnaire {
   @PrimaryGeneratedColumn("uuid") id!: string;
-  @Column({ nullable: true }) schoolId?: string;
+  @Index() @Column({ nullable: true }) schoolId?: string;
   @Column({ nullable: true }) createdBy?: string;
   @Column({ length: 255 }) title!: string;
   @Column({ type: "text", nullable: true }) description?: string;

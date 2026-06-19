@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 export type FLDirection = "reading" | "math" | "science";
 export type FLDifficulty = "low" | "medium" | "high";
@@ -23,8 +23,8 @@ export class FLTask {
   @Column({ type: "jsonb", nullable: true }) options?: FLTaskOption[];
   @Column({ type: "text", nullable: true }) correctAnswer?: string;
   @Column({ default: "bank" }) source!: FLSource;
-  @Column({ nullable: true }) schoolId?: string;
-  @Column({ nullable: true }) teacherId?: string;
+  @Index() @Column({ nullable: true }) schoolId?: string;
+  @Index() @Column({ nullable: true }) teacherId?: string;
   @CreateDateColumn() createdAt!: Date;
   @UpdateDateColumn() updatedAt!: Date;
 }

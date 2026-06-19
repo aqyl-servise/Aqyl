@@ -1,10 +1,10 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity("nutrition_student")
 export class NutritionStudent {
   @PrimaryGeneratedColumn("uuid") id!: string;
-  @Column({ nullable: true }) schoolId?: string;
-  @Column() studentId!: string;
+  @Index() @Column({ nullable: true }) schoolId?: string;
+  @Index() @Column() studentId!: string;
   @Column({ default: "free" }) nutritionType!: string;
   @Column({ nullable: true }) academicYear?: string;
   @Column({ type: "text", nullable: true }) notes?: string;

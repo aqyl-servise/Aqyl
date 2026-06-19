@@ -17,10 +17,12 @@ export class NotificationsService {
     return this.repo.save(this.repo.create({ ...data, isRead: false }));
   }
 
-  async getMyNotifications(teacherId: string) {
+  async getMyNotifications(teacherId: string, limit = 50) {
+    // Notifications accumulate indefinitely; cap to the 50 most recent to bound payload/query.
     return this.repo.find({
       where: { teacherId },
       order: { createdAt: "DESC" },
+      take: Math.min(limit, 100),
     });
   }
 

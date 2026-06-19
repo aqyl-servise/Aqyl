@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 export type FLAssignmentFormat = "test" | "text_work" | "practical";
 export type FLAssignmentStatus = "draft" | "published" | "closed";
@@ -9,9 +9,9 @@ export class FLAssignment {
   @Column() title!: string;
   @Column({ type: "text", nullable: true }) description?: string;
   @Column({ type: "jsonb", default: [] }) tasks!: string[];
-  @Column() classroomId!: string;
-  @Column() teacherId!: string;
-  @Column() schoolId!: string;
+  @Index() @Column() classroomId!: string;
+  @Index() @Column() teacherId!: string;
+  @Index() @Column() schoolId!: string;
   @Column({ nullable: true }) format?: FLAssignmentFormat;
   @Column({ nullable: true }) timeLimit?: number;
   @Column({ type: "timestamp", nullable: true }) dueDate?: Date;

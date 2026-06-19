@@ -9,6 +9,7 @@ export class OpenLesson {
   @Column()
   subject!: string;
 
+  @Index()
   @Column({ nullable: true })
   classroomId?: string;
 

@@ -109,9 +109,16 @@ import { MalimetModule } from "./modules/malimet/malimet.module";
         type: "postgres",
         url: cfg.get<string>("DATABASE_URL"),
         autoLoadEntities: true,
-        // synchronize: true ensures new entities/columns are applied on every deploy.
-        // Safe as long as only additive schema changes (new tables, nullable columns) are made.
-        synchronize: true,
+        // synchronize applies new entities/columns automatically (additive changes only).
+        // SCALE SAFETY: never let it run unsupervised in production. In production it is OFF
+        // by default; set DB_SYNCHRONIZE=true explicitly on the VPS to keep the current
+        // deploy-time auto-sync workflow until a TypeORM migration pipeline is introduced.
+        // TODO: ADD_MIGRATIONS — replace prod synchronize with versioned migrations.
+        synchronize:
+          cfg.get<string>("NODE_ENV") !== "production" ||
+          cfg.get<string>("DB_SYNCHRONIZE") === "true",
+        // Connection pooling — bounded pool prevents exhausting Postgres connections under load.
+        extra: { max: 10, min: 2, idleTimeoutMillis: 30000 },
         entities: [
           School, Teacher, Classroom, Student, Submission, GeneratedDocument,
           Schedule, Assignment, TaskSubmission, OpenLesson, LessonAnalysis, Protocol, ClassHour, ClassHourHistory, UploadedFile,

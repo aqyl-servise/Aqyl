@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, ForbiddenException, Get, NotFoundException, Param, Post, Req, Res, UseGuards } from "@nestjs/common";
+import { Throttle } from "@nestjs/throttler";
 import { Response } from "express";
 import { join } from "path";
 import { existsSync } from "fs";
@@ -18,6 +19,7 @@ export class MaterialsController {
   constructor(private readonly svc: MaterialsService) {}
 
   @Post("presentations")
+  @Throttle({ medium: { limit: 10, ttl: 60_000 } })
   @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal", "vice_principal_academic")
   generatePresentation(
     @Body() body: { prompt: string; slideCount?: number; attachedText?: string },
@@ -59,6 +61,7 @@ export class MaterialsController {
   }
 
   @Post("illustrations")
+  @Throttle({ medium: { limit: 10, ttl: 60_000 } })
   @Roles("teacher", "class_teacher", "admin", "principal", "vice_principal", "vice_principal_academic")
   generateIllustration(
     @Body() body: { prompt: string; attachedText?: string },

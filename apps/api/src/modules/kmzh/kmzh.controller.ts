@@ -1,4 +1,5 @@
 import { Controller, Post, Get, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -14,12 +15,14 @@ export class KmzhController {
   constructor(private readonly kmzhService: KmzhService) {}
 
   @Post('generate')
+  @Throttle({ medium: { limit: 10, ttl: 60_000 } })
   @Roles('teacher', 'class_teacher', 'principal', 'admin')
   async generate(@Body() dto: KmzhGenerateDto, @Req() req: { user: { sub: string; schoolId: string; role: string } }) {
     return this.kmzhService.generate(dto, { userId: req.user.sub, schoolId: req.user.schoolId, role: req.user.role });
   }
 
   @Post('regenerate')
+  @Throttle({ medium: { limit: 10, ttl: 60_000 } })
   @Roles('teacher', 'class_teacher', 'principal', 'admin')
   async regenerate(@Body() dto: KmzhRegenerateDto, @Req() req: { user: { sub: string; schoolId: string; role: string } }) {
     return this.kmzhService.regenerate(

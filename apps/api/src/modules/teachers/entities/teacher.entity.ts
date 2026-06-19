@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, Index, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Classroom } from "../../schools/entities/classroom.entity";
 import { GeneratedDocument } from "../../schools/entities/generated-document.entity";
 import { School } from "../../schools/entities/school.entity";
@@ -37,6 +37,7 @@ export class Teacher {
   @Column({ nullable: true })
   schoolName?: string;
 
+  @Index()
   @Column({ nullable: true })
   schoolId?: string;
 

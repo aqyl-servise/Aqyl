@@ -22,9 +22,11 @@ export class SorSochDocument {
   @Column({ nullable: true })
   fileUrl?: string;
 
+  @Index()
   @Column({ nullable: true })
   teacherId?: string;
 
+  @Index()
   @Column({ nullable: true })
   classroomId?: string;
 

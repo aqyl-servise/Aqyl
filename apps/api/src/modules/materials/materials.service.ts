@@ -48,6 +48,9 @@ export class MaterialsService {
     @Optional() private readonly tokenService?: TokenService,
     @Optional() private readonly aiUsageService?: AiUsageService,
   ) {
+    // TODO: MIGRATE_TO_S3 — generated .pptx/.svg are written to local disk here and in
+    // generatePresentation()/generateIllustration() (writeFileSync). Local files break under
+    // multi-instance/multi-VPS scaling and are lost on redeploy. Stream to object storage instead.
     this.presentationsDir = join(process.cwd(), "uploads", "presentations");
     this.illustrationsDir = join(process.cwd(), "uploads", "illustrations");
     if (!existsSync(this.presentationsDir)) mkdirSync(this.presentationsDir, { recursive: true });

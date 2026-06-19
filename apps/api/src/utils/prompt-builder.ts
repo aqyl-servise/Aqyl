@@ -1,8 +1,10 @@
+import { Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 
 const PROMPTS_DIR = path.join(process.cwd(), 'prompts');
 const promptCache = new Map<string, string>();
+const logger = new Logger('PromptBuilder');
 
 export function loadPrompt(name: string): string {
   if (promptCache.has(name)) {
@@ -14,7 +16,7 @@ export function loadPrompt(name: string): string {
     promptCache.set(name, content);
     return content;
   } catch {
-    console.warn('Prompt file not found: ' + filePath + ', using fallback');
+    logger.warn('Prompt file not found: ' + filePath + ', using fallback');
     return 'You are an educational AI assistant. Answer in {{language}}.';
   }
 }

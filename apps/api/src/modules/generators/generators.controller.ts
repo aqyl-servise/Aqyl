@@ -1,4 +1,5 @@
 import { Body, Controller, Post, Req, UseGuards } from "@nestjs/common";
+import { Throttle } from "@nestjs/throttler";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -9,6 +10,8 @@ import { ALL_TEACHER_ROLES } from "../../common/roles.constants";
 
 interface ReqUser { user: { id: string; role: string; schoolId?: string } }
 
+// AI generation is expensive: cap at 10 requests/minute per user (on top of global throttler).
+@Throttle({ medium: { limit: 10, ttl: 60_000 } })
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(...ALL_TEACHER_ROLES)
 @Controller("generators")

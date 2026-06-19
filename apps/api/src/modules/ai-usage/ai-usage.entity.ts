@@ -1,11 +1,11 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from "typeorm";
 
 @Entity("ai_usage_daily")
 @Unique(["userId", "date", "actionType"])
 export class AiUsageDaily {
   @PrimaryGeneratedColumn("uuid") id!: string;
-  @Column() userId!: string;
-  @Column({ nullable: true }) schoolId?: string;
+  @Index() @Column() userId!: string;
+  @Index() @Column({ nullable: true }) schoolId?: string;
   @Column() actionType!: string;
   @Column({ type: "date" }) date!: string;
   @Column({ default: 1 }) count!: number;
@@ -19,8 +19,8 @@ export class AiUsageDaily {
 @Entity("ai_usage_alerts")
 export class AiUsageAlert {
   @PrimaryGeneratedColumn("uuid") id!: string;
-  @Column() userId!: string;
-  @Column({ nullable: true }) schoolId?: string;
+  @Index() @Column() userId!: string;
+  @Index() @Column({ nullable: true }) schoolId?: string;
   @Column() alertType!: string;
   @CreateDateColumn() sentAt!: Date;
   @Column({ default: false }) resolved!: boolean;

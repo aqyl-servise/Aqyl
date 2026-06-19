@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { In, Repository } from "typeorm";
 import { Classroom } from "../schools/entities/classroom.entity";
 import { Student } from "../schools/entities/student.entity";
 import { StudentTransfer } from "../schools/entities/student-transfer.entity";
@@ -140,33 +140,45 @@ export class ClassroomsService {
 
     const toClassroom = await this.classroomRepo.findOne({ where: { id: toId } });
 
-    for (const student of students) {
-      await this.transferRepo.save(
+    if (students.length === 0) return { transferred: 0 };
+    const studentIds = students.map((s) => s.id);
+
+    // Optimized: replaced per-student save+update loop (N+1) with bulk operations.
+    // 1) One bulk insert of transfer records.
+    await this.transferRepo.save(
+      students.map((student) =>
         this.transferRepo.create({
           student: { id: student.id },
           fromClassroom: { id: fromId },
           toClassroom: { id: toId },
           note: "Массовый перевод",
         }),
-      );
-      await this.studentRepo.update(student.id, { classroom: { id: toId } });
+      ),
+    );
 
-      if (toClassroom && (toClassroom.grade === 9 || toClassroom.grade === 11)) {
-        const exists = student.iin
-          ? await this.attestationRepo.findOne({ where: { iin: student.iin, grade: toClassroom.grade } })
-          : null;
-        if (!exists) {
-          await this.attestationRepo.save(
-            this.attestationRepo.create({
-              grade: toClassroom.grade,
-              fullName: student.fullName,
-              iin: student.iin || undefined,
-              parentName: student.parentName || undefined,
-              schoolId: toClassroom.schoolId ?? undefined,
-            }),
-          );
-        }
-      }
+    // 2) One UPDATE moving every student to the target classroom.
+    await this.studentRepo.update({ id: In(studentIds) }, { classroom: { id: toId } });
+
+    // 3) For graduating grades, batch-create attestation rows for students not already present.
+    if (toClassroom && (toClassroom.grade === 9 || toClassroom.grade === 11)) {
+      const iins = students.map((s) => s.iin).filter((iin): iin is string => !!iin);
+      const existing = iins.length
+        ? await this.attestationRepo.find({ where: { iin: In(iins), grade: toClassroom.grade } })
+        : [];
+      const existingIins = new Set(existing.map((e) => e.iin));
+
+      const toCreate = students
+        .filter((student) => !student.iin || !existingIins.has(student.iin))
+        .map((student) =>
+          this.attestationRepo.create({
+            grade: toClassroom.grade,
+            fullName: student.fullName,
+            iin: student.iin || undefined,
+            parentName: student.parentName || undefined,
+            schoolId: toClassroom.schoolId ?? undefined,
+          }),
+        );
+      if (toCreate.length) await this.attestationRepo.save(toCreate);
     }
 
     return { transferred: students.length };
