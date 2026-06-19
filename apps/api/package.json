@@ -11,7 +11,7 @@
     "clear:db": "ts-node --project tsconfig.json src/scripts/clear-db.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.90.0",
+    "@anthropic-ai/sdk": "^0.105.0",
     "@nestjs/common": "^11.1.6",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.6",
@@ -27,7 +27,7 @@
     "docx": "^9.6.1",
     "helmet": "^8.1.0",
     "multer": "^2.0.2",
-    "nodemailer": "^8.0.6",
+    "nodemailer": "^9.0.1",
     "openai": "^5.12.2",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
@@ -37,7 +37,7 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "typeorm": "^0.3.27",
-    "uuid": "^11.1.0",
+    "uuid": "^14.0.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
