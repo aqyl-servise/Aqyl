@@ -71,6 +71,13 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
 
+    # User files & generated materials are now stored in S3-compatible object storage
+    # and served through the API (/api/files/..., /api/materials/...). Nginx no longer
+    # serves /uploads/ from local disk. The local ./uploads dir is kept only for legacy
+    # files until the S3 migration script (apps/api/scripts/migrate-to-s3.ts) has run.
+    # TODO: REMOVE_NGINX_UPLOADS — after migrate-to-s3 succeeds, the local ./uploads dir
+    # can be deleted; no nginx /uploads/ alias block exists to remove.
+
     # NestJS API
     location /api/ {
         limit_req          zone=api_limit burst=40 nodelay;

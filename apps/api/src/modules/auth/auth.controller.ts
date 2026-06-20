@@ -9,6 +9,7 @@ import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { RefreshTokenDto } from "./dto/refresh.dto";
 import { RegisterB2CDto } from "./dto/register-b2c.dto";
 import { SendCodeDto, VerifyCodeDto, LoginB2CDto } from "./dto/b2c-auth.dto";
+import { UpdateB2CProfileDto } from "./dto/update-b2c-profile.dto";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { TeachersService } from "../teachers/teachers.service";
 import { SkipIsolation } from "../../guards/skip-isolation.decorator";
@@ -98,6 +99,12 @@ export class AuthController {
   @Get("b2c/me")
   meB2C(@Req() req: { user: AuthUser }) {
     return this.b2cAuthService.getProfile(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch("b2c/profile")
+  updateB2CProfile(@Req() req: { user: AuthUser }, @Body() dto: UpdateB2CProfileDto) {
+    return this.b2cAuthService.updateProfile(req.user.id, dto);
   }
 
   @UseGuards(JwtAuthGuard)

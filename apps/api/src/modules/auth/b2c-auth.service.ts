@@ -96,6 +96,30 @@ export class B2cAuthService {
     return this.serialize(teacher);
   }
 
+  /** Update B2C onboarding/profile fields. Only whitelisted fields are persisted. */
+  async updateProfile(
+    userId: string,
+    data: Partial<{
+      subject: string;
+      gradeLevel: string;
+      region: string;
+      language: string;
+      onboardingCompleted: boolean;
+    }>,
+  ) {
+    const teacher = await this.teacherRepo.findOne({ where: { id: userId } });
+    if (!teacher) throw new NotFoundException("User not found");
+
+    if (data.subject !== undefined) teacher.subject = data.subject?.trim() || undefined;
+    if (data.gradeLevel !== undefined) teacher.gradeLevel = data.gradeLevel?.trim() || undefined;
+    if (data.region !== undefined) teacher.region = data.region?.trim() || undefined;
+    if (data.language !== undefined) teacher.language = data.language?.trim() || undefined;
+    if (data.onboardingCompleted !== undefined) teacher.onboardingCompleted = data.onboardingCompleted;
+
+    await this.teacherRepo.save(teacher);
+    return this.serialize(teacher);
+  }
+
   private latestVerification(email: string) {
     return this.verificationRepo.findOne({ where: { email }, order: { createdAt: "DESC" } });
   }
@@ -113,6 +137,10 @@ export class B2cAuthService {
       isEmailVerified: teacher.isEmailVerified,
       subscriptionStatus: teacher.subscriptionStatus,
       trialEndsAt: teacher.trialEndsAt ?? null,
+      onboardingCompleted: teacher.onboardingCompleted ?? false,
+      gradeLevel: teacher.gradeLevel ?? null,
+      region: teacher.region ?? null,
+      language: teacher.language ?? null,
     };
   }
 }

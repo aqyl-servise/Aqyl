@@ -54,6 +54,19 @@ export class Teacher {
   @Column({ type: "timestamp", nullable: true })
   trialEndsAt?: Date | null; // 14 days from B2C registration
 
+  // ── B2C onboarding ─────────────────────────────────────────────────────────
+  @Column({ default: false })
+  onboardingCompleted!: boolean;
+
+  @Column({ nullable: true })
+  gradeLevel?: string; // классы, которые преподаёт: '1-4' | '5-9' | '10-11' (через запятую)
+
+  @Column({ nullable: true })
+  region?: string; // область Казахстана
+
+  @Column({ nullable: true })
+  language?: string; // язык обучения: 'ru' | 'kz' | 'mixed'
+
   @ManyToOne(() => School, (s) => s.teachers, { nullable: true, onDelete: "SET NULL" })
   school?: School;
 

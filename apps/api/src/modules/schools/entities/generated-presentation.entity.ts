@@ -11,6 +11,8 @@ export class GeneratedPresentation {
   @Column("text") prompt!: string;
   @Column({ default: 10 }) slideCount!: number;
   @Column({ nullable: true, length: 500 }) fileUrl?: string;
+  // S3 object key (null for legacy disk-backed rows where fileUrl is a relative path).
+  @Column({ nullable: true, length: 500 }) s3Key?: string;
   @Column({ default: "generating" }) status!: PresentationStatus;
   @CreateDateColumn() createdAt!: Date;
   @UpdateDateColumn() updatedAt!: Date;

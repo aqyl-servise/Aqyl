@@ -34,7 +34,19 @@ export type B2CProfile = AuthUser & {
   isEmailVerified: boolean;
   subscriptionStatus: "trial" | "active" | "expired" | "none";
   trialEndsAt: string | null;
+  onboardingCompleted: boolean;
+  gradeLevel: string | null;
+  region: string | null;
+  language: string | null;
 };
+
+export type UpdateB2CProfileInput = Partial<{
+  subject: string;
+  gradeLevel: string;
+  region: string;
+  language: string;
+  onboardingCompleted: boolean;
+}>;
 
 export type Subscription = {
   id: string;
@@ -335,6 +347,8 @@ export const api = {
   loginB2C: (email: string, password: string) =>
     request<B2CAuthResponse>("/auth/b2c/login", { method: "POST", body: JSON.stringify({ email, password }) }),
   getB2CMe: (token: string) => request<B2CProfile>("/auth/b2c/me", undefined, token),
+  updateB2CProfile: (token: string, data: UpdateB2CProfileInput) =>
+    request<B2CProfile>("/auth/b2c/profile", { method: "PATCH", body: JSON.stringify(data) }, token),
 
   // Billing (Kaspi Pay)
   createPaymentSession: (token: string, months: number) =>
