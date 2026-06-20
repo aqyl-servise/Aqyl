@@ -1,60 +1,65 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { jwtVerify } from 'jose'
 
-const COOKIE_NAME = 'aqyl-token'
-// Routes that never require authentication.
-const PUBLIC_PATHS = ['/', '/login', '/login-teacher', '/register', '/reset-password']
-// Routes that require a valid session.
-const PROTECTED_PATHS = ['/dashboard']
+const PUBLIC_PATHS = [
+  '/login',
+  '/login-teacher',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/api/auth/set-cookie',
+  '/api/auth/clear-cookie',
+  '/api/auth',        // все /api/auth/* публичные (login, register, b2c/*)
+  '/_next',
+  '/favicon',
+  '/icons',
+  '/images',
+]
 
-function matches(pathname: string, paths: string[]): boolean {
-  return paths.some(p => pathname === p || pathname.startsWith(p + '/'))
+function isPublic(pathname: string): boolean {
+  // Корневой лендинг доступен всем (startsWith('/') матчил бы вообще всё).
+  if (pathname === '/') return true
+  return PUBLIC_PATHS.some((p) => pathname.startsWith(p))
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Static assets / API — never gated here.
-  if (
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/api') ||
-    pathname.startsWith('/icon') ||
-    pathname.includes('.')
-  ) {
+  // Публичные маршруты — пропускаем без проверки
+  if (isPublic(pathname)) {
     return NextResponse.next()
   }
 
-  const token = request.cookies.get(COOKIE_NAME)?.value
-  // Реальная проверка JWT происходит на бэкенде через JwtAuthGuard.
-  // Middleware проверяет только наличие cookie.
-  const valid = !!token
+  const token = request.cookies.get('aqyl-token')?.value
 
-  // Authenticated users shouldn't see the login screen.
-  if (valid && pathname === '/login') {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+  // Нет токена — редирект на логин
+  if (!token) {
+    const loginUrl = pathname.startsWith('/dashboard/b2c')
+      ? '/login-teacher'
+      : '/login'
+    return NextResponse.redirect(new URL(loginUrl, request.url))
   }
 
-  // Public routes pass through.
-  if (matches(pathname, PUBLIC_PATHS)) {
+  // Есть токен — проверяем подпись
+  try {
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET)
+    await jwtVerify(token, secret)
     return NextResponse.next()
+  } catch {
+    // Токен невалидный или истёк
+    const response = NextResponse.redirect(
+      new URL(
+        pathname.startsWith('/dashboard/b2c') ? '/login-teacher' : '/login',
+        request.url,
+      ),
+    )
+    response.cookies.delete('aqyl-token')
+    return response
   }
-
-  // Protected routes require a valid session.
-  if (matches(pathname, PROTECTED_PATHS)) {
-    // B2C teachers have their own login screen.
-    const loginPath = pathname.startsWith('/dashboard/b2c') ? '/login-teacher' : '/login'
-    if (!token) {
-      return NextResponse.redirect(new URL(loginPath, request.url))
-    }
-    if (!valid) {
-      const response = NextResponse.redirect(new URL(loginPath, request.url))
-      response.cookies.delete(COOKIE_NAME)
-      return response
-    }
-  }
-
-  return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|icons|images).*)',
+  ],
 }

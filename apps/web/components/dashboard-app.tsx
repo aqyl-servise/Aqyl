@@ -21,9 +21,9 @@ export function DashboardApp() {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
 
-  function logout() {
+  async function logout() {
     localStorage.removeItem("aqyl-token");
-    document.cookie = "aqyl-token=; path=/; max-age=0";
+    await fetch("/api/auth/clear-cookie", { method: "POST" });
     setToken(null);
     setUser(null);
     router.replace("/login");
@@ -38,7 +38,13 @@ export function DashboardApp() {
       router.replace("/login");
       return;
     }
-    document.cookie = `aqyl-token=${tok}; path=/; max-age=86400; SameSite=Strict`;
+    // Подстраховка: переустанавливаем httpOnly cookie через сервер на случай,
+    // если она отсутствует (а токен в localStorage есть).
+    fetch("/api/auth/set-cookie", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accessToken: tok }),
+    }).catch(() => {});
     setToken(tok);
   }, [router]);
 
@@ -50,7 +56,7 @@ export function DashboardApp() {
       setLanguage((u.preferredLanguage as Language) || "ru");
     }).catch(() => {
       localStorage.removeItem("aqyl-token");
-      document.cookie = "aqyl-token=; path=/; max-age=0";
+      fetch("/api/auth/clear-cookie", { method: "POST" }).catch(() => {});
       setToken(null);
       router.replace("/login");
     });

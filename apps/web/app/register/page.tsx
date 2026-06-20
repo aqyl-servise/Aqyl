@@ -114,7 +114,7 @@ export default function RegisterPage() {
         subject: subject.trim() || undefined,
         region: region.trim() || undefined,
       });
-      setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken });
+      await setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken });
       router.replace("/dashboard/b2c");
     } catch (err) {
       setError(extractError(err, "Не удалось создать аккаунт"));

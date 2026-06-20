@@ -1,7 +1,9 @@
 // Token storage for the B2C flow.
 //
 // - accessToken: kept in memory + sessionStorage (NOT localStorage), and mirrored into the
-//   `aqyl-token` cookie so the Next.js middleware can gate /dashboard/b2c.
+//   httpOnly `aqyl-token` cookie (set server-side via /api/auth/set-cookie) so the Next.js
+//   middleware can gate /dashboard/b2c. The cookie is httpOnly — it cannot be read/written
+//   from document.cookie; only the server route sets it (proper Set-Cookie header).
 // - refreshToken: kept in localStorage under `aqyl_refresh_token`.
 //
 // getValidAccessToken() transparently refreshes an expired access token using the refresh token.
@@ -10,7 +12,6 @@ import { api } from "./api";
 
 const ACCESS_KEY = "aqyl_access_token";
 const REFRESH_KEY = "aqyl_refresh_token";
-const COOKIE_NAME = "aqyl-token";
 
 let accessTokenInMemory: string | null = null;
 
@@ -18,13 +19,18 @@ function isBrowser(): boolean {
   return typeof window !== "undefined";
 }
 
-function setCookie(token: string) {
-  // 30-day cookie; the JWT inside still governs validity (middleware checks exp).
-  document.cookie = `${COOKIE_NAME}=${token}; path=/; max-age=2592000; SameSite=Strict`;
+// Устанавливаем cookie через сервер (httpOnly, secure) — заголовок Set-Cookie применяется
+// до того как сработает редирект, поэтому middleware сразу видит cookie.
+async function setCookie(token: string) {
+  await fetch("/api/auth/set-cookie", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ accessToken: token }),
+  });
 }
 
-function clearCookie() {
-  document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`;
+async function clearCookie() {
+  await fetch("/api/auth/clear-cookie", { method: "POST" });
 }
 
 export function getAccessToken(): string | null {
@@ -39,24 +45,24 @@ export function getRefreshToken(): string | null {
   return localStorage.getItem(REFRESH_KEY);
 }
 
-export function setAccessToken(token: string) {
+export async function setAccessToken(token: string) {
   accessTokenInMemory = token;
   if (!isBrowser()) return;
   sessionStorage.setItem(ACCESS_KEY, token);
-  setCookie(token);
+  await setCookie(token);
 }
 
-export function setTokens(pair: { accessToken: string; refreshToken: string }) {
-  setAccessToken(pair.accessToken);
+export async function setTokens(pair: { accessToken: string; refreshToken: string }) {
   if (isBrowser()) localStorage.setItem(REFRESH_KEY, pair.refreshToken);
+  await setAccessToken(pair.accessToken);
 }
 
-export function clearTokens() {
+export async function clearTokens() {
   accessTokenInMemory = null;
   if (!isBrowser()) return;
   sessionStorage.removeItem(ACCESS_KEY);
   localStorage.removeItem(REFRESH_KEY);
-  clearCookie();
+  await clearCookie();
 }
 
 /** Milliseconds-since-epoch of the token's `exp` claim, or 0 if unreadable. */
@@ -85,10 +91,11 @@ export async function getValidAccessToken(): Promise<string | null> {
 
   try {
     const pair = await api.refreshToken(refresh);
-    setTokens(pair);
+    // Обновляем cookie новым access-токеном после рефреша.
+    await setTokens(pair);
     return pair.accessToken;
   } catch {
-    clearTokens();
+    await clearTokens();
     return null;
   }
 }
@@ -104,5 +111,5 @@ export async function logout(): Promise<void> {
       /* ignore — clear locally regardless */
     }
   }
-  clearTokens();
+  await clearTokens();
 }

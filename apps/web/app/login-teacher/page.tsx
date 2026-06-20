@@ -25,7 +25,7 @@ export default function LoginTeacherPage() {
     const fd = new FormData(e.currentTarget);
     try {
       const res = await api.loginB2C(String(fd.get("email")), String(fd.get("password")));
-      setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken });
+      await setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken });
       router.replace("/dashboard/b2c");
     } catch {
       setError("Неверный email или пароль");

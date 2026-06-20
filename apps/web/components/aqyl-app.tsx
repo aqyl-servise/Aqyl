@@ -23,10 +23,13 @@ export function LoginApp() {
     // Already authenticated → go straight to the app.
     const tok = localStorage.getItem("aqyl-token");
     if (tok) {
-      document.cookie = `aqyl-token=${tok}; path=/; max-age=86400; SameSite=Strict`;
-      // Небольшая задержка чтобы cookie успела установиться до редиректа
+      // Устанавливаем cookie через сервер (httpOnly Set-Cookie), затем редирект.
       (async () => {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await fetch("/api/auth/set-cookie", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accessToken: tok }),
+        });
         router.replace("/dashboard");
       })();
     }
@@ -42,9 +45,13 @@ export function LoginApp() {
       const res = await api.login(String(fd.get("email")), String(fd.get("password")));
       localStorage.setItem("aqyl-token", res.accessToken);
       localStorage.setItem("aqyl-lang", (res.user.preferredLanguage as Language) || "ru");
-      document.cookie = `aqyl-token=${res.accessToken}; path=/; max-age=86400; SameSite=Strict`;
-      // Небольшая задержка чтобы cookie успела установиться до редиректа
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Устанавливаем cookie через сервер — Set-Cookie применяется до редиректа,
+      // поэтому middleware сразу видит токен (без костыля с setTimeout).
+      await fetch("/api/auth/set-cookie", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accessToken: res.accessToken }),
+      });
       router.replace("/dashboard");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
