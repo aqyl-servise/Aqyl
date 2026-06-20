@@ -4,7 +4,7 @@ import {
   UploadedFile, UseGuards, UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { diskStorage } from "multer";
+import { memoryStorage } from "multer";
 import { extname, resolve } from "path";
 import { v4 as uuid } from "uuid";
 import { Response } from "express";
@@ -16,6 +16,7 @@ import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { UploadedFile as UploadedFileEntity } from "../schools/entities/uploaded-file.entity";
 import { FileFolder } from "../schools/entities/file-folder.entity";
+import { StorageService } from "../storage/storage.service";
 import { ADMIN_ROLES, ALL_TEACHER_ROLES, STAFF_ROLES, isAdminRole } from "../../common/roles.constants";
 
 // All authenticated staff except students — default for most file operations
@@ -36,7 +37,7 @@ const ALLOWED_MIME_TYPES = new Set([
 ]);
 
 interface ReqUser { user: { id: string; role: string; schoolId?: string | null } }
-interface MulterFile { originalname: string; mimetype: string; size: number; filename: string; path: string }
+interface MulterFile { originalname: string; mimetype: string; size: number; buffer: Buffer }
 
 @Controller("files")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -47,6 +48,7 @@ export class FilesController {
     private readonly fileRepo: Repository<UploadedFileEntity>,
     @InjectRepository(FileFolder)
     private readonly folderRepo: Repository<FileFolder>,
+    private readonly storageService: StorageService,
   ) {}
 
   // ── Upload ──────────────────────────────────────────────────────────────────
@@ -54,10 +56,8 @@ export class FilesController {
   @Post("upload")
   @UseInterceptors(
     FileInterceptor("file", {
-      storage: diskStorage({
-        destination: "./uploads",
-        filename: (_req, file, cb) => cb(null, `${uuid()}${extname(file.originalname)}`),
-      }),
+      // memoryStorage: file lands in file.buffer, which we stream to S3 (no local disk).
+      storage: memoryStorage(),
       limits: { fileSize: 20 * 1024 * 1024 },
       fileFilter: (_req, file, cb) => {
         if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
@@ -76,18 +76,25 @@ export class FilesController {
     @Body("refId") refId?: string,
     @Body("assignedClassrooms") assignedClassroomsRaw?: string,
   ) {
+    if (!file) throw new BadRequestException("File is required");
     if (folderId) await this.assertFolderAccess(folderId, req.user);
     let assignedClassrooms: string[] | undefined;
     if (assignedClassroomsRaw) {
       try { assignedClassrooms = JSON.parse(assignedClassroomsRaw); } catch {}
     }
+    // Upload to S3-compatible storage; keep a uuid `filename` so the existing
+    // /files/:filename serve route (and any stored URLs) keep working.
+    const { key, url } = await this.storageService.uploadFile(file as Express.Multer.File, "uploads");
+    const filename = `${uuid()}${extname(file.originalname)}`;
     const saved = await this.fileRepo.save(
       this.fileRepo.create({
-        filename: file.filename,
+        filename,
         originalName: file.originalname,
         mimetype: file.mimetype,
         size: file.size,
-        path: file.path,
+        path: key, // legacy column now holds the S3 key
+        s3Key: key,
+        s3Url: url,
         folderId: folderId || undefined,
         section: section || undefined,
         refType: refType || undefined,
@@ -97,7 +104,13 @@ export class FilesController {
         uploadedBy: { id: req.user.id } as never,
       }),
     );
-    return { id: saved.id, filename: saved.filename, originalName: saved.originalName, url: `/files/${saved.filename}` };
+    return {
+      id: saved.id,
+      filename: saved.filename,
+      originalName: saved.originalName,
+      url: `/files/${saved.filename}`,
+      key,
+    };
   }
 
   // ── Folder CRUD (declared before :filename to avoid route shadowing) ────────
@@ -234,7 +247,7 @@ export class FilesController {
     if (!isAdminRole(req.user.role) && file.uploadedBy?.id !== req.user.id) {
       throw new ForbiddenException("Access denied");
     }
-    try { fs.unlinkSync(file.path); } catch {}
+    await this.removeBlob(file);
     await this.fileRepo.delete(id);
     return { ok: true };
   }
@@ -259,10 +272,26 @@ export class FilesController {
     res.setHeader("Cache-Control", "private, no-store");
     res.setHeader("Content-Type", file.mimetype || "application/octet-stream");
     res.setHeader("Content-Disposition", `inline; filename="${this.safeDownloadName(file.originalName)}"`);
+    // New files live in S3 — stream the object through (preserves access control + headers).
+    if (file.s3Key) {
+      const buffer = await this.storageService.downloadToBuffer(file.s3Key);
+      res.setHeader("Content-Length", String(buffer.length));
+      return res.end(buffer);
+    }
+    // Legacy disk-backed files (uploaded before the S3 migration).
     res.sendFile(filePath);
   }
 
   // ── Private helpers ─────────────────────────────────────────────────────────
+
+  // Remove the underlying blob: from S3 if migrated, otherwise the legacy disk file.
+  private async removeBlob(file: UploadedFileEntity) {
+    if (file.s3Key) {
+      await this.storageService.deleteFile(file.s3Key);
+    } else if (file.path) {
+      try { fs.unlinkSync(file.path); } catch {}
+    }
+  }
 
   private async deleteFolderRecursive(folderId: string) {
     const subfolders = await this.folderRepo.find({ where: { parentId: folderId } });
@@ -271,7 +300,7 @@ export class FilesController {
     }
     const files = await this.fileRepo.find({ where: { folderId } });
     for (const f of files) {
-      try { fs.unlinkSync(f.path); } catch {}
+      await this.removeBlob(f);
       await this.fileRepo.delete(f.id);
     }
     await this.folderRepo.delete(folderId);

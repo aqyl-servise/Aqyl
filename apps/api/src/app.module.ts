@@ -100,6 +100,7 @@ import { EmailVerification } from "./modules/auth/entities/email-verification.en
 import { Subscription } from "./modules/billing/entities/subscription.entity";
 import { Payment } from "./modules/billing/entities/payment.entity";
 import { BillingModule } from "./modules/billing/billing.module";
+import { StorageModule } from "./modules/storage/storage.module";
 
 @Module({
   imports: [
@@ -196,6 +197,7 @@ import { BillingModule } from "./modules/billing/billing.module";
     TokensModule,
     MalimetModule,
     BillingModule,
+    StorageModule,
   ],
   providers: [
     SeedService,

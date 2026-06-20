@@ -2,12 +2,15 @@ import { HttpException, HttpStatus, Injectable, NotFoundException, Optional } fr
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { join } from "path";
-import { existsSync, mkdirSync, writeFileSync, unlinkSync } from "fs";
+import { existsSync, unlinkSync } from "fs";
 import { AiClientService } from "../../services/ai-client.service";
 import { GeneratedPresentation } from "../schools/entities/generated-presentation.entity";
 import { GeneratedIllustration } from "../schools/entities/generated-illustration.entity";
+import { StorageService } from "../storage/storage.service";
 import { TokenService } from "../tokens/token.service";
 import { AiUsageService } from "../ai-usage/ai-usage.service";
+
+const PPTX_MIME = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const PptxGenJS = require("pptxgenjs") as new () => PptxInstance;
@@ -36,25 +39,18 @@ interface SlideData {
 
 @Injectable()
 export class MaterialsService {
-  private readonly presentationsDir: string;
-  private readonly illustrationsDir: string;
-
   constructor(
     @InjectRepository(GeneratedPresentation)
     private readonly presRepo: Repository<GeneratedPresentation>,
     @InjectRepository(GeneratedIllustration)
     private readonly illusRepo: Repository<GeneratedIllustration>,
     private readonly aiClientService: AiClientService,
+    private readonly storageService: StorageService,
     @Optional() private readonly tokenService?: TokenService,
     @Optional() private readonly aiUsageService?: AiUsageService,
   ) {
-    // TODO: MIGRATE_TO_S3 — generated .pptx/.svg are written to local disk here and in
-    // generatePresentation()/generateIllustration() (writeFileSync). Local files break under
-    // multi-instance/multi-VPS scaling and are lost on redeploy. Stream to object storage instead.
-    this.presentationsDir = join(process.cwd(), "uploads", "presentations");
-    this.illustrationsDir = join(process.cwd(), "uploads", "illustrations");
-    if (!existsSync(this.presentationsDir)) mkdirSync(this.presentationsDir, { recursive: true });
-    if (!existsSync(this.illustrationsDir)) mkdirSync(this.illustrationsDir, { recursive: true });
+    // Generated .pptx/.svg are streamed to S3-compatible object storage (StorageService) —
+    // no longer written to local disk, so they survive redeploys and multi-instance scaling.
   }
 
   private async checkLimit(teacherId: string, schoolId: string, role: string): Promise<void> {
@@ -136,11 +132,11 @@ Return ONLY a JSON array of slides, no other text, no markdown code blocks:
         costUsd: this.tokenService.calculateCost({ input_tokens: result.tokensIn, output_tokens: result.tokensOut }, result.model),
       }).catch(() => {});
 
-      const fileUrl = `uploads/presentations/${record.id}.pptx`;
-      const buf = await pptx.write({ outputType: "nodebuffer" });
-      writeFileSync(join(process.cwd(), fileUrl), buf as Buffer);
+      const buf = (await pptx.write({ outputType: "nodebuffer" })) as Buffer;
+      const key = `presentations/${Date.now()}-${record.id}.pptx`;
+      const fileUrl = await this.storageService.uploadBuffer(buf, key, PPTX_MIME);
 
-      await this.presRepo.update(record.id, { fileUrl, status: "ready" });
+      await this.presRepo.update(record.id, { fileUrl, s3Key: key, status: "ready" });
       return this.presRepo.findOneOrFail({ where: { id: record.id } });
     } catch (err) {
       await this.presRepo.update(record.id, { status: "error" });
@@ -192,10 +188,14 @@ Use viewBox="0 0 800 600". Include proper colors and labels in Russian.`;
       const svgMatch = svgContent.match(/<svg[\s\S]*<\/svg>/i);
       if (svgMatch) svgContent = svgMatch[0];
 
-      const imageUrl = `uploads/illustrations/${record.id}.svg`;
-      writeFileSync(join(process.cwd(), imageUrl), svgContent, "utf-8");
+      const key = `illustrations/${Date.now()}-${record.id}.svg`;
+      const imageUrl = await this.storageService.uploadBuffer(
+        Buffer.from(svgContent, "utf-8"),
+        key,
+        "image/svg+xml",
+      );
 
-      await this.illusRepo.update(record.id, { imageUrl, status: "ready" });
+      await this.illusRepo.update(record.id, { imageUrl, s3Key: key, status: "ready" });
       return this.illusRepo.findOneOrFail({ where: { id: record.id } });
     } catch (err) {
       await this.illusRepo.update(record.id, { status: "error" });
@@ -226,7 +226,10 @@ Use viewBox="0 0 800 600". Include proper colors and labels in Russian.`;
   async deletePresentation(id: string, teacherId: string): Promise<void> {
     const pres = await this.presRepo.findOne({ where: { id, teacherId } });
     if (!pres) throw new NotFoundException("Presentation not found");
-    if (pres.fileUrl) {
+    if (pres.s3Key) {
+      await this.storageService.deleteFile(pres.s3Key);
+    } else if (pres.fileUrl) {
+      // Legacy disk-backed file (pre-S3 migration).
       const fp = join(process.cwd(), pres.fileUrl);
       if (existsSync(fp)) unlinkSync(fp);
     }
@@ -236,7 +239,10 @@ Use viewBox="0 0 800 600". Include proper colors and labels in Russian.`;
   async deleteIllustration(id: string, teacherId: string): Promise<void> {
     const illus = await this.illusRepo.findOne({ where: { id, teacherId } });
     if (!illus) throw new NotFoundException("Illustration not found");
-    if (illus.imageUrl) {
+    if (illus.s3Key) {
+      await this.storageService.deleteFile(illus.s3Key);
+    } else if (illus.imageUrl) {
+      // Legacy disk-backed file (pre-S3 migration).
       const fp = join(process.cwd(), illus.imageUrl);
       if (existsSync(fp)) unlinkSync(fp);
     }
