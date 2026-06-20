@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { jwtVerify } from 'jose'
 
 const COOKIE_NAME = 'aqyl-token'
 // Routes that never require authentication.
@@ -7,25 +6,11 @@ const PUBLIC_PATHS = ['/', '/login', '/login-teacher', '/register', '/reset-pass
 // Routes that require a valid session.
 const PROTECTED_PATHS = ['/dashboard']
 
-async function verifyToken(token: string): Promise<boolean> {
-  const secret = process.env.JWT_SECRET
-  if (!secret) {
-    console.error('[middleware] JWT_SECRET is not configured — blocking protected route')
-    return false
-  }
-  try {
-    await jwtVerify(token, new TextEncoder().encode(secret))
-    return true
-  } catch {
-    return false
-  }
-}
-
 function matches(pathname: string, paths: string[]): boolean {
   return paths.some(p => pathname === p || pathname.startsWith(p + '/'))
 }
 
-export async function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Static assets / API — never gated here.
@@ -39,7 +24,9 @@ export async function middleware(request: NextRequest) {
   }
 
   const token = request.cookies.get(COOKIE_NAME)?.value
-  const valid = token ? await verifyToken(token) : false
+  // Реальная проверка JWT происходит на бэкенде через JwtAuthGuard.
+  // Middleware проверяет только наличие cookie.
+  const valid = !!token
 
   // Authenticated users shouldn't see the login screen.
   if (valid && pathname === '/login') {
