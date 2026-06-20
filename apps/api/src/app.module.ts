@@ -97,6 +97,9 @@ import { TokensModule } from "./modules/tokens/tokens.module";
 import { MalimetModule } from "./modules/malimet/malimet.module";
 import { RefreshToken } from "./modules/auth/entities/refresh-token.entity";
 import { EmailVerification } from "./modules/auth/entities/email-verification.entity";
+import { Subscription } from "./modules/billing/entities/subscription.entity";
+import { Payment } from "./modules/billing/entities/payment.entity";
+import { BillingModule } from "./modules/billing/billing.module";
 
 @Module({
   imports: [
@@ -140,6 +143,7 @@ import { EmailVerification } from "./modules/auth/entities/email-verification.en
           SecurityAuditLog,
           SchoolTokenPackage, TokenTransaction,
           RefreshToken, EmailVerification,
+          Subscription, Payment,
         ],
       }),
     }),
@@ -191,6 +195,7 @@ import { EmailVerification } from "./modules/auth/entities/email-verification.en
     GuardsModule,
     TokensModule,
     MalimetModule,
+    BillingModule,
   ],
   providers: [
     SeedService,

@@ -9,12 +9,14 @@ import { KmzhGenerationSession } from './entities/kmzh-generation-session.entity
 import { KmzhSaved } from './entities/kmzh-saved.entity';
 import { AiClientModule } from '../../services/ai-client.module';
 import { AiUsageModule } from '../ai-usage/ai-usage.module';
+import { BillingModule } from '../billing/billing.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([KmzhStageCache, KmzhGenerationSession, KmzhSaved]),
     AiClientModule,
     AiUsageModule,
+    BillingModule,
   ],
   controllers: [KmzhController],
   providers: [KmzhService, KmzhStageCacheService, KmzhSessionService],

@@ -36,6 +36,34 @@ export type B2CProfile = AuthUser & {
   trialEndsAt: string | null;
 };
 
+export type Subscription = {
+  id: string;
+  teacherId: string;
+  status: "trial" | "active" | "expired" | "cancelled";
+  pricePerMonth: number;
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
+  trialEndsAt: string | null;
+  cancelAtPeriodEnd: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PaymentRecord = {
+  id: string;
+  teacherId: string;
+  provider: string;
+  orderId?: string;
+  externalId?: string;
+  amount: number;
+  currency: string;
+  status: "pending" | "paid" | "failed" | "refunded";
+  paidAt: string | null;
+  createdAt: string;
+};
+
+export type CreateSessionResponse = { orderId: string; paymentUrl: string; amount: number };
+
 export type PendingUser = {
   id: string;
   fullName: string;
@@ -307,6 +335,14 @@ export const api = {
   loginB2C: (email: string, password: string) =>
     request<B2CAuthResponse>("/auth/b2c/login", { method: "POST", body: JSON.stringify({ email, password }) }),
   getB2CMe: (token: string) => request<B2CProfile>("/auth/b2c/me", undefined, token),
+
+  // Billing (Kaspi Pay)
+  createPaymentSession: (token: string, months: number) =>
+    request<CreateSessionResponse>("/billing/create-session", { method: "POST", body: JSON.stringify({ months }) }, token),
+  getSubscription: (token: string) =>
+    request<Subscription | null>("/billing/subscription", undefined, token),
+  getPaymentHistory: (token: string) =>
+    request<PaymentRecord[]>("/billing/payments", undefined, token),
 
   // Dashboard (teacher)
   getDashboard: (token: string) =>

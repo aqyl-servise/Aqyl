@@ -3,6 +3,7 @@ import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { SubscriptionGuard } from '../../common/guards/subscription.guard';
 import { KmzhService } from './kmzh.service';
 import { ALL_TEACHER_ROLES } from '../../common/roles.constants';
 import { KmzhGenerateDto } from './dto/kmzh-generate.dto';
@@ -10,7 +11,7 @@ import { KmzhRegenerateDto } from './dto/kmzh-regenerate.dto';
 import { KmzhSaveDto } from './dto/kmzh-save.dto';
 
 @Controller('kmzh')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, SubscriptionGuard)
 export class KmzhController {
   constructor(private readonly kmzhService: KmzhService) {}
 

@@ -6,6 +6,7 @@ import { existsSync } from "fs";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
+import { SubscriptionGuard } from "../../common/guards/subscription.guard";
 import { MaterialsService } from "./materials.service";
 import { ADMIN_ROLES, ALL_TEACHER_ROLES, isAdminRole } from "../../common/roles.constants";
 
@@ -14,7 +15,7 @@ type GeneratedMaterial = { teacherId: string; schoolId: string; title: string };
 const MATERIAL_ROLES = [...ALL_TEACHER_ROLES, ...ADMIN_ROLES] as const;
 
 @Controller("materials")
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, SubscriptionGuard)
 export class MaterialsController {
   constructor(private readonly svc: MaterialsService) {}
 

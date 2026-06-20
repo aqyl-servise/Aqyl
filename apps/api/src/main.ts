@@ -10,7 +10,11 @@ import { SeedService } from "./seed.service";
 import { SchoolSwitchInterceptor } from "./common/school-switch.interceptor";
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // rawBody: true сохраняет сырое тело запроса (req.rawBody) рядом с распарсенным —
+  // нужно для верификации HMAC-подписи Kaspi webhook по исходным байтам.
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    rawBody: true,
+  });
 
   // Behind Nginx: trust the first proxy hop so req.ip reflects the real client
   // (X-Forwarded-For). Without this, the IP-based ThrottlerGuard would see every

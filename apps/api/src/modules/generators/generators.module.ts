@@ -4,12 +4,13 @@ import { GeneratedDocument } from "../schools/entities/generated-document.entity
 import { KmzhCacheModule } from "../kmzh-cache/kmzh-cache.module";
 import { AiClientModule } from "../../services/ai-client.module";
 import { AiUsageModule } from "../ai-usage/ai-usage.module";
+import { BillingModule } from "../billing/billing.module";
 import { AiService } from "./ai.service";
 import { GeneratorsController } from "./generators.controller";
 import { GeneratorsService } from "./generators.service";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([GeneratedDocument]), KmzhCacheModule, AiClientModule, AiUsageModule],
+  imports: [TypeOrmModule.forFeature([GeneratedDocument]), KmzhCacheModule, AiClientModule, AiUsageModule, BillingModule],
   controllers: [GeneratorsController],
   providers: [AiService, GeneratorsService],
 })
