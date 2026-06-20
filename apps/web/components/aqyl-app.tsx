@@ -24,7 +24,11 @@ export function LoginApp() {
     const tok = localStorage.getItem("aqyl-token");
     if (tok) {
       document.cookie = `aqyl-token=${tok}; path=/; max-age=86400; SameSite=Strict`;
-      router.replace("/dashboard");
+      // Небольшая задержка чтобы cookie успела установиться до редиректа
+      (async () => {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        router.replace("/dashboard");
+      })();
     }
   }, [router]);
 
@@ -39,6 +43,8 @@ export function LoginApp() {
       localStorage.setItem("aqyl-token", res.accessToken);
       localStorage.setItem("aqyl-lang", (res.user.preferredLanguage as Language) || "ru");
       document.cookie = `aqyl-token=${res.accessToken}; path=/; max-age=86400; SameSite=Strict`;
+      // Небольшая задержка чтобы cookie успела установиться до редиректа
+      await new Promise(resolve => setTimeout(resolve, 100));
       router.replace("/dashboard");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
