@@ -83,7 +83,7 @@ export default function OnboardingPage() {
     let active = true;
     (async () => {
       const token = await getValidAccessToken();
-      if (!token) { router.replace("/login-teacher"); return; }
+      if (!token) { router.replace("/login"); return; }
       try {
         const me = await api.getB2CMe(token);
         if (!active) return;
@@ -91,7 +91,7 @@ export default function OnboardingPage() {
         setProfile(me);
         if (me.subject) setSubject(me.subject);
       } catch {
-        if (active) router.replace("/login-teacher");
+        if (active) router.replace("/login");
         return;
       } finally {
         if (active) setLoading(false);
@@ -127,7 +127,7 @@ export default function OnboardingPage() {
 
   async function persist(extra: Record<string, unknown>) {
     const token = await getValidAccessToken();
-    if (!token) { router.replace("/login-teacher"); return; }
+    if (!token) { router.replace("/login"); return; }
     await api.updateB2CProfile(token, {
       subject: subject || undefined,
       gradeLevel: gradeLevels.join(",") || undefined,

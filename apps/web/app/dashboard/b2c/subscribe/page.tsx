@@ -39,7 +39,7 @@ export default function SubscribePage() {
     setLoadingMonths(months);
     try {
       const token = await getValidAccessToken();
-      if (!token) { router.replace("/login-teacher"); return; }
+      if (!token) { router.replace("/login"); return; }
       const { paymentUrl } = await api.createPaymentSession(token, months);
       window.location.href = paymentUrl;
     } catch {

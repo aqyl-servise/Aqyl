@@ -22,6 +22,7 @@ export type AuthUser = {
 };
 
 export type LoginResponse = { accessToken: string; refreshToken?: string; user: AuthUser };
+export type UniversalLoginResponse = { accessToken: string; refreshToken: string; user: AuthUser; redirectTo: string };
 
 export type TokenPair = { accessToken: string; refreshToken: string };
 export type B2CAuthResponse = { accessToken: string; refreshToken: string; user: AuthUser };
@@ -292,7 +293,7 @@ export type TeacherViolation = {
 let _selectedSchoolId: string | null = null;
 export function setApiSchoolId(id: string | null) { _selectedSchoolId = id; }
 
-class ApiError extends Error {
+export class ApiError extends Error {
   constructor(public readonly status: number, message: string) {
     super(message);
   }
@@ -321,6 +322,8 @@ export const api = {
   // Auth
   login: (email: string, password: string) =>
     request<LoginResponse>("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
+  universalLogin: (email: string, password: string) =>
+    request<UniversalLoginResponse>("/auth/universal-login", { method: "POST", body: JSON.stringify({ email, password }) }),
   register: (data: { fullName: string; email: string; password: string; role: string; schoolName: string }) =>
     request<{ message: string }>("/auth/register", { method: "POST", body: JSON.stringify(data) }),
   getMe: (token: string) => request<AuthUser>("/auth/me", undefined, token),

@@ -107,7 +107,9 @@
       "Bash(ls node_modules/compression)",
       "Bash(ls apps/api/node_modules/compression)",
       "Bash(ls node_modules/@aws-sdk)",
-      "Bash(ls node_modules/mime-types)"
+      "Bash(ls node_modules/mime-types)",
+      "PowerShell(cd C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\api; npx tsc --noEmit 2>&1 | Select-Object -First 40; Write-Output \"=== API EXIT: $LASTEXITCODE ===\")",
+      "PowerShell(cd C:\\\\Users\\\\MI\\\\aqyl-teacher\\\\apps\\\\web; npx tsc --noEmit 2>&1 | Select-Object -First 40; Write-Output \"=== WEB EXIT: $LASTEXITCODE ===\")"
     ]
   }
 }

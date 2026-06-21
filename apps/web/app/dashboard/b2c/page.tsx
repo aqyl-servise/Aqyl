@@ -41,7 +41,7 @@ export default function B2CDashboardPage() {
     let active = true;
     (async () => {
       const token = await getValidAccessToken();
-      if (!token) { router.replace("/login-teacher"); return; }
+      if (!token) { router.replace("/login"); return; }
       try {
         const me = await api.getB2CMe(token);
         if (!active) return;
@@ -52,7 +52,7 @@ export default function B2CDashboardPage() {
         setProfile(me);
         setSubscription(sub);
       } catch {
-        if (active) router.replace("/login-teacher");
+        if (active) router.replace("/login");
       } finally {
         if (active) setLoading(false);
       }
@@ -90,7 +90,7 @@ export default function B2CDashboardPage() {
 
   async function handleLogout() {
     await logout();
-    router.replace("/login-teacher");
+    router.replace("/login");
   }
 
   if (loading) {

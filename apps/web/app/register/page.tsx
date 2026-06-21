@@ -212,7 +212,7 @@ export default function RegisterPage() {
         )}
 
         <p style={{ textAlign: "center", fontSize: 13, color: "#6b7280", marginTop: 20 }}>
-          Уже есть аккаунт? <a href="/login-teacher" style={{ color: BRAND, fontWeight: 600, textDecoration: "none" }}>Войти</a>
+          Уже есть аккаунт? <a href="/login" style={{ color: BRAND, fontWeight: 600, textDecoration: "none" }}>Войти</a>
         </p>
       </div>
     </div>

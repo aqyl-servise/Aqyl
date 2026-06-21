@@ -34,10 +34,8 @@ export async function middleware(request: NextRequest) {
 
   // Нет токена — редирект на логин
   if (!token) {
-    const loginUrl = pathname.startsWith('/dashboard/b2c')
-      ? '/login-teacher'
-      : '/login'
-    return NextResponse.redirect(new URL(loginUrl, request.url))
+    // Единый вход — оба типа пользователей идут на /login.
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   // Есть токен — проверяем подпись
@@ -47,12 +45,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   } catch {
     // Токен невалидный или истёк
-    const response = NextResponse.redirect(
-      new URL(
-        pathname.startsWith('/dashboard/b2c') ? '/login-teacher' : '/login',
-        request.url,
-      ),
-    )
+    const response = NextResponse.redirect(new URL('/login', request.url))
     response.cookies.delete('aqyl-token')
     return response
   }

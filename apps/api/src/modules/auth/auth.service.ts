@@ -104,6 +104,14 @@ export class AuthService {
     const matches = await bcrypt.compare(loginDto.password, teacher.passwordHash);
     if (!matches) throw new UnauthorizedException("Invalid credentials");
 
+    return this.issueB2gSession(teacher);
+  }
+
+  /**
+   * Build a B2G/staff session (rich 1d access token + refresh token) after the
+   * caller has already verified the password. Enforces the staff status gates.
+   */
+  private async issueB2gSession(teacher: Teacher) {
     if (teacher.status === "pending") throw new ForbiddenException("PENDING");
     if (teacher.status === "rejected") throw new ForbiddenException("REJECTED");
     if (teacher.status === "inactive") throw new ForbiddenException("INACTIVE");
@@ -130,6 +138,30 @@ export class AuthService {
       refreshToken,
       user: this.serialize(teacher),
     };
+  }
+
+  /**
+   * Smart unified login: one email+password entry point for every kind of user.
+   * The account's registrationSource decides which session to issue and where the
+   * client should land afterwards.
+   */
+  async universalLogin(email: string, password: string) {
+    const teacher = await this.teachersService.findByEmail(email);
+    if (!teacher) throw new UnauthorizedException("Неверный email или пароль");
+
+    const matches = await bcrypt.compare(password, teacher.passwordHash);
+    if (!matches) throw new UnauthorizedException("Неверный email или пароль");
+
+    // B2C (self-serve individual teacher) → short-lived access + refresh, B2C dashboard.
+    if (teacher.registrationSource === "b2c") {
+      if (teacher.status === "inactive") throw new UnauthorizedException("INACTIVE");
+      const tokens = await this.generateTokens(teacher.id, "teacher", "teacher");
+      return { ...tokens, user: this.serialize(teacher), redirectTo: "/dashboard/b2c" };
+    }
+
+    // B2G staff (registrationSource 'b2g' or null) and every other role → staff dashboard.
+    const session = await this.issueB2gSession(teacher);
+    return { ...session, redirectTo: "/dashboard" };
   }
 
   async register(dto: RegisterDto) {

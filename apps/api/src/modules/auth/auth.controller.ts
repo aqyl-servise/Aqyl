@@ -31,6 +31,14 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
+  // Smart unified login — one endpoint for B2C, B2G and every other role.
+  // Public (no JwtAuthGuard); returns { accessToken, refreshToken, user, redirectTo }.
+  @Post("universal-login")
+  @Throttle({ short: { limit: 5, ttl: 60_000 }, medium: { limit: 20, ttl: 900_000 } })
+  universalLogin(@Body() dto: LoginDto) {
+    return this.authService.universalLogin(dto.email, dto.password);
+  }
+
   @Post("register")
   @Throttle({ short: { limit: 3, ttl: 60_000 } })
   register(@Body() dto: RegisterDto) {
