@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { api } from "../../lib/api";
 import { setTokens } from "../../lib/auth";
 import { ThemeToggle } from "../../components/theme-toggle";
+import { LogoIcon } from "../../components/public-header";
 
 const RESEND_SECONDS = 600; // 10 minutes
 
@@ -115,55 +116,64 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="aqyl-ds aqyl-fade">
-      <div className="aqyl-auth">
-        {/* Левая колонка — бренд */}
-        <div className="aqyl-auth-left">
-          <Link href="/" style={{ fontWeight: 800, fontSize: "1.5rem", color: "#fff", letterSpacing: "-0.02em" }}>Aqyl</Link>
-          <h2 style={{ color: "#fff", fontSize: "1.75rem", lineHeight: 1.3, marginTop: 12 }}>Начните бесплатно</h2>
-          <p style={{ color: "rgba(255,255,255,0.85)", marginTop: -8 }}>14 дней без ограничений. Без привязки карты.</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 8 }}>
-            {FEATURES.map((f) => (
-              <div key={f} className="aqyl-auth-feature">
-                <span className="aqyl-auth-check">✓</span>
-                <span>{f}</span>
-              </div>
-            ))}
+    <div className="aqyl-pub">
+      <div className="pub-auth">
+        {/* Левая колонка */}
+        <div className="pub-auth-left">
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <LogoIcon size={36} />
+            <span style={{ fontWeight: 600, fontSize: "1.25rem", letterSpacing: "0.1em", color: "#fff" }}>aqyl</span>
+          </div>
+
+          <div>
+            <div className="pub-divider" style={{ background: "rgba(255,255,255,0.15)", marginBottom: 32 }} />
+            <h2 style={{ color: "rgba(244,240,255,0.95)" }}>Начните бесплатно</h2>
+            <p style={{ color: "rgba(244,240,255,0.95)", marginTop: 4 }}>14 дней без ограничений.</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 28 }}>
+              {FEATURES.map((f) => (
+                <div key={f} className="pub-auth-feature">
+                  <span className="pub-dot pub-dot-green" /> {f}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <ThemeToggle onDark />
+            <Link href="/login" style={{ fontSize: "0.875rem", color: "rgba(244,240,255,0.85)" }}>Уже есть аккаунт?</Link>
           </div>
         </div>
 
-        {/* Правая колонка — форма */}
-        <div className="aqyl-auth-right">
-          <div className="aqyl-auth-toolbar"><ThemeToggle /></div>
+        {/* Правая колонка */}
+        <div className="pub-auth-right">
+          <div className="pub-auth-form">
+            <h2 style={{ fontWeight: 600, marginBottom: 24 }}>Создать аккаунт</h2>
 
-          <div className="aqyl-auth-form">
-            <h2 style={{ marginBottom: 24 }}>Создать аккаунт</h2>
-
-            {/* Прогресс-бар шагов */}
-            <div className="aqyl-steps">
+            {/* Прогресс шагов */}
+            <div className="pub-steps">
               {STEPS.map((label, i) => {
                 const n = i + 1;
                 const cls = step === n ? "is-active" : step > n ? "is-done" : "";
                 return (
                   <div key={label} style={{ display: "contents" }}>
-                    <div className={`aqyl-step ${cls}`}>
-                      <span className="aqyl-step-dot">{step > n ? "✓" : n}</span>
-                      <span className="aqyl-step-label">{label}</span>
+                    <div className={`pub-step ${cls}`}>
+                      <span className="pub-step-dot">{step > n ? "✓" : n}</span>
+                      <span className="pub-step-label">{label}</span>
                     </div>
-                    {n < STEPS.length && <span className="aqyl-step-line" />}
+                    {n < STEPS.length && <span className="pub-step-line" />}
                   </div>
                 );
               })}
             </div>
 
-            {error && <div className="aqyl-error">{error}</div>}
+            {error && <div className="pub-error">{error}</div>}
 
             {step === 1 && (
               <>
-                <label className="label">Email</label>
-                <input className="input" type="email" value={email} placeholder="you@example.com"
+                <label className="pub-label">Email</label>
+                <input className="pub-input" type="email" value={email} placeholder="you@example.com"
                   onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSendCode()} />
-                <button className="btn btn-primary btn-full" style={{ marginTop: 18 }} disabled={busy} onClick={handleSendCode}>
+                <button className="pub-btn pub-btn-primary pub-btn-full pub-btn-lg" style={{ marginTop: 18 }} disabled={busy} onClick={handleSendCode}>
                   {busy ? "Отправка…" : "Получить код"}
                 </button>
               </>
@@ -171,31 +181,31 @@ export default function RegisterPage() {
 
             {step === 2 && (
               <>
-                <p style={{ marginBottom: 16 }}>Код отправлен на <strong style={{ color: "var(--text-primary)" }}>{email}</strong></p>
+                <p style={{ marginBottom: 16 }}>Код отправлен на <strong style={{ color: "var(--pub-text)" }}>{email}</strong></p>
                 <div style={{ display: "flex", gap: 8, justifyContent: "space-between", marginBottom: 18 }}>
                   {code.map((c, i) => (
                     <input
                       key={i}
                       ref={(el) => { codeRefs.current[i] = el; }}
-                      className="input"
+                      className="pub-input"
                       value={c}
                       inputMode="numeric"
                       maxLength={1}
                       autoFocus={i === 0}
                       onChange={(e) => handleCodeChange(i, e.target.value)}
                       onKeyDown={(e) => handleCodeKeyDown(i, e)}
-                      style={{ width: 46, height: 54, textAlign: "center", fontSize: "1.375rem", fontWeight: 700, padding: 0 }}
+                      style={{ width: 46, height: 52, textAlign: "center", fontSize: "1.375rem", fontWeight: 600, padding: 0 }}
                     />
                   ))}
                 </div>
-                <button className="btn btn-primary btn-full" disabled={busy} onClick={handleVerify}>
+                <button className="pub-btn pub-btn-primary pub-btn-full pub-btn-lg" disabled={busy} onClick={handleVerify}>
                   {busy ? "Проверка…" : "Подтвердить"}
                 </button>
                 <button
                   onClick={handleSendCode}
                   disabled={secondsLeft > 0 || busy}
-                  className="btn btn-ghost btn-full btn-sm"
-                  style={{ marginTop: 12, color: secondsLeft > 0 ? "var(--text-muted)" : "var(--accent-purple)" }}
+                  className="pub-btn pub-btn-ghost pub-btn-full pub-btn-sm"
+                  style={{ marginTop: 12, color: secondsLeft > 0 ? "var(--pub-text-3)" : "var(--pub-purple)" }}
                 >
                   {secondsLeft > 0 ? `Отправить повторно через ${timerLabel}` : "Отправить повторно"}
                 </button>
@@ -206,42 +216,42 @@ export default function RegisterPage() {
               <>
                 <div style={{ display: "flex", gap: 10 }}>
                   <div style={{ flex: 1 }}>
-                    <label className="label">Имя</label>
-                    <input className="input" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                    <label className="pub-label">Имя</label>
+                    <input className="pub-input" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label className="label">Фамилия</label>
-                    <input className="input" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                    <label className="pub-label">Фамилия</label>
+                    <input className="pub-input" value={lastName} onChange={(e) => setLastName(e.target.value)} />
                   </div>
                 </div>
                 <div style={{ marginTop: 14 }}>
-                  <label className="label">Пароль</label>
-                  <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <label className="pub-label">Пароль</label>
+                  <input className="pub-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
                 <div style={{ marginTop: 14 }}>
-                  <label className="label">Подтверждение пароля</label>
-                  <input className="input" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+                  <label className="pub-label">Подтверждение пароля</label>
+                  <input className="pub-input" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
                 </div>
                 <div style={{ marginTop: 14 }}>
-                  <label className="label">Предмет (необязательно)</label>
-                  <input className="input" value={subject} onChange={(e) => setSubject(e.target.value)} />
+                  <label className="pub-label">Предмет (необязательно)</label>
+                  <input className="pub-input" value={subject} onChange={(e) => setSubject(e.target.value)} />
                 </div>
                 <div style={{ marginTop: 14 }}>
-                  <label className="label">Область (необязательно)</label>
-                  <input className="input" value={region} onChange={(e) => setRegion(e.target.value)} />
+                  <label className="pub-label">Область (необязательно)</label>
+                  <input className="pub-input" value={region} onChange={(e) => setRegion(e.target.value)} />
                 </div>
-                <label style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 16, fontSize: "0.8125rem", color: "var(--text-secondary)" }}>
+                <label style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 16, fontSize: "0.8125rem", color: "var(--pub-text-2)" }}>
                   <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} style={{ marginTop: 2 }} />
                   <span>Я согласен с условиями использования</span>
                 </label>
-                <button className="btn btn-primary btn-full" style={{ marginTop: 18 }} disabled={busy} onClick={handleRegister}>
+                <button className="pub-btn pub-btn-primary pub-btn-full pub-btn-lg" style={{ marginTop: 18 }} disabled={busy} onClick={handleRegister}>
                   {busy ? "Создание…" : "Создать аккаунт"}
                 </button>
               </>
             )}
 
             <p style={{ textAlign: "center", fontSize: "0.875rem", marginTop: 20 }}>
-              Уже есть аккаунт? <Link href="/login" style={{ color: "var(--accent-purple)", fontWeight: 600 }}>Войти</Link>
+              Уже есть аккаунт? <Link href="/login" style={{ color: "var(--pub-purple)", fontWeight: 500 }}>Войти</Link>
             </p>
           </div>
         </div>

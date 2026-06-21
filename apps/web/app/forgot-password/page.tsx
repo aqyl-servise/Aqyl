@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { api } from "../../lib/api";
 import { ThemeToggle } from "../../components/theme-toggle";
+import { LogoIcon } from "../../components/public-header";
 
 const FEATURES = [
   "Восстановите доступ за минуту",
@@ -29,52 +30,60 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="aqyl-ds aqyl-fade">
-      <div className="aqyl-auth">
-        {/* Левая колонка — бренд */}
-        <div className="aqyl-auth-left">
-          <Link href="/" style={{ fontWeight: 800, fontSize: "1.5rem", color: "#fff", letterSpacing: "-0.02em" }}>Aqyl</Link>
-          <h2 style={{ color: "#fff", fontSize: "1.75rem", lineHeight: 1.3, marginTop: 12 }}>Восстановление пароля</h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 8 }}>
-            {FEATURES.map((f) => (
-              <div key={f} className="aqyl-auth-feature">
-                <span className="aqyl-auth-check">✓</span>
-                <span>{f}</span>
-              </div>
-            ))}
+    <div className="aqyl-pub">
+      <div className="pub-auth">
+        {/* Левая колонка */}
+        <div className="pub-auth-left">
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <LogoIcon size={36} />
+            <span style={{ fontWeight: 600, fontSize: "1.25rem", letterSpacing: "0.1em", color: "#fff" }}>aqyl</span>
+          </div>
+
+          <div>
+            <div className="pub-divider" style={{ background: "rgba(255,255,255,0.15)", marginBottom: 32 }} />
+            <h2 style={{ color: "rgba(244,240,255,0.95)" }}>Восстановление пароля</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 28 }}>
+              {FEATURES.map((f) => (
+                <div key={f} className="pub-auth-feature">
+                  <span className="pub-dot pub-dot-green" /> {f}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <ThemeToggle onDark />
+            <Link href="/login" style={{ fontSize: "0.875rem", color: "rgba(244,240,255,0.85)" }}>Вспомнили?</Link>
           </div>
         </div>
 
-        {/* Правая колонка — форма */}
-        <div className="aqyl-auth-right">
-          <div className="aqyl-auth-toolbar"><ThemeToggle /></div>
-
-          <div className="aqyl-auth-form">
+        {/* Правая колонка */}
+        <div className="pub-auth-right">
+          <div className="pub-auth-form">
             {sent ? (
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: "2.5rem", marginBottom: 12 }}>📬</div>
-                <h2 style={{ marginBottom: 10 }}>Проверьте почту</h2>
+                <h2 style={{ fontWeight: 600, marginBottom: 10 }}>Проверьте почту</h2>
                 <p style={{ marginBottom: 24 }}>
                   Если этот email зарегистрирован, мы отправили на него ссылку для сброса пароля.
                 </p>
-                <Link href="/login" className="btn btn-secondary btn-full">← Вернуться ко входу</Link>
+                <Link href="/login" className="pub-btn pub-btn-outline pub-btn-full">← Вернуться ко входу</Link>
               </div>
             ) : (
               <form onSubmit={handleSubmit}>
-                <h2 style={{ marginBottom: 6 }}>Забыли пароль?</h2>
-                <p style={{ marginBottom: 24 }}>Укажите email — отправим инструкции по восстановлению</p>
+                <h2 style={{ fontWeight: 600 }}>Забыли пароль?</h2>
+                <p style={{ color: "var(--pub-text-3)", marginBottom: 28, marginTop: 6 }}>Укажите email — отправим инструкции</p>
 
-                {error && <div className="aqyl-error">{error}</div>}
+                {error && <div className="pub-error">{error}</div>}
 
-                <label className="label">Email</label>
-                <input className="input" name="email" type="email" required placeholder="you@example.com" autoComplete="email" />
+                <label className="pub-label">Email</label>
+                <input className="pub-input" name="email" type="email" required placeholder="you@example.com" autoComplete="email" />
 
-                <button type="submit" className="btn btn-primary btn-full" style={{ marginTop: 24 }} disabled={busy}>
+                <button type="submit" className="pub-btn pub-btn-primary pub-btn-full pub-btn-lg" style={{ marginTop: 24 }} disabled={busy}>
                   {busy ? "Отправка…" : "Отправить инструкции"}
                 </button>
 
                 <p style={{ textAlign: "center", fontSize: "0.875rem", marginTop: 18 }}>
-                  <Link href="/login" style={{ color: "var(--text-muted)" }}>← Вернуться ко входу</Link>
+                  <Link href="/login" style={{ color: "var(--pub-text-3)" }}>← Вернуться ко входу</Link>
                 </p>
               </form>
             )}

@@ -1,232 +1,308 @@
 /* ============================================================================
-   AQYL — Дизайн-система публичных страниц (лендинг, логин, регистрация, forgot)
+   AQYL DESIGN SYSTEM v2 — Scale AI стиль, две полноценные темы
    ----------------------------------------------------------------------------
-   ВАЖНО: глобальный globals.css уже определяет .btn / .card / .input / .badge
-   и переменные --radius-sm / --shadow-sm, используемые во всём дашборде.
-   Чтобы не сломать аутентифицированный интерфейс, дизайн-система ограничена
-   обёрткой .aqyl-ds (специфичность .aqyl-ds .btn > .btn). Все публичные
-   страницы рендерятся внутри <div className="aqyl-ds">.
+   ВАЖНО: глобальный globals.css и дашборд НЕ трогаем. Все стили публичных
+   страниц ограничены классом .aqyl-pub на корневом div каждой страницы
+   (специфичность .aqyl-pub .pub-* не пересекается с дашбордом).
+   Тема переключается атрибутом data-theme на <html>; по умолчанию — светлая.
    ============================================================================ */
 
-/* ── Токены: светлая тема (по умолчанию) ─────────────────────────────────── */
-.aqyl-ds {
-  --bg-primary: #FFFFFF;
-  --bg-secondary: #F4F5F7;
-  --bg-surface: #FFFFFF;
-  --bg-surface-hover: #F0F1F5;
+/* ===== СВЕТЛАЯ ТЕМА (default) ===== */
+.aqyl-pub {
+  /* Фоны */
+  --pub-bg: #F7F7FA;
+  --pub-bg-surface: #FFFFFF;
+  --pub-bg-subtle: #F0F0F5;
+  --pub-bg-inset: #E8E8F0;
 
-  --text-primary: #0D0E1A;
-  --text-secondary: #4A4B5E;
-  --text-muted: #8A8B9E;
-  --text-inverse: #FFFFFF;
+  /* Текст */
+  --pub-text: #0A0A14;
+  --pub-text-2: #3A3A50;
+  --pub-text-3: #6B6B85;
+  --pub-text-inv: #FFFFFF;
 
-  --accent-purple: #6B5CE7;
-  --accent-purple-hover: #5A4BD6;
-  --accent-purple-light: #EEECFF;
-  --accent-green: #2DC08E;
-  --accent-green-hover: #25A97A;
-  --accent-amber: #F5A623;
+  /* Акценты из логотипа */
+  --pub-purple: #6B5CE7;
+  --pub-purple-2: #9B95E4;
+  --pub-purple-bg: #EEEEFF;
+  --pub-green: #3DB88E;
+  --pub-green-bg: #E8F8F3;
+  --pub-amber: #F5A623;
+  --pub-amber-bg: #FEF5E7;
+  --pub-dark: #2E2780;
 
-  --border-color: #E2E4EA;
-  --border-focus: #6B5CE7;
+  /* Границы */
+  --pub-border: #E2E2EC;
+  --pub-border-2: #CACAD8;
 
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.10);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+  /* Тени */
+  --pub-shadow: 0 1px 2px rgba(10,10,20,0.06), 0 2px 8px rgba(10,10,20,0.04);
+  --pub-shadow-lg: 0 4px 16px rgba(10,10,20,0.08), 0 1px 4px rgba(10,10,20,0.04);
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-
-  --font-sans: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-
-  --transition: 0.2s ease;
-
-  --sidebar-width: 220px;
-  --header-height: 56px;
+  /* Типографика */
+  --pub-font: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --pub-radius: 4px;
+  --pub-radius-md: 8px;
 }
 
-/* ── Токены: тёмная тема ─────────────────────────────────────────────────── */
-[data-theme="dark"] .aqyl-ds {
-  --bg-primary: #0D0E1A;
-  --bg-secondary: #13141F;
-  --bg-surface: #161728;
-  --bg-surface-hover: #1E1F30;
+/* ===== ТЁМНАЯ ТЕМА ===== */
+[data-theme="dark"] .aqyl-pub {
+  --pub-bg: #060608;
+  --pub-bg-surface: #0F1018;
+  --pub-bg-subtle: #161622;
+  --pub-bg-inset: #1E1E2E;
 
-  --text-primary: #F0F0F5;
-  --text-secondary: #A0A1B5;
-  --text-muted: #60617A;
-  --text-inverse: #0D0E1A;
+  --pub-text: #F4F0FF;
+  --pub-text-2: #A8A8C0;
+  --pub-text-3: #6B6B85;
+  --pub-text-inv: #060608;
 
-  --accent-purple-light: #1E1A3A;
+  --pub-purple: #9B95E4;
+  --pub-purple-2: #7F77DD;
+  --pub-purple-bg: #1A1830;
+  --pub-green: #3DB88E;
+  --pub-green-bg: #0D2420;
+  --pub-amber: #F5A623;
+  --pub-amber-bg: #2A1E08;
+  --pub-dark: #9B95E4;
 
-  --border-color: #252636;
+  --pub-border: #1E1E30;
+  --pub-border-2: #2A2A40;
 
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+  --pub-shadow: 0 1px 2px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3);
+  --pub-shadow-lg: 0 4px 16px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.3);
 }
 
-/* ── База ─────────────────────────────────────────────────────────────────── */
-.aqyl-ds, .aqyl-ds *, .aqyl-ds *::before, .aqyl-ds *::after { box-sizing: border-box; }
-.aqyl-ds {
+/* ===== БАЗОВЫЕ СТИЛИ внутри .aqyl-pub ===== */
+.aqyl-pub {
+  font-family: var(--pub-font);
+  background: var(--pub-bg);
+  color: var(--pub-text);
   min-height: 100vh;
-  font-family: var(--font-sans);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  transition: background var(--transition), color var(--transition);
   -webkit-font-smoothing: antialiased;
 }
-.aqyl-ds a { color: inherit; text-decoration: none; }
+.aqyl-pub *, .aqyl-pub *::before, .aqyl-pub *::after { box-sizing: border-box; }
+.aqyl-pub a { color: inherit; text-decoration: none; }
 
-/* ── Типографика ──────────────────────────────────────────────────────────── */
-.aqyl-ds h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; margin: 0; }
-.aqyl-ds h2 { font-size: 1.5rem; font-weight: 600; line-height: 1.3; margin: 0; }
-.aqyl-ds h3 { font-size: 1.125rem; font-weight: 600; line-height: 1.4; margin: 0; }
-.aqyl-ds p { font-size: 0.9375rem; line-height: 1.6; color: var(--text-secondary); margin: 0; }
-
-/* ── Кнопки ───────────────────────────────────────────────────────────────── */
-.aqyl-ds .btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 10px 20px; border-radius: var(--radius-sm);
-  font-size: 0.875rem; font-weight: 600; cursor: pointer;
-  border: none; text-decoration: none; transition: all var(--transition);
-  white-space: nowrap; font-family: var(--font-sans);
+/* Типографика */
+.aqyl-pub h1 {
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--pub-text);
+  margin: 0;
 }
-.aqyl-ds .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.aqyl-ds .btn-primary { background: var(--accent-purple); color: #fff; }
-.aqyl-ds .btn-primary:hover:not(:disabled) { background: var(--accent-purple-hover); }
-.aqyl-ds .btn-secondary {
-  background: var(--bg-secondary); color: var(--text-primary);
-  border: 1px solid var(--border-color);
+.aqyl-pub h2 {
+  font-size: clamp(1.25rem, 2.5vw, 1.875rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--pub-text);
+  margin: 0;
 }
-.aqyl-ds .btn-secondary:hover:not(:disabled) { background: var(--bg-surface-hover); }
-.aqyl-ds .btn-ghost { background: transparent; color: var(--text-secondary); }
-.aqyl-ds .btn-ghost:hover:not(:disabled) { color: var(--text-primary); background: var(--bg-surface-hover); }
-.aqyl-ds .btn-white { background: #fff; color: var(--accent-purple); }
-.aqyl-ds .btn-white:hover:not(:disabled) { background: #F0F1F5; }
-.aqyl-ds .btn-sm { padding: 7px 14px; font-size: 0.8125rem; }
-.aqyl-ds .btn-lg { padding: 13px 28px; font-size: 1rem; }
-.aqyl-ds .btn-full { width: 100%; }
-
-/* ── Карточки ─────────────────────────────────────────────────────────────── */
-.aqyl-ds .card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 20px;
-  box-shadow: var(--shadow-sm);
+.aqyl-pub h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--pub-text);
+  margin: 0;
+}
+.aqyl-pub p {
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--pub-text-2);
+  margin: 0;
 }
 
-/* ── Инпуты ───────────────────────────────────────────────────────────────── */
-.aqyl-ds .input {
-  width: 100%; padding: 10px 14px;
-  background: var(--bg-secondary); color: var(--text-primary);
-  border: 1px solid var(--border-color); border-radius: var(--radius-sm);
-  font-size: 0.9375rem; font-family: var(--font-sans);
-  transition: border-color var(--transition), box-shadow var(--transition);
+/* Контейнер */
+.aqyl-pub .pub-container { width: 100%; max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+
+/* Кнопки */
+.aqyl-pub .pub-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 18px;
+  font-size: 0.875rem; font-weight: 500;
+  border-radius: var(--pub-radius);
+  border: 1px solid transparent;
+  cursor: pointer; text-decoration: none;
+  transition: opacity 0.15s ease, transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap; font-family: var(--pub-font);
+  letter-spacing: -0.01em;
+}
+.aqyl-pub .pub-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.aqyl-pub .pub-btn-primary {
+  background: var(--pub-purple);
+  color: #fff;
+  border-color: var(--pub-purple);
+}
+.aqyl-pub .pub-btn-primary:hover:not(:disabled) { opacity: 0.88; }
+.aqyl-pub .pub-btn-outline {
+  background: transparent;
+  color: var(--pub-text);
+  border-color: var(--pub-border-2);
+}
+.aqyl-pub .pub-btn-outline:hover:not(:disabled) {
+  background: var(--pub-bg-subtle);
+  border-color: var(--pub-border-2);
+}
+.aqyl-pub .pub-btn-ghost {
+  background: transparent;
+  color: var(--pub-text-3);
+  border-color: transparent;
+}
+.aqyl-pub .pub-btn-ghost:hover:not(:disabled) { color: var(--pub-text); background: var(--pub-bg-subtle); }
+.aqyl-pub .pub-btn-lg { padding: 12px 24px; font-size: 0.9375rem; }
+.aqyl-pub .pub-btn-sm { padding: 6px 12px; font-size: 0.8125rem; }
+.aqyl-pub .pub-btn-full { width: 100%; }
+
+/* Карточки */
+.aqyl-pub .pub-card {
+  background: var(--pub-bg-surface);
+  border: 1px solid var(--pub-border);
+  border-radius: var(--pub-radius-md);
+  padding: 20px 24px;
+}
+.aqyl-pub .pub-card-accent-purple { border-left: 2px solid var(--pub-purple); }
+.aqyl-pub .pub-card-accent-green { border-left: 2px solid var(--pub-green); }
+.aqyl-pub .pub-card-accent-amber { border-left: 2px solid var(--pub-amber); }
+
+/* Инпуты */
+.aqyl-pub .pub-input {
+  width: 100%;
+  padding: 9px 13px;
+  background: var(--pub-bg-surface);
+  color: var(--pub-text);
+  border: 1px solid var(--pub-border);
+  border-radius: var(--pub-radius);
+  font-size: 0.9375rem;
+  font-family: var(--pub-font);
   outline: none;
+  transition: border-color 0.15s;
 }
-.aqyl-ds .input:focus {
-  border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px rgba(107,92,231,0.15);
-}
-.aqyl-ds .input::placeholder { color: var(--text-muted); }
-.aqyl-ds .label {
-  display: block; font-size: 0.8125rem; font-weight: 500;
-  color: var(--text-secondary); margin-bottom: 6px;
+.aqyl-pub .pub-input:focus { border-color: var(--pub-purple); }
+.aqyl-pub .pub-input::placeholder { color: var(--pub-text-3); }
+.aqyl-pub .pub-label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--pub-text-2);
+  margin-bottom: 5px;
+  letter-spacing: 0.01em;
 }
 
-/* ── Бейджи ───────────────────────────────────────────────────────────────── */
-.aqyl-ds .badge {
-  display: inline-flex; align-items: center;
-  padding: 3px 10px; border-radius: 20px;
-  font-size: 0.75rem; font-weight: 600;
+/* Бейджи */
+.aqyl-pub .pub-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px;
+  border-radius: 2px;
+  font-size: 0.75rem; font-weight: 500;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  border: 1px solid;
 }
-.aqyl-ds .badge-purple { background: var(--accent-purple-light); color: var(--accent-purple); }
-.aqyl-ds .badge-green { background: rgba(45,192,142,0.12); color: var(--accent-green); }
-.aqyl-ds .badge-amber { background: rgba(245,166,35,0.12); color: var(--accent-amber); }
+.aqyl-pub .pub-badge-purple {
+  background: var(--pub-purple-bg);
+  color: var(--pub-purple);
+  border-color: var(--pub-purple-2);
+  opacity: 0.9;
+}
+.aqyl-pub .pub-badge-green {
+  background: var(--pub-green-bg);
+  color: var(--pub-green);
+  border-color: var(--pub-green);
+  opacity: 0.9;
+}
 
-/* ── Сетка/контейнеры лендинга ────────────────────────────────────────────── */
-.aqyl-ds .aqyl-container { width: 100%; max-width: 1140px; margin: 0 auto; padding: 0 32px; }
-.aqyl-ds .aqyl-section { padding: 56px 0; }
-.aqyl-ds .aqyl-section-alt { background: var(--bg-secondary); }
-.aqyl-ds .aqyl-section-title { text-align: center; margin: 0 auto 32px; max-width: 720px; }
-.aqyl-ds .aqyl-grid { display: grid; gap: 20px; }
-.aqyl-ds .aqyl-grid-2 { grid-template-columns: repeat(2, 1fr); }
-.aqyl-ds .aqyl-grid-3 { grid-template-columns: repeat(3, 1fr); }
-.aqyl-ds .aqyl-card-accent { border-left: 3px solid var(--accent-purple); }
+/* Разделитель */
+.aqyl-pub .pub-divider {
+  height: 1px;
+  background: var(--pub-border);
+  margin: 0;
+}
 
-/* ── Двухколоночный макет авторизации ─────────────────────────────────────── */
-.aqyl-ds .aqyl-auth { display: flex; min-height: 100vh; }
-.aqyl-ds .aqyl-auth-left {
-  width: 50%; background: var(--accent-purple); color: #fff;
-  padding: 48px 44px; display: flex; flex-direction: column; gap: 28px;
+/* Метка-точка (как в Scale AI) */
+.aqyl-pub .pub-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
 }
-.aqyl-ds .aqyl-auth-right {
-  width: 50%; background: var(--bg-primary);
-  display: flex; flex-direction: column; padding: 24px 40px 40px; position: relative;
-}
-.aqyl-ds .aqyl-auth-toolbar { display: flex; justify-content: flex-end; }
-.aqyl-ds .aqyl-auth-form { margin: auto 0; width: 100%; max-width: 400px; align-self: center; }
-.aqyl-ds .aqyl-auth-feature { display: flex; align-items: flex-start; gap: 10px; font-size: 0.9375rem; line-height: 1.5; }
-.aqyl-ds .aqyl-auth-check {
-  flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
-  background: rgba(255,255,255,0.18); display: inline-flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700;
-}
-.aqyl-ds .aqyl-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
-.aqyl-ds .aqyl-divider::before, .aqyl-ds .aqyl-divider::after { content: ""; flex: 1; height: 1px; background: var(--border-color); }
-.aqyl-ds .aqyl-divider span { color: var(--text-muted); font-size: 0.8125rem; }
+.aqyl-pub .pub-dot-purple { background: var(--pub-purple); }
+.aqyl-pub .pub-dot-green { background: var(--pub-green); }
+.aqyl-pub .pub-dot-amber { background: var(--pub-amber); }
 
-/* ── Прогресс-бар шагов регистрации ───────────────────────────────────────── */
-.aqyl-ds .aqyl-steps { display: flex; align-items: center; gap: 6px; margin-bottom: 28px; }
-.aqyl-ds .aqyl-step { display: flex; align-items: center; gap: 8px; }
-.aqyl-ds .aqyl-step-dot {
-  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+/* ===== ЛЕЙАУТ ЛЕНДИНГА ===== */
+.aqyl-pub .pub-section { padding: 64px 0; }
+.aqyl-pub .pub-section-subtle { background: var(--pub-bg-subtle); }
+.aqyl-pub .pub-grid { display: grid; gap: 16px; }
+.aqyl-pub .pub-grid-2 { grid-template-columns: repeat(2, 1fr); }
+.aqyl-pub .pub-grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+/* ===== ДВУХКОЛОНОЧНЫЙ МАКЕТ АВТОРИЗАЦИИ ===== */
+.aqyl-pub .pub-auth { display: flex; min-height: 100vh; }
+.aqyl-pub .pub-auth-left {
+  width: 50%;
+  background: #2E2780;
+  color: #fff;
+  padding: 48px;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 24px;
+}
+[data-theme="dark"] .aqyl-pub .pub-auth-left { background: #0A0918; }
+.aqyl-pub .pub-auth-right {
+  width: 50%;
+  background: var(--pub-bg-surface);
+  padding: 48px;
+  display: flex; align-items: center; justify-content: center;
+}
+.aqyl-pub .pub-auth-form { width: 100%; max-width: 360px; }
+.aqyl-pub .pub-auth-feature {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 0.9rem; color: rgba(244,240,255,0.7); line-height: 1.5;
+}
+
+/* Прогресс-бар шагов регистрации */
+.aqyl-pub .pub-steps { display: flex; align-items: center; margin-bottom: 28px; }
+.aqyl-pub .pub-step { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.aqyl-pub .pub-step-dot {
+  width: 28px; height: 28px; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
-  font-size: 0.8125rem; font-weight: 700;
-  background: var(--bg-secondary); color: var(--text-muted);
-  border: 1px solid var(--border-color); transition: all var(--transition);
+  font-size: 0.8125rem; font-weight: 600;
+  background: var(--pub-bg-inset); color: var(--pub-text-3);
+  transition: background 0.15s, color 0.15s;
 }
-.aqyl-ds .aqyl-step-label { font-size: 0.8125rem; font-weight: 500; color: var(--text-muted); }
-.aqyl-ds .aqyl-step-line { flex: 1; height: 2px; background: var(--border-color); border-radius: 2px; min-width: 16px; }
-.aqyl-ds .aqyl-step.is-active .aqyl-step-dot { background: var(--accent-purple); color: #fff; border-color: var(--accent-purple); }
-.aqyl-ds .aqyl-step.is-active .aqyl-step-label { color: var(--text-primary); }
-.aqyl-ds .aqyl-step.is-done .aqyl-step-dot { background: var(--accent-green); color: #fff; border-color: var(--accent-green); }
-.aqyl-ds .aqyl-step.is-done .aqyl-step-label { color: var(--text-secondary); }
+.aqyl-pub .pub-step-label { font-size: 0.75rem; color: var(--pub-text-3); }
+.aqyl-pub .pub-step-line { flex: 1; height: 1px; background: var(--pub-border); margin: 0 6px; margin-bottom: 20px; }
+.aqyl-pub .pub-step.is-active .pub-step-dot { background: var(--pub-purple); color: #fff; }
+.aqyl-pub .pub-step.is-active .pub-step-label { color: var(--pub-text); }
+.aqyl-pub .pub-step.is-done .pub-step-dot { background: var(--pub-green); color: #fff; }
+.aqyl-pub .pub-step.is-done .pub-step-label { color: var(--pub-text-2); }
 
-/* ── Поле пароля с кнопкой показать/скрыть ────────────────────────────────── */
-.aqyl-ds .aqyl-pwd { position: relative; }
-.aqyl-ds .aqyl-pwd .input { padding-right: 72px; }
-.aqyl-ds .aqyl-pwd-toggle {
-  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+/* Поле пароля с кнопкой показать/скрыть */
+.aqyl-pub .pub-pwd { position: relative; }
+.aqyl-pub .pub-pwd .pub-input { padding-right: 80px; }
+.aqyl-pub .pub-pwd-toggle {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
   background: none; border: none; cursor: pointer;
-  color: var(--accent-purple); font-size: 0.8125rem; font-weight: 600; padding: 4px 6px;
+  color: var(--pub-purple); font-size: 0.8125rem; font-weight: 500; padding: 4px 8px;
 }
 
-/* ── Сообщение об ошибке ──────────────────────────────────────────────────── */
-.aqyl-ds .aqyl-error {
-  background: rgba(208,48,48,0.10); color: #d03030;
-  padding: 10px 12px; border-radius: var(--radius-sm); font-size: 0.8125rem; margin-bottom: 16px;
+/* Разделитель "или" */
+.aqyl-pub .pub-or { display: flex; align-items: center; gap: 12px; margin: 18px 0; }
+.aqyl-pub .pub-or::before, .aqyl-pub .pub-or::after { content: ""; flex: 1; height: 1px; background: var(--pub-border); }
+.aqyl-pub .pub-or span { font-size: 0.8125rem; color: var(--pub-text-3); }
+
+/* Сообщение об ошибке */
+.aqyl-pub .pub-error {
+  background: var(--pub-amber-bg); color: #b9560c;
+  border: 1px solid var(--pub-amber); border-radius: var(--pub-radius);
+  padding: 9px 12px; font-size: 0.8125rem; margin-bottom: 16px;
 }
+[data-theme="dark"] .aqyl-pub .pub-error { color: #f5a623; }
 
-/* ── Анимация появления ───────────────────────────────────────────────────── */
-@keyframes aqyl-fade-in { from { opacity: 0; } to { opacity: 1; } }
-.aqyl-ds.aqyl-fade { animation: aqyl-fade-in 0.3s ease; }
-
-/* ── Адаптив ──────────────────────────────────────────────────────────────── */
+/* ===== АДАПТИВ ===== */
 @media (max-width: 768px) {
-  .aqyl-ds .aqyl-grid-2, .aqyl-ds .aqyl-grid-3 { grid-template-columns: 1fr; }
-  .aqyl-ds .aqyl-auth { flex-direction: column; }
-  .aqyl-ds .aqyl-auth-left, .aqyl-ds .aqyl-auth-right { width: 100%; }
-  .aqyl-ds .aqyl-auth-left { padding: 32px 28px; }
-  .aqyl-ds .aqyl-auth-right { padding: 20px 28px 36px; }
-  .aqyl-ds .aqyl-container { padding: 0 20px; }
-  .aqyl-ds .aqyl-public-nav { display: none !important; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .aqyl-ds.aqyl-fade { animation: none; }
+  .aqyl-pub .pub-grid-2, .aqyl-pub .pub-grid-3 { grid-template-columns: 1fr; }
+  .aqyl-pub .pub-auth { flex-direction: column; }
+  .aqyl-pub .pub-auth-right { width: 100%; padding: 36px 24px; }
+  .aqyl-pub .pub-auth-left { display: none; }
+  .aqyl-pub .pub-nav { display: none !important; }
 }

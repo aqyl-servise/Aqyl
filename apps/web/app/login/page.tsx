@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation";
 import { api, ApiError } from "../../lib/api";
 import { setTokens } from "../../lib/auth";
 import { ThemeToggle } from "../../components/theme-toggle";
+import { LogoIcon } from "../../components/public-header";
 
 const FEATURES = [
-  "Планы уроков по МОН РК",
+  "Планы уроков по стандарту МОН РК",
   "Автоматические оценки и отчёты",
-  "Для всей школы или лично",
+  "Для школы или индивидуально",
 ];
 
 export default function LoginPage() {
@@ -44,58 +45,66 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="aqyl-ds aqyl-fade">
-      <div className="aqyl-auth">
-        {/* Левая колонка — бренд */}
-        <div className="aqyl-auth-left">
-          <Link href="/" style={{ fontWeight: 800, fontSize: "1.5rem", color: "#fff", letterSpacing: "-0.02em" }}>Aqyl</Link>
-          <h2 style={{ color: "#fff", fontSize: "1.75rem", lineHeight: 1.3, marginTop: 12 }}>
-            Создайте КМЖ за 30 секунд.<br />Сэкономьте 3 часа в неделю.
-          </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 8 }}>
-            {FEATURES.map((f) => (
-              <div key={f} className="aqyl-auth-feature">
-                <span className="aqyl-auth-check">✓</span>
-                <span>{f}</span>
-              </div>
-            ))}
+    <div className="aqyl-pub">
+      <div className="pub-auth">
+        {/* Левая колонка */}
+        <div className="pub-auth-left">
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <LogoIcon size={36} />
+            <span style={{ fontWeight: 600, fontSize: "1.25rem", letterSpacing: "0.1em", color: "#fff" }}>aqyl</span>
+          </div>
+
+          <div>
+            <div className="pub-divider" style={{ background: "rgba(255,255,255,0.15)", marginBottom: 32 }} />
+            <h2 style={{ color: "rgba(244,240,255,0.95)" }}>Создайте КМЖ за 30 секунд.</h2>
+            <p style={{ color: "rgba(244,240,255,0.95)", marginTop: 4 }}>Сэкономьте 3 часа в неделю.</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 28 }}>
+              {FEATURES.map((f) => (
+                <div key={f} className="pub-auth-feature">
+                  <span className="pub-dot pub-dot-green" /> {f}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <ThemeToggle onDark />
+            <Link href="/register" style={{ fontSize: "0.875rem", color: "rgba(244,240,255,0.85)" }}>Нет аккаунта?</Link>
           </div>
         </div>
 
-        {/* Правая колонка — форма */}
-        <div className="aqyl-auth-right">
-          <div className="aqyl-auth-toolbar"><ThemeToggle /></div>
+        {/* Правая колонка */}
+        <div className="pub-auth-right">
+          <form className="pub-auth-form" onSubmit={handleSubmit}>
+            <h2 style={{ fontWeight: 600 }}>Войти в Aqyl</h2>
+            <p style={{ color: "var(--pub-text-3)", marginBottom: 28, marginTop: 6 }}>Введите данные для входа</p>
 
-          <form className="aqyl-auth-form" onSubmit={handleSubmit}>
-            <h2 style={{ marginBottom: 6 }}>Войти в Aqyl</h2>
-            <p style={{ marginBottom: 24 }}>Введите данные для входа</p>
+            {error && <div className="pub-error">{error}</div>}
 
-            {error && <div className="aqyl-error">{error}</div>}
-
-            <label className="label">Email</label>
-            <input className="input" name="email" type="email" required placeholder="you@example.com" autoComplete="email" />
+            <label className="pub-label">Email</label>
+            <input className="pub-input" name="email" type="email" required placeholder="you@example.com" autoComplete="email" />
 
             <div style={{ marginTop: 16 }}>
-              <label className="label">Пароль</label>
-              <div className="aqyl-pwd">
-                <input className="input" name="password" type={showPassword ? "text" : "password"} required autoComplete="current-password" />
-                <button type="button" className="aqyl-pwd-toggle" onClick={() => setShowPassword((v) => !v)}>
+              <label className="pub-label">Пароль</label>
+              <div className="pub-pwd">
+                <input className="pub-input" name="password" type={showPassword ? "text" : "password"} required autoComplete="current-password" />
+                <button type="button" className="pub-pwd-toggle" onClick={() => setShowPassword((v) => !v)}>
                   {showPassword ? "Скрыть" : "Показать"}
                 </button>
               </div>
             </div>
 
-            <button type="submit" className="btn btn-primary btn-full" style={{ marginTop: 24 }} disabled={busy}>
+            <button type="submit" className="pub-btn pub-btn-primary pub-btn-full pub-btn-lg" style={{ marginTop: 24 }} disabled={busy}>
               {busy ? "Вход…" : "Войти"}
             </button>
 
-            <div className="aqyl-divider"><span>или</span></div>
+            <div className="pub-or"><span>или</span></div>
 
             <p style={{ textAlign: "center", fontSize: "0.875rem" }}>
-              Нет аккаунта? <Link href="/register" style={{ color: "var(--accent-purple)", fontWeight: 600 }}>Зарегистрироваться →</Link>
+              <Link href="/register" style={{ color: "var(--pub-purple)", fontWeight: 500 }}>Зарегистрироваться →</Link>
             </p>
             <p style={{ textAlign: "center", fontSize: "0.875rem", marginTop: 10 }}>
-              <Link href="/forgot-password" style={{ color: "var(--text-muted)" }}>Забыли пароль?</Link>
+              <Link href="/forgot-password" style={{ color: "var(--pub-text-3)" }}>Забыли пароль?</Link>
             </p>
           </form>
         </div>

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 
-export function ThemeToggle() {
+export function ThemeToggle({ onDark = false }: { onDark?: boolean }) {
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
@@ -20,9 +20,13 @@ export function ThemeToggle() {
   };
 
   return (
-    <button onClick={toggle} className="btn btn-ghost btn-sm" aria-label="Переключить тему"
-      style={{ fontSize: '1.1rem', padding: '6px 10px' }}>
-      {dark ? '☀️' : '🌙'}
+    <button onClick={toggle} className="pub-btn pub-btn-ghost pub-btn-sm"
+      style={{
+        fontSize: '0.8125rem', padding: '6px 10px', letterSpacing: '0.02em',
+        ...(onDark ? { color: 'rgba(244,240,255,0.85)' } : {}),
+      }}
+      aria-label="Переключить тему">
+      {dark ? '◑ Светлая' : '◐ Тёмная'}
     </button>
   );
 }
