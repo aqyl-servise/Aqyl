@@ -1,18 +1,17 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, ApiError } from "../../lib/api";
 import { setTokens } from "../../lib/auth";
+import { ThemeToggle } from "../../components/theme-toggle";
 
-const BRAND = "#6B5CE7";
-const DARK = "#0D0E1A";
-
-const input: React.CSSProperties = {
-  width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px solid #d9d9e3",
-  fontSize: 15, outline: "none", boxSizing: "border-box",
-};
-const label: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: DARK, marginBottom: 6, display: "block" };
+const FEATURES = [
+  "Планы уроков по МОН РК",
+  "Автоматические оценки и отчёты",
+  "Для всей школы или лично",
+];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,9 +25,8 @@ export default function LoginPage() {
     const fd = new FormData(e.currentTarget);
     try {
       const res = await api.universalLogin(String(fd.get("email")), String(fd.get("password")));
-      // Покрываем оба дашборда:
-      //  • B2G (/dashboard) читает access-токен из localStorage["aqyl-token"];
-      //  • B2C (/dashboard/b2c) использует setTokens → sessionStorage + cookie + refresh-токен.
+      // Покрываем оба дашборда: B2G (/dashboard) читает localStorage["aqyl-token"];
+      // B2C (/dashboard/b2c) использует setTokens → sessionStorage + cookie + refresh.
       await setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken });
       if (typeof window !== "undefined") {
         localStorage.setItem("aqyl-token", res.accessToken);
@@ -46,50 +44,62 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: DARK, padding: 20, fontFamily: "system-ui, sans-serif" }}>
-      <form onSubmit={handleSubmit} style={{ width: "100%", maxWidth: 400, background: "#fff", borderRadius: 16, padding: "32px 28px", boxShadow: "0 10px 40px rgba(13,14,26,0.12)" }}>
-        <h1 style={{ color: BRAND, fontSize: 26, fontWeight: 800, margin: "0 0 4px" }}>Aqyl</h1>
-        <p style={{ color: "#6b7280", fontSize: 14, margin: "0 0 24px" }}>Войти в Aqyl</p>
-
-        {error && (
-          <div style={{ background: "#fdecec", color: "#c0392b", padding: "10px 12px", borderRadius: 8, fontSize: 13, marginBottom: 16 }}>{error}</div>
-        )}
-
-        <label style={label}>Email</label>
-        <input style={input} name="email" type="email" required placeholder="you@example.com" autoComplete="email" />
-
-        <div style={{ marginTop: 14 }}>
-          <label style={label}>Пароль</label>
-          <div style={{ position: "relative" }}>
-            <input style={{ ...input, paddingRight: 64 }} name="password" type={showPassword ? "text" : "password"} required autoComplete="current-password" />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: BRAND, fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 4 }}
-            >
-              {showPassword ? "Скрыть" : "Показать"}
-            </button>
+    <div className="aqyl-ds aqyl-fade">
+      <div className="aqyl-auth">
+        {/* Левая колонка — бренд */}
+        <div className="aqyl-auth-left">
+          <Link href="/" style={{ fontWeight: 800, fontSize: "1.5rem", color: "#fff", letterSpacing: "-0.02em" }}>Aqyl</Link>
+          <h2 style={{ color: "#fff", fontSize: "1.75rem", lineHeight: 1.3, marginTop: 12 }}>
+            Создайте КМЖ за 30 секунд.<br />Сэкономьте 3 часа в неделю.
+          </h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 8 }}>
+            {FEATURES.map((f) => (
+              <div key={f} className="aqyl-auth-feature">
+                <span className="aqyl-auth-check">✓</span>
+                <span>{f}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        <button type="submit" disabled={busy} style={{ width: "100%", padding: 13, borderRadius: 10, border: "none", background: BRAND, color: "#fff", fontSize: 15, fontWeight: 600, cursor: "pointer", marginTop: 20, opacity: busy ? 0.7 : 1 }}>
-          {busy ? "Вход…" : "Войти"}
-        </button>
+        {/* Правая колонка — форма */}
+        <div className="aqyl-auth-right">
+          <div className="aqyl-auth-toolbar"><ThemeToggle /></div>
 
-        <p style={{ textAlign: "center", fontSize: 13, marginTop: 14 }}>
-          <a href="/forgot-password" style={{ color: "#6b7280", textDecoration: "none" }}>Забыли пароль?</a>
-        </p>
+          <form className="aqyl-auth-form" onSubmit={handleSubmit}>
+            <h2 style={{ marginBottom: 6 }}>Войти в Aqyl</h2>
+            <p style={{ marginBottom: 24 }}>Введите данные для входа</p>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "18px 0" }}>
-          <span style={{ flex: 1, height: 1, background: "#e5e7eb" }} />
-          <span style={{ color: "#9ca3af", fontSize: 12 }}>или</span>
-          <span style={{ flex: 1, height: 1, background: "#e5e7eb" }} />
+            {error && <div className="aqyl-error">{error}</div>}
+
+            <label className="label">Email</label>
+            <input className="input" name="email" type="email" required placeholder="you@example.com" autoComplete="email" />
+
+            <div style={{ marginTop: 16 }}>
+              <label className="label">Пароль</label>
+              <div className="aqyl-pwd">
+                <input className="input" name="password" type={showPassword ? "text" : "password"} required autoComplete="current-password" />
+                <button type="button" className="aqyl-pwd-toggle" onClick={() => setShowPassword((v) => !v)}>
+                  {showPassword ? "Скрыть" : "Показать"}
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" className="btn btn-primary btn-full" style={{ marginTop: 24 }} disabled={busy}>
+              {busy ? "Вход…" : "Войти"}
+            </button>
+
+            <div className="aqyl-divider"><span>или</span></div>
+
+            <p style={{ textAlign: "center", fontSize: "0.875rem" }}>
+              Нет аккаунта? <Link href="/register" style={{ color: "var(--accent-purple)", fontWeight: 600 }}>Зарегистрироваться →</Link>
+            </p>
+            <p style={{ textAlign: "center", fontSize: "0.875rem", marginTop: 10 }}>
+              <Link href="/forgot-password" style={{ color: "var(--text-muted)" }}>Забыли пароль?</Link>
+            </p>
+          </form>
         </div>
-
-        <p style={{ textAlign: "center", fontSize: 13, color: "#6b7280", margin: 0 }}>
-          Нет аккаунта? <a href="/register" style={{ color: BRAND, fontWeight: 600, textDecoration: "none" }}>Зарегистрироваться</a>
-        </p>
-      </form>
+      </div>
     </div>
   );
 }
