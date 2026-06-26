@@ -101,6 +101,8 @@ import { Subscription } from "./modules/billing/entities/subscription.entity";
 import { Payment } from "./modules/billing/entities/payment.entity";
 import { BillingModule } from "./modules/billing/billing.module";
 import { StorageModule } from "./modules/storage/storage.module";
+import { VisualizerModule } from "./modules/visualizer/visualizer.module";
+import { Diagram } from "./modules/visualizer/entities/diagram.entity";
 
 @Module({
   imports: [
@@ -145,6 +147,7 @@ import { StorageModule } from "./modules/storage/storage.module";
           SchoolTokenPackage, TokenTransaction,
           RefreshToken, EmailVerification,
           Subscription, Payment,
+          Diagram,
         ],
       }),
     }),
@@ -198,6 +201,7 @@ import { StorageModule } from "./modules/storage/storage.module";
     MalimetModule,
     BillingModule,
     StorageModule,
+    VisualizerModule,
   ],
   providers: [
     SeedService,

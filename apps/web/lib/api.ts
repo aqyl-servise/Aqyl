@@ -1,4 +1,19 @@
+import type { DiagramContract } from "./json-to-mermaid";
+
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+
+export type DiagramRecord = {
+  id: string;
+  schoolId: string;
+  userId: string;
+  title: string;
+  type: string;
+  language: "kz" | "ru";
+  content: DiagramContract;
+  theme: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export type UserRole =
   | "teacher" | "admin" | "principal"
@@ -1013,4 +1028,18 @@ export const api = {
     request<{ id: string }>("/malimet/save", { method: "POST", body: JSON.stringify(data) }, token),
   getMalimetList: (token: string, classroomId?: string) =>
     request<Array<{ id: string; quarter: number; academicYear: string; lang: string; createdAt: string }>>("/malimet/list" + (classroomId ? "?classroomId=" + classroomId : ""), undefined, token),
+
+  // Visualizer — diagram generator
+  generateDiagram: (token: string, data: { topicOrText: string; type?: string; language: "kz" | "ru" }) =>
+    request<DiagramContract>("/visualizer/generate", { method: "POST", body: JSON.stringify(data) }, token),
+  saveDiagram: (token: string, data: { title: string; content: DiagramContract; theme?: string }) =>
+    request<DiagramRecord>("/visualizer", { method: "POST", body: JSON.stringify(data) }, token),
+  getDiagrams: (token: string) =>
+    request<DiagramRecord[]>("/visualizer", undefined, token),
+  getDiagram: (token: string, id: string) =>
+    request<DiagramRecord>("/visualizer/" + id, undefined, token),
+  updateDiagram: (token: string, id: string, data: { title?: string; content?: DiagramContract; theme?: string }) =>
+    request<DiagramRecord>("/visualizer/" + id, { method: "PATCH", body: JSON.stringify(data) }, token),
+  deleteDiagram: (token: string, id: string) =>
+    request<{ success: boolean }>("/visualizer/" + id, { method: "DELETE" }, token),
 };
