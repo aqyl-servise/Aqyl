@@ -15,6 +15,8 @@ export const ACTION_MODEL_MAP: Record<string, keyof typeof AI_MODELS> = {
   rating_analysis: 'HAIKU',
   visualizer_classify: 'HAIKU',
   visualizer_generate: 'SONNET',
+  text_adapter_generate: 'SONNET',
+  text_adapter_translate: 'SONNET',
 };
 
 export const MAX_TOKENS_MAP: Record<string, number> = {
@@ -29,6 +31,8 @@ export const MAX_TOKENS_MAP: Record<string, number> = {
   rating_analysis: 500,
   visualizer_classify: 20,
   visualizer_generate: 2000,
+  text_adapter_generate: 2000,
+  text_adapter_translate: 2000,
 };
 
 export function getModelForAction(action: string): string {

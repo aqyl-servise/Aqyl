@@ -17,6 +17,7 @@ import { MyRatingPanel } from "./my-rating-panel";
 import { MaterialsPanel } from "./materials-panel";
 import { KmzhPanel } from "./kmzh-panel";
 import { VisualizerPanel } from "./visualizer-panel";
+import { TextAdapterPanel } from "./text-adapter-panel";
 import { MalimetPanel } from "./malimet-panel";
 import { NotificationBell } from "./NotificationBell";
 import { PremiumModal } from "./PremiumModal";
@@ -57,6 +58,7 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
     { key: "sor-soch", label: t.nav_sor_soch ?? "СОР/СОЧ", icon: "📄" },
     { key: "kmzh-generator", label: t.nav_kmzh ?? "КМЖ Генератор", icon: "📋" },
     { key: "visualizer", label: t.nav_visualizer ?? "Визуализатор", icon: "🗺️" },
+    { key: "text-adapter", label: t.nav_text_adapter ?? "Адаптация текста", icon: "📖" },
     ...(isClassTeacher ? [{ key: "malimet", label: t.nav_malimet ?? "Мәлімет", icon: "📄" }] : []),
   ];
 
@@ -111,6 +113,7 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
       {section === "sor-soch" && <SorSochPanel token={token} language={language} t={t} />}
       {section === "kmzh-generator" && <KmzhPanel token={token} language={language} teacher={user} />}
       {section === "visualizer" && <VisualizerPanel token={token} language={language} />}
+      {section === "text-adapter" && <TextAdapterPanel token={token} language={language} />}
       {section === "malimet" && isClassTeacher && (
         <MalimetPanel token={token} language={language} teacher={user} />
       )}

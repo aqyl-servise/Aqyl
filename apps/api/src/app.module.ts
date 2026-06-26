@@ -103,6 +103,8 @@ import { BillingModule } from "./modules/billing/billing.module";
 import { StorageModule } from "./modules/storage/storage.module";
 import { VisualizerModule } from "./modules/visualizer/visualizer.module";
 import { Diagram } from "./modules/visualizer/entities/diagram.entity";
+import { TextAdapterModule } from "./modules/text-adapter/text-adapter.module";
+import { Adaptation } from "./modules/text-adapter/entities/adaptation.entity";
 
 @Module({
   imports: [
@@ -148,6 +150,7 @@ import { Diagram } from "./modules/visualizer/entities/diagram.entity";
           RefreshToken, EmailVerification,
           Subscription, Payment,
           Diagram,
+          Adaptation,
         ],
       }),
     }),
@@ -202,6 +205,7 @@ import { Diagram } from "./modules/visualizer/entities/diagram.entity";
     BillingModule,
     StorageModule,
     VisualizerModule,
+    TextAdapterModule,
   ],
   providers: [
     SeedService,

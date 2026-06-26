@@ -2,6 +2,24 @@ import type { DiagramContract } from "./json-to-mermaid";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
+export type AdaptationResult = {
+  adaptedText: string;
+  summary: string;
+  questions: { q: string; type: "recall" | "inference" }[];
+  vocabulary: { term: string; definition: string }[];
+};
+
+export type AdaptationRecord = {
+  id: string;
+  targetGrade: number;
+  language: "kz" | "ru";
+  sourceText: string;
+  sourceType?: "text" | "pdf";
+  createdAt: string;
+  updatedAt?: string;
+  result: AdaptationResult;
+};
+
 export type DiagramRecord = {
   id: string;
   schoolId: string;
@@ -1042,4 +1060,26 @@ export const api = {
     request<DiagramRecord>("/visualizer/" + id, { method: "PATCH", body: JSON.stringify(data) }, token),
   deleteDiagram: (token: string, id: string) =>
     request<{ success: boolean }>("/visualizer/" + id, { method: "DELETE" }, token),
+
+  // Text Adapter
+  adaptText: (token: string, data: { sourceText: string; targetGrade: number; language: "kz" | "ru"; sourceType?: "text" | "pdf" }) =>
+    request<AdaptationResult>("/text-adapter/adapt", { method: "POST", body: JSON.stringify(data) }, token),
+  extractPdf: (token: string, formData: FormData) =>
+    fetch(`${API_URL}/text-adapter/extract-pdf`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    }).then((r) => r.json() as Promise<{ text: string; pages: number; truncated?: boolean; message?: string }>),
+  translateAdaptation: (token: string, data: { result: AdaptationResult; fromLang: "kz" | "ru"; toLang: "kz" | "ru" }) =>
+    request<AdaptationResult>("/text-adapter/translate", { method: "POST", body: JSON.stringify(data) }, token),
+  saveAdaptation: (token: string, data: { sourceText: string; sourceType: "text" | "pdf"; targetGrade: number; language: "kz" | "ru"; result: AdaptationResult }) =>
+    request<AdaptationRecord>("/text-adapter", { method: "POST", body: JSON.stringify(data) }, token),
+  updateAdaptation: (token: string, id: string, data: { result?: AdaptationResult; language?: "kz" | "ru" }) =>
+    request<AdaptationRecord>("/text-adapter/" + id, { method: "PATCH", body: JSON.stringify(data) }, token),
+  getAdaptations: (token: string) =>
+    request<AdaptationRecord[]>("/text-adapter", undefined, token),
+  getAdaptation: (token: string, id: string) =>
+    request<AdaptationRecord>("/text-adapter/" + id, undefined, token),
+  deleteAdaptation: (token: string, id: string) =>
+    request<{ success: boolean }>("/text-adapter/" + id, { method: "DELETE" }, token),
 };
