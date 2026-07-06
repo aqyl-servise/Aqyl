@@ -78,6 +78,25 @@ server {
     # TODO: REMOVE_NGINX_UPLOADS — after migrate-to-s3 succeeds, the local ./uploads dir
     # can be deleted; no nginx /uploads/ alias block exists to remove.
 
+    # Web app's OWN Next route handlers for the session cookie. These live in the
+    # Next app (port 3000), NOT the backend. Exact-match `location =` beats the
+    # `/api/` prefix below, so they must NOT be rewritten to the backend — otherwise
+    # the cookie is never set and every login bounces back to /login.
+    location = /api/auth/set-cookie {
+        proxy_pass         http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+    }
+    location = /api/auth/clear-cookie {
+        proxy_pass         http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+    }
+
     # NestJS API
     location /api/ {
         limit_req          zone=api_limit burst=40 nodelay;
