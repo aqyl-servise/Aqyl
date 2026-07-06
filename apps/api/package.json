@@ -11,7 +11,7 @@
     "clear:db": "ts-node --project tsconfig.json src/scripts/clear-db.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.90.0",
+    "@anthropic-ai/sdk": "^0.91.1",
     "@aws-sdk/client-s3": "^3.1073.0",
     "@aws-sdk/s3-request-presigner": "^3.1073.0",
     "@nestjs/common": "^11.1.6",
@@ -31,7 +31,7 @@
     "helmet": "^8.1.0",
     "mime-types": "^3.0.2",
     "multer": "^2.0.2",
-    "nodemailer": "^8.0.6",
+    "nodemailer": "^9.0.3",
     "openai": "^5.12.2",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
@@ -43,7 +43,7 @@
     "rxjs": "^7.8.2",
     "typeorm": "^0.3.27",
     "uuid": "^11.1.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.10",
@@ -55,7 +55,7 @@
     "@types/jest": "^29.5.14",
     "@types/multer": "^2.0.0",
     "@types/node": "^24.7.2",
-    "@types/nodemailer": "^8.0.0",
+    "@types/nodemailer": "^7.0.12",
     "@types/passport-jwt": "^4.0.1",
     "@types/pdf-parse": "^1.1.5",
     "@types/pdfkit": "^0.17.3",

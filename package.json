@@ -12,5 +12,9 @@
     "build": "npm run build --workspace api && npm run build --workspace web",
     "lint": "npm run lint --workspace api && npm run lint --workspace web",
     "start": "npm run start --workspace api"
+  },
+  "overrides": {
+    "multer": "^2.2.0",
+    "postcss": "^8.5.10"
   }
 }
