@@ -11,7 +11,7 @@
     "clear:db": "ts-node --project tsconfig.json src/scripts/clear-db.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.91.1",
+    "@anthropic-ai/sdk": "^0.110.0",
     "@aws-sdk/client-s3": "^3.1073.0",
     "@aws-sdk/s3-request-presigner": "^3.1073.0",
     "@nestjs/common": "^11.1.6",
@@ -41,8 +41,8 @@
     "pptxgenjs": "^4.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
-    "typeorm": "^0.3.27",
-    "uuid": "^11.1.0",
+    "typeorm": "^1.0.0",
+    "uuid": "^14.0.1",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
