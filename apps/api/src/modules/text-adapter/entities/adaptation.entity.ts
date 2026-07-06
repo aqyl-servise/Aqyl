@@ -20,8 +20,10 @@ export class Adaptation {
   userId!: string;
 
   // Nullable: B2C teachers belong to no school.
+  // Explicit type required: a `string | null` union emits design-type Object,
+  // which TypeORM cannot map to a Postgres column.
   @Index()
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   schoolId!: string | null;
 
   @Column({ type: 'enum', enum: ['text', 'pdf'], default: 'text' })
