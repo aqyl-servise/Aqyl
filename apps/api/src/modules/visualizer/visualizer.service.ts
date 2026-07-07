@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { Diagram, DiagramType } from './entities/diagram.entity';
 import { GenerateDiagramDto } from './dto/generate-diagram.dto';
 import { SaveDiagramDto } from './dto/save-diagram.dto';
@@ -131,14 +131,14 @@ export class VisualizerService {
 
   async findAll(userCtx: UserContext) {
     return this.diagramRepo.find({
-      where: { userId: userCtx.userId, schoolId: userCtx.schoolId },
+      where: { userId: userCtx.userId, schoolId: userCtx.schoolId ?? IsNull() },
       order: { updatedAt: 'DESC' },
     });
   }
 
   async findOne(id: string, userCtx: UserContext) {
     const diagram = await this.diagramRepo.findOne({
-      where: { id, userId: userCtx.userId, schoolId: userCtx.schoolId },
+      where: { id, userId: userCtx.userId, schoolId: userCtx.schoolId ?? IsNull() },
     });
     if (!diagram) {
       throw new HttpException('Схема не найдена', HttpStatus.NOT_FOUND);
