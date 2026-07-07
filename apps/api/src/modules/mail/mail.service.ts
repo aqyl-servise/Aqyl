@@ -78,10 +78,13 @@ export class MailService {
   ) {
     this.from = config.get<string>("SMTP_FROM") ?? "Aqyl <noreply@aqyl.kz>";
 
+    // Env values are strings — coerce the port to a number so `secure` is correct.
+    // Port 465 uses implicit TLS (secure: true); 587/25 use STARTTLS (secure: false).
+    const port = Number(config.get<string>("SMTP_PORT") ?? 587) || 587;
     this.transporter = nodemailer.createTransport({
       host: config.get<string>("SMTP_HOST"),
-      port: config.get<number>("SMTP_PORT") ?? 587,
-      secure: config.get<number>("SMTP_PORT") === 465,
+      port,
+      secure: port === 465,
       auth: {
         user: config.get<string>("SMTP_USER"),
         pass: config.get<string>("SMTP_PASS"),
