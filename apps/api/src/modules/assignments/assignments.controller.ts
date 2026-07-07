@@ -90,17 +90,17 @@ export class AssignmentsController {
   @Patch(":id")
   @UseGuards(RolesGuard)
   @Roles("teacher", "admin")
-  update(@Param("id") id: string, @Body() body: Partial<{ title: string; description: string; dueDate: string; status: string; assignmentType: string }>) {
+  update(@Param("id") id: string, @Body() body: Partial<{ title: string; description: string; dueDate: string; status: string; assignmentType: string }>, @Req() req: ReqUser) {
     const update: Record<string, unknown> = { ...body };
     if (body.dueDate) update.dueDate = new Date(body.dueDate);
-    return this.service.update(id, update as never);
+    return this.service.update(id, update as never, req.user.role === "admin" ? undefined : req.user.id);
   }
 
   @Delete(":id")
   @UseGuards(RolesGuard)
   @Roles("teacher", "admin")
-  remove(@Param("id") id: string) {
-    return this.service.remove(id);
+  remove(@Param("id") id: string, @Req() req: ReqUser) {
+    return this.service.remove(id, req.user.role === "admin" ? undefined : req.user.id);
   }
 
   @Post(":id/submit")

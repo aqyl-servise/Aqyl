@@ -89,12 +89,12 @@ export class ClassHoursController {
     const { changeDescription, date, ...rest } = dto;
     const updateData: Record<string, unknown> = { ...rest };
     if (date) updateData.date = new Date(date);
-    return this.service.update(id, updateData, req.user.id, changeDescription);
+    return this.service.update(id, updateData, req.user.id, changeDescription, req.user.schoolId);
   }
 
   @Delete(":id")
   remove(@Param("id") id: string, @Req() req: ReqUser) {
     assertCanWrite(req.user);
-    return this.service.remove(id);
+    return this.service.remove(id, req.user.schoolId);
   }
 }

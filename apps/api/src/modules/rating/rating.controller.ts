@@ -126,7 +126,7 @@ export class RatingController {
 
   @Delete("violations/:id")
   @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
-  deleteViolation(@Param("id") id: string) {
-    return this.svc.deleteViolation(id);
+  deleteViolation(@Param("id") id: string, @Req() req: ReqUser) {
+    return this.svc.deleteViolation(id, req.user.schoolId);
   }
 }

@@ -36,8 +36,8 @@ export class SorSochController {
   }
 
   @Get(":id")
-  findOne(@Param("id") id: string) {
-    return this.service.findOne(id);
+  findOne(@Param("id") id: string, @Req() req: ReqUser) {
+    return this.service.findOne(id, req.user.schoolId);
   }
 
   @Post()
@@ -63,12 +63,13 @@ export class SorSochController {
   update(
     @Param("id") id: string,
     @Body() body: Partial<{ title: string; subject: string; classroomId: string; quarter: string; fileUrl: string }>,
+    @Req() req: ReqUser,
   ) {
-    return this.service.update(id, body as never);
+    return this.service.update(id, body as never, req.user.schoolId);
   }
 
   @Delete(":id")
-  remove(@Param("id") id: string) {
-    return this.service.remove(id);
+  remove(@Param("id") id: string, @Req() req: ReqUser) {
+    return this.service.remove(id, req.user.schoolId);
   }
 }

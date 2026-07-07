@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, Repository } from "typeorm";
 import { Classroom } from "../schools/entities/classroom.entity";
@@ -93,7 +93,11 @@ export class ClassroomsService {
     return this.classroomRepo.findOne({ where: { id: saved.id }, relations: ["classTeacher"] });
   }
 
-  async update(id: string, dto: Partial<CreateClassroomDto>) {
+  async update(id: string, dto: Partial<CreateClassroomDto>, schoolId?: string | null) {
+    if (schoolId) {
+      const owned = await this.classroomRepo.findOne({ where: { id, schoolId } });
+      if (!owned) throw new NotFoundException();
+    }
     if (dto.classTeacherId !== undefined) {
       const existing = await this.classroomRepo.findOne({ where: { id }, relations: ["classTeacher"] });
       const prevTeacherId = existing?.classTeacher?.id;
@@ -127,8 +131,9 @@ export class ClassroomsService {
     return this.classroomRepo.findOne({ where: { id }, relations: ["classTeacher"] });
   }
 
-  async remove(id: string) {
-    await this.classroomRepo.delete(id);
+  async remove(id: string, schoolId?: string | null) {
+    const res = await this.classroomRepo.delete(schoolId ? { id, schoolId } : { id });
+    if (!res.affected) throw new NotFoundException();
     return { ok: true };
   }
 

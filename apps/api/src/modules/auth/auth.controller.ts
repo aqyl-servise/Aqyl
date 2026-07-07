@@ -10,6 +10,7 @@ import { RefreshTokenDto } from "./dto/refresh.dto";
 import { RegisterB2CDto } from "./dto/register-b2c.dto";
 import { SendCodeDto, VerifyCodeDto, LoginB2CDto } from "./dto/b2c-auth.dto";
 import { UpdateB2CProfileDto } from "./dto/update-b2c-profile.dto";
+import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { TeachersService } from "../teachers/teachers.service";
 import { SkipIsolation } from "../../guards/skip-isolation.decorator";
@@ -125,8 +126,8 @@ export class AuthController {
   @Patch("profile")
   async updateProfile(
     @Req() req: { user: AuthUser },
-    @Body() body: Partial<{ phone: string; experience: number; category: string; university: string; courses: string; achievements: string; preferredLanguage: string }>,
+    @Body() body: UpdateProfileDto,
   ) {
-    return this.teachersService.updateProfile(req.user.id, body);
+    return this.teachersService.updateProfile(req.user.id, { ...body } as Record<string, unknown>);
   }
 }

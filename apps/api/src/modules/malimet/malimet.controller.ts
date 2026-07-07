@@ -14,18 +14,18 @@ export class MalimetController {
 
   @Get('prefill')
   @Roles('class_teacher')
-  async prefill(@Query('quarter') _quarter: string, @Req() req: { user: { sub: string; schoolId: string; managedClassroomId: string } }) {
-    return this.service.prefill(req.user.managedClassroomId, req.user.sub, req.user.schoolId);
+  async prefill(@Query('quarter') _quarter: string, @Req() req: { user: { id: string; sub?: string; schoolId: string; managedClassroomId: string } }) {
+    return this.service.prefill(req.user.managedClassroomId, req.user.id ?? req.user.sub, req.user.schoolId);
   }
 
   @Post('generate')
   @Roles('class_teacher')
   async generate(
     @Body() dto: MalimetGenerateDto,
-    @Req() req: { user: { sub: string; schoolId: string } },
+    @Req() req: { user: { id: string; sub?: string; schoolId: string } },
     @Res() res: Response,
   ) {
-    const buffer = await this.service.generate(dto, req.user.sub, req.user.schoolId);
+    const buffer = await this.service.generate(dto, req.user.id ?? req.user.sub, req.user.schoolId);
     const className = dto.formData.classroomName.replace(/\s/g, '');
     const ext = dto.format === 'pdf' ? 'pdf' : 'docx';
     const filename = `malimet_${className}_Q${dto.formData.quarter}.${ext}`;
@@ -48,9 +48,9 @@ export class MalimetController {
   @Roles('class_teacher')
   async save(
     @Body() dto: MalimetSaveDto,
-    @Req() req: { user: { sub: string; schoolId: string } },
+    @Req() req: { user: { id: string; sub?: string; schoolId: string } },
   ) {
-    return this.service.save(dto, req.user.sub, req.user.schoolId);
+    return this.service.save(dto, req.user.id ?? req.user.sub, req.user.schoolId);
   }
 
   @Get('list')

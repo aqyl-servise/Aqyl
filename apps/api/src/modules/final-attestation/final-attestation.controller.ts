@@ -24,12 +24,12 @@ export class FinalAttestationController {
   }
 
   @Patch("students/:id")
-  update(@Param("id") id: string, @Body() dto: Partial<FinalStudentDto>) {
-    return this.service.update(id, dto);
+  update(@Param("id") id: string, @Body() dto: Partial<FinalStudentDto>, @Req() req: ReqUser) {
+    return this.service.update(id, dto, req.user.schoolId);
   }
 
   @Delete("students/:id")
-  remove(@Param("id") id: string) {
-    return this.service.remove(id);
+  remove(@Param("id") id: string, @Req() req: ReqUser) {
+    return this.service.remove(id, req.user.schoolId);
   }
 }

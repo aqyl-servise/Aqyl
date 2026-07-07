@@ -22,8 +22,8 @@ export class ProtocolsController {
   @Get(":id")
   @UseGuards(RolesGuard)
   @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "vice_principal_education", "teacher", "class_teacher", "psychologist", "social_pedagogue")
-  findOne(@Param("id") id: string) {
-    return this.service.findOne(id);
+  findOne(@Param("id") id: string, @Req() req: ReqUser) {
+    return this.service.findOne(id, req.user.schoolId);
   }
 
   @Post()
@@ -46,14 +46,14 @@ export class ProtocolsController {
   @Patch(":id")
   @UseGuards(RolesGuard)
   @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "vice_principal_education")
-  update(@Param("id") id: string, @Body() body: Partial<{ title: string; content: string; fileUrls: string[] }>) {
-    return this.service.update(id, body as never);
+  update(@Param("id") id: string, @Body() body: Partial<{ title: string; content: string; fileUrls: string[] }>, @Req() req: ReqUser) {
+    return this.service.update(id, body as never, req.user.schoolId);
   }
 
   @Delete(":id")
   @UseGuards(RolesGuard)
   @Roles("admin", "principal")
-  remove(@Param("id") id: string) {
-    return this.service.remove(id);
+  remove(@Param("id") id: string, @Req() req: ReqUser) {
+    return this.service.remove(id, req.user.schoolId);
   }
 }

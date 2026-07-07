@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { SorSochDocument } from "../schools/entities/sor-soch-document.entity";
@@ -21,21 +21,23 @@ export class SorSochService {
     return this.repo.find({ where, relations: ["teacher", "classroom"], order: { createdAt: "DESC" } });
   }
 
-  findOne(id: string) {
-    return this.repo.findOne({ where: { id }, relations: ["teacher", "classroom"] });
+  findOne(id: string, schoolId?: string | null) {
+    return this.repo.findOne({ where: schoolId ? { id, schoolId } : { id }, relations: ["teacher", "classroom"] });
   }
 
   create(data: Partial<SorSochDocument>) {
     return this.repo.save(this.repo.create(data));
   }
 
-  async update(id: string, data: Partial<SorSochDocument>) {
-    await this.repo.update(id, data as never);
-    return this.findOne(id);
+  async update(id: string, data: Partial<SorSochDocument>, schoolId?: string | null) {
+    const res = await this.repo.update(schoolId ? { id, schoolId } : { id }, data as never);
+    if (!res.affected) throw new NotFoundException();
+    return this.findOne(id, schoolId);
   }
 
-  async remove(id: string) {
-    await this.repo.delete(id);
+  async remove(id: string, schoolId?: string | null) {
+    const res = await this.repo.delete(schoolId ? { id, schoolId } : { id });
+    if (!res.affected) throw new NotFoundException();
     return { ok: true };
   }
 }

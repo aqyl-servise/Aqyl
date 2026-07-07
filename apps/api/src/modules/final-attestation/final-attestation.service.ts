@@ -38,15 +38,15 @@ export class FinalAttestationService {
     return this.repo.save(this.repo.create({ ...dto, schoolId: schoolId ?? undefined }));
   }
 
-  async update(id: string, dto: Partial<FinalStudentDto>) {
-    const record = await this.repo.findOne({ where: { id } });
+  async update(id: string, dto: Partial<FinalStudentDto>, schoolId?: string | null) {
+    const record = await this.repo.findOne({ where: schoolId ? { id, schoolId } : { id } });
     if (!record) throw new NotFoundException("Student not found");
     Object.assign(record, dto);
     return this.repo.save(record);
   }
 
-  async remove(id: string) {
-    const record = await this.repo.findOne({ where: { id } });
+  async remove(id: string, schoolId?: string | null) {
+    const record = await this.repo.findOne({ where: schoolId ? { id, schoolId } : { id } });
     if (!record) throw new NotFoundException("Student not found");
     await this.repo.delete(id);
     return { ok: true };

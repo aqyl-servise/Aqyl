@@ -56,14 +56,14 @@ export class StudentsController {
 
   @Patch(":id")
   @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "teacher")
-  update(@Param("id") id: string, @Body() dto: Partial<CreateStudentDto>) {
-    return this.service.update(id, dto);
+  update(@Param("id") id: string, @Body() dto: Partial<CreateStudentDto>, @Req() req: { user: ReqUser }) {
+    return this.service.update(id, dto, req.user.schoolId);
   }
 
   @Delete(":id")
   @Roles("admin", "principal")
-  remove(@Param("id") id: string) {
-    return this.service.remove(id);
+  remove(@Param("id") id: string, @Req() req: { user: ReqUser }) {
+    return this.service.remove(id, req.user.schoolId);
   }
 
   @Post(":id/transfer")
@@ -71,13 +71,14 @@ export class StudentsController {
   transfer(
     @Param("id") id: string,
     @Body() body: { classroomId: string; note?: string },
+    @Req() req: { user: ReqUser },
   ) {
-    return this.service.transfer(id, body.classroomId, body.note);
+    return this.service.transfer(id, body.classroomId, body.note, req.user.schoolId);
   }
 
   @Get(":id/transfers")
   @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
-  getTransferHistory(@Param("id") id: string) {
-    return this.service.getTransferHistory(id);
+  getTransferHistory(@Param("id") id: string, @Req() req: { user: ReqUser }) {
+    return this.service.getTransferHistory(id, req.user.schoolId);
   }
 }

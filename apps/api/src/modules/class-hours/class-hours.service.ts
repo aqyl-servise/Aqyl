@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { ClassHour } from "../schools/entities/class-hour.entity";
@@ -50,8 +50,9 @@ export class ClassHoursService {
     return this.repo.save(this.repo.create(data));
   }
 
-  async update(id: string, data: Record<string, unknown>, changedById?: string, changeDescription?: string) {
-    await this.repo.update(id, data as never);
+  async update(id: string, data: Record<string, unknown>, changedById?: string, changeDescription?: string, schoolId?: string | null) {
+    const res = await this.repo.update(schoolId ? { id, schoolId } : { id }, data as never);
+    if (!res.affected) throw new NotFoundException();
     if (changedById) {
       await this.historyRepo.save(
         this.historyRepo.create({
@@ -65,8 +66,9 @@ export class ClassHoursService {
     return this.repo.findOne({ where: { id }, relations: { classTeacher: true, classroom: true } });
   }
 
-  async remove(id: string) {
-    await this.repo.delete(id);
+  async remove(id: string, schoolId?: string | null) {
+    const res = await this.repo.delete(schoolId ? { id, schoolId } : { id });
+    if (!res.affected) throw new NotFoundException();
   }
 
   getHistory(classHourId: string) {

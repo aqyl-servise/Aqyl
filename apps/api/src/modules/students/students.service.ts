@@ -56,7 +56,9 @@ export class StudentsService {
   findAll(classroomId?: string, schoolId?: string | null) {
     const where: Record<string, unknown> = {};
     if (classroomId) {
-      where["classroom"] = { id: classroomId };
+      // Scope by school too: a foreign classroomId must not leak another
+      // school's students. (schoolId is null only for the global admin.)
+      where["classroom"] = schoolId ? { id: classroomId, schoolId } : { id: classroomId };
     } else if (schoolId) {
       where["classroom"] = { schoolId };
     }
@@ -159,7 +161,8 @@ export class StudentsService {
     return saved;
   }
 
-  async update(id: string, dto: Partial<CreateStudentDto & { userId?: string | null }>) {
+  async update(id: string, dto: Partial<CreateStudentDto & { userId?: string | null }>, schoolId?: string | null) {
+    await this.assertStudentInSchool(id, schoolId);
     if (dto.iin) {
       const existing = await this.studentRepo.findOne({ where: { iin: dto.iin } });
       if (existing && existing.id !== id) throw new ConflictException("IIN_EXISTS");
@@ -177,17 +180,30 @@ export class StudentsService {
     return this.studentRepo.findOne({ where: { id }, relations: ["classroom", "classTeacher"] });
   }
 
-  async remove(id: string) {
+  async remove(id: string, schoolId?: string | null) {
+    await this.assertStudentInSchool(id, schoolId);
     await this.studentRepo.delete(id);
     return { ok: true };
   }
 
-  async transfer(studentId: string, classroomId: string, note?: string) {
+  // Ensures the student belongs to the caller's school (global admin: schoolId null → skip).
+  private async assertStudentInSchool(id: string, schoolId?: string | null) {
+    const student = await this.studentRepo.findOne({ where: { id }, relations: ["classroom"] });
+    if (!student) throw new NotFoundException("Student not found");
+    if (schoolId && student.classroom?.schoolId !== schoolId) {
+      throw new NotFoundException("Student not found");
+    }
+  }
+
+  async transfer(studentId: string, classroomId: string, note?: string, schoolId?: string | null) {
     const student = await this.studentRepo.findOne({
       where: { id: studentId },
       relations: ["classroom"],
     });
     if (!student) throw new NotFoundException("Student not found");
+    if (schoolId && student.classroom?.schoolId !== schoolId) {
+      throw new NotFoundException("Student not found");
+    }
 
     const targetClassroom = await this.classroomRepo.findOne({ where: { id: classroomId } });
     if (!targetClassroom) throw new NotFoundException("Classroom not found");
@@ -211,7 +227,8 @@ export class StudentsService {
     return this.studentRepo.findOne({ where: { id: studentId }, relations: ["classroom", "classTeacher"] });
   }
 
-  getTransferHistory(studentId: string) {
+  async getTransferHistory(studentId: string, schoolId?: string | null) {
+    await this.assertStudentInSchool(studentId, schoolId);
     return this.transferRepo.find({
       where: { student: { id: studentId } },
       relations: ["fromClassroom", "toClassroom"],

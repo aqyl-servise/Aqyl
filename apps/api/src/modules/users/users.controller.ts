@@ -6,6 +6,7 @@ import { Roles } from "../auth/decorators/roles.decorator";
 import { TeachersService } from "../teachers/teachers.service";
 import { SchoolsService } from "../schools/schools.service";
 import { UserRole } from "../teachers/entities/teacher.entity";
+import { AdminUpdateUserDto } from "./dto/admin-update-user.dto";
 
 interface ReqUser { user: { id: string; role: string; schoolId?: string | null } }
 
@@ -66,13 +67,29 @@ export class UsersController {
   @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
   async update(
     @Param("id") id: string,
-    @Body() body: Partial<{
-      fullName: string; role: UserRole; subject: string; experience: number;
-      category: string; university: string; phone: string;
-      isClassTeacher: boolean; managedClassroomId: string | null; managedClassroomName: string | null;
-      schoolId: string | null;
-    }>,
+    @Body() body: AdminUpdateUserDto,
+    @Req() req: ReqUser,
   ) {
+    const target = await this.teachersService.findById(id);
+    if (!target) throw new NotFoundException();
+
+    // Non-admin school leaders may only manage staff within their own school,
+    // may not move teachers across schools, and may not grant the admin role.
+    if (req.user.role !== "admin") {
+      if (target.schoolId !== req.user.schoolId) {
+        throw new ForbiddenException("Access denied");
+      }
+      if (body.role === "admin") {
+        throw new ForbiddenException("Недостаточно прав для назначения роли admin");
+      }
+      if (
+        body.schoolId !== undefined &&
+        body.schoolId !== req.user.schoolId
+      ) {
+        throw new ForbiddenException("Нельзя переносить учителя в другую школу");
+      }
+    }
+
     const data: Record<string, unknown> = { ...body };
     if (body.isClassTeacher === false) {
       data.managedClassroomId = null;

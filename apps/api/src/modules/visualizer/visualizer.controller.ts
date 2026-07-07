@@ -17,7 +17,7 @@ import { GenerateDiagramDto } from './dto/generate-diagram.dto';
 import { SaveDiagramDto } from './dto/save-diagram.dto';
 import { UpdateDiagramDto } from './dto/update-diagram.dto';
 
-type AuthRequest = { user: { sub: string; schoolId: string; role: string } };
+type AuthRequest = { user: { id: string; sub?: string; schoolId: string; role: string } };
 
 @Controller('visualizer')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -35,7 +35,7 @@ export class VisualizerController {
 
   private ctx(req: AuthRequest) {
     return {
-      userId: req.user.sub,
+      userId: req.user.id ?? req.user.sub,
       schoolId: req.user.schoolId,
       role: req.user.role,
     };

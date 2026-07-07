@@ -32,8 +32,8 @@ export class SocialPedagogueController {
   }
 
   @Delete("nutrition/students/:id")
-  removeNutritionStudent(@Param("id") id: string) {
-    return this.service.removeNutritionStudent(id);
+  removeNutritionStudent(@Param("id") id: string, @Req() req: ReqUser) {
+    return this.service.removeNutritionStudent(id, req.user.schoolId);
   }
 
   // ── Nutrition Orders ────────────────────────────────────────────────────
@@ -52,8 +52,8 @@ export class SocialPedagogueController {
   }
 
   @Delete("nutrition/orders/:id")
-  removeNutritionOrder(@Param("id") id: string) {
-    return this.service.removeNutritionOrder(id);
+  removeNutritionOrder(@Param("id") id: string, @Req() req: ReqUser) {
+    return this.service.removeNutritionOrder(id, req.user.schoolId);
   }
 
   @Get("nutrition/export")
@@ -81,16 +81,17 @@ export class SocialPedagogueController {
   }
 
   @Delete("special-attention/:id")
-  removeSpecialAttention(@Param("id") id: string) {
-    return this.service.removeSpecialAttentionStudent(id);
+  removeSpecialAttention(@Param("id") id: string, @Req() req: ReqUser) {
+    return this.service.removeSpecialAttentionStudent(id, req.user.schoolId);
   }
 
   @Post("special-attention/:id/documents")
   addDocument(
     @Param("id") id: string,
     @Body() body: { title: string; fileUrl: string },
+    @Req() req: ReqUser,
   ) {
-    return this.service.addDocument(id, body);
+    return this.service.addDocument(id, body, req.user.schoolId);
   }
 
   @Get("special-attention/export")

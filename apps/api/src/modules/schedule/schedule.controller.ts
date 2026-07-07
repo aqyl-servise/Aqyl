@@ -52,8 +52,8 @@ export class ScheduleController {
   @Delete(":id")
   @UseGuards(RolesGuard)
   @Roles("admin", "teacher")
-  remove(@Param("id") id: string) {
-    return this.scheduleService.remove(id);
+  remove(@Param("id") id: string, @Req() req: ReqUser) {
+    return this.scheduleService.remove(id, req.user.schoolId);
   }
 
   @Get("admin")
@@ -87,8 +87,8 @@ export class ScheduleController {
   @Delete("admin/:id")
   @UseGuards(RolesGuard)
   @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
-  adminRemove(@Param("id") id: string) {
-    return this.scheduleService.remove(id);
+  adminRemove(@Param("id") id: string, @Req() req: ReqUser) {
+    return this.scheduleService.remove(id, req.user.schoolId);
   }
 
   @Get("admin/versions")

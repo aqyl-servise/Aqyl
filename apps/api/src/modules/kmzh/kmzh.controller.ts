@@ -18,29 +18,29 @@ export class KmzhController {
   @Post('generate')
   @Throttle({ medium: { limit: 10, ttl: 60_000 } })
   @Roles('teacher', 'class_teacher', 'principal', 'admin')
-  async generate(@Body() dto: KmzhGenerateDto, @Req() req: { user: { sub: string; schoolId: string; role: string } }) {
-    return this.kmzhService.generate(dto, { userId: req.user.sub, schoolId: req.user.schoolId, role: req.user.role });
+  async generate(@Body() dto: KmzhGenerateDto, @Req() req: { user: { id: string; sub?: string; schoolId: string; role: string } }) {
+    return this.kmzhService.generate(dto, { userId: req.user.id ?? req.user.sub, schoolId: req.user.schoolId, role: req.user.role });
   }
 
   @Post('regenerate')
   @Throttle({ medium: { limit: 10, ttl: 60_000 } })
   @Roles('teacher', 'class_teacher', 'principal', 'admin')
-  async regenerate(@Body() dto: KmzhRegenerateDto, @Req() req: { user: { sub: string; schoolId: string; role: string } }) {
+  async regenerate(@Body() dto: KmzhRegenerateDto, @Req() req: { user: { id: string; sub?: string; schoolId: string; role: string } }) {
     return this.kmzhService.regenerate(
-      dto.sessionId, dto.kmzhInput, { userId: req.user.sub, schoolId: req.user.schoolId, role: req.user.role }
+      dto.sessionId, dto.kmzhInput, { userId: req.user.id ?? req.user.sub, schoolId: req.user.schoolId, role: req.user.role }
     );
   }
 
   @Post('save')
   @Roles('teacher', 'class_teacher')
-  async save(@Body() dto: KmzhSaveDto, @Req() req: { user: { sub: string; schoolId: string } }) {
-    return this.kmzhService.save(dto, req.user.sub, req.user.schoolId);
+  async save(@Body() dto: KmzhSaveDto, @Req() req: { user: { id: string; sub?: string; schoolId: string } }) {
+    return this.kmzhService.save(dto, req.user.id ?? req.user.sub, req.user.schoolId);
   }
 
   @Get('saved')
   @Roles('teacher', 'class_teacher')
-  async getMySaved(@Req() req: { user: { sub: string; schoolId: string } }) {
-    return this.kmzhService.getMySaved(req.user.sub, req.user.schoolId);
+  async getMySaved(@Req() req: { user: { id: string; sub?: string; schoolId: string } }) {
+    return this.kmzhService.getMySaved(req.user.id ?? req.user.sub, req.user.schoolId);
   }
 
   @Get('values/:month')

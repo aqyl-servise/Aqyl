@@ -32,14 +32,14 @@ export class ClassroomsController {
 
   @Patch(":id")
   @Roles("admin", "principal", "vice_principal", "vice_principal_academic")
-  update(@Param("id") id: string, @Body() dto: Partial<CreateClassroomDto>) {
-    return this.service.update(id, dto);
+  update(@Param("id") id: string, @Body() dto: Partial<CreateClassroomDto>, @Req() req: ReqUser) {
+    return this.service.update(id, dto, req.user.schoolId);
   }
 
   @Delete(":id")
   @Roles("admin", "principal")
-  remove(@Param("id") id: string) {
-    return this.service.remove(id);
+  remove(@Param("id") id: string, @Req() req: ReqUser) {
+    return this.service.remove(id, req.user.schoolId);
   }
 
   @Post(":id/bulk-transfer")

@@ -20,8 +20,8 @@ export class QuestionnairesService {
     });
   }
 
-  async getOne(id: string) {
-    const q = await this.questionnaireRepo.findOne({ where: { id } });
+  async getOne(id: string, schoolId?: string | null) {
+    const q = await this.questionnaireRepo.findOne({ where: schoolId ? { id, schoolId } : { id } });
     if (!q) throw new NotFoundException("Questionnaire not found");
     return q;
   }
@@ -30,24 +30,29 @@ export class QuestionnairesService {
     return this.questionnaireRepo.save(this.questionnaireRepo.create(data));
   }
 
-  async update(id: string, data: Partial<Questionnaire>) {
-    await this.questionnaireRepo.update(id, data);
-    return this.getOne(id);
+  async update(id: string, data: Partial<Questionnaire>, schoolId?: string | null) {
+    const res = await this.questionnaireRepo.update(schoolId ? { id, schoolId } : { id }, data);
+    if (!res.affected) throw new NotFoundException("Questionnaire not found");
+    return this.getOne(id, schoolId);
   }
 
-  async remove(id: string) {
-    await this.questionnaireRepo.delete(id);
+  async remove(id: string, schoolId?: string | null) {
+    const res = await this.questionnaireRepo.delete(schoolId ? { id, schoolId } : { id });
+    if (!res.affected) throw new NotFoundException("Questionnaire not found");
   }
 
-  async assign(id: string, classroomIds: string[]) {
-    await this.questionnaireRepo.update(id, {
+  async assign(id: string, classroomIds: string[], schoolId?: string | null) {
+    const res = await this.questionnaireRepo.update(schoolId ? { id, schoolId } : { id }, {
       assignedClassroomIds: classroomIds,
       status: "assigned",
     });
-    return this.getOne(id);
+    if (!res.affected) throw new NotFoundException("Questionnaire not found");
+    return this.getOne(id, schoolId);
   }
 
-  async getResponses(questionnaireId: string) {
+  async getResponses(questionnaireId: string, schoolId?: string | null) {
+    // Verify the questionnaire belongs to the caller's school before exposing responses.
+    await this.getOne(questionnaireId, schoolId);
     return this.responseRepo.find({ where: { questionnaireId }, order: { createdAt: "DESC" } });
   }
 
@@ -116,10 +121,10 @@ export class QuestionnairesService {
     }));
   }
 
-  async analyzeResponses(id: string) {
+  async analyzeResponses(id: string, schoolId?: string | null) {
     const [questionnaire, responses] = await Promise.all([
-      this.getOne(id),
-      this.getResponses(id),
+      this.getOne(id, schoolId),
+      this.getResponses(id, schoolId),
     ]);
 
     if (responses.length === 0) {

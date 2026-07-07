@@ -20,8 +20,8 @@ export class QuestionnairesController {
 
   @Get(":id")
   @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "vice_principal_education", "psychologist")
-  getOne(@Param("id") id: string) {
-    return this.service.getOne(id);
+  getOne(@Param("id") id: string, @Req() req: ReqUser) {
+    return this.service.getOne(id, req.user.schoolId);
   }
 
   @Post()
@@ -32,32 +32,32 @@ export class QuestionnairesController {
 
   @Put(":id")
   @Roles("admin", "principal", "vice_principal_academic", "vice_principal_education", "psychologist")
-  update(@Param("id") id: string, @Body() dto: UpdateQuestionnaireDto) {
-    return this.service.update(id, dto as never);
+  update(@Param("id") id: string, @Body() dto: UpdateQuestionnaireDto, @Req() req: ReqUser) {
+    return this.service.update(id, dto as never, req.user.schoolId);
   }
 
   @Delete(":id")
   @Roles("admin", "principal", "vice_principal_academic", "vice_principal_education", "psychologist")
-  remove(@Param("id") id: string) {
-    return this.service.remove(id);
+  remove(@Param("id") id: string, @Req() req: ReqUser) {
+    return this.service.remove(id, req.user.schoolId);
   }
 
   @Post(":id/assign")
   @Roles("admin", "principal", "vice_principal_academic", "vice_principal_education", "psychologist")
-  assign(@Param("id") id: string, @Body() body: { classroomIds: string[] }) {
-    return this.service.assign(id, body.classroomIds);
+  assign(@Param("id") id: string, @Body() body: { classroomIds: string[] }, @Req() req: ReqUser) {
+    return this.service.assign(id, body.classroomIds, req.user.schoolId);
   }
 
   @Get(":id/responses")
   @Roles("admin", "principal", "vice_principal_academic", "vice_principal_education", "psychologist")
-  getResponses(@Param("id") id: string) {
-    return this.service.getResponses(id);
+  getResponses(@Param("id") id: string, @Req() req: ReqUser) {
+    return this.service.getResponses(id, req.user.schoolId);
   }
 
   @Post(":id/analyze")
   @Roles("admin", "principal", "vice_principal_academic", "vice_principal_education", "psychologist")
-  analyze(@Param("id") id: string) {
-    return this.service.analyzeResponses(id);
+  analyze(@Param("id") id: string, @Req() req: ReqUser) {
+    return this.service.analyzeResponses(id, req.user.schoolId);
   }
 
   @Post("generate")

@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { NutritionStudent } from "../schools/entities/nutrition-student.entity";
@@ -37,8 +37,9 @@ export class SocialPedagogueService {
     return this.nutritionStudentRepo.save(this.nutritionStudentRepo.create(data));
   }
 
-  async removeNutritionStudent(id: string) {
-    await this.nutritionStudentRepo.delete(id);
+  async removeNutritionStudent(id: string, schoolId?: string | null) {
+    const res = await this.nutritionStudentRepo.delete(schoolId ? { id, schoolId } : { id });
+    if (!res.affected) throw new NotFoundException();
   }
 
   // ── Nutrition Orders ────────────────────────────────────────────────────
@@ -50,8 +51,9 @@ export class SocialPedagogueService {
     return this.nutritionOrderRepo.save(this.nutritionOrderRepo.create(data));
   }
 
-  async removeNutritionOrder(id: string) {
-    await this.nutritionOrderRepo.delete(id);
+  async removeNutritionOrder(id: string, schoolId?: string | null) {
+    const res = await this.nutritionOrderRepo.delete(schoolId ? { id, schoolId } : { id });
+    if (!res.affected) throw new NotFoundException();
   }
 
   // ── Special Attention Students ──────────────────────────────────────────
@@ -79,13 +81,14 @@ export class SocialPedagogueService {
     }));
   }
 
-  async removeSpecialAttentionStudent(id: string) {
-    await this.specialAttentionRepo.delete(id);
+  async removeSpecialAttentionStudent(id: string, schoolId?: string | null) {
+    const res = await this.specialAttentionRepo.delete(schoolId ? { id, schoolId } : { id });
+    if (!res.affected) throw new NotFoundException();
   }
 
-  async addDocument(id: string, doc: { title: string; fileUrl: string }) {
-    const record = await this.specialAttentionRepo.findOne({ where: { id } });
-    if (!record) return null;
+  async addDocument(id: string, doc: { title: string; fileUrl: string }, schoolId?: string | null) {
+    const record = await this.specialAttentionRepo.findOne({ where: schoolId ? { id, schoolId } : { id } });
+    if (!record) throw new NotFoundException();
     record.documents = [...(record.documents ?? []), doc];
     return this.specialAttentionRepo.save(record);
   }

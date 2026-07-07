@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, Between } from "typeorm";
 
@@ -425,8 +425,9 @@ export class RatingService {
     });
   }
 
-  async deleteViolation(id: string) {
-    await this.violationRepo.delete(id);
+  async deleteViolation(id: string, schoolId?: string | null) {
+    const res = await this.violationRepo.delete(schoolId ? { id, schoolId } : { id });
+    if (!res.affected) throw new NotFoundException();
     return { ok: true };
   }
 }

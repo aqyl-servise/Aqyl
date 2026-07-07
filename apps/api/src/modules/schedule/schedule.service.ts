@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from "@nestjs/common";
+import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Schedule } from "../schools/entities/schedule.entity";
@@ -43,8 +43,9 @@ export class ScheduleService {
     return this.scheduleRepo.save(this.scheduleRepo.create(data));
   }
 
-  async remove(id: string) {
-    await this.scheduleRepo.delete(id);
+  async remove(id: string, schoolId?: string | null) {
+    const res = await this.scheduleRepo.delete(schoolId ? { id, schoolId } : { id });
+    if (!res.affected) throw new NotFoundException();
   }
 
   async getAdminSchedule(schoolId: string, classroomId?: string, version = "main", academicYear?: string) {

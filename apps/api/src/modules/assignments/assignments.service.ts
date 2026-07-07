@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Assignment } from "../schools/entities/assignment.entity";
@@ -60,13 +60,22 @@ export class AssignmentsService {
     return this.assignmentRepo.save(this.assignmentRepo.create(data));
   }
 
-  async update(id: string, data: Record<string, unknown>) {
+  async update(id: string, data: Record<string, unknown>, ownerTeacherId?: string) {
+    await this.assertOwner(id, ownerTeacherId);
     await this.assignmentRepo.update(id, data as never);
     return this.findOne(id);
   }
 
-  async remove(id: string) {
+  async remove(id: string, ownerTeacherId?: string) {
+    await this.assertOwner(id, ownerTeacherId);
     await this.assignmentRepo.delete(id);
+  }
+
+  // When ownerTeacherId is provided (non-admin), the assignment must belong to them.
+  private async assertOwner(id: string, ownerTeacherId?: string) {
+    const found = await this.assignmentRepo.findOne({ where: { id }, relations: { teacher: true } });
+    if (!found) throw new NotFoundException();
+    if (ownerTeacherId && found.teacher?.id !== ownerTeacherId) throw new NotFoundException();
   }
 
   // Submissions
