@@ -179,6 +179,16 @@ export default function B2CDashboardPage() {
               <div style={{ fontWeight: 700, color: DARK }}>Создать КМЖ</div>
               <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>Краткосрочный план урока</div>
             </div>
+            <div style={cardStyle} onClick={() => router.push("/dashboard/b2c/visualizer")}>
+              <div style={{ fontSize: 28, marginBottom: 8 }}>🗺️</div>
+              <div style={{ fontWeight: 700, color: DARK }}>Визуализатор</div>
+              <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>Учебные схемы из текста</div>
+            </div>
+            <div style={cardStyle} onClick={() => router.push("/dashboard/b2c/text-adapter")}>
+              <div style={{ fontSize: 28, marginBottom: 8 }}>📖</div>
+              <div style={{ fontWeight: 700, color: DARK }}>Адаптация текста</div>
+              <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>Текст под класс + вопросы + словарь</div>
+            </div>
             <div style={cardStyle} onClick={() => router.push("/dashboard/b2c")}>
               <div style={{ fontSize: 28, marginBottom: 8 }}>📚</div>
               <div style={{ fontWeight: 700, color: DARK }}>Мои материалы</div>

@@ -12,13 +12,17 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { SkipSchoolIsolation } from '../../common/decorators/skip-school-isolation.decorator';
 import { VisualizerService } from './visualizer.service';
 import { GenerateDiagramDto } from './dto/generate-diagram.dto';
 import { SaveDiagramDto } from './dto/save-diagram.dto';
 import { UpdateDiagramDto } from './dto/update-diagram.dto';
 
-type AuthRequest = { user: { id: string; sub?: string; schoolId: string; role: string } };
+type AuthRequest = { user: { id: string; sub?: string; schoolId: string | null; role: string } };
 
+// B2C teachers have no school — service still scopes every query by userId,
+// so skip the school-isolation interceptor (same pattern as text-adapter).
+@SkipSchoolIsolation()
 @Controller('visualizer')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(

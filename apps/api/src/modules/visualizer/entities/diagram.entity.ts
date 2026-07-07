@@ -22,9 +22,10 @@ export class Diagram {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
+  // Nullable: B2C teachers belong to no school (same as text-adapter's Adaptation).
   @Index()
-  @Column({ nullable: false })
-  schoolId!: string;
+  @Column({ type: 'varchar', nullable: true })
+  schoolId!: string | null;
 
   @Index()
   @Column()

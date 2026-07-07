@@ -9,7 +9,7 @@ import { AiClientService } from '../../services/ai-client.service';
 
 interface UserContext {
   userId: string;
-  schoolId: string;
+  schoolId: string | null;
   role?: string;
 }
 
