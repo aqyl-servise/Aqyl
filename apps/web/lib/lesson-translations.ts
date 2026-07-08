@@ -1,0 +1,186 @@
+"use client";
+import { useEffect, useState } from "react";
+
+export type Lang = "ru" | "kz" | "en";
+
+// Self-contained tri-lingual dictionary for the B2C lesson-plan flow.
+type Dict = Record<string, string>;
+
+const ru: Dict = {
+  back: "Назад", next: "Далее →", soon: "Скоро", loading: "Загрузка…", generating: "Генерация…",
+  logout: "Выйти", profile: "Профиль",
+  // dashboard
+  createLesson: "Создать урок", createLessonSub: "Краткосрочный план урока (КСП)",
+  materials: "Мои материалы", materialsSub: "Сохранённые уроки и задания",
+  fl: "Функциональная грамотность", flDev: "Модуль в разработке — скоро.",
+  subscription: "Подписка", subscriptionSub: "Тарифы и оплата",
+  help: "Помощь", helpSub: "Справка и поддержка",
+  subActive: "Подписка активна", subTrial: "Пробный период", subLimited: "Доступ ограничен",
+  trialLeft: "Пробный период: осталось {n} дн.", getSub: "Оформить подписку", extendSub: "Продлить подписку",
+  trialEnded: "Пробный период завершён", subExpired: "Подписка истекла",
+  subExpiredHint: "Оформите подписку, чтобы продолжить пользоваться Aqyl.",
+  subActiveNext: "Подписка активна. Следующее списание: {d}.",
+  // generator
+  genTitle: "Создать урок (КСП)", stepOf: "Шаг {n} из 5",
+  headerTitle: "Шапка КСП",
+  fUnit: "Глава / Раздел", fTeacher: "Имя учителя", fDate: "Дата", fLessonNo: "№ урока",
+  fGrade: "Класс *", fSubject: "Предмет *", fPresent: "Присутствует", fAbsent: "Отсутствует",
+  fTitle: "Тема урока *", fLangFocus: "Языковая цель (для языков)",
+  fLearnObj: "Цели обучения (коды, по одному в строке) *", fValues: "Ценности (месяц)", fDuration: "Длительность (мин)",
+  lessonObjectives: "Цели урока", genObjectives: "Сгенерировать цели урока",
+  objHint: "Заполните цели обучения и нажмите «Сгенерировать цели урока».",
+  reqFields: "Заполните обязательные поля: класс, предмет, тема.", reqCodes: "Сначала заполните цели обучения (коды).",
+  errNoAiObj: "Не удалось сгенерировать цели (нужен ключ ИИ). ", errNoAiGen: "Не удалось запустить генерацию (нужен ключ ИИ). ",
+  chooseMode: "Выберите режим",
+  quickMode: "Быстрый урок", quickModeSub: "Платформа подберёт инструменты и сразу сгенерирует урок.",
+  constructorMode: "Собрать самому", constructorModeSub: "Выберите инструменты и тайминг для каждого этапа.",
+  constructorTitle: "Конструктор урока", recommend: "Рекомендуем", timeMin: "Время (мин):",
+  generateLesson: "Сгенерировать урок", starting: "Запуск…",
+  genProgress: "Генерируем урок…", genProgressSub: "Обычно занимает 20–40 секунд. Не закрывайте страницу.",
+  vUnit: "Раздел", vGrade: "Класс", vSubject: "Предмет", vTeacher: "Учитель", vDate: "Дата", vNo: "№",
+  vValue: "Ценность", vTotalPoints: "Итого баллов",
+  thStage: "Этап / Время", thTeacher: "Действия учителя", thStudent: "Действия обучающегося",
+  thCriteria: "Критерии оценивания", thResources: "Ресурсы", descriptors: "Дескрипторы",
+  regen: "↻ Перегенерировать", min: "мин",
+  downloadPlan: "Скачать план урока", createPresentation: "Создать презентацию (скоро)",
+  genError: "Ошибка генерации.", genErrorHint: "Попробуйте ещё раз.",
+  st_warmup: "Разогрев", st_explanation: "Объяснение", st_task: "Задание", st_quiz: "Квиз", st_reflection: "Рефлексия",
+  // materials
+  noLessons: "Пока нет сохранённых уроков", createFirst: "Создать первый урок", noTopic: "Без темы",
+  gradeWord: "класс", download: "Скачать",
+  stt_draft: "Черновик", stt_generating: "Генерация…", stt_ready: "Готов", stt_error: "Ошибка",
+  // help
+  helpH2: "Как пользоваться Aqyl",
+  help1: "Создать урок — заполните шапку КСП, сгенерируйте цели, выберите режим и получите готовый краткосрочный план по формату №130.",
+  help2: "Мои материалы — сохранённые уроки, их можно скачать в Word.",
+  help3: "Подписка — тарифы и оплата через Kaspi.",
+  helpSupport: "Поддержка", helpContact: "Вопросы и предложения:",
+  // profile
+  pName: "Имя", pEmail: "Email", pSubject: "Предмет",
+};
+
+const kz: Dict = {
+  back: "Артқа", next: "Келесі →", soon: "Жақында", loading: "Жүктелуде…", generating: "Құрылуда…",
+  logout: "Шығу", profile: "Профиль",
+  createLesson: "Сабақ құру", createLessonSub: "Қысқа мерзімді жоспар (ҚМЖ)",
+  materials: "Материалдарым", materialsSub: "Сақталған сабақтар мен тапсырмалар",
+  fl: "Функционалдық сауаттылық", flDev: "Модуль әзірленуде — жақында.",
+  subscription: "Жазылым", subscriptionSub: "Тарифтер мен төлем",
+  help: "Көмек", helpSub: "Анықтама және қолдау",
+  subActive: "Жазылым белсенді", subTrial: "Сынақ мерзімі", subLimited: "Қолжетімділік шектеулі",
+  trialLeft: "Сынақ мерзімі: {n} күн қалды", getSub: "Жазылым рәсімдеу", extendSub: "Жазылымды ұзарту",
+  trialEnded: "Сынақ мерзімі аяқталды", subExpired: "Жазылым мерзімі бітті",
+  subExpiredHint: "Aqyl-ды әрі қарай пайдалану үшін жазылым рәсімдеңіз.",
+  subActiveNext: "Жазылым белсенді. Келесі төлем: {d}.",
+  genTitle: "Сабақ құру (ҚМЖ)", stepOf: "{n}-қадам, 5-тен",
+  headerTitle: "ҚМЖ тақырыбы",
+  fUnit: "Бөлім", fTeacher: "Мұғалім аты", fDate: "Күні", fLessonNo: "Сабақ №",
+  fGrade: "Сынып *", fSubject: "Пән *", fPresent: "Қатысқан", fAbsent: "Қатыспаған",
+  fTitle: "Сабақ тақырыбы *", fLangFocus: "Тілдік мақсат (тілдер үшін)",
+  fLearnObj: "Оқу мақсаттары (кодтар, әр жолда біреу) *", fValues: "Құндылықтар (ай)", fDuration: "Ұзақтығы (мин)",
+  lessonObjectives: "Сабақ мақсаттары", genObjectives: "Сабақ мақсаттарын құру",
+  objHint: "Оқу мақсаттарын толтырып, «Сабақ мақсаттарын құру» түймесін басыңыз.",
+  reqFields: "Міндетті өрістерді толтырыңыз: сынып, пән, тақырып.", reqCodes: "Алдымен оқу мақсаттарын (кодтар) толтырыңыз.",
+  errNoAiObj: "Мақсаттарды құру мүмкін болмады (ИИ кілті қажет). ", errNoAiGen: "Генерацияны бастау мүмкін болмады (ИИ кілті қажет). ",
+  chooseMode: "Режимді таңдаңыз",
+  quickMode: "Жылдам сабақ", quickModeSub: "Платформа құралдарды таңдап, сабақты бірден құрады.",
+  constructorMode: "Өзім құрастырамын", constructorModeSub: "Әр кезеңге құрал мен уақытты таңдаңыз.",
+  constructorTitle: "Сабақ конструкторы", recommend: "Ұсынамыз", timeMin: "Уақыт (мин):",
+  generateLesson: "Сабақты құру", starting: "Іске қосылуда…",
+  genProgress: "Сабақ құрылуда…", genProgressSub: "Әдетте 20–40 секунд алады. Бетті жаппаңыз.",
+  vUnit: "Бөлім", vGrade: "Сынып", vSubject: "Пән", vTeacher: "Мұғалім", vDate: "Күні", vNo: "№",
+  vValue: "Құндылық", vTotalPoints: "Барлық ұпай",
+  thStage: "Кезең / Уақыт", thTeacher: "Мұғалім әрекеті", thStudent: "Оқушы әрекеті",
+  thCriteria: "Бағалау критерийлері", thResources: "Ресурстар", descriptors: "Дескрипторлар",
+  regen: "↻ Қайта құру", min: "мин",
+  downloadPlan: "Сабақ жоспарын жүктеу", createPresentation: "Презентация құру (жақында)",
+  genError: "Құру қатесі.", genErrorHint: "Қайталап көріңіз.",
+  st_warmup: "Қыздыру", st_explanation: "Түсіндіру", st_task: "Тапсырма", st_quiz: "Квиз", st_reflection: "Рефлексия",
+  noLessons: "Әзірше сақталған сабақтар жоқ", createFirst: "Алғашқы сабақты құру", noTopic: "Тақырыпсыз",
+  gradeWord: "сынып", download: "Жүктеу",
+  stt_draft: "Жоба", stt_generating: "Құрылуда…", stt_ready: "Дайын", stt_error: "Қате",
+  helpH2: "Aqyl-ды қалай қолдану",
+  help1: "Сабақ құру — ҚМЖ тақырыбын толтырып, мақсаттарды құрып, режимді таңдап, №130 форматындағы дайын қысқа мерзімді жоспар алыңыз.",
+  help2: "Материалдарым — сақталған сабақтар, оларды Word форматында жүктеуге болады.",
+  help3: "Жазылым — Kaspi арқылы тарифтер мен төлем.",
+  helpSupport: "Қолдау", helpContact: "Сұрақтар мен ұсыныстар:",
+  pName: "Аты", pEmail: "Email", pSubject: "Пән",
+};
+
+const en: Dict = {
+  back: "Back", next: "Next →", soon: "Soon", loading: "Loading…", generating: "Generating…",
+  logout: "Log out", profile: "Profile",
+  createLesson: "Create lesson", createLessonSub: "Short-term lesson plan",
+  materials: "My materials", materialsSub: "Saved lessons and tasks",
+  fl: "Functional literacy", flDev: "Module in development — soon.",
+  subscription: "Subscription", subscriptionSub: "Plans and payment",
+  help: "Help", helpSub: "Reference and support",
+  subActive: "Subscription active", subTrial: "Trial period", subLimited: "Access limited",
+  trialLeft: "Trial: {n} days left", getSub: "Subscribe", extendSub: "Renew subscription",
+  trialEnded: "Trial period ended", subExpired: "Subscription expired",
+  subExpiredHint: "Subscribe to keep using Aqyl.",
+  subActiveNext: "Subscription active. Next charge: {d}.",
+  genTitle: "Create lesson", stepOf: "Step {n} of 5",
+  headerTitle: "Lesson header",
+  fUnit: "Unit", fTeacher: "Teacher name", fDate: "Date", fLessonNo: "Lesson №",
+  fGrade: "Grade *", fSubject: "Subject *", fPresent: "Present", fAbsent: "Absent",
+  fTitle: "Lesson title *", fLangFocus: "Language focus (for languages)",
+  fLearnObj: "Learning objectives (codes, one per line) *", fValues: "Values (month)", fDuration: "Duration (min)",
+  lessonObjectives: "Lesson objectives", genObjectives: "Generate lesson objectives",
+  objHint: "Fill in the learning objectives and press “Generate lesson objectives”.",
+  reqFields: "Fill in the required fields: grade, subject, title.", reqCodes: "First fill in the learning objectives (codes).",
+  errNoAiObj: "Could not generate objectives (AI key needed). ", errNoAiGen: "Could not start generation (AI key needed). ",
+  chooseMode: "Choose mode",
+  quickMode: "Quick lesson", quickModeSub: "The platform picks tools and generates the lesson right away.",
+  constructorMode: "Build it myself", constructorModeSub: "Choose tools and timing for each stage.",
+  constructorTitle: "Lesson constructor", recommend: "Recommended", timeMin: "Time (min):",
+  generateLesson: "Generate lesson", starting: "Starting…",
+  genProgress: "Generating the lesson…", genProgressSub: "Usually takes 20–40 seconds. Don't close the page.",
+  vUnit: "Unit", vGrade: "Grade", vSubject: "Subject", vTeacher: "Teacher", vDate: "Date", vNo: "№",
+  vValue: "Value", vTotalPoints: "Total points",
+  thStage: "Stage / Time", thTeacher: "Teacher's actions", thStudent: "Student's actions",
+  thCriteria: "Assessment criteria", thResources: "Resources", descriptors: "Descriptors",
+  regen: "↻ Regenerate", min: "min",
+  downloadPlan: "Download lesson plan", createPresentation: "Create presentation (soon)",
+  genError: "Generation error.", genErrorHint: "Please try again.",
+  st_warmup: "Warm-up", st_explanation: "Explanation", st_task: "Task", st_quiz: "Quiz", st_reflection: "Reflection",
+  noLessons: "No saved lessons yet", createFirst: "Create your first lesson", noTopic: "No title",
+  gradeWord: "grade", download: "Download",
+  stt_draft: "Draft", stt_generating: "Generating…", stt_ready: "Ready", stt_error: "Error",
+  helpH2: "How to use Aqyl",
+  help1: "Create lesson — fill in the КСП header, generate objectives, choose a mode and get a ready short-term plan in the №130 format.",
+  help2: "My materials — saved lessons you can download as Word.",
+  help3: "Subscription — plans and payment via Kaspi.",
+  helpSupport: "Support", helpContact: "Questions and suggestions:",
+  pName: "Name", pEmail: "Email", pSubject: "Subject",
+};
+
+export const LT: Record<Lang, Dict> = { ru, kz, en };
+
+// Месяц → ценность в трёх языках (для селектора ценностей).
+export const VALUE_MONTHS: { month: string; label: Record<Lang, string>; value: Record<Lang, string> }[] = [
+  { month: "09", label: { ru: "Сентябрь", kz: "Қыркүйек", en: "September" }, value: { ru: "Патриотизм", kz: "Отансүйгіштік", en: "Patriotism" } },
+  { month: "10", label: { ru: "Октябрь", kz: "Қазан", en: "October" }, value: { ru: "Доброта", kz: "Ізгілік", en: "Kindness" } },
+  { month: "11", label: { ru: "Ноябрь", kz: "Қараша", en: "November" }, value: { ru: "Трудолюбие", kz: "Еңбексүйгіштік", en: "Diligence" } },
+  { month: "12", label: { ru: "Декабрь", kz: "Желтоқсан", en: "December" }, value: { ru: "Семья", kz: "Отбасы", en: "Family" } },
+  { month: "01", label: { ru: "Январь", kz: "Қаңтар", en: "January" }, value: { ru: "Здоровье", kz: "Денсаулық", en: "Health" } },
+  { month: "02", label: { ru: "Февраль", kz: "Ақпан", en: "February" }, value: { ru: "Дружба", kz: "Достық", en: "Friendship" } },
+  { month: "03", label: { ru: "Март", kz: "Наурыз", en: "March" }, value: { ru: "Творчество", kz: "Шығармашылық", en: "Creativity" } },
+  { month: "04", label: { ru: "Апрель", kz: "Сәуір", en: "April" }, value: { ru: "Природа", kz: "Табиғат", en: "Nature" } },
+  { month: "05", label: { ru: "Май", kz: "Мамыр", en: "May" }, value: { ru: "Знание", kz: "Білім", en: "Knowledge" } },
+];
+
+export function useLang(): [Lang, (l: Lang) => void] {
+  const [lang, setLangState] = useState<Lang>("ru");
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("aqyl-lang") as Lang | null;
+      if (stored === "ru" || stored === "kz" || stored === "en") setLangState(stored);
+    } catch { /* ignore */ }
+  }, []);
+  const setLang = (l: Lang) => {
+    setLangState(l);
+    try { localStorage.setItem("aqyl-lang", l); } catch { /* ignore */ }
+  };
+  return [lang, setLang];
+}

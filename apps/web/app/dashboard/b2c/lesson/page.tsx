@@ -4,26 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getValidAccessToken } from "../../../../lib/auth";
 import { api, API_URL, type LpLesson, type LpToolsResponse, type LpStageInput, type LpHeader } from "../../../../lib/api";
+import { useLang, LT, VALUE_MONTHS, type Lang } from "../../../../lib/lesson-translations";
+import { LangSwitcher } from "../../../../components/lang-switcher";
 
 const BRAND = "#6B5CE7";
 const DARK = "#0D0E1A";
-
-// Месяц → ценность (Адал Азамат), для селектора ценностей (Экран 1).
-const VALUE_MONTHS: { month: string; label: string; value: string }[] = [
-  { month: "09", label: "Сентябрь", value: "Патриотизм" },
-  { month: "10", label: "Октябрь", value: "Доброта" },
-  { month: "11", label: "Ноябрь", value: "Трудолюбие" },
-  { month: "12", label: "Декабрь", value: "Семья" },
-  { month: "01", label: "Январь", value: "Здоровье" },
-  { month: "02", label: "Февраль", value: "Дружба" },
-  { month: "03", label: "Март", value: "Творчество" },
-  { month: "04", label: "Апрель", value: "Природа" },
-  { month: "05", label: "Май", value: "Знание" },
-];
-
-const STAGE_LABELS: Record<string, string> = {
-  warmup: "Разогрев", explanation: "Объяснение", task: "Задание", quiz: "Квиз", reflection: "Рефлексия",
-};
 
 const inp: React.CSSProperties = { width: "100%", padding: "10px 12px", borderRadius: 9, border: "1.5px solid #d9d9e3", fontSize: 14, boxSizing: "border-box" };
 const label: React.CSSProperties = { fontSize: 13, fontWeight: 700, color: DARK, marginBottom: 5, display: "block" };
@@ -31,12 +16,13 @@ const card: React.CSSProperties = { background: "#fff", borderRadius: 14, paddin
 const btnPrimary: React.CSSProperties = { background: BRAND, color: "#fff", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 15, fontWeight: 600, cursor: "pointer" };
 const btnGhost: React.CSSProperties = { background: "none", border: "1px solid #d9d9e3", color: DARK, borderRadius: 10, padding: "10px 18px", fontSize: 14, cursor: "pointer" };
 
+type T = Record<string, string>;
+
 interface HeaderForm {
   unit: string; teacherName: string; date: string; lessonNumber: string; grade: string;
   presentCount: string; absentCount: string; subject: string; lessonTitle: string; languageFocus: string;
   learningObjectives: string; valueMonth: string; durationMinutes: string;
 }
-
 const EMPTY: HeaderForm = {
   unit: "", teacherName: "", date: "", lessonNumber: "", grade: "", presentCount: "", absentCount: "",
   subject: "", lessonTitle: "", languageFocus: "", learningObjectives: "", valueMonth: "", durationMinutes: "45",
@@ -44,6 +30,8 @@ const EMPTY: HeaderForm = {
 
 export default function LessonGeneratorPage() {
   const router = useRouter();
+  const [lang, setLang] = useLang();
+  const t = LT[lang];
   const [token, setToken] = useState<string | null>(null);
   const [step, setStep] = useState(1);
   const [lessonId, setLessonId] = useState<string | null>(null);
@@ -59,9 +47,9 @@ export default function LessonGeneratorPage() {
 
   useEffect(() => {
     (async () => {
-      const t = await getValidAccessToken();
-      if (!t) { router.replace("/login"); return; }
-      setToken(t);
+      const tk = await getValidAccessToken();
+      if (!tk) { router.replace("/login"); return; }
+      setToken(tk);
     })();
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [router]);
@@ -93,21 +81,19 @@ export default function LessonGeneratorPage() {
     if (!token) return;
     setError(null);
     const codes = form.learningObjectives.split(/[\n,]/).map((s) => s.trim()).filter(Boolean);
-    if (!codes.length) { setError("Сначала заполните цели обучения (коды)."); return; }
+    if (!codes.length) { setError(t.reqCodes); return; }
     setGenObjLoading(true);
     try {
       const id = await ensureLesson();
-      const obj = await api.lpObjectives(token, id);
-      setObjectives(obj);
-    } catch (e: unknown) {
-      setError("Не удалось сгенерировать цели (нужен ключ ИИ). " + msg(e));
-    } finally { setGenObjLoading(false); }
+      setObjectives(await api.lpObjectives(token, id));
+    } catch (e) { setError(t.errNoAiObj + msg(e)); }
+    finally { setGenObjLoading(false); }
   }
 
   async function toStep2() {
     if (!token) return;
     setError(null);
-    if (!form.subject || !form.lessonTitle || !form.grade) { setError("Заполните обязательные поля: класс, предмет, тема."); return; }
+    if (!form.subject || !form.lessonTitle || !form.grade) { setError(t.reqFields); return; }
     setBusy(true);
     try {
       await ensureLesson();
@@ -118,48 +104,37 @@ export default function LessonGeneratorPage() {
 
   async function chooseMode(mode: "quick" | "constructor") {
     if (mode === "constructor") {
-      // init default selections per stage type
       if (tools) {
         const sel: Record<string, { toolId: string; time: number }> = {};
         const timeByType: Record<string, number> = { warmup: 7, explanation: 10, task: 8, quiz: 5, reflection: 5 };
         for (const st of tools.stages) {
           const list = tools.tools[st] ?? [];
-          const def = list.find((t) => t.isDefault) ?? list[0];
+          const def = list.find((x) => x.isDefault) ?? list[0];
           if (def) sel[st] = { toolId: def.toolId, time: timeByType[st] ?? 5 };
         }
         setStageSel(sel);
       }
       setStep(3);
-    } else {
-      await runGenerate("quick");
-    }
+    } else { await runGenerate("quick"); }
   }
 
   async function saveStagesAndGenerate() {
     if (!token || !lessonId || !tools) return;
-    const stages: LpStageInput[] = tools.stages
-      .filter((st) => stageSel[st])
-      .map((st) => ({ stageType: st, toolId: stageSel[st].toolId, timeMinutes: stageSel[st].time }));
+    const stages: LpStageInput[] = tools.stages.filter((st) => stageSel[st]).map((st) => ({ stageType: st, toolId: stageSel[st].toolId, timeMinutes: stageSel[st].time }));
     setBusy(true);
-    try {
-      await api.lpSetStages(token, lessonId, stages);
-      await runGenerate("constructor");
-    } catch (e) { setError(msg(e)); setBusy(false); }
+    try { await api.lpSetStages(token, lessonId, stages); await runGenerate("constructor"); }
+    catch (e) { setError(msg(e)); setBusy(false); }
   }
 
   async function runGenerate(mode: "quick" | "constructor") {
     if (!token) return;
-    setError(null);
-    setBusy(true);
+    setError(null); setBusy(true);
     try {
       const id = lessonId ?? (await ensureLesson());
       await api.lpGenerate(token, id, mode);
       setStep(4);
       startPolling(id);
-    } catch (e) {
-      setError("Не удалось запустить генерацию (нужен ключ ИИ). " + msg(e));
-      setBusy(false);
-    }
+    } catch (e) { setError(t.errNoAiGen + msg(e)); setBusy(false); }
   }
 
   function startPolling(id: string) {
@@ -170,9 +145,7 @@ export default function LessonGeneratorPage() {
         const l = await api.lpGet(token, id);
         if (l.status === "ready" || l.status === "error") {
           if (pollRef.current) clearInterval(pollRef.current);
-          setLesson(l);
-          setBusy(false);
-          setStep(5);
+          setLesson(l); setBusy(false); setStep(5);
         }
       } catch { /* keep polling */ }
     }, 2000);
@@ -180,20 +153,19 @@ export default function LessonGeneratorPage() {
 
   async function regenStage(sid: string) {
     if (!token || !lessonId) return;
-    try {
-      await api.lpRegenerateStage(token, lessonId, sid);
-      setLesson(await api.lpGet(token, lessonId));
-    } catch (e) { setError(msg(e)); }
+    try { await api.lpRegenerateStage(token, lessonId, sid); setLesson(await api.lpGet(token, lessonId)); }
+    catch (e) { setError(msg(e)); }
   }
 
-  if (!token) return <Center>Загрузка…</Center>;
+  if (!token) return <Center>{t.loading}</Center>;
 
   return (
     <div style={{ minHeight: "100vh", background: "#f4f5fb", fontFamily: "system-ui, sans-serif" }}>
       <header style={{ background: DARK, color: "#fff", padding: "14px 24px", display: "flex", alignItems: "center", gap: 16 }}>
-        <button onClick={() => (step > 1 && step < 4 ? setStep(step - 1) : router.push("/dashboard/b2c"))} style={{ ...btnGhost, color: "#fff", borderColor: "rgba(255,255,255,0.3)" }}>← Назад</button>
-        <span style={{ fontWeight: 700 }}>Создать урок (КСП)</span>
-        <span style={{ marginLeft: "auto", fontSize: 13, opacity: 0.8 }}>Шаг {Math.min(step, 5)} из 5</span>
+        <button onClick={() => (step > 1 && step < 4 ? setStep(step - 1) : router.push("/dashboard/b2c"))} style={{ ...btnGhost, color: "#fff", borderColor: "rgba(255,255,255,0.3)" }}>← {t.back}</button>
+        <span style={{ fontWeight: 700 }}>{t.genTitle}</span>
+        <span style={{ marginLeft: "auto", fontSize: 13, opacity: 0.8 }}>{t.stepOf.replace("{n}", String(Math.min(step, 5)))}</span>
+        <LangSwitcher lang={lang} setLang={setLang} dark />
       </header>
 
       <main style={{ maxWidth: 900, margin: "0 auto", padding: "24px" }}>
@@ -201,76 +173,55 @@ export default function LessonGeneratorPage() {
 
         {step === 1 && (
           <div>
-            <h2 style={{ color: DARK, fontSize: 20, marginTop: 0 }}>Шапка КСП</h2>
+            <h2 style={{ color: DARK, fontSize: 20, marginTop: 0 }}>{t.headerTitle}</h2>
             <div style={card}>
               <Grid>
-                <Field l="Глава / Раздел"><input style={inp} value={form.unit} onChange={(e) => set("unit", e.target.value)} /></Field>
-                <Field l="Имя учителя"><input style={inp} value={form.teacherName} onChange={(e) => set("teacherName", e.target.value)} /></Field>
-                <Field l="Дата"><input type="date" style={inp} value={form.date} onChange={(e) => set("date", e.target.value)} /></Field>
-                <Field l="№ урока"><input style={inp} value={form.lessonNumber} onChange={(e) => set("lessonNumber", e.target.value)} /></Field>
-                <Field l="Класс *"><select style={inp} value={form.grade} onChange={(e) => set("grade", e.target.value)}><option value="">—</option>{Array.from({ length: 11 }, (_, i) => i + 1).map((g) => <option key={g} value={g}>{g}</option>)}</select></Field>
-                <Field l="Предмет *"><input style={inp} value={form.subject} onChange={(e) => set("subject", e.target.value)} /></Field>
-                <Field l="Присутствует"><input type="number" style={inp} value={form.presentCount} onChange={(e) => set("presentCount", e.target.value)} /></Field>
-                <Field l="Отсутствует"><input type="number" style={inp} value={form.absentCount} onChange={(e) => set("absentCount", e.target.value)} /></Field>
+                <Field l={t.fUnit}><input style={inp} value={form.unit} onChange={(e) => set("unit", e.target.value)} /></Field>
+                <Field l={t.fTeacher}><input style={inp} value={form.teacherName} onChange={(e) => set("teacherName", e.target.value)} /></Field>
+                <Field l={t.fDate}><input type="date" style={inp} value={form.date} onChange={(e) => set("date", e.target.value)} /></Field>
+                <Field l={t.fLessonNo}><input style={inp} value={form.lessonNumber} onChange={(e) => set("lessonNumber", e.target.value)} /></Field>
+                <Field l={t.fGrade}><select style={inp} value={form.grade} onChange={(e) => set("grade", e.target.value)}><option value="">—</option>{Array.from({ length: 11 }, (_, i) => i + 1).map((g) => <option key={g} value={g}>{g}</option>)}</select></Field>
+                <Field l={t.fSubject}><input style={inp} value={form.subject} onChange={(e) => set("subject", e.target.value)} /></Field>
+                <Field l={t.fPresent}><input type="number" style={inp} value={form.presentCount} onChange={(e) => set("presentCount", e.target.value)} /></Field>
+                <Field l={t.fAbsent}><input type="number" style={inp} value={form.absentCount} onChange={(e) => set("absentCount", e.target.value)} /></Field>
               </Grid>
-              <div style={{ marginTop: 12 }}>
-                <Field l="Тема урока *"><input style={inp} value={form.lessonTitle} onChange={(e) => set("lessonTitle", e.target.value)} /></Field>
-              </div>
-              <div style={{ marginTop: 12 }}>
-                <Field l="Языковая цель (для языков)"><input style={inp} value={form.languageFocus} onChange={(e) => set("languageFocus", e.target.value)} /></Field>
-              </div>
-              <div style={{ marginTop: 12 }}>
-                <Field l="Цели обучения (коды, по одному в строке) *">
-                  <textarea style={{ ...inp, minHeight: 70, fontFamily: "inherit" }} value={form.learningObjectives} onChange={(e) => set("learningObjectives", e.target.value)} placeholder="7.6.7.1&#10;7.5.4.1" />
-                </Field>
-              </div>
+              <div style={{ marginTop: 12 }}><Field l={t.fTitle}><input style={inp} value={form.lessonTitle} onChange={(e) => set("lessonTitle", e.target.value)} /></Field></div>
+              <div style={{ marginTop: 12 }}><Field l={t.fLangFocus}><input style={inp} value={form.languageFocus} onChange={(e) => set("languageFocus", e.target.value)} /></Field></div>
+              <div style={{ marginTop: 12 }}><Field l={t.fLearnObj}><textarea style={{ ...inp, minHeight: 70, fontFamily: "inherit" }} value={form.learningObjectives} onChange={(e) => set("learningObjectives", e.target.value)} placeholder="7.6.7.1&#10;7.5.4.1" /></Field></div>
               <Grid>
-                <Field l="Ценности (месяц)">
+                <Field l={t.fValues}>
                   <select style={inp} value={form.valueMonth} onChange={(e) => set("valueMonth", e.target.value)}>
                     <option value="">—</option>
-                    {VALUE_MONTHS.map((m) => <option key={m.month} value={m.month}>{m.label} — {m.value}</option>)}
+                    {VALUE_MONTHS.map((m) => <option key={m.month} value={m.month}>{m.label[lang]} — {m.value[lang]}</option>)}
                   </select>
                 </Field>
-                <Field l="Длительность (мин)"><input type="number" style={inp} value={form.durationMinutes} onChange={(e) => set("durationMinutes", e.target.value)} /></Field>
+                <Field l={t.fDuration}><input type="number" style={inp} value={form.durationMinutes} onChange={(e) => set("durationMinutes", e.target.value)} /></Field>
               </Grid>
             </div>
 
             <div style={card}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <strong style={{ color: DARK }}>Цели урока</strong>
-                <button onClick={genObjectives} disabled={genObjLoading} style={{ ...btnGhost, opacity: genObjLoading ? 0.6 : 1 }}>
-                  {genObjLoading ? "Генерация…" : "Сгенерировать цели урока"}
-                </button>
+                <strong style={{ color: DARK }}>{t.lessonObjectives}</strong>
+                <button onClick={genObjectives} disabled={genObjLoading} style={{ ...btnGhost, opacity: genObjLoading ? 0.6 : 1 }}>{genObjLoading ? t.generating : t.genObjectives}</button>
               </div>
-              {objectives.length ? (
-                objectives.map((o, i) => (
-                  <textarea key={i} style={{ ...inp, minHeight: 44, marginBottom: 8, fontFamily: "inherit" }} value={o}
-                    onChange={(e) => setObjectives((arr) => arr.map((x, j) => (j === i ? e.target.value : x)))} />
-                ))
-              ) : (
-                <div style={{ color: "#6b7280", fontSize: 13 }}>Заполните цели обучения и нажмите «Сгенерировать цели урока».</div>
-              )}
+              {objectives.length ? objectives.map((o, i) => (
+                <textarea key={i} style={{ ...inp, minHeight: 44, marginBottom: 8, fontFamily: "inherit" }} value={o} onChange={(e) => setObjectives((arr) => arr.map((x, j) => (j === i ? e.target.value : x)))} />
+              )) : <div style={{ color: "#6b7280", fontSize: 13 }}>{t.objHint}</div>}
             </div>
 
-            <div style={{ textAlign: "right" }}>
-              <button onClick={toStep2} disabled={busy} style={btnPrimary}>Далее →</button>
-            </div>
+            <div style={{ textAlign: "right" }}><button onClick={toStep2} disabled={busy} style={btnPrimary}>{t.next}</button></div>
           </div>
         )}
 
         {step === 2 && (
           <div>
-            <h2 style={{ color: DARK }}>Выберите режим</h2>
+            <h2 style={{ color: DARK }}>{t.chooseMode}</h2>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
               <button onClick={() => chooseMode("quick")} disabled={busy} style={{ ...card, cursor: "pointer", textAlign: "left", border: "1px solid #ececf3" }}>
-                <div style={{ fontSize: 34 }}>⚡</div>
-                <div style={{ fontWeight: 800, fontSize: 18, color: DARK }}>Быстрый урок</div>
-                <div style={{ fontSize: 13, color: "#6b7280" }}>Платформа подберёт инструменты и сразу сгенерирует урок.</div>
+                <div style={{ fontSize: 34 }}>⚡</div><div style={{ fontWeight: 800, fontSize: 18, color: DARK }}>{t.quickMode}</div><div style={{ fontSize: 13, color: "#6b7280" }}>{t.quickModeSub}</div>
               </button>
               <button onClick={() => chooseMode("constructor")} disabled={busy} style={{ ...card, cursor: "pointer", textAlign: "left", border: "1px solid #ececf3" }}>
-                <div style={{ fontSize: 34 }}>🧩</div>
-                <div style={{ fontWeight: 800, fontSize: 18, color: DARK }}>Собрать самому</div>
-                <div style={{ fontSize: 13, color: "#6b7280" }}>Выберите инструменты и тайминг для каждого этапа.</div>
+                <div style={{ fontSize: 34 }}>🧩</div><div style={{ fontWeight: 800, fontSize: 18, color: DARK }}>{t.constructorMode}</div><div style={{ fontSize: 13, color: "#6b7280" }}>{t.constructorModeSub}</div>
               </button>
             </div>
           </div>
@@ -278,29 +229,25 @@ export default function LessonGeneratorPage() {
 
         {step === 3 && tools && (
           <div>
-            <h2 style={{ color: DARK }}>Конструктор урока</h2>
+            <h2 style={{ color: DARK }}>{t.constructorTitle}</h2>
             {tools.stages.map((st) => (
               <div key={st} style={card}>
-                <strong style={{ color: DARK }}>{STAGE_LABELS[st] ?? st}</strong>
+                <strong style={{ color: DARK }}>{t[`st_${st}`] ?? st}</strong>
                 <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-                  {(tools.tools[st] ?? []).map((t) => (
-                    <label key={t.toolId} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: DARK, cursor: "pointer" }}>
-                      <input type="radio" name={st} checked={stageSel[st]?.toolId === t.toolId}
-                        onChange={() => setStageSel((s) => ({ ...s, [st]: { toolId: t.toolId, time: s[st]?.time ?? 5 } }))} />
-                      {t.nameRu}{t.isDefault && <span style={{ fontSize: 11, color: BRAND, fontWeight: 700 }}>· Рекомендуем</span>}
+                  {(tools.tools[st] ?? []).map((tl) => (
+                    <label key={tl.toolId} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: DARK, cursor: "pointer" }}>
+                      <input type="radio" name={st} checked={stageSel[st]?.toolId === tl.toolId} onChange={() => setStageSel((s) => ({ ...s, [st]: { toolId: tl.toolId, time: s[st]?.time ?? 5 } }))} />
+                      {toolName(tl, lang)}{tl.isDefault && <span style={{ fontSize: 11, color: BRAND, fontWeight: 700 }}>· {t.recommend}</span>}
                     </label>
                   ))}
                 </div>
                 <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 13, color: "#6b7280" }}>Время (мин):</span>
-                  <input type="number" style={{ ...inp, width: 90 }} value={stageSel[st]?.time ?? 5}
-                    onChange={(e) => setStageSel((s) => ({ ...s, [st]: { toolId: s[st]?.toolId ?? "", time: Number(e.target.value) } }))} />
+                  <span style={{ fontSize: 13, color: "#6b7280" }}>{t.timeMin}</span>
+                  <input type="number" style={{ ...inp, width: 90 }} value={stageSel[st]?.time ?? 5} onChange={(e) => setStageSel((s) => ({ ...s, [st]: { toolId: s[st]?.toolId ?? "", time: Number(e.target.value) } }))} />
                 </div>
               </div>
             ))}
-            <div style={{ textAlign: "right" }}>
-              <button onClick={saveStagesAndGenerate} disabled={busy} style={btnPrimary}>{busy ? "Запуск…" : "Сгенерировать урок"}</button>
-            </div>
+            <div style={{ textAlign: "right" }}><button onClick={saveStagesAndGenerate} disabled={busy} style={btnPrimary}>{busy ? t.starting : t.generateLesson}</button></div>
           </div>
         )}
 
@@ -308,55 +255,53 @@ export default function LessonGeneratorPage() {
           <Center>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>⏳</div>
-              <div style={{ fontWeight: 700, color: DARK, fontSize: 18 }}>Генерируем урок…</div>
-              <div style={{ color: "#6b7280", fontSize: 14, marginTop: 6 }}>Обычно занимает 20–40 секунд. Не закрывайте страницу.</div>
+              <div style={{ fontWeight: 700, color: DARK, fontSize: 18 }}>{t.genProgress}</div>
+              <div style={{ color: "#6b7280", fontSize: 14, marginTop: 6 }}>{t.genProgressSub}</div>
             </div>
           </Center>
         )}
 
-        {step === 5 && lesson && (
-          <LessonView lesson={lesson} onRegen={regenStage} onExport={() => token && downloadExport(lesson, token)} />
-        )}
+        {step === 5 && lesson && <LessonView lesson={lesson} onRegen={regenStage} onExport={() => token && downloadExport(lesson, token)} t={t} lang={lang} />}
       </main>
     </div>
   );
 }
 
-function LessonView({ lesson, onRegen, onExport }: { lesson: LpLesson; onRegen: (sid: string) => void; onExport: () => void }) {
+function LessonView({ lesson, onRegen, onExport, t, lang }: { lesson: LpLesson; onRegen: (sid: string) => void; onExport: () => void; t: T; lang: Lang }) {
   const th: React.CSSProperties = { textAlign: "left", padding: "8px 10px", background: "#f0f0f7", fontSize: 12, color: "#374151", border: "1px solid #e5e5ee" };
   const td: React.CSSProperties = { padding: "8px 10px", fontSize: 13, color: DARK, border: "1px solid #e5e5ee", verticalAlign: "top" };
   if (lesson.status === "error") {
-    return <div style={card}><strong>Ошибка генерации.</strong><div style={{ color: "#6b7280", marginTop: 6 }}>{lesson.generationError ?? "Попробуйте ещё раз."}</div></div>;
+    return <div style={card}><strong>{t.genError}</strong><div style={{ color: "#6b7280", marginTop: 6 }}>{lesson.generationError ?? t.genErrorHint}</div></div>;
   }
   return (
     <div>
       <div style={card}>
-        <h2 style={{ marginTop: 0, color: DARK }}>{lesson.lessonTitle || "Урок"}</h2>
+        <h2 style={{ marginTop: 0, color: DARK }}>{lesson.lessonTitle || t.st_task}</h2>
         <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.7 }}>
-          <div><b>Раздел:</b> {lesson.unit || "—"} · <b>Класс:</b> {lesson.grade ?? "—"} · <b>Предмет:</b> {lesson.subject || "—"}</div>
-          <div><b>Учитель:</b> {lesson.teacherName || "—"} · <b>Дата:</b> {lesson.date || "—"} · <b>№:</b> {lesson.lessonNumber || "—"}</div>
-          <div><b>Ценность:</b> {lesson.valueLink || "—"}</div>
-          {!!lesson.lessonObjectives?.length && <div style={{ marginTop: 6 }}><b>Цели урока:</b><ul style={{ margin: "4px 0", paddingLeft: 18 }}>{lesson.lessonObjectives.map((o, i) => <li key={i}>{o}</li>)}</ul></div>}
-          <div><b>Итого баллов:</b> {lesson.totalPoints}/10</div>
+          <div><b>{t.vUnit}:</b> {lesson.unit || "—"} · <b>{t.vGrade}:</b> {lesson.grade ?? "—"} · <b>{t.vSubject}:</b> {lesson.subject || "—"}</div>
+          <div><b>{t.vTeacher}:</b> {lesson.teacherName || "—"} · <b>{t.vDate}:</b> {lesson.date || "—"} · <b>{t.vNo}:</b> {lesson.lessonNumber || "—"}</div>
+          <div><b>{t.vValue}:</b> {lesson.valueLink || "—"}</div>
+          {!!lesson.lessonObjectives?.length && <div style={{ marginTop: 6 }}><b>{t.lessonObjectives}:</b><ul style={{ margin: "4px 0", paddingLeft: 18 }}>{lesson.lessonObjectives.map((o, i) => <li key={i}>{o}</li>)}</ul></div>}
+          <div><b>{t.vTotalPoints}:</b> {lesson.totalPoints}/10</div>
         </div>
       </div>
 
       <div style={{ overflowX: "auto" }}>
         <table style={{ borderCollapse: "collapse", width: "100%", background: "#fff" }}>
-          <thead><tr><th style={th}>Этап / Время</th><th style={th}>Действия учителя</th><th style={th}>Действия обучающегося</th><th style={th}>Критерии оценивания</th><th style={th}>Ресурсы</th></tr></thead>
+          <thead><tr><th style={th}>{t.thStage}</th><th style={th}>{t.thTeacher}</th><th style={th}>{t.thStudent}</th><th style={th}>{t.thCriteria}</th><th style={th}>{t.thResources}</th></tr></thead>
           <tbody>
             {(lesson.stages ?? []).map((s) => (
               <tr key={s.id}>
                 <td style={td}>
-                  <b>{s.stageName || STAGE_LABELS[s.stageType] || s.stageType}</b><br />({s.timeMinutes} мин)
-                  <br /><button onClick={() => onRegen(s.id)} style={{ ...btnGhost, padding: "3px 8px", fontSize: 11, marginTop: 6 }}>↻ Перегенерировать</button>
+                  <b>{s.stageName || t[`st_${s.stageType}`] || s.stageType}</b><br />({s.timeMinutes} {t.min})
+                  <br /><button onClick={() => onRegen(s.id)} style={{ ...btnGhost, padding: "3px 8px", fontSize: 11, marginTop: 6 }}>{t.regen}</button>
                 </td>
                 <td style={td}>{s.teacherActions}</td>
                 <td style={td}>
                   {s.studentActions}
                   {!!s.descriptors?.length && (
                     <div style={{ marginTop: 6, fontSize: 12 }}>
-                      <b>Дескрипторы:</b>
+                      <b>{t.descriptors}:</b>
                       <ol style={{ margin: "2px 0", paddingLeft: 16 }}>{s.descriptors.map((d) => <li key={d.id}>{d.text}</li>)}</ol>
                       <b>Total: {s.points} points</b>
                     </div>
@@ -371,15 +316,18 @@ function LessonView({ lesson, onRegen, onExport }: { lesson: LpLesson; onRegen: 
       </div>
 
       <div style={{ marginTop: 16, display: "flex", gap: 12 }}>
-        <button onClick={onExport} style={btnPrimary}>Скачать план урока</button>
-        <button disabled title="Скоро" style={{ ...btnGhost, opacity: 0.5, cursor: "not-allowed" }}>Создать презентацию (скоро)</button>
+        <button onClick={onExport} style={btnPrimary}>{t.downloadPlan}</button>
+        <button disabled title={t.soon} style={{ ...btnGhost, opacity: 0.5, cursor: "not-allowed" }}>{t.createPresentation}</button>
       </div>
     </div>
   );
 }
 
+function toolName(tl: { nameRu: string; nameKz: string; nameEn: string }, lang: Lang): string {
+  return lang === "kz" ? tl.nameKz : lang === "en" ? tl.nameEn : tl.nameRu;
+}
+
 async function downloadExport(lesson: LpLesson, token: string) {
-  // №130 export (.docx) from the API.
   const res = await fetch(`${API_URL}/lesson-plans/${lesson.id}/export`, { headers: { Authorization: `Bearer ${token}` } });
   if (!res.ok) return;
   const blob = await res.blob();
@@ -389,15 +337,7 @@ async function downloadExport(lesson: LpLesson, token: string) {
   URL.revokeObjectURL(url);
 }
 
-function Field({ l, children }: { l: string; children: React.ReactNode }) {
-  return <div><span style={label}>{l}</span>{children}</div>;
-}
-function Grid({ children }: { children: React.ReactNode }) {
-  return <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>{children}</div>;
-}
-function Center({ children }: { children: React.ReactNode }) {
-  return <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#6b7280" }}>{children}</div>;
-}
-function msg(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
-}
+function Field({ l, children }: { l: string; children: React.ReactNode }) { return <div><span style={label}>{l}</span>{children}</div>; }
+function Grid({ children }: { children: React.ReactNode }) { return <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>{children}</div>; }
+function Center({ children }: { children: React.ReactNode }) { return <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#6b7280" }}>{children}</div>; }
+function msg(e: unknown): string { return e instanceof Error ? e.message : String(e); }

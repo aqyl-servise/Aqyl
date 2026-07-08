@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, type B2CProfile, type Subscription } from "../../../lib/api";
 import { getValidAccessToken, logout } from "../../../lib/auth";
+import { useLang, LT } from "../../../lib/lesson-translations";
+import { LangSwitcher } from "../../../components/lang-switcher";
 
 const BRAND = "#6B5CE7";
 const GREEN = "#2DC08E";
@@ -11,26 +13,15 @@ const DARK = "#0D0E1A";
 
 function daysLeft(date: string | null): number {
   if (!date) return 0;
-  const diff = new Date(date).getTime() - Date.now();
-  return Math.max(0, Math.ceil(diff / (24 * 60 * 60 * 1000)));
+  return Math.max(0, Math.ceil((new Date(date).getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
 }
 
-function formatDate(date: string | null): string {
-  if (!date) return "—";
-  return new Date(date).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
-}
-
-interface BigButton {
-  key: string;
-  icon: string;
-  title: string;
-  subtitle: string;
-  onClick: () => void;
-  soon?: boolean;
-}
+interface BigButton { key: string; icon: string; title: string; subtitle: string; onClick: () => void; soon?: boolean }
 
 export default function B2CDashboardPage() {
   const router = useRouter();
+  const [lang, setLang] = useLang();
+  const t = LT[lang];
   const [profile, setProfile] = useState<B2CProfile | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,36 +38,26 @@ export default function B2CDashboardPage() {
         if (!me.onboardingCompleted) { router.replace("/dashboard/b2c/onboarding"); return; }
         const sub = await api.getSubscription(token).catch(() => null);
         if (!active) return;
-        setProfile(me);
-        setSubscription(sub);
-      } catch {
-        if (active) router.replace("/login");
-      } finally {
-        if (active) setLoading(false);
-      }
+        setProfile(me); setSubscription(sub);
+      } catch { if (active) router.replace("/login"); }
+      finally { if (active) setLoading(false); }
     })();
     return () => { active = false; };
   }, [router]);
 
-  // ?payment=... (Kaspi) и ?action=create-lesson (из онбординга) → сразу к генератору.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const payment = params.get("payment");
     const action = params.get("action");
-    if (payment === "success") setToast({ kind: "success", text: "Оплата прошла успешно. Подписка активирована." });
-    else if (payment === "failed") setToast({ kind: "error", text: "Оплата не прошла. Попробуйте ещё раз." });
+    if (payment === "success") setToast({ kind: "success", text: t.subActive });
+    else if (payment === "failed") setToast({ kind: "error", text: "—" });
     if (payment || action) window.history.replaceState({}, "", "/dashboard/b2c");
     if (action === "create-lesson" || action === "create-kmzh") router.push("/dashboard/b2c/lesson");
-  }, [router]);
+  }, [router, t]);
 
-  async function handleLogout() {
-    await logout();
-    router.replace("/login");
-  }
+  async function handleLogout() { await logout(); router.replace("/login"); }
 
-  if (loading) {
-    return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#6b7280" }}>Загрузка…</div>;
-  }
+  if (loading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#6b7280" }}>{t.loading}</div>;
   if (!profile) return null;
 
   const status = subscription?.status ?? profile.subscriptionStatus;
@@ -85,36 +66,26 @@ export default function B2CDashboardPage() {
   const isTrial = status === "trial" && trialLeft > 0;
   const isExpired = status === "expired" || status === "cancelled" || (status === "trial" && trialLeft <= 0);
 
-  // 5 крупных кнопок (ТЗ раздел 2). Без Визуализатора/Адаптации/Профиля на главной.
   const buttons: BigButton[] = [
-    { key: "lesson", icon: "📝", title: "Создать урок", subtitle: "Краткосрочный план урока (КСП)", onClick: () => router.push("/dashboard/b2c/lesson") },
-    { key: "materials", icon: "📚", title: "Мои материалы", subtitle: "Сохранённые уроки и задания", onClick: () => router.push("/dashboard/b2c/materials") },
-    { key: "fl", icon: "📊", title: "Функциональная грамотность", subtitle: "Скоро", soon: true, onClick: () => setToast({ kind: "success", text: "Модуль в разработке — скоро." }) },
-    { key: "subscribe", icon: "💳", title: "Подписка", subtitle: "Тарифы и оплата", onClick: () => router.push("/dashboard/b2c/subscribe") },
-    { key: "help", icon: "❓", title: "Помощь", subtitle: "Справка и поддержка", onClick: () => router.push("/dashboard/b2c/help") },
+    { key: "lesson", icon: "📝", title: t.createLesson, subtitle: t.createLessonSub, onClick: () => router.push("/dashboard/b2c/lesson") },
+    { key: "materials", icon: "📚", title: t.materials, subtitle: t.materialsSub, onClick: () => router.push("/dashboard/b2c/materials") },
+    { key: "fl", icon: "📊", title: t.fl, subtitle: t.soon, soon: true, onClick: () => setToast({ kind: "success", text: t.flDev }) },
+    { key: "subscribe", icon: "💳", title: t.subscription, subtitle: t.subscriptionSub, onClick: () => router.push("/dashboard/b2c/subscribe") },
+    { key: "help", icon: "❓", title: t.help, subtitle: t.helpSub, onClick: () => router.push("/dashboard/b2c/help") },
   ];
 
   return (
     <div style={{ minHeight: "100vh", background: "#f4f5fb", fontFamily: "system-ui, sans-serif" }}>
-      <header style={{ background: DARK, color: "#fff", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <header style={{ background: DARK, color: "#fff", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
           <span style={{ color: BRAND, fontWeight: 800, fontSize: 20 }}>Aqyl</span>
           <span style={{ marginLeft: 14, fontSize: 14, opacity: 0.85 }}>{profile.fullName}</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <button
-            onClick={() => router.push("/dashboard/b2c/profile")}
-            title="Профиль"
-            style={{ background: "none", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13 }}
-          >
-            👤 Профиль
-          </button>
-          <span style={{ fontSize: 12, padding: "4px 10px", borderRadius: 999, background: "rgba(107,92,231,0.25)" }}>
-            {isActive ? "Подписка активна" : isTrial ? "Пробный период" : "Доступ ограничен"}
-          </span>
-          <button onClick={handleLogout} style={{ background: "none", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13 }}>
-            Выйти
-          </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <LangSwitcher lang={lang} setLang={setLang} dark />
+          <button onClick={() => router.push("/dashboard/b2c/profile")} style={{ background: "none", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13 }}>👤 {t.profile}</button>
+          <span style={{ fontSize: 12, padding: "4px 10px", borderRadius: 999, background: "rgba(107,92,231,0.25)" }}>{isActive ? t.subActive : isTrial ? t.subTrial : t.subLimited}</span>
+          <button onClick={handleLogout} style={{ background: "none", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13 }}>{t.logout}</button>
         </div>
       </header>
 
@@ -128,37 +99,22 @@ export default function B2CDashboardPage() {
 
         {isTrial && (
           <div style={{ background: "#efeaff", border: `1px solid ${BRAND}33`, color: DARK, padding: "16px 18px", borderRadius: 12, marginBottom: 24, fontSize: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-            <span>Пробный период: осталось <strong>{trialLeft}</strong> {trialLeft === 1 ? "день" : trialLeft < 5 ? "дня" : "дней"}.</span>
-            <button onClick={() => router.push("/dashboard/b2c/subscribe")} style={{ background: BRAND, color: "#fff", border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>Оформить подписку</button>
-          </div>
-        )}
-        {isActive && subscription && (
-          <div style={{ background: "#e7f8f1", border: `1px solid ${GREEN}33`, color: DARK, padding: "16px 18px", borderRadius: 12, marginBottom: 24, fontSize: 14 }}>
-            Подписка активна. Следующее списание: <strong>{formatDate(subscription.currentPeriodEnd)}</strong>.
+            <span>{t.trialLeft.replace("{n}", String(trialLeft))}</span>
+            <button onClick={() => router.push("/dashboard/b2c/subscribe")} style={{ background: BRAND, color: "#fff", border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>{t.getSub}</button>
           </div>
         )}
 
         {isExpired ? (
           <div style={{ background: "#fff", borderRadius: 14, padding: "40px 24px", textAlign: "center", boxShadow: "0 4px 18px rgba(13,14,26,0.08)" }}>
-            <h2 style={{ color: DARK, fontSize: 20, margin: "0 0 8px" }}>{status === "trial" ? "Пробный период завершён" : "Подписка истекла"}</h2>
-            <p style={{ color: "#6b7280", fontSize: 14, margin: "0 0 20px" }}>Оформите подписку, чтобы продолжить пользоваться Aqyl.</p>
-            <button onClick={() => router.push("/dashboard/b2c/subscribe")} style={{ background: BRAND, color: "#fff", border: "none", borderRadius: 10, padding: "12px 26px", fontSize: 15, fontWeight: 600, cursor: "pointer" }}>Продлить подписку</button>
+            <h2 style={{ color: DARK, fontSize: 20, margin: "0 0 8px" }}>{status === "trial" ? t.trialEnded : t.subExpired}</h2>
+            <p style={{ color: "#6b7280", fontSize: 14, margin: "0 0 20px" }}>{t.subExpiredHint}</p>
+            <button onClick={() => router.push("/dashboard/b2c/subscribe")} style={{ background: BRAND, color: "#fff", border: "none", borderRadius: 10, padding: "12px 26px", fontSize: 15, fontWeight: 600, cursor: "pointer" }}>{t.extendSub}</button>
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 18 }}>
             {buttons.map((b) => (
-              <button
-                key={b.key}
-                onClick={b.onClick}
-                style={{
-                  position: "relative", textAlign: "left", background: "#fff", border: "1px solid #ececf3",
-                  borderRadius: 16, padding: "26px 22px", cursor: "pointer", boxShadow: "0 4px 18px rgba(13,14,26,0.06)",
-                  display: "flex", flexDirection: "column", gap: 8, minHeight: 120, transition: "transform .08s",
-                }}
-              >
-                {b.soon && (
-                  <span style={{ position: "absolute", top: 14, right: 14, fontSize: 11, fontWeight: 700, color: "#fff", background: "#f59e0b", borderRadius: 999, padding: "3px 9px" }}>Скоро</span>
-                )}
+              <button key={b.key} onClick={b.onClick} style={{ position: "relative", textAlign: "left", background: "#fff", border: "1px solid #ececf3", borderRadius: 16, padding: "26px 22px", cursor: "pointer", boxShadow: "0 4px 18px rgba(13,14,26,0.06)", display: "flex", flexDirection: "column", gap: 8, minHeight: 120 }}>
+                {b.soon && <span style={{ position: "absolute", top: 14, right: 14, fontSize: 11, fontWeight: 700, color: "#fff", background: "#f59e0b", borderRadius: 999, padding: "3px 9px" }}>{t.soon}</span>}
                 <div style={{ fontSize: 34 }}>{b.icon}</div>
                 <div style={{ fontWeight: 800, fontSize: 18, color: DARK }}>{b.title}</div>
                 <div style={{ fontSize: 13, color: "#6b7280" }}>{b.subtitle}</div>
