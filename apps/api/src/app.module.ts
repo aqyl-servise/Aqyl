@@ -105,6 +105,12 @@ import { VisualizerModule } from "./modules/visualizer/visualizer.module";
 import { Diagram } from "./modules/visualizer/entities/diagram.entity";
 import { TextAdapterModule } from "./modules/text-adapter/text-adapter.module";
 import { Adaptation } from "./modules/text-adapter/entities/adaptation.entity";
+import { LessonPlansModule } from "./modules/lesson-plans/lesson-plans.module";
+import { Lesson } from "./modules/lesson-plans/entities/lesson.entity";
+import { LessonStage } from "./modules/lesson-plans/entities/lesson-stage.entity";
+import { Descriptor } from "./modules/lesson-plans/entities/descriptor.entity";
+import { ToolCatalog } from "./modules/lesson-plans/entities/tool-catalog.entity";
+import { ValueLinkReference } from "./modules/lesson-plans/entities/value-link-reference.entity";
 
 @Module({
   imports: [
@@ -151,6 +157,11 @@ import { Adaptation } from "./modules/text-adapter/entities/adaptation.entity";
           Subscription, Payment,
           Diagram,
           Adaptation,
+          Lesson,
+          LessonStage,
+          Descriptor,
+          ToolCatalog,
+          ValueLinkReference,
         ],
       }),
     }),
@@ -206,6 +217,7 @@ import { Adaptation } from "./modules/text-adapter/entities/adaptation.entity";
     StorageModule,
     VisualizerModule,
     TextAdapterModule,
+    LessonPlansModule,
   ],
   providers: [
     SeedService,
