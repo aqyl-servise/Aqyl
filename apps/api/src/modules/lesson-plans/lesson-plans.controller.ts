@@ -7,7 +7,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { SubscriptionGuard } from '../../common/guards/subscription.guard';
 import { SkipSchoolIsolation } from '../../common/decorators/skip-school-isolation.decorator';
-import { ALL_TEACHER_ROLES } from '../../common/roles.constants';
+import { ALL_TEACHER_ROLES, ADMIN_ROLES } from '../../common/roles.constants';
 import { LessonPlansService } from './lesson-plans.service';
 import { LessonHeaderDto } from './dto/lesson-header.dto';
 import { SetStagesDto, GenerateLessonDto, SwapToolDto } from './dto/lesson-actions.dto';
@@ -19,7 +19,7 @@ type AuthRequest = { user: { id: string; sub?: string; schoolId: string | null; 
 @SkipSchoolIsolation()
 @Controller('lesson-plans')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(...ALL_TEACHER_ROLES)
+@Roles(...ALL_TEACHER_ROLES, ...ADMIN_ROLES)
 export class LessonPlansController {
   constructor(private readonly service: LessonPlansService) {}
 
