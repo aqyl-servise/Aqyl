@@ -332,6 +332,28 @@ export class ApiError extends Error {
   }
 }
 
+// ── Lesson-plans (КСП generator) ──────────────────────────────────
+export interface LpTool { toolId: string; stageType: string; nameRu: string; nameKz: string; nameEn: string; isDefault: boolean; description: string; sortOrder: number }
+export interface LpDescriptor { id: string; order: number; text: string; points: number }
+export interface LpStage {
+  id: string; order: number; stageType: string; stageName?: string; timeMinutes: number; toolId?: string;
+  teacherActions?: string; studentActions?: string; assessmentCriteria?: string; method?: string; resources?: string;
+  isAssessed: boolean; points?: number | null; descriptors?: LpDescriptor[];
+}
+export interface LpLesson {
+  id: string; userId: string; schoolId?: string | null;
+  unit?: string; teacherName?: string; date?: string; lessonNumber?: string; grade?: number;
+  presentCount?: number; absentCount?: number; subject?: string; lessonTitle?: string; languageFocus?: string;
+  learningObjectives: string[]; lessonObjectives: string[]; valueMonth?: string; valueLink?: string; durationMinutes: number;
+  homework?: string | null; mode: string; status: "draft" | "generating" | "ready" | "error"; generationError?: string | null;
+  totalPoints: number; stages?: LpStage[]; createdAt: string; updatedAt: string;
+}
+export interface LpToolsResponse { stages: string[]; tools: Record<string, LpTool[]> }
+export type LpHeader = Partial<Pick<LpLesson,
+  "unit" | "teacherName" | "date" | "lessonNumber" | "grade" | "presentCount" | "absentCount" |
+  "subject" | "lessonTitle" | "languageFocus" | "learningObjectives" | "valueMonth" | "durationMinutes">>;
+export interface LpStageInput { stageType: string; toolId?: string; timeMinutes: number }
+
 async function request<T>(path: string, init?: RequestInit, token?: string): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
@@ -393,6 +415,28 @@ export const api = {
     request<Subscription | null>("/billing/subscription", undefined, token),
   getPaymentHistory: (token: string) =>
     request<PaymentRecord[]>("/billing/payments", undefined, token),
+
+  // Lesson-plans (КСП generator)
+  lpCreate: (token: string, header: LpHeader) =>
+    request<LpLesson>("/lesson-plans", { method: "POST", body: JSON.stringify(header) }, token),
+  lpUpdate: (token: string, id: string, header: LpHeader) =>
+    request<LpLesson>(`/lesson-plans/${id}`, { method: "PATCH", body: JSON.stringify(header) }, token),
+  lpGet: (token: string, id: string) =>
+    request<LpLesson>(`/lesson-plans/${id}`, undefined, token),
+  lpList: (token: string) =>
+    request<LpLesson[]>("/lesson-plans", undefined, token),
+  lpObjectives: (token: string, id: string) =>
+    request<string[]>(`/lesson-plans/${id}/objectives`, { method: "POST" }, token),
+  lpTools: (token: string) =>
+    request<LpToolsResponse>("/lesson-plans/tools", undefined, token),
+  lpSetStages: (token: string, id: string, stages: LpStageInput[]) =>
+    request<LpLesson>(`/lesson-plans/${id}/stages`, { method: "PATCH", body: JSON.stringify({ stages }) }, token),
+  lpGenerate: (token: string, id: string, mode: "quick" | "constructor") =>
+    request<{ status: string }>(`/lesson-plans/${id}/generate`, { method: "POST", body: JSON.stringify({ mode }) }, token),
+  lpRegenerateStage: (token: string, id: string, sid: string) =>
+    request<LpStage>(`/lesson-plans/${id}/stages/${sid}/regenerate`, { method: "POST" }, token),
+  lpSwapTool: (token: string, id: string, sid: string, toolId: string) =>
+    request<LpStage>(`/lesson-plans/${id}/stages/${sid}/swap-tool`, { method: "PATCH", body: JSON.stringify({ toolId }) }, token),
 
   // Dashboard (teacher)
   getDashboard: (token: string) =>
