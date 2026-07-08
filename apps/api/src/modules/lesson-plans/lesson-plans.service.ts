@@ -102,6 +102,80 @@ export class LessonPlansService {
     return lesson;
   }
 
+  // ── Export №130 (.docx) ─────────────────────────────────────────
+  async exportDocx(id: string, ctx: UserCtx): Promise<Buffer> {
+    const lesson = await this.getOne(id, ctx);
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, HeadingLevel } =
+      require('docx') as typeof import('docx');
+
+    const border = { style: BorderStyle.SINGLE, size: 4, color: '000000' };
+    const borders = { top: border, bottom: border, left: border, right: border };
+    const p = (text: string, bold = false) => new Paragraph({ children: [new TextRun({ text: text ?? '', bold, size: 20 })] });
+    const cell = (children: import('docx').Paragraph[], widthDxa?: number) =>
+      new TableCell({ borders, ...(widthDxa ? { width: { size: widthDxa, type: WidthType.DXA } } : {}), children });
+
+    // Header rows (label | value)
+    const hRow = (label: string, value: string) =>
+      new TableRow({ children: [cell([p(label, true)], 3200), cell([p(value)], 6800)] });
+
+    const headerTable = new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        hRow('Short term plan', lesson.unit ? `Unit: ${lesson.unit}` : ''),
+        hRow('Lesson №', lesson.lessonNumber ?? ''),
+        hRow('Teacher name', lesson.teacherName ?? ''),
+        hRow('Date', lesson.date ?? ''),
+        hRow('Grade', String(lesson.grade ?? '')),
+        hRow('Number present / absent', `${lesson.presentCount ?? ''} / ${lesson.absentCount ?? ''}`),
+        hRow('Lesson title', lesson.lessonTitle ?? ''),
+        hRow('Language focus', lesson.languageFocus ?? ''),
+        hRow('Learning objectives', (lesson.learningObjectives ?? []).join('\n')),
+        hRow('Lesson objectives', (lesson.lessonObjectives ?? []).join('\n')),
+        hRow('Value links', lesson.valueLink ?? ''),
+      ],
+    });
+
+    // Plan table (5 columns)
+    const th = (t: string) => cell([p(t, true)]);
+    const planHeader = new TableRow({
+      children: [th('Stages / Time'), th("Teachers' actions"), th("Students' actions"), th('Assessment criteria'), th('Resources')],
+    });
+    const planRows = (lesson.stages ?? []).map((s) => {
+      const studentChildren: import('docx').Paragraph[] = [p(s.studentActions ?? '')];
+      if (s.descriptors?.length) {
+        studentChildren.push(p('Descriptor:', true));
+        s.descriptors.forEach((d, i) => studentChildren.push(p(`${i + 1}. ${d.text}`)));
+        studentChildren.push(p(`Total: ${s.points ?? 0} points`, true));
+      }
+      const critChildren: import('docx').Paragraph[] = [p(s.assessmentCriteria ?? '')];
+      if (s.method) critChildren.push(p(`Method: ${s.method}`));
+      return new TableRow({
+        children: [
+          cell([p(`${s.stageName || s.stageType}`, true), p(`(${s.timeMinutes} min)`)]),
+          cell([p(s.teacherActions ?? '')]),
+          cell(studentChildren),
+          cell(critChildren),
+          cell([p(s.resources ?? '')]),
+        ],
+      });
+    });
+    const planTable = new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [planHeader, ...planRows] });
+
+    const doc = new Document({
+      sections: [{
+        children: [
+          new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: 'Краткосрочный план урока (КСП)', bold: true })] }),
+          headerTable,
+          new Paragraph({ children: [new TextRun({ text: '' })] }),
+          new Paragraph({ children: [new TextRun({ text: 'Plan', bold: true, size: 22 })] }),
+          planTable,
+        ],
+      }],
+    });
+    return Packer.toBuffer(doc);
+  }
+
   // ── Objectives (Haiku) ──────────────────────────────────────────
   async generateObjectives(id: string, ctx: UserCtx): Promise<string[]> {
     const lesson = await this.own(id, ctx);

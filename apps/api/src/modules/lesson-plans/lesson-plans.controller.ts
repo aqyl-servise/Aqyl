@@ -1,6 +1,7 @@
 import {
-  Body, Controller, Get, Param, Patch, Post, Req, UseGuards,
+  Body, Controller, Get, Param, Patch, Post, Req, Res, UseGuards,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -92,9 +93,14 @@ export class LessonPlansController {
     return this.service.swapTool(id, sid, this.ctx(req), body.toolId);
   }
 
-  // ── export (№130) — real docx in Фаза 6; returns lesson JSON for now ──
+  // ── export (№130) → .docx ───────────────────────────────────────
   @Get(':id/export')
-  export(@Param('id') id: string, @Req() req: AuthRequest) {
-    return this.service.getOne(id, this.ctx(req));
+  async export(@Param('id') id: string, @Req() req: AuthRequest, @Res() res: Response) {
+    const buf = await this.service.exportDocx(id, this.ctx(req));
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'Content-Disposition': `attachment; filename="ksp-${id}.docx"`,
+    });
+    res.send(buf);
   }
 }

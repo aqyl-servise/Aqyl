@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getValidAccessToken } from "../../../../lib/auth";
-import { api, type LpLesson, type LpToolsResponse, type LpStageInput, type LpHeader } from "../../../../lib/api";
+import { api, API_URL, type LpLesson, type LpToolsResponse, type LpStageInput, type LpHeader } from "../../../../lib/api";
 
 const BRAND = "#6B5CE7";
 const DARK = "#0D0E1A";
@@ -315,7 +315,7 @@ export default function LessonGeneratorPage() {
         )}
 
         {step === 5 && lesson && (
-          <LessonView lesson={lesson} onRegen={regenStage} onExport={() => downloadExport(lesson)} />
+          <LessonView lesson={lesson} onRegen={regenStage} onExport={() => token && downloadExport(lesson, token)} />
         )}
       </main>
     </div>
@@ -378,12 +378,14 @@ function LessonView({ lesson, onRegen, onExport }: { lesson: LpLesson; onRegen: 
   );
 }
 
-function downloadExport(lesson: LpLesson) {
-  // №130 export lands in Фаза 6; for now download the plan JSON.
-  const blob = new Blob([JSON.stringify(lesson, null, 2)], { type: "application/json" });
+async function downloadExport(lesson: LpLesson, token: string) {
+  // №130 export (.docx) from the API.
+  const res = await fetch(`${API_URL}/lesson-plans/${lesson.id}/export`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) return;
+  const blob = await res.blob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url; a.download = `ksp-${lesson.id}.json`; a.click();
+  a.href = url; a.download = `ksp-${lesson.id}.docx`; a.click();
   URL.revokeObjectURL(url);
 }
 
