@@ -9,6 +9,7 @@ import { LessonsSeedService } from './lesson-plans.seed.service';
 import { LessonPlansService } from './lesson-plans.service';
 import { LessonPlansController } from './lesson-plans.controller';
 import { AiClientModule } from '../../services/ai-client.module';
+import { BillingModule } from '../billing/billing.module';
 
 // КСП (short-term lesson plan) generator — Срез 1.
 // Named `lesson-plans` to avoid the existing `lessons` module (open-lesson analysis).
@@ -22,6 +23,7 @@ import { AiClientModule } from '../../services/ai-client.module';
       ValueLinkReference,
     ]),
     AiClientModule,
+    BillingModule,
   ],
   controllers: [LessonPlansController],
   providers: [LessonsSeedService, LessonPlansService],
