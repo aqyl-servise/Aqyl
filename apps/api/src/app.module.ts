@@ -111,6 +111,9 @@ import { LessonStage } from "./modules/lesson-plans/entities/lesson-stage.entity
 import { Descriptor } from "./modules/lesson-plans/entities/descriptor.entity";
 import { ToolCatalog } from "./modules/lesson-plans/entities/tool-catalog.entity";
 import { ValueLinkReference } from "./modules/lesson-plans/entities/value-link-reference.entity";
+import { LiteracyModule } from "./modules/literacy/literacy.module";
+import { LiteracySet } from "./modules/literacy/entities/literacy-set.entity";
+import { LiteracyQuestion } from "./modules/literacy/entities/literacy-question.entity";
 
 @Module({
   imports: [
@@ -162,6 +165,8 @@ import { ValueLinkReference } from "./modules/lesson-plans/entities/value-link-r
           Descriptor,
           ToolCatalog,
           ValueLinkReference,
+          LiteracySet,
+          LiteracyQuestion,
         ],
       }),
     }),
@@ -218,6 +223,7 @@ import { ValueLinkReference } from "./modules/lesson-plans/entities/value-link-r
     VisualizerModule,
     TextAdapterModule,
     LessonPlansModule,
+    LiteracyModule,
   ],
   providers: [
     SeedService,

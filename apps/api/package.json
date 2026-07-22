@@ -29,6 +29,7 @@
     "compression": "^1.8.1",
     "docx": "^9.6.1",
     "helmet": "^8.1.0",
+    "mammoth": "^1.8.0",
     "mime-types": "^3.0.2",
     "multer": "^2.0.2",
     "nodemailer": "^9.0.3",

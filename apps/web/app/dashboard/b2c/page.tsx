@@ -69,7 +69,7 @@ export default function B2CDashboardPage() {
   const buttons: BigButton[] = [
     { key: "lesson", icon: "📝", title: t.createLesson, subtitle: t.createLessonSub, onClick: () => router.push("/dashboard/b2c/lesson") },
     { key: "materials", icon: "📚", title: t.materials, subtitle: t.materialsSub, onClick: () => router.push("/dashboard/b2c/materials") },
-    { key: "fl", icon: "📊", title: t.fl, subtitle: t.soon, soon: true, onClick: () => setToast({ kind: "success", text: t.flDev }) },
+    { key: "fl", icon: "📊", title: t.fl, subtitle: t.litTitle, onClick: () => router.push("/dashboard/b2c/literacy") },
     { key: "subscribe", icon: "💳", title: t.subscription, subtitle: t.subscriptionSub, onClick: () => router.push("/dashboard/b2c/subscribe") },
     { key: "help", icon: "❓", title: t.help, subtitle: t.helpSub, onClick: () => router.push("/dashboard/b2c/help") },
   ];

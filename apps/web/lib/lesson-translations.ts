@@ -57,6 +57,20 @@ const ru: Dict = {
   helpSupport: "Поддержка", helpContact: "Вопросы и предложения:",
   // profile
   pName: "Имя", pEmail: "Email", pSubject: "Предмет",
+  // functional literacy
+  litTitle: "Функциональная грамотность",
+  litType: "Тип грамотности", litTypeReading: "Читательская", litTypeMath: "Математическая", litTypeScience: "Естественно-научная",
+  litSubjectF: "Предмет", litGradeF: "Класс", litLang: "Язык генерации",
+  litSource: "Источник стимула", litSourceOwn: "Свой материал", litSourceGen: "Сгенерировать",
+  litCount: "Количество вопросов", litPisa: "Уровни PISA", litQTypes: "Типы вопросов",
+  qt_single: "Один ответ", qt_multiple: "Несколько ответов", qt_truefalse: "Верно / Неверно", qt_short: "Краткий ответ", qt_open: "Развёрнутый ответ", qt_matching: "Сопоставление",
+  litPasteText: "Вставить текст", litUploadFile: "Загрузить файл (PDF/DOCX/TXT)", litTopic: "Тема / контекст", litNotes: "Дополнительные пожелания",
+  litUseMaterial: "Использовать материал", litGenStimulus: "Сгенерировать стимул", litGenQuestions: "Сгенерировать задания",
+  litGenerating: "Генерируем задания…", litStimulus: "Стимульный материал", litQuestions: "Вопросы",
+  litForTeacher: "Для учителя (ключи)", litKey: "Ключ", litCriteriaF: "Критерий", litTotalF: "Общий балл",
+  litRegenQ: "↻ Перегенерировать", litDelQ: "Удалить", litDownloadStudent: "Скачать для ученика", litDownloadTeacher: "Скачать для учителя",
+  litReqStimulus: "Сначала задайте стимульный материал.", litPickTypes: "Выберите хотя бы один тип вопроса и уровень PISA.",
+  pisaBadge: "PISA", pointsShort: "б.",
 };
 
 const kz: Dict = {
@@ -105,6 +119,19 @@ const kz: Dict = {
   help3: "Жазылым — Kaspi арқылы тарифтер мен төлем.",
   helpSupport: "Қолдау", helpContact: "Сұрақтар мен ұсыныстар:",
   pName: "Аты", pEmail: "Email", pSubject: "Пән",
+  litTitle: "Функционалдық сауаттылық",
+  litType: "Сауаттылық түрі", litTypeReading: "Оқу", litTypeMath: "Математикалық", litTypeScience: "Жаратылыстану-ғылыми",
+  litSubjectF: "Пән", litGradeF: "Сынып", litLang: "Генерация тілі",
+  litSource: "Стимул көзі", litSourceOwn: "Өз материалым", litSourceGen: "Генерациялау",
+  litCount: "Сұрақтар саны", litPisa: "PISA деңгейлері", litQTypes: "Сұрақ түрлері",
+  qt_single: "Бір жауап", qt_multiple: "Бірнеше жауап", qt_truefalse: "Дұрыс / Бұрыс", qt_short: "Қысқа жауап", qt_open: "Толық жауап", qt_matching: "Сәйкестендіру",
+  litPasteText: "Мәтін кірістіру", litUploadFile: "Файл жүктеу (PDF/DOCX/TXT)", litTopic: "Тақырып / контекст", litNotes: "Қосымша тілектер",
+  litUseMaterial: "Материалды пайдалану", litGenStimulus: "Стимул генерациялау", litGenQuestions: "Тапсырмалар генерациялау",
+  litGenerating: "Тапсырмалар құрылуда…", litStimulus: "Стимул материалы", litQuestions: "Сұрақтар",
+  litForTeacher: "Мұғалімге (кілттер)", litKey: "Кілт", litCriteriaF: "Критерий", litTotalF: "Жалпы ұпай",
+  litRegenQ: "↻ Қайта құру", litDelQ: "Жою", litDownloadStudent: "Оқушыға жүктеу", litDownloadTeacher: "Мұғалімге жүктеу",
+  litReqStimulus: "Алдымен стимул материалын беріңіз.", litPickTypes: "Кемінде бір сұрақ түрі мен PISA деңгейін таңдаңыз.",
+  pisaBadge: "PISA", pointsShort: "ұп.",
 };
 
 const en: Dict = {
@@ -153,6 +180,19 @@ const en: Dict = {
   help3: "Subscription — plans and payment via Kaspi.",
   helpSupport: "Support", helpContact: "Questions and suggestions:",
   pName: "Name", pEmail: "Email", pSubject: "Subject",
+  litTitle: "Functional literacy",
+  litType: "Literacy type", litTypeReading: "Reading", litTypeMath: "Mathematical", litTypeScience: "Scientific",
+  litSubjectF: "Subject", litGradeF: "Grade", litLang: "Generation language",
+  litSource: "Stimulus source", litSourceOwn: "Own material", litSourceGen: "Generate",
+  litCount: "Number of questions", litPisa: "PISA levels", litQTypes: "Question types",
+  qt_single: "Single choice", qt_multiple: "Multiple choice", qt_truefalse: "True / False", qt_short: "Short answer", qt_open: "Open-ended", qt_matching: "Matching",
+  litPasteText: "Paste text", litUploadFile: "Upload file (PDF/DOCX/TXT)", litTopic: "Topic / context", litNotes: "Additional notes",
+  litUseMaterial: "Use this material", litGenStimulus: "Generate stimulus", litGenQuestions: "Generate questions",
+  litGenerating: "Generating questions…", litStimulus: "Stimulus material", litQuestions: "Questions",
+  litForTeacher: "For teacher (keys)", litKey: "Key", litCriteriaF: "Criterion", litTotalF: "Total points",
+  litRegenQ: "↻ Regenerate", litDelQ: "Delete", litDownloadStudent: "Download for student", litDownloadTeacher: "Download for teacher",
+  litReqStimulus: "Set the stimulus material first.", litPickTypes: "Pick at least one question type and PISA level.",
+  pisaBadge: "PISA", pointsShort: "pts",
 };
 
 export const LT: Record<Lang, Dict> = { ru, kz, en };

@@ -354,6 +354,25 @@ export type LpHeader = Partial<Pick<LpLesson,
   "subject" | "lessonTitle" | "languageFocus" | "learningObjectives" | "valueMonth" | "durationMinutes">>;
 export interface LpStageInput { stageType: string; toolId?: string; timeMinutes: number }
 
+// ── Functional literacy (PISA) ────────────────────────────────────
+export interface LitQuestion {
+  id: string; order: number; questionText: string; questionType: string;
+  pisaLevel: number; points: number; options?: unknown; correctAnswer?: unknown; answerCriteria?: string | null;
+}
+export interface LitSet {
+  id: string; userId: string; schoolId?: string | null; literacyType: "reading" | "math" | "science";
+  subject?: string; grade?: number; language: "ru" | "kz" | "en"; sourceMode: "own" | "generated";
+  sourceTopic?: string | null; sourceNotes?: string | null; stimulusText: string; stimulusData?: Record<string, unknown> | null;
+  questionCount: number; pisaLevels: number[]; questionTypes: string[]; totalPoints: number;
+  status: "draft" | "generating" | "ready" | "error"; generationError?: string | null; questions?: LitQuestion[];
+  createdAt: string; updatedAt: string;
+}
+export interface LitCreateInput {
+  literacyType: "reading" | "math" | "science"; subject?: string; grade?: number; language?: "ru" | "kz" | "en";
+  sourceMode?: "own" | "generated"; sourceTopic?: string; sourceNotes?: string;
+  questionCount?: number; pisaLevels?: number[]; questionTypes?: string[];
+}
+
 async function request<T>(path: string, init?: RequestInit, token?: string): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
@@ -437,6 +456,27 @@ export const api = {
     request<LpStage>(`/lesson-plans/${id}/stages/${sid}/regenerate`, { method: "POST" }, token),
   lpSwapTool: (token: string, id: string, sid: string, toolId: string) =>
     request<LpStage>(`/lesson-plans/${id}/stages/${sid}/swap-tool`, { method: "PATCH", body: JSON.stringify({ toolId }) }, token),
+
+  // Functional literacy (PISA)
+  litCreate: (token: string, input: LitCreateInput) =>
+    request<LitSet>("/literacy/sets", { method: "POST", body: JSON.stringify(input) }, token),
+  litGet: (token: string, id: string) =>
+    request<LitSet>(`/literacy/sets/${id}`, undefined, token),
+  litList: (token: string) =>
+    request<LitSet[]>("/literacy/sets", undefined, token),
+  litStimulus: (token: string, id: string, body: { mode: "own" | "generated"; text?: string }) =>
+    request<LitSet>(`/literacy/sets/${id}/stimulus`, { method: "POST", body: JSON.stringify(body) }, token),
+  litUpload: (token: string, id: string, file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return request<{ text: string }>(`/literacy/sets/${id}/upload`, { method: "POST", body: fd }, token);
+  },
+  litGenerate: (token: string, id: string) =>
+    request<{ status: string }>(`/literacy/sets/${id}/generate`, { method: "POST" }, token),
+  litRegenQuestion: (token: string, id: string, qid: string) =>
+    request<LitSet>(`/literacy/sets/${id}/questions/${qid}/regenerate`, { method: "POST" }, token),
+  litDeleteQuestion: (token: string, id: string, qid: string) =>
+    request<LitSet>(`/literacy/sets/${id}/questions/${qid}`, { method: "DELETE" }, token),
 
   // Dashboard (teacher)
   getDashboard: (token: string) =>

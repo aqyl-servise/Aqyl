@@ -21,6 +21,10 @@ export const ACTION_MODEL_MAP: Record<string, keyof typeof AI_MODELS> = {
   lesson_points: 'SONNET',
   lesson_stage: 'SONNET',
   lesson_descriptors: 'SONNET',
+  literacy_stimulus: 'SONNET',
+  literacy_analyze: 'HAIKU',
+  literacy_questions: 'SONNET',
+  literacy_regen_question: 'SONNET',
 };
 
 export const MAX_TOKENS_MAP: Record<string, number> = {
@@ -41,6 +45,10 @@ export const MAX_TOKENS_MAP: Record<string, number> = {
   lesson_points: 500,
   lesson_stage: 1200,
   lesson_descriptors: 500,
+  literacy_stimulus: 1500,
+  literacy_analyze: 400,
+  literacy_questions: 3000,
+  literacy_regen_question: 800,
 };
 
 export function getModelForAction(action: string): string {
