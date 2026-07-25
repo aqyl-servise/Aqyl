@@ -1750,3 +1750,30 @@ h1, h2, h3, h4 { line-height: 1.3; letter-spacing: -0.02em; margin: 0; }
 @media (prefers-reduced-motion: reduce) {
   .aqyl-b2c * { transition: none !important; animation: none !important; }
 }
+
+/* ============================================================================
+   AQYL BRAND RAIL — фирменный тёмный индиго-сайдбар (обе темы).
+   Область данных остаётся светлой/тёмной по теме; брендовая «рельса» слева
+   делает каждый экран B2G узнаваемо Aqyl. Перекрашиваем всё внутри сайдбара
+   на светлый текст поверх индиго. Блок в конце файла — выигрывает по порядку.
+   ============================================================================ */
+.al-sidebar {
+  background: linear-gradient(180deg, #241C4A 0%, #1A1533 100%);
+  border-right: 1px solid rgba(139,127,232,.18);
+}
+.al-brand-name { color: #F5F4FB; }
+.al-sidebar-bottom { border-top-color: rgba(255,255,255,.10); }
+.al-nav-ai { border-top-color: rgba(255,255,255,.10) !important; }
+.al-nav-item { color: rgba(245,244,251,.68); }
+.al-nav-item:hover { background: rgba(255,255,255,.07); color: #fff; }
+.al-nav-item.active {
+  background: rgba(139,127,232,.20);
+  color: #fff;
+  border-left-color: #8B7FE8;
+}
+.al-user-name { color: #F5F4FB; }
+.al-user-role { color: rgba(245,244,251,.55); }
+.al-sidebar .btn-ghost { color: rgba(245,244,251,.78); border-color: rgba(255,255,255,.16); }
+.al-sidebar .btn-ghost:hover { background: rgba(255,255,255,.08); color: #fff; }
+.al-sidebar .lang-btn { color: rgba(245,244,251,.70); border-color: rgba(255,255,255,.16); }
+.al-sidebar .lang-btn:hover:not(.active) { background: rgba(255,255,255,.08); color: #fff; }

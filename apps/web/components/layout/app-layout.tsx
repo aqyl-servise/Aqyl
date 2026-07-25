@@ -111,7 +111,7 @@ function AppLayoutInner({
                 <circle cx="56" cy="26" r="6.5" fill="#F5F4FB"/>
               </svg>
             </span>
-            <span className="al-brand-name" style={{ fontFamily: "var(--font-fraunces), var(--font-manrope), serif" }}>aqyl</span>
+            <span className="al-brand-name" style={{ fontFamily: "var(--font-fraunces), var(--font-manrope), serif" }}>aqy<span style={{ color: "#F5A623" }}>l</span></span>
           </div>
           {schoolSwitcher && (
             <div style={{ padding: "0 8px", marginBottom: 4 }}>
