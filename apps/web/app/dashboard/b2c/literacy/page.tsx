@@ -7,13 +7,14 @@ import { api, API_URL, type LitSet, type LitCreateInput } from "../../../../lib/
 import { useLang, LT } from "../../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../../components/lang-switcher";
 
-const BRAND = "#6B5CE7";
-const DARK = "#0D0E1A";
-const inp: React.CSSProperties = { width: "100%", padding: "10px 12px", borderRadius: 9, border: "1.5px solid #d9d9e3", fontSize: 14, boxSizing: "border-box" };
-const label: React.CSSProperties = { fontSize: 13, fontWeight: 700, color: DARK, marginBottom: 5, display: "block" };
-const card: React.CSSProperties = { background: "#fff", borderRadius: 14, padding: "22px 20px", boxShadow: "0 4px 18px rgba(13,14,26,0.06)", marginBottom: 16 };
-const btnPrimary: React.CSSProperties = { background: BRAND, color: "#fff", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 15, fontWeight: 600, cursor: "pointer" };
-const btnGhost: React.CSSProperties = { background: "none", border: "1px solid #d9d9e3", color: DARK, borderRadius: 10, padding: "8px 14px", fontSize: 13, cursor: "pointer" };
+// Бренд-токены применяются через класс .aqyl-b2c на корне (см. globals.css).
+const BRAND = "var(--lavender)";
+const DARK = "var(--white)";
+const inp: React.CSSProperties = { width: "100%", padding: "10px 12px", borderRadius: 9, border: "1.5px solid var(--line)", background: "var(--ink)", color: "var(--white)", fontSize: 14, boxSizing: "border-box", fontFamily: "inherit" };
+const label: React.CSSProperties = { fontSize: 13, fontWeight: 700, color: "var(--white)", marginBottom: 5, display: "block" };
+const card: React.CSSProperties = { background: "var(--ink-2)", borderRadius: 14, padding: "22px 20px", border: "1px solid var(--line)", marginBottom: 16 };
+const btnPrimary: React.CSSProperties = { background: "var(--amber)", color: "var(--on-amber)", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" };
+const btnGhost: React.CSSProperties = { background: "rgba(139,127,232,.12)", border: "1px solid var(--line)", color: "var(--lavender)", borderRadius: 10, padding: "8px 14px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" };
 const badge = (bg: string): React.CSSProperties => ({ fontSize: 11, fontWeight: 700, color: "#fff", background: bg, borderRadius: 999, padding: "2px 8px", marginLeft: 6 });
 
 const Q_TYPES = ["single", "multiple", "truefalse", "short", "open", "matching"];
@@ -130,15 +131,15 @@ export default function LiteracyPage() {
   if (!token) return <Center>{t.loading}</Center>;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f4f5fb", fontFamily: "system-ui, sans-serif" }}>
-      <header style={{ background: DARK, color: "#fff", padding: "14px 24px", display: "flex", alignItems: "center", gap: 16 }}>
-        <button onClick={() => (step > 1 && step < 3 ? setStep(step - 1) : router.push("/dashboard/b2c"))} style={{ ...btnGhost, color: "#fff", borderColor: "rgba(255,255,255,0.3)" }}>← {t.back}</button>
+    <div className="aqyl-b2c" style={{ minHeight: "100vh" }}>
+      <header style={{ background: "var(--ink-2)", color: "var(--white)", padding: "14px 24px", display: "flex", alignItems: "center", gap: 16, borderBottom: "1px solid var(--line)" }}>
+        <button onClick={() => (step > 1 && step < 3 ? setStep(step - 1) : router.push("/dashboard/b2c"))} style={{ ...btnGhost, color: "var(--white)" }}>← {t.back}</button>
         <span style={{ fontWeight: 700 }}>📊 {t.litTitle}</span>
         <div style={{ marginLeft: "auto" }}><LangSwitcher lang={lang} setLang={setLang} dark /></div>
       </header>
 
       <main style={{ maxWidth: 900, margin: "0 auto", padding: "24px" }}>
-        {error && <div style={{ background: "#fdeaea", border: "1px solid #e0575755", color: DARK, padding: "12px 16px", borderRadius: 10, marginBottom: 16, fontSize: 14 }}>{error}</div>}
+        {error && <div style={{ background: "var(--ink-2)", border: "1px solid var(--danger)", color: "var(--white)", padding: "12px 16px", borderRadius: 10, marginBottom: 16, fontSize: 14 }}>{error}</div>}
 
         {step === 1 && (
           <div>
@@ -203,13 +204,13 @@ export default function LiteracyPage() {
                     {t.litUploadFile}
                     <input type="file" accept=".pdf,.docx,.txt" style={{ display: "none" }} onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])} />
                   </label>
-                  <span style={{ marginLeft: 10, fontSize: 12, color: "#6b7280" }}>{ownText.length} симв.</span>
+                  <span style={{ marginLeft: 10, fontSize: 12, color: "var(--muted)" }}>{ownText.length} симв.</span>
                 </div>
               </div>
             ) : (
               <div style={card}>
-                <div style={{ fontSize: 14, color: "#374151" }}>{t.litTopic}: <b>{topic}</b></div>
-                <div style={{ fontSize: 13, color: "#6b7280", marginTop: 6 }}>Стимул сгенерируется автоматически перед заданиями.</div>
+                <div style={{ fontSize: 14, color: "var(--muted)" }}>{t.litTopic}: <b>{topic}</b></div>
+                <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 6 }}>Стимул сгенерируется автоматически перед заданиями.</div>
               </div>
             )}
             <div style={{ textAlign: "right" }}><button onClick={generate} disabled={busy} style={btnPrimary}>{busy ? t.generating : t.litGenQuestions}</button></div>
@@ -223,14 +224,14 @@ export default function LiteracyPage() {
         {step === 4 && lset && (
           <div>
             {lset.status === "error" ? (
-              <div style={card}><b>{t.genError}</b><div style={{ color: "#6b7280", marginTop: 6 }}>{lset.generationError ?? t.genErrorHint}</div></div>
+              <div style={card}><b>{t.genError}</b><div style={{ color: "var(--muted)", marginTop: 6 }}>{lset.generationError ?? t.genErrorHint}</div></div>
             ) : (
               <>
                 <div style={card}>
                   <h2 style={{ marginTop: 0, color: DARK }}>{t.litTitle}</h2>
-                  <div style={{ fontSize: 13, color: "#6b7280" }}>{t[`litType${lset.literacyType === "reading" ? "Reading" : lset.literacyType === "math" ? "Math" : "Science"}`]} · {lset.subject} · {lset.grade} {t.gradeWord}</div>
+                  <div style={{ fontSize: 13, color: "var(--muted)" }}>{t[`litType${lset.literacyType === "reading" ? "Reading" : lset.literacyType === "math" ? "Math" : "Science"}`]} · {lset.subject} · {lset.grade} {t.gradeWord}</div>
                   <div style={{ marginTop: 10, fontWeight: 700, color: DARK }}>{t.litStimulus}</div>
-                  <div style={{ whiteSpace: "pre-wrap", fontSize: 14, color: "#374151", marginTop: 4 }}>{lset.stimulusText}</div>
+                  <div style={{ whiteSpace: "pre-wrap", fontSize: 14, color: "var(--muted)", marginTop: 4 }}>{lset.stimulusText}</div>
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
@@ -242,22 +243,22 @@ export default function LiteracyPage() {
                   <div key={q.id} style={card}>
                     <div style={{ fontWeight: 700, color: DARK }}>
                       {i + 1}. {q.questionText}
-                      <span style={badge("#0ea5e9")}>{t[`qt_${q.questionType}`] ?? q.questionType}</span>
-                      <span style={badge("#6B5CE7")}>{t.pisaBadge} {q.pisaLevel}</span>
-                      <span style={badge("#2DC08E")}>{q.points} {t.pointsShort}</span>
+                      <span style={badge("#0EA5E9")}>{t[`qt_${q.questionType}`] ?? q.questionType}</span>
+                      <span style={badge("var(--lavender)")}>{t.pisaBadge} {q.pisaLevel}</span>
+                      <span style={badge("var(--mint)")}>{q.points} {t.pointsShort}</span>
                     </div>
                     {Array.isArray(q.options) && (
                       <ul style={{ margin: "6px 0", paddingLeft: 20, fontSize: 14 }}>{(q.options as unknown[]).map((o, j) => <li key={j}>{typeof o === "string" ? o : JSON.stringify(o)}</li>)}</ul>
                     )}
                     {teacherView && (
-                      <div style={{ marginTop: 6, fontSize: 13, color: "#374151", background: "#f6f6fb", borderRadius: 8, padding: "8px 10px" }}>
+                      <div style={{ marginTop: 6, fontSize: 13, color: "var(--muted)", background: "var(--ink)", borderRadius: 8, padding: "8px 10px" }}>
                         <div><b>{t.litKey}:</b> {typeof q.correctAnswer === "string" ? q.correctAnswer : JSON.stringify(q.correctAnswer)}</div>
                         {q.answerCriteria && <div><b>{t.litCriteriaF}:</b> {q.answerCriteria}</div>}
                       </div>
                     )}
                     <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
                       <button onClick={() => regenQ(q.id)} style={{ ...btnGhost, fontSize: 12 }}>{t.litRegenQ}</button>
-                      <button onClick={() => delQ(q.id)} style={{ ...btnGhost, fontSize: 12, color: "#e05757" }}>{t.litDelQ}</button>
+                      <button onClick={() => delQ(q.id)} style={{ ...btnGhost, fontSize: 12, color: "var(--danger)" }}>{t.litDelQ}</button>
                     </div>
                   </div>
                 ))}
@@ -266,7 +267,7 @@ export default function LiteracyPage() {
 
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                   <button onClick={() => download("student")} style={btnPrimary}>{t.litDownloadStudent}</button>
-                  <button onClick={() => download("teacher")} style={{ ...btnPrimary, background: "#0D0E1A" }}>{t.litDownloadTeacher}</button>
+                  <button onClick={() => download("teacher")} style={{ ...btnPrimary, background: "transparent", color: "var(--white)", border: "1.5px solid var(--lavender)" }}>{t.litDownloadTeacher}</button>
                   <button onClick={() => router.push("/dashboard/b2c/materials")} style={btnGhost}>{t.materials}</button>
                 </div>
               </>
@@ -278,5 +279,5 @@ export default function LiteracyPage() {
   );
 }
 
-function Center({ children }: { children: React.ReactNode }) { return <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#6b7280" }}>{children}</div>; }
+function Center({ children }: { children: React.ReactNode }) { return <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)" }}>{children}</div>; }
 function msg(e: unknown): string { return e instanceof Error ? e.message : String(e); }

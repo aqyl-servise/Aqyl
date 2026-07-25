@@ -6,9 +6,10 @@ import { api, type B2CProfile } from "../../../../lib/api";
 import { getValidAccessToken } from "../../../../lib/auth";
 import { generateDemoKmzh, topicPlaceholder, type DemoKmzh } from "../../../../lib/onboarding-demo";
 
-const BRAND = "#6B5CE7";
-const GREEN = "#2DC08E";
-const DARK = "#0D0E1A";
+// Бренд-токены применяются через класс .aqyl-b2c на корне (см. globals.css).
+const BRAND = "var(--lavender)";
+const GREEN = "var(--mint)";
+const DARK = "var(--white)";
 const STORAGE_KEY = "aqyl_onboarding_data";
 const TOTAL_STEPS = 4;
 
@@ -54,12 +55,12 @@ type SavedData = {
 };
 
 const pillBase: React.CSSProperties = {
-  padding: "9px 16px", borderRadius: 999, border: "1.5px solid #d9d9e3",
-  background: "#fff", color: DARK, fontSize: 14, cursor: "pointer", fontWeight: 500,
+  padding: "9px 16px", borderRadius: 999, border: "1.5px solid var(--line)",
+  background: "var(--ink-2)", color: "var(--white)", fontSize: 14, cursor: "pointer", fontWeight: 500, fontFamily: "inherit",
 };
 function pill(active: boolean): React.CSSProperties {
   return active
-    ? { ...pillBase, border: `1.5px solid ${BRAND}`, background: "#efeaff", color: BRAND, fontWeight: 600 }
+    ? { ...pillBase, border: "1.5px solid var(--lavender)", background: "rgba(139,127,232,.16)", color: "var(--lavender)", fontWeight: 600 }
     : pillBase;
 }
 
@@ -158,7 +159,7 @@ export default function OnboardingPage() {
   }
 
   if (loading) {
-    return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#6b7280" }}>Загрузка…</div>;
+    return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)" }}>Загрузка…</div>;
   }
   if (!profile) return null;
 
@@ -166,12 +167,12 @@ export default function OnboardingPage() {
   const canSkip = step === 2 || step === 3;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f4f5fb", fontFamily: "system-ui, sans-serif" }}>
+    <div className="aqyl-b2c" style={{ minHeight: "100vh" }}>
       <style>{`
         @keyframes fadeInStep { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
         .ob-step { animation: fadeInStep 0.3s ease; }
-        .ob-btn-primary { transition: background 0.2s ease, transform 0.1s ease; }
-        .ob-btn-primary:hover:not(:disabled) { background: #5a4bd6 !important; }
+        .ob-btn-primary { transition: filter 0.2s ease, transform 0.1s ease; }
+        .ob-btn-primary:hover:not(:disabled) { filter: brightness(0.94); }
         .ob-btn-primary:active:not(:disabled) { transform: translateY(1px); }
       `}</style>
 
@@ -183,7 +184,7 @@ export default function OnboardingPage() {
             <button
               onClick={() => finishOnboarding()}
               disabled={saving}
-              style={{ background: "none", border: "none", color: "#9ca3af", fontSize: 13, cursor: "pointer", fontWeight: 500 }}
+              style={{ background: "none", border: "none", color: "var(--muted)", fontSize: 13, cursor: "pointer", fontWeight: 500 }}
             >
               Пропустить →
             </button>
@@ -192,14 +193,14 @@ export default function OnboardingPage() {
 
         {/* Progress bar */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
-          <span style={{ fontSize: 13, color: "#6b7280", whiteSpace: "nowrap" }}>Шаг {step} из {TOTAL_STEPS}</span>
+          <span style={{ fontSize: 13, color: "var(--muted)", whiteSpace: "nowrap" }}>Шаг {step} из {TOTAL_STEPS}</span>
           <div style={{ display: "flex", gap: 8 }}>
             {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
               <span
                 key={i}
                 style={{
                   width: 12, height: 12, borderRadius: 999,
-                  background: i < step ? BRAND : "#d9d9e3",
+                  background: i < step ? BRAND : "var(--line)",
                   transition: "background 0.3s ease",
                 }}
               />
@@ -249,15 +250,15 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
   return (
     <div style={{ textAlign: "center" }}>
       <h1 style={{ color: DARK, fontSize: 28, fontWeight: 800, margin: "0 0 8px" }}>Добро пожаловать в Aqyl 👋</h1>
-      <p style={{ color: "#6b7280", fontSize: 16, margin: "0 0 28px" }}>
+      <p style={{ color: "var(--muted)", fontSize: 16, margin: "0 0 28px" }}>
         Мы поможем вам экономить до 3 часов в неделю на документации
       </p>
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", marginBottom: 30 }}>
         {cards.map((c) => (
-          <div key={c.title} style={{ flex: "1 1 180px", minWidth: 180, background: "#fff", borderRadius: 14, padding: "22px 18px", boxShadow: "0 4px 18px rgba(13,14,26,0.07)", textAlign: "center" }}>
+          <div key={c.title} style={{ flex: "1 1 180px", minWidth: 180, background: "var(--ink-2)", borderRadius: 14, padding: "22px 18px", boxShadow: "0 4px 18px rgba(13,14,26,0.07)", textAlign: "center" }}>
             <div style={{ fontSize: 32, marginBottom: 10 }}>{c.icon}</div>
             <div style={{ fontWeight: 700, color: DARK, marginBottom: 6 }}>{c.title}</div>
-            <div style={{ fontSize: 13, color: "#6b7280" }}>{c.text}</div>
+            <div style={{ fontSize: 13, color: "var(--muted)" }}>{c.text}</div>
           </div>
         ))}
       </div>
@@ -305,7 +306,7 @@ function StepInfo(props: {
       <select
         value={region}
         onChange={(e) => setRegion(e.target.value)}
-        style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid #d9d9e3", fontSize: 15, marginBottom: 28, background: "#fff", color: region ? DARK : "#9ca3af", boxSizing: "border-box" }}
+        style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid var(--line)", fontSize: 15, marginBottom: 28, background: "var(--ink-2)", color: region ? DARK : "var(--muted)", boxSizing: "border-box" }}
       >
         <option value="">Выберите область…</option>
         {REGIONS.map((r) => <option key={r} value={r} style={{ color: DARK }}>{r}</option>)}
@@ -333,14 +334,14 @@ function StepDemo(props: {
   return (
     <div>
       <h1 style={{ color: DARK, fontSize: 24, fontWeight: 800, margin: "0 0 6px" }}>Попробуйте прямо сейчас</h1>
-      <p style={{ color: "#6b7280", fontSize: 15, margin: "0 0 22px" }}>Введите тему урока и получите план за 30 секунд</p>
+      <p style={{ color: "var(--muted)", fontSize: 15, margin: "0 0 22px" }}>Введите тему урока и получите план за 30 секунд</p>
 
       <FieldLabel>Тема урока</FieldLabel>
       <input
         value={topic}
         onChange={(e) => setTopic(e.target.value)}
         placeholder={topicPlaceholder(subject)}
-        style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid #d9d9e3", fontSize: 15, marginBottom: 16, boxSizing: "border-box" }}
+        style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid var(--line)", fontSize: 15, marginBottom: 16, boxSizing: "border-box" }}
       />
 
       <button
@@ -353,12 +354,12 @@ function StepDemo(props: {
       </button>
 
       {demo && (
-        <div style={{ marginTop: 24, background: "#fff", borderRadius: 14, padding: "22px 20px", boxShadow: "0 4px 18px rgba(13,14,26,0.08)" }}>
+        <div style={{ marginTop: 24, background: "var(--ink-2)", borderRadius: 14, padding: "22px 20px", boxShadow: "0 4px 18px rgba(13,14,26,0.08)" }}>
           <div style={{ fontSize: 12, color: GREEN, fontWeight: 700, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Демо-пример</div>
           <h3 style={{ color: DARK, fontSize: 18, margin: "0 0 14px" }}>{demo.title}</h3>
 
           <div style={{ fontWeight: 700, color: DARK, fontSize: 14, marginBottom: 8 }}>Цели урока:</div>
-          <ul style={{ margin: "0 0 18px", paddingLeft: 20, color: "#374151", fontSize: 14, lineHeight: 1.7 }}>
+          <ul style={{ margin: "0 0 18px", paddingLeft: 20, color: "var(--muted)", fontSize: 14, lineHeight: 1.7 }}>
             {demo.objectives.map((o, i) => <li key={i}>{o}</li>)}
           </ul>
 
@@ -366,7 +367,7 @@ function StepDemo(props: {
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 460 }}>
               <thead>
-                <tr style={{ background: "#f4f5fb", textAlign: "left", color: "#6b7280" }}>
+                <tr style={{ background: "var(--ink)", textAlign: "left", color: "var(--muted)" }}>
                   <th style={th}>Этап</th>
                   <th style={th}>Время</th>
                   <th style={th}>Учитель</th>
@@ -375,7 +376,7 @@ function StepDemo(props: {
               </thead>
               <tbody>
                 {demo.stages.map((s, i) => (
-                  <tr key={i} style={{ borderTop: "1px solid #ececf3", verticalAlign: "top" }}>
+                  <tr key={i} style={{ borderTop: "1px solid var(--line)", verticalAlign: "top" }}>
                     <td style={td}><strong>{s.name}</strong></td>
                     <td style={td}>{s.duration}</td>
                     <td style={td}>{s.teacherActivity}</td>
@@ -401,9 +402,9 @@ function StepDone(props: { trialDays: number; saving: boolean; onCreate: () => v
   return (
     <div style={{ textAlign: "center" }}>
       <h1 style={{ color: DARK, fontSize: 28, fontWeight: 800, margin: "0 0 18px" }}>Всё готово! 🎉</h1>
-      <div style={{ background: "#efeaff", border: `1px solid ${BRAND}33`, borderRadius: 14, padding: "20px 22px", marginBottom: 26, textAlign: "left" }}>
+      <div style={{ background: "rgba(139,127,232,.14)", border: "1px solid var(--line)", borderRadius: 14, padding: "20px 22px", marginBottom: 26, textAlign: "left" }}>
         <div style={{ fontWeight: 700, color: DARK, marginBottom: 8 }}>В пробном периоде доступны все функции бесплатно</div>
-        <div style={{ color: "#4b5563", fontSize: 14 }}>
+        <div style={{ color: "var(--muted)", fontSize: 14 }}>
           Осталось <strong style={{ color: BRAND }}>{trialDays}</strong> {trialDays === 1 ? "день" : trialDays < 5 ? "дня" : "дней"} пробного периода.
         </div>
       </div>
@@ -425,12 +426,12 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 }
 
 const primaryBtn: React.CSSProperties = {
-  background: BRAND, color: "#fff", border: "none", borderRadius: 10,
-  padding: "13px 26px", fontSize: 15, fontWeight: 600, cursor: "pointer",
+  background: "var(--amber)", color: "var(--on-amber)", border: "none", borderRadius: 10,
+  padding: "13px 26px", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
 };
 const secondaryBtn: React.CSSProperties = {
-  background: "#fff", color: BRAND, border: `1.5px solid ${BRAND}`, borderRadius: 10,
-  padding: "13px 26px", fontSize: 15, fontWeight: 600, cursor: "pointer",
+  background: "transparent", color: "var(--white)", border: "1.5px solid var(--lavender)", borderRadius: 10,
+  padding: "13px 26px", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
 };
 const th: React.CSSProperties = { padding: "8px 10px", fontWeight: 600 };
-const td: React.CSSProperties = { padding: "8px 10px", color: "#374151" };
+const td: React.CSSProperties = { padding: "8px 10px", color: "var(--muted)" };

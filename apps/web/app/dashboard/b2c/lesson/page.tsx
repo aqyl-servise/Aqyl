@@ -7,14 +7,15 @@ import { api, API_URL, type LpLesson, type LpToolsResponse, type LpStageInput, t
 import { useLang, LT, VALUE_MONTHS, type Lang } from "../../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../../components/lang-switcher";
 
-const BRAND = "#6B5CE7";
-const DARK = "#0D0E1A";
+// Бренд-токены применяются через класс .aqyl-b2c на корне (см. globals.css).
+const BRAND = "var(--lavender)";
+const DARK = "var(--white)";
 
-const inp: React.CSSProperties = { width: "100%", padding: "10px 12px", borderRadius: 9, border: "1.5px solid #d9d9e3", fontSize: 14, boxSizing: "border-box" };
-const label: React.CSSProperties = { fontSize: 13, fontWeight: 700, color: DARK, marginBottom: 5, display: "block" };
-const card: React.CSSProperties = { background: "#fff", borderRadius: 14, padding: "22px 20px", boxShadow: "0 4px 18px rgba(13,14,26,0.06)", marginBottom: 16 };
-const btnPrimary: React.CSSProperties = { background: BRAND, color: "#fff", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 15, fontWeight: 600, cursor: "pointer" };
-const btnGhost: React.CSSProperties = { background: "none", border: "1px solid #d9d9e3", color: DARK, borderRadius: 10, padding: "10px 18px", fontSize: 14, cursor: "pointer" };
+const inp: React.CSSProperties = { width: "100%", padding: "10px 12px", borderRadius: 9, border: "1.5px solid var(--line)", background: "var(--ink)", color: "var(--white)", fontSize: 14, boxSizing: "border-box", fontFamily: "inherit" };
+const label: React.CSSProperties = { fontSize: 13, fontWeight: 700, color: "var(--white)", marginBottom: 5, display: "block" };
+const card: React.CSSProperties = { background: "var(--ink-2)", borderRadius: 14, padding: "22px 20px", border: "1px solid var(--line)", marginBottom: 16 };
+const btnPrimary: React.CSSProperties = { background: "var(--amber)", color: "var(--on-amber)", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" };
+const btnGhost: React.CSSProperties = { background: "rgba(139,127,232,.12)", border: "1px solid var(--line)", color: "var(--lavender)", borderRadius: 10, padding: "10px 18px", fontSize: 14, cursor: "pointer", fontFamily: "inherit" };
 
 type T = Record<string, string>;
 
@@ -163,16 +164,16 @@ export default function LessonGeneratorPage() {
   if (!token) return <Center>{t.loading}</Center>;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f4f5fb", fontFamily: "system-ui, sans-serif" }}>
-      <header style={{ background: DARK, color: "#fff", padding: "14px 24px", display: "flex", alignItems: "center", gap: 16 }}>
-        <button onClick={() => (step > 1 && step < 4 ? setStep(step - 1) : router.push("/dashboard/b2c"))} style={{ ...btnGhost, color: "#fff", borderColor: "rgba(255,255,255,0.3)" }}>← {t.back}</button>
+    <div className="aqyl-b2c" style={{ minHeight: "100vh" }}>
+      <header style={{ background: "var(--ink-2)", color: "var(--white)", padding: "14px 24px", display: "flex", alignItems: "center", gap: 16, borderBottom: "1px solid var(--line)" }}>
+        <button onClick={() => (step > 1 && step < 4 ? setStep(step - 1) : router.push("/dashboard/b2c"))} style={{ ...btnGhost, color: "var(--white)" }}>← {t.back}</button>
         <span style={{ fontWeight: 700 }}>{t.genTitle}</span>
-        <span style={{ marginLeft: "auto", fontSize: 13, opacity: 0.8 }}>{t.stepOf.replace("{n}", String(Math.min(step, 5)))}</span>
+        <span style={{ marginLeft: "auto", fontSize: 13, color: "var(--muted)" }}>{t.stepOf.replace("{n}", String(Math.min(step, 5)))}</span>
         <LangSwitcher lang={lang} setLang={setLang} dark />
       </header>
 
       <main style={{ maxWidth: 900, margin: "0 auto", padding: "24px" }}>
-        {error && <div style={{ background: "#fdeaea", border: "1px solid #e0575755", color: DARK, padding: "12px 16px", borderRadius: 10, marginBottom: 16, fontSize: 14 }}>{error}</div>}
+        {error && <div style={{ background: "var(--ink-2)", border: "1px solid var(--danger)", color: "var(--white)", padding: "12px 16px", borderRadius: 10, marginBottom: 16, fontSize: 14 }}>{error}</div>}
 
         {step === 1 && (
           <div>
@@ -209,7 +210,7 @@ export default function LessonGeneratorPage() {
               </div>
               {objectives.length ? objectives.map((o, i) => (
                 <textarea key={i} style={{ ...inp, minHeight: 44, marginBottom: 8, fontFamily: "inherit" }} value={o} onChange={(e) => setObjectives((arr) => arr.map((x, j) => (j === i ? e.target.value : x)))} />
-              )) : <div style={{ color: "#6b7280", fontSize: 13 }}>{t.objHint}</div>}
+              )) : <div style={{ color: "var(--muted)", fontSize: 13 }}>{t.objHint}</div>}
             </div>
 
             <div style={{ textAlign: "right" }}><button onClick={toStep2} disabled={busy} style={btnPrimary}>{t.next}</button></div>
@@ -220,11 +221,11 @@ export default function LessonGeneratorPage() {
           <div>
             <h2 style={{ color: DARK }}>{t.chooseMode}</h2>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
-              <button onClick={() => chooseMode("quick")} disabled={busy} style={{ ...card, cursor: "pointer", textAlign: "left", border: "1px solid #ececf3" }}>
-                <div style={{ fontSize: 34 }}>⚡</div><div style={{ fontWeight: 800, fontSize: 18, color: DARK }}>{t.quickMode}</div><div style={{ fontSize: 13, color: "#6b7280" }}>{t.quickModeSub}</div>
+              <button onClick={() => chooseMode("quick")} disabled={busy} style={{ ...card, cursor: "pointer", textAlign: "left", border: "1px solid var(--line)" }}>
+                <div style={{ fontSize: 34 }}>⚡</div><div style={{ fontWeight: 800, fontSize: 18, color: DARK }}>{t.quickMode}</div><div style={{ fontSize: 13, color: "var(--muted)" }}>{t.quickModeSub}</div>
               </button>
-              <button onClick={() => chooseMode("constructor")} disabled={busy} style={{ ...card, cursor: "pointer", textAlign: "left", border: "1px solid #ececf3" }}>
-                <div style={{ fontSize: 34 }}>🧩</div><div style={{ fontWeight: 800, fontSize: 18, color: DARK }}>{t.constructorMode}</div><div style={{ fontSize: 13, color: "#6b7280" }}>{t.constructorModeSub}</div>
+              <button onClick={() => chooseMode("constructor")} disabled={busy} style={{ ...card, cursor: "pointer", textAlign: "left", border: "1px solid var(--line)" }}>
+                <div style={{ fontSize: 34 }}>🧩</div><div style={{ fontWeight: 800, fontSize: 18, color: DARK }}>{t.constructorMode}</div><div style={{ fontSize: 13, color: "var(--muted)" }}>{t.constructorModeSub}</div>
               </button>
             </div>
           </div>
@@ -245,7 +246,7 @@ export default function LessonGeneratorPage() {
                   ))}
                 </div>
                 <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 13, color: "#6b7280" }}>{t.timeMin}</span>
+                  <span style={{ fontSize: 13, color: "var(--muted)" }}>{t.timeMin}</span>
                   <input type="number" style={{ ...inp, width: 90 }} value={stageSel[st]?.time ?? 5} onChange={(e) => setStageSel((s) => ({ ...s, [st]: { toolId: s[st]?.toolId ?? "", time: Number(e.target.value) } }))} />
                 </div>
               </div>
@@ -259,7 +260,7 @@ export default function LessonGeneratorPage() {
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>⏳</div>
               <div style={{ fontWeight: 700, color: DARK, fontSize: 18 }}>{t.genProgress}</div>
-              <div style={{ color: "#6b7280", fontSize: 14, marginTop: 6 }}>{t.genProgressSub}</div>
+              <div style={{ color: "var(--muted)", fontSize: 14, marginTop: 6 }}>{t.genProgressSub}</div>
             </div>
           </Center>
         )}
@@ -271,16 +272,16 @@ export default function LessonGeneratorPage() {
 }
 
 function LessonView({ lesson, onRegen, onExport, t, lang }: { lesson: LpLesson; onRegen: (sid: string) => void; onExport: () => void; t: T; lang: Lang }) {
-  const th: React.CSSProperties = { textAlign: "left", padding: "8px 10px", background: "#f0f0f7", fontSize: 12, color: "#374151", border: "1px solid #e5e5ee" };
-  const td: React.CSSProperties = { padding: "8px 10px", fontSize: 13, color: DARK, border: "1px solid #e5e5ee", verticalAlign: "top" };
+  const th: React.CSSProperties = { textAlign: "left", padding: "8px 10px", background: "var(--ink)", fontSize: 12, color: "var(--muted)", border: "1px solid var(--line)" };
+  const td: React.CSSProperties = { padding: "8px 10px", fontSize: 13, color: DARK, border: "1px solid var(--line)", verticalAlign: "top" };
   if (lesson.status === "error") {
-    return <div style={card}><strong>{t.genError}</strong><div style={{ color: "#6b7280", marginTop: 6 }}>{lesson.generationError ?? t.genErrorHint}</div></div>;
+    return <div style={card}><strong>{t.genError}</strong><div style={{ color: "var(--muted)", marginTop: 6 }}>{lesson.generationError ?? t.genErrorHint}</div></div>;
   }
   return (
     <div>
       <div style={card}>
         <h2 style={{ marginTop: 0, color: DARK }}>{lesson.lessonTitle || t.st_task}</h2>
-        <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.7 }}>
+        <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.7 }}>
           <div><b>{t.vUnit}:</b> {lesson.unit || "—"} · <b>{t.vGrade}:</b> {lesson.grade ?? "—"} · <b>{t.vSubject}:</b> {lesson.subject || "—"}</div>
           <div><b>{t.vTeacher}:</b> {lesson.teacherName || "—"} · <b>{t.vDate}:</b> {lesson.date || "—"} · <b>{t.vNo}:</b> {lesson.lessonNumber || "—"}</div>
           <div><b>{t.vValue}:</b> {lesson.valueLink || "—"}</div>
@@ -290,7 +291,7 @@ function LessonView({ lesson, onRegen, onExport, t, lang }: { lesson: LpLesson; 
       </div>
 
       <div style={{ overflowX: "auto" }}>
-        <table style={{ borderCollapse: "collapse", width: "100%", background: "#fff" }}>
+        <table style={{ borderCollapse: "collapse", width: "100%", background: "var(--ink-2)" }}>
           <thead><tr><th style={th}>{t.thStage}</th><th style={th}>{t.thTeacher}</th><th style={th}>{t.thStudent}</th><th style={th}>{t.thCriteria}</th><th style={th}>{t.thResources}</th></tr></thead>
           <tbody>
             {(lesson.stages ?? []).map((s) => (
@@ -342,5 +343,5 @@ async function downloadExport(lesson: LpLesson, token: string) {
 
 function Field({ l, children }: { l: string; children: React.ReactNode }) { return <div><span style={label}>{l}</span>{children}</div>; }
 function Grid({ children }: { children: React.ReactNode }) { return <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>{children}</div>; }
-function Center({ children }: { children: React.ReactNode }) { return <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#6b7280" }}>{children}</div>; }
+function Center({ children }: { children: React.ReactNode }) { return <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)" }}>{children}</div>; }
 function msg(e: unknown): string { return e instanceof Error ? e.message : String(e); }

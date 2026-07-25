@@ -24,18 +24,18 @@ export default function B2CTextAdapterPage() {
 
   if (loading || !token) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#6b7280" }}>
+      <div className="aqyl-b2c" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)" }}>
         Загрузка…
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f4f5fb", fontFamily: "system-ui, sans-serif" }}>
-      <header style={{ background: "#0D0E1A", color: "#fff", padding: "14px 24px", display: "flex", alignItems: "center", gap: 16 }}>
+    <div className="aqyl-b2c" style={{ minHeight: "100vh" }}>
+      <header style={{ background: "var(--ink-2)", color: "var(--white)", padding: "14px 24px", display: "flex", alignItems: "center", gap: 16, borderBottom: "1px solid var(--line)" }}>
         <button
           onClick={() => router.push("/dashboard/b2c")}
-          style={{ background: "none", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13 }}
+          style={{ background: "rgba(139,127,232,.12)", border: "1px solid var(--line)", color: "var(--white)", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}
         >
           ← Назад
         </button>
