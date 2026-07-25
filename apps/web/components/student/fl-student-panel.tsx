@@ -7,7 +7,7 @@ type View = "list" | "detail" | "history";
 
 function statusBadge(status: string, t: Record<string, string>) {
   const map: Record<string, { label: string; color: string }> = {
-    new: { label: t.fl_status_new ?? "Новое", color: "#3b82f6" },
+    new: { label: t.fl_status_new ?? "Новое", color: "#8B7FE8" },
     in_progress: { label: t.fl_status_in_progress ?? "В процессе", color: "#f59e0b" },
     submitted: { label: t.fl_status_submitted ?? "Отправлено", color: "#8b5cf6" },
     graded: { label: t.fl_status_graded ?? "Оценено", color: "#10b981" },

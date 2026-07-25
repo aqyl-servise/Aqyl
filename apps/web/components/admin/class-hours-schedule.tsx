@@ -28,7 +28,7 @@ const STATUS_LABELS: Record<string, string> = {
   planned: "Запланирован", conducted: "Проведён", rescheduled: "Перенесён",
 };
 const STATUS_COLORS: Record<string, string> = {
-  planned: "#3b82f6", conducted: "#22c55e", rescheduled: "#f97316",
+  planned: "#8B7FE8", conducted: "#22c55e", rescheduled: "#f97316",
 };
 
 const TOPIC_LABELS: Record<string, string> = {

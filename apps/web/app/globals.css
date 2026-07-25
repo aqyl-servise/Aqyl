@@ -1731,18 +1731,22 @@ h1, h2, h3, h4 { line-height: 1.3; letter-spacing: -0.02em; margin: 0; }
    действие. Fraunces для заголовков (латиница), кириллица/КЗ — фолбэк на Manrope.
    ============================================================================ */
 .aqyl-b2c {
-  --ink: #1A1533;        /* фон-ядро */
-  --ink-2: #221B42;      /* карточки / приподнятая поверхность */
-  --indigo: #3B2E7E;     /* круг знака */
+  /* Светлая тема — ПО УМОЛЧАНИЮ. Тёмная включается классом .b2c-theme-dark
+     на обёртке (layout воронки B2C), независимо от ОС/глобальной темы.
+     Семантика имён сохранена: --ink=базовый фон, --ink-2=карточки,
+     --white=основной ТЕКСТ (тёмный на светлом), --line=границы. */
+  --ink: #F6F5FB;        /* базовый фон */
+  --ink-2: #FFFFFF;      /* карточки / приподнятая поверхность */
+  --indigo: #3B2E7E;     /* круг знака (лого) */
   --lavender: #8B7FE8;   /* акцент 1 — навигация, статусы */
   --mint: #3FBF8F;       /* акцент 2 — «готово», статусы */
   --amber: #F5A623;      /* ЕДИНСТВЕННЫЙ цвет главного действия */
   --on-amber: #2A1C00;   /* тёмный текст на янтарной кнопке */
   --danger: #E05757;     /* ошибка / статус error */
   --paper: #F6F5FB;      /* светлый фон / печать */
-  --white: #F5F4FB;      /* основной текст на тёмном */
-  --muted: #A29FBF;      /* приглушённый текст */
-  --line: rgba(139,127,232,.22);
+  --white: #1A1533;      /* основной текст (тёмный на светлом) */
+  --muted: #6B6890;      /* приглушённый текст */
+  --line: #E6E3F5;       /* границы */
   --radius: 16px;
   --radius-sm: 10px;
   --font-display: var(--font-fraunces), var(--font-manrope), Georgia, serif;
@@ -1752,6 +1756,27 @@ h1, h2, h3, h4 { line-height: 1.3; letter-spacing: -0.02em; margin: 0; }
   color: var(--white);
   font-family: var(--font-body);
   min-height: 100vh;
+}
+/* Тёмная тема воронки B2C (индиго-ядро) — по классу-обёртке. */
+.b2c-theme-dark .aqyl-b2c {
+  --ink: #1A1533;
+  --ink-2: #221B42;
+  --white: #F5F4FB;
+  --muted: #A29FBF;
+  --line: rgba(139,127,232,.22);
+}
+/* Плавающий тумблер темы воронки B2C (вне .aqyl-b2c → свои цвета). */
+.b2c-theme-fab {
+  position: fixed; right: 18px; bottom: 18px; z-index: 50;
+  width: 44px; height: 44px; border-radius: 999px;
+  border: 1px solid #E6E3F5; background: #FFFFFF; color: #1A1533;
+  cursor: pointer; font-size: 18px; box-shadow: 0 6px 20px rgba(13,14,26,.18);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: inherit;
+}
+.b2c-theme-fab:hover { border-color: #8B7FE8; }
+.b2c-theme-dark .b2c-theme-fab {
+  border-color: rgba(139,127,232,.28); background: #221B42; color: #F5F4FB;
 }
 .aqyl-b2c ::placeholder { color: var(--muted); }
 .aqyl-b2c :focus-visible {

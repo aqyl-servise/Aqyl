@@ -30,9 +30,9 @@ const FORMATS = [
 
 function dirBadge(dir?: string) {
   const map: Record<string, { label: string; color: string }> = {
-    reading: { label: "📖 Чтение", color: "#3b82f6" },
-    math: { label: "🔢 Математика", color: "#8b5cf6" },
-    science: { label: "🔬 Наука", color: "#10b981" },
+    reading: { label: "📖 Чтение", color: "#8B7FE8" },
+    math: { label: "🔢 Математика", color: "#3B2E7E" },
+    science: { label: "🔬 Наука", color: "#3FBF8F" },
   };
   const d = dir ? map[dir] : null;
   if (!d) return null;
@@ -63,7 +63,7 @@ function statusBadge(status: string) {
 function subStatusBadge(status: string) {
   const map: Record<string, { label: string; color: string }> = {
     in_progress: { label: "В процессе", color: "#f59e0b" },
-    submitted: { label: "Отправлено", color: "#3b82f6" },
+    submitted: { label: "Отправлено", color: "#8B7FE8" },
     graded: { label: "Оценено", color: "#10b981" },
   };
   const d = map[status] ?? { label: status, color: "#6b7280" };

@@ -289,9 +289,9 @@ export function UsersPanel({ token, language, t, currentUserId }: {
                       {u.role === "teacher" && u.isClassTeacher && u.managedClassroomName && (
                         <span style={{
                           fontSize: 11, fontWeight: 600,
-                          background: "#dbeafe", color: "#1d4ed8",
+                          background: "var(--accent-light)", color: "var(--accent)",
                           borderRadius: 6, padding: "2px 7px",
-                          border: "1px solid #bfdbfe",
+                          border: "1px solid var(--accent-muted)",
                         }}>
                           {t.role_class_teacher} · {u.managedClassroomName}
                         </span>
@@ -299,9 +299,9 @@ export function UsersPanel({ token, language, t, currentUserId }: {
                       {u.role === "teacher" && u.isClassTeacher && !u.managedClassroomName && (
                         <span style={{
                           fontSize: 11, fontWeight: 600,
-                          background: "#dbeafe", color: "#1d4ed8",
+                          background: "var(--accent-light)", color: "var(--accent)",
                           borderRadius: 6, padding: "2px 7px",
-                          border: "1px solid #bfdbfe",
+                          border: "1px solid var(--accent-muted)",
                         }}>
                           {t.role_class_teacher}
                         </span>
@@ -321,7 +321,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
                       {!isSelf(u) && (
                         <button
                           className="btn btn-sm"
-                          style={{ background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe" }}
+                          style={{ background: "var(--accent-light)", color: "var(--accent)", border: "1px solid var(--accent-muted)" }}
                           onClick={() => setPasswordTarget(u)}
                           title={t.users_change_password}
                         >

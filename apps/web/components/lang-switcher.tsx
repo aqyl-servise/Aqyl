@@ -7,9 +7,12 @@ const OPTS: { key: Lang; label: string }[] = [
   { key: "en", label: "EN" },
 ];
 
-export function LangSwitcher({ lang, setLang, dark }: { lang: Lang; setLang: (l: Lang) => void; dark?: boolean }) {
+// Свитчер языка воронки B2C. Цвета — через токены .aqyl-b2c, поэтому
+// адаптируется к светлой/тёмной теме автоматически. Проп `dark` больше не нужен
+// (оставлен для обратной совместимости сигнатуры), стили от него не зависят.
+export function LangSwitcher({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void; dark?: boolean }) {
   return (
-    <div style={{ display: "inline-flex", gap: 2, background: dark ? "rgba(255,255,255,0.12)" : "#ececf3", borderRadius: 8, padding: 2 }}>
+    <div style={{ display: "inline-flex", gap: 2, background: "rgba(139,127,232,.14)", borderRadius: 8, padding: 2 }}>
       {OPTS.map((o) => {
         const active = lang === o.key;
         return (
@@ -18,8 +21,9 @@ export function LangSwitcher({ lang, setLang, dark }: { lang: Lang; setLang: (l:
             onClick={() => setLang(o.key)}
             style={{
               border: "none", borderRadius: 6, padding: "4px 9px", fontSize: 12, cursor: "pointer", fontWeight: 700,
-              background: active ? (dark ? "#6B5CE7" : "#fff") : "transparent",
-              color: active ? (dark ? "#fff" : "#0D0E1A") : (dark ? "rgba(255,255,255,0.75)" : "#6b7280"),
+              fontFamily: "inherit",
+              background: active ? "var(--lavender)" : "transparent",
+              color: active ? "#fff" : "var(--muted)",
             }}
           >
             {o.label}
