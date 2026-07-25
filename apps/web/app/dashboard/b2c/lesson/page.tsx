@@ -51,6 +51,9 @@ export default function LessonGeneratorPage() {
       if (!tk) { router.replace("/login"); return; }
       setToken(tk);
     })();
+    // Тема, переданная с дашборда (/dashboard/b2c/lesson?topic=…), сразу подставляется в «Тему урока».
+    const topic = new URLSearchParams(window.location.search).get("topic");
+    if (topic) setForm((f) => ({ ...f, lessonTitle: topic }));
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [router]);
 
