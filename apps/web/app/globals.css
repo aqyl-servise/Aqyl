@@ -1,19 +1,20 @@
 :root {
-  --bg: #F8F7FF;
+  /* Бренд-система Aqyl (светлая): индиго-ядро + лаванда/мята/янтарь. */
+  --bg: #F6F5FB;
   --panel: #FFFFFF;
-  --panel-alt: #F8F7FF;
+  --panel-alt: #F6F5FB;
   --panel-glass: rgba(255,255,255,0.92);
-  --border: #E8E6F8;
-  --border-light: #F0EFFE;
-  --text: #1A1740;
+  --border: #E6E3F5;
+  --border-light: #F1EFFB;
+  --text: #1A1533;
   --muted: #6B6890;
   --muted-light: #9B98B8;
-  --accent: #2E2780;
-  --accent-hover: #231f62;
-  --accent-light: #F0EFFE;
-  --accent-muted: #7F77DD;
-  --success: #1D9E75;
-  --success-light: #E8F8F2;
+  --accent: #3B2E7E;
+  --accent-hover: #2E2465;
+  --accent-light: #EEEBFB;
+  --accent-muted: #8B7FE8;
+  --success: #1FA579;
+  --success-light: #E7F7F0;
   --warn: #D03030;
   --warn-light: #FEF0F0;
   --warn-amber: #F5A623;
@@ -27,21 +28,22 @@
 
 [data-theme="dark"] {
   color-scheme: dark;
-  --bg: #0d1117;
-  --panel: #161b22;
-  --panel-alt: #1c2128;
-  --panel-glass: rgba(22,27,34,0.95);
-  --border: #2E2A4A;
-  --border-light: #1c2128;
-  --text: #e6edf3;
-  --muted: #8b949e;
-  --muted-light: #6e7681;
-  --accent: #7F77DD;
-  --accent-hover: #6B63CC;
-  --accent-light: rgba(127,119,221,0.15);
+  /* Бренд-система Aqyl (тёмная): индиго-ядро #1A1533. */
+  --bg: #1A1533;
+  --panel: #221B42;
+  --panel-alt: #2A2350;
+  --panel-glass: rgba(34,27,66,0.95);
+  --border: #322A57;
+  --border-light: #251E48;
+  --text: #F5F4FB;
+  --muted: #A29FBF;
+  --muted-light: #7C769C;
+  --accent: #8B7FE8;
+  --accent-hover: #7A6DDC;
+  --accent-light: rgba(139,127,232,0.16);
   --accent-muted: #9B95E4;
-  --success: #3fb950;
-  --success-light: rgba(63,185,80,0.15);
+  --success: #3FBF8F;
+  --success-light: rgba(63,191,143,0.15);
   --warn: #f85149;
   --warn-light: rgba(248,81,73,0.15);
   --warn-amber: #F5A623;
