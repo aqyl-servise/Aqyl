@@ -9,65 +9,70 @@
 
 /* ===== СВЕТЛАЯ ТЕМА (default) ===== */
 .aqyl-pub {
+  /* Бренд-система Aqyl (светлая): индиго-ядро + лаванда/мята/янтарь. */
   /* Фоны */
-  --pub-bg: #F7F7FA;
+  --pub-bg: #F6F5FB;
   --pub-bg-surface: #FFFFFF;
-  --pub-bg-subtle: #F0F0F5;
-  --pub-bg-inset: #E8E8F0;
+  --pub-bg-subtle: #F1EFFB;
+  --pub-bg-inset: #E9E5F8;
 
   /* Текст */
-  --pub-text: #0A0A14;
-  --pub-text-2: #3A3A50;
-  --pub-text-3: #6B6B85;
+  --pub-text: #1A1533;
+  --pub-text-2: #3A3358;
+  --pub-text-3: #6B6890;
   --pub-text-inv: #FFFFFF;
 
-  /* Акценты из логотипа */
-  --pub-purple: #6B5CE7;
+  /* Акценты из знака */
+  --pub-purple: #8B7FE8;
   --pub-purple-2: #9B95E4;
-  --pub-purple-bg: #EEEEFF;
-  --pub-green: #3DB88E;
-  --pub-green-bg: #E8F8F3;
+  --pub-purple-bg: #EEEBFB;
+  --pub-green: #3FBF8F;
+  --pub-green-bg: #E7F7F0;
   --pub-amber: #F5A623;
   --pub-amber-bg: #FEF5E7;
-  --pub-dark: #2E2780;
+  --pub-dark: #3B2E7E;
+  --pub-on-amber: #2A1C00;   /* тёмный текст на янтарной кнопке */
 
   /* Границы */
-  --pub-border: #E2E2EC;
-  --pub-border-2: #CACAD8;
+  --pub-border: #E6E3F5;
+  --pub-border-2: #C9C3E6;
 
   /* Тени */
-  --pub-shadow: 0 1px 2px rgba(10,10,20,0.06), 0 2px 8px rgba(10,10,20,0.04);
-  --pub-shadow-lg: 0 4px 16px rgba(10,10,20,0.08), 0 1px 4px rgba(10,10,20,0.04);
+  --pub-shadow: 0 1px 2px rgba(26,21,51,0.06), 0 2px 8px rgba(26,21,51,0.04);
+  --pub-shadow-lg: 0 4px 16px rgba(26,21,51,0.08), 0 1px 4px rgba(26,21,51,0.04);
 
-  /* Типографика */
-  --pub-font: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --pub-radius: 4px;
-  --pub-radius-md: 8px;
+  /* Типографика: Manrope — текст/интерфейс, Fraunces — заголовки. */
+  --pub-font: var(--font-manrope), var(--font-inter), -apple-system, BlinkMacSystemFont, sans-serif;
+  --pub-font-display: var(--font-fraunces), var(--font-manrope), Georgia, serif;
+  --pub-radius: 10px;
+  --pub-radius-md: 16px;
 }
 
 /* ===== ТЁМНАЯ ТЕМА ===== */
 [data-theme="dark"] .aqyl-pub {
-  --pub-bg: #060608;
-  --pub-bg-surface: #0F1018;
-  --pub-bg-subtle: #161622;
-  --pub-bg-inset: #1E1E2E;
+  /* Бренд-система Aqyl (тёмная): индиго-ядро #1A1533. */
+  --pub-bg: #1A1533;
+  --pub-bg-surface: #221B42;
+  --pub-bg-subtle: #2A2350;
+  --pub-bg-inset: #322A57;
 
-  --pub-text: #F4F0FF;
-  --pub-text-2: #A8A8C0;
-  --pub-text-3: #6B6B85;
-  --pub-text-inv: #060608;
+  --pub-text: #F5F4FB;
+  --pub-text-2: #C4C0DC;
+  --pub-text-3: #A29FBF;
+  --pub-text-inv: #1A1533;
 
-  --pub-purple: #9B95E4;
-  --pub-purple-2: #7F77DD;
-  --pub-purple-bg: #1A1830;
-  --pub-green: #3DB88E;
-  --pub-green-bg: #0D2420;
+  --pub-purple: #8B7FE8;
+  --pub-purple-2: #9B95E4;
+  --pub-purple-bg: #2A2350;
+  --pub-green: #3FBF8F;
+  --pub-green-bg: #143229;
   --pub-amber: #F5A623;
-  --pub-amber-bg: #2A1E08;
+  --pub-amber-bg: #33260C;
   --pub-dark: #9B95E4;
+  --pub-on-amber: #2A1C00;
 
-  --pub-border: #1E1E30;
-  --pub-border-2: #2A2A40;
+  --pub-border: #322A57;
+  --pub-border-2: #40376B;
 
   --pub-shadow: 0 1px 2px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3);
   --pub-shadow-lg: 0 4px 16px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.3);
@@ -86,17 +91,19 @@
 
 /* Типографика */
 .aqyl-pub h1 {
+  font-family: var(--pub-font-display);
   font-size: clamp(2rem, 4vw, 3.25rem);
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
   color: var(--pub-text);
   margin: 0;
 }
 .aqyl-pub h2 {
+  font-family: var(--pub-font-display);
   font-size: clamp(1.25rem, 2.5vw, 1.875rem);
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.015em;
   color: var(--pub-text);
   margin: 0;
 }
@@ -130,12 +137,15 @@
   letter-spacing: -0.01em;
 }
 .aqyl-pub .pub-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+/* Янтарь — единственный цвет главного действия (правило бренд-системы). */
 .aqyl-pub .pub-btn-primary {
-  background: var(--pub-purple);
-  color: #fff;
-  border-color: var(--pub-purple);
+  background: var(--pub-amber);
+  color: var(--pub-on-amber);
+  border-color: var(--pub-amber);
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(245,166,35,.24);
 }
-.aqyl-pub .pub-btn-primary:hover:not(:disabled) { opacity: 0.88; }
+.aqyl-pub .pub-btn-primary:hover:not(:disabled) { filter: brightness(0.95); opacity: 1; }
 .aqyl-pub .pub-btn-outline {
   background: transparent;
   color: var(--pub-text);

@@ -2,16 +2,15 @@
 import Link from 'next/link';
 import { ThemeToggle } from './theme-toggle';
 
-// SVG логотип — упрощённая иконка aqyl: тёмно-синий круг, лавандовая левая нога,
-// мятная правая нога, янтарная перекладина.
+// Знак Aqyl: три штриха (лаванда/мята/янтарь) собираются в одну вершину —
+// метафора сборки урока из модулей. Цвета фиксированы (логотип).
 export const LogoIcon = ({ size = 28 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 100 100" fill="none" aria-hidden="true">
-    <circle cx="50" cy="50" r="48" fill="#2E2780" stroke="#7F77DD" strokeWidth="1.5" />
-    <path d="M47 25 L22 75 L31 75 L56 25 Z" fill="#9B95E4" />
-    <path d="M47 25 L56 25 L81 75 L72 75 Z" fill="#3DB88E" />
-    <rect x="31" y="52" width="38" height="7" rx="2" fill="#F5A623" />
-    <circle cx="51" cy="25" r="5" fill="white" opacity="0.95" />
-    <circle cx="51" cy="25" r="2.5" fill="#2E2780" />
+  <svg width={size} height={size} viewBox="0 0 112 112" fill="none" aria-hidden="true">
+    <rect x="2" y="2" width="108" height="108" rx="26" fill="#3B2E7E" />
+    <path d="M56 26 L34 84" stroke="#8B7FE8" strokeWidth="11" strokeLinecap="round" />
+    <path d="M56 26 L78 84" stroke="#3FBF8F" strokeWidth="11" strokeLinecap="round" />
+    <path d="M44 60 L68 60" stroke="#F5A623" strokeWidth="11" strokeLinecap="round" />
+    <circle cx="56" cy="26" r="6.5" fill="#F5F4FB" />
   </svg>
 );
 
@@ -28,7 +27,7 @@ export function PublicHeader() {
       <div className="pub-container" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '9px' }}>
           <LogoIcon size={26} />
-          <span style={{ fontWeight: 600, fontSize: '1.0625rem', letterSpacing: '0.08em', color: 'var(--pub-text)' }}>aqyl</span>
+          <span style={{ fontFamily: 'var(--pub-font-display)', fontWeight: 600, fontSize: '1.1875rem', letterSpacing: '0.02em', color: 'var(--pub-text)' }}>aqy<span style={{ color: 'var(--pub-amber)' }}>l</span></span>
         </Link>
 
         <nav className="pub-nav" style={{ display: 'flex', gap: '2px', marginLeft: '12px', flex: 1 }}>
