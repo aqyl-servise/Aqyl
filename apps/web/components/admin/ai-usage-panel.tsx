@@ -168,7 +168,7 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
               return (
                 <div key={pt.date} style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 20, flex: "1 0 20px" }} title={`${pt.date}: ${pt.totalCount} запросов`}>
                   <div style={{
-                    width: "100%", background: "#7F77DD", borderRadius: "3px 3px 0 0",
+                    width: "100%", background: "var(--accent-muted)", borderRadius: "3px 3px 0 0",
                     height: `${Math.max(heightPct, pt.totalCount > 0 ? 4 : 0)}%`,
                     transition: "height 0.3s",
                   }} />

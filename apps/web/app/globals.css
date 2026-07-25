@@ -24,6 +24,17 @@
   --radius: 12px;
   --radius-sm: 8px;
   --radius-full: 999px;
+
+  /* Алиасы для компонентов, ссылавшихся на несуществующие токены
+     (раньше падали в синий/серый фолбэк, напр. var(--primary, #2563eb)).
+     Привязаны к бренд-системе; резолвятся лениво → работают в обеих темах. */
+  --primary: var(--accent);
+  --primary-light: var(--accent-light);
+  --surface: var(--panel);
+  --text-muted: var(--muted);
+  --error: var(--warn);
+  --bg-alt: var(--panel-alt);
+  --fg: var(--text);
 }
 
 [data-theme="dark"] {
@@ -328,7 +339,7 @@ h1, h2, h3, h4 { line-height: 1.3; letter-spacing: -0.02em; margin: 0; }
 }
 .card-title-row { display: flex; align-items: center; gap: 10px; }
 .card-icon { font-size: 20px; }
-.card-title { font-size: 16px; font-weight: 600; color: var(--text); }
+.card-title { font-size: 16px; font-weight: 600; color: var(--text); font-family: var(--font-fraunces), var(--font-manrope), inherit; }
 
 /* ── Form ────────────────────────────────────────────── */
 .form-stack { display: flex; flex-direction: column; gap: 14px; }
@@ -768,6 +779,7 @@ h1, h2, h3, h4 { line-height: 1.3; letter-spacing: -0.02em; margin: 0; }
   letter-spacing: -0.03em;
   color: var(--text);
   margin: 0;
+  font-family: var(--font-fraunces), var(--font-manrope), inherit;
 }
 
 .page-header {

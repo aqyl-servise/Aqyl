@@ -70,7 +70,7 @@ export function QuestionnairesPanel({ token, language, userRole }: Props) {
   }
 
   const statusLabel = (s: string) => ({ draft: t.quest_status_draft, assigned: t.quest_status_assigned, completed: t.quest_status_completed }[s] ?? s);
-  const statusColor = (s: string) => ({ draft: "var(--text-muted)", assigned: "#3DB88E", completed: "#7F77DD" }[s] ?? "inherit");
+  const statusColor = (s: string) => ({ draft: "var(--text-muted)", assigned: "var(--success)", completed: "var(--accent-muted)" }[s] ?? "inherit");
 
   return (
     <div className="page">
