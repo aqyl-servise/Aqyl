@@ -69,7 +69,7 @@ export default function LiteracyPage() {
     setError(null);
     if (!subject || !grade) { setError(t.reqFields); return; }
     if (!qtypes.length || !pisa.length) { setError(t.litPickTypes); return; }
-    if (source === "generated" && !topic.trim()) { setError(t.litTopic + " —?"); return; }
+    if (source === "generated" && !topic.trim()) { setError(t.litReqTopic); return; }
     setBusy(true);
     try {
       const input: LitCreateInput = {
@@ -95,7 +95,7 @@ export default function LiteracyPage() {
     setError(null); setBusy(true);
     try {
       if (source === "own") {
-        if (ownText.trim().length < 200) { setError("Текст слишком короткий (мин. ~200 символов)."); setBusy(false); return; }
+        if (ownText.trim().length < 200) { setError(t.litTooShort); setBusy(false); return; }
         await api.litStimulus(token, setId, { mode: "own", text: ownText });
       } else {
         await api.litStimulus(token, setId, { mode: "generated" });
@@ -103,7 +103,7 @@ export default function LiteracyPage() {
       await api.litGenerate(token, setId);
       setStep(3);
       startPolling(setId);
-    } catch (e) { setError("Не удалось запустить генерацию (нужен ключ ИИ). " + msg(e)); setBusy(false); }
+    } catch (e) { setError(t.litGenFailed + " " + msg(e)); setBusy(false); }
   }
 
   function startPolling(id: string) {
@@ -163,7 +163,7 @@ export default function LiteracyPage() {
               </div>
               {source === "generated" && (
                 <div style={{ marginTop: 12 }}>
-                  <span style={label}>{t.litTopic} *</span><input style={inp} value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="напр. водные ресурсы Казахстана" />
+                  <span style={label}>{t.litTopic} *</span><input style={inp} value={topic} onChange={(e) => setTopic(e.target.value)} placeholder={t.litTopicHint} />
                   <div style={{ marginTop: 8 }}><span style={label}>{t.litNotes}</span><input style={inp} value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
                 </div>
               )}
@@ -204,13 +204,13 @@ export default function LiteracyPage() {
                     {t.litUploadFile}
                     <input type="file" accept=".pdf,.docx,.txt" style={{ display: "none" }} onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])} />
                   </label>
-                  <span style={{ marginLeft: 10, fontSize: 12, color: "var(--muted)" }}>{ownText.length} симв.</span>
+                  <span style={{ marginLeft: 10, fontSize: 12, color: "var(--muted)" }}>{ownText.length} {t.litChars}</span>
                 </div>
               </div>
             ) : (
               <div style={card}>
                 <div style={{ fontSize: 14, color: "var(--muted)" }}>{t.litTopic}: <b>{topic}</b></div>
-                <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 6 }}>Стимул сгенерируется автоматически перед заданиями.</div>
+                <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 6 }}>{t.litAutoStimulus}</div>
               </div>
             )}
             <div style={{ textAlign: "right" }}><button onClick={generate} disabled={busy} style={btnPrimary}>{busy ? t.generating : t.litGenQuestions}</button></div>

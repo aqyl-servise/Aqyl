@@ -98,7 +98,7 @@ export default function B2CDashboardPage() {
   return (
     <div className="aqyl-b2c b2c-depth">
       {/* ── Шапка ── */}
-      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", padding: "22px 28px" }}>
+      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20, flexWrap: "wrap", maxWidth: 1180, margin: "0 auto", padding: "26px 32px 0" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
           <span style={{ display: "inline-flex", filter: "drop-shadow(0 6px 16px rgba(59,46,126,.5))" }}><AqylMark size={52} /></span>
           <div style={{ lineHeight: 1.2 }}>
@@ -114,7 +114,7 @@ export default function B2CDashboardPage() {
         </div>
       </header>
 
-      <main style={{ maxWidth: 900, margin: "0 auto", padding: "32px 24px 64px" }}>
+      <main style={{ maxWidth: 1180, margin: "0 auto", padding: "26px 32px 80px" }}>
         {toast && (
           <div style={{ ...banner, borderColor: toast.kind === "success" ? "var(--mint)" : "var(--danger)", marginBottom: 22 }}>
             <span>{toast.text}</span>
@@ -161,15 +161,17 @@ export default function B2CDashboardPage() {
 
             {/* ── Фирменный конвейер ── */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", overflowX: "auto", margin: "34px auto 0", maxWidth: 960, padding: "2px 2px 6px" }}>
+              {/* Стрелка склеена со СЛЕДУЮЩИМ узлом: при переносе строки они
+                  уезжают вместе, поэтому стрелка никогда не висит в конце строки. */}
               {pipeline.map((step, i) => (
                 <span key={step} style={{ display: "inline-flex", alignItems: "center", flex: "none" }}>
+                  {i > 0 && <span aria-hidden style={{ color: "var(--lavender)", opacity: 0.6, padding: "0 11px", fontSize: 15 }}>→</span>}
                   <span style={{
                     background: "var(--ink-2)", border: `1px solid ${i === 0 ? "var(--mint)" : "var(--line)"}`,
                     color: i === 0 ? "var(--mint)" : "var(--white)", borderRadius: 12, padding: "12px 18px",
                     fontSize: 14, fontWeight: 600, whiteSpace: "nowrap",
                     boxShadow: i === 0 ? "0 0 0 3px rgba(63,191,143,.12)" : undefined,
                   }}>{step}</span>
-                  {i < pipeline.length - 1 && <span aria-hidden style={{ color: "var(--lavender)", opacity: 0.6, padding: "0 11px", fontSize: 15 }}>→</span>}
                 </span>
               ))}
             </div>

@@ -75,6 +75,9 @@ const ru: Dict = {
   litForTeacher: "Для учителя (ключи)", litKey: "Ключ", litCriteriaF: "Критерий", litTotalF: "Общий балл",
   litRegenQ: "↻ Перегенерировать", litDelQ: "Удалить", litDownloadStudent: "Скачать для ученика", litDownloadTeacher: "Скачать для учителя",
   litReqStimulus: "Сначала задайте стимульный материал.", litPickTypes: "Выберите хотя бы один тип вопроса и уровень PISA.",
+  litReqTopic: "Укажите тему для генерации стимула.", litTooShort: "Текст слишком короткий (мин. ~200 символов).", litGenFailed: "Не удалось запустить генерацию.",
+  litTopicHint: "напр. водные ресурсы Казахстана", litAutoStimulus: "Стимул сгенерируется автоматически перед заданиями.",
+  litChars: "симв.",
   pisaBadge: "PISA", pointsShort: "б.",
 };
 
@@ -141,6 +144,9 @@ const kz: Dict = {
   litForTeacher: "Мұғалімге (кілттер)", litKey: "Кілт", litCriteriaF: "Критерий", litTotalF: "Жалпы ұпай",
   litRegenQ: "↻ Қайта құру", litDelQ: "Жою", litDownloadStudent: "Оқушыға жүктеу", litDownloadTeacher: "Мұғалімге жүктеу",
   litReqStimulus: "Алдымен стимул материалын беріңіз.", litPickTypes: "Кемінде бір сұрақ түрі мен PISA деңгейін таңдаңыз.",
+  litReqTopic: "Стимул генерациясы үшін тақырыпты көрсетіңіз.", litTooShort: "Мәтін тым қысқа (кемінде ~200 таңба).", litGenFailed: "Генерацияны бастау мүмкін болмады.",
+  litTopicHint: "мыс. Қазақстанның су ресурстары", litAutoStimulus: "Стимул тапсырмалардың алдында автоматты түрде жасалады.",
+  litChars: "таңба",
   pisaBadge: "PISA", pointsShort: "ұп.",
 };
 
@@ -190,7 +196,7 @@ const en: Dict = {
   gradeWord: "grade", download: "Download",
   stt_draft: "Draft", stt_generating: "Generating…", stt_ready: "Ready", stt_error: "Error",
   helpH2: "How to use Aqyl",
-  help1: "Create lesson — fill in the КСП header, generate objectives, choose a mode and get a ready short-term plan in the №130 format.",
+  help1: "Create lesson — fill in the KSP (short-term plan) header, generate objectives, choose a mode and get a ready short-term plan in the No. 130 format.",
   help2: "My materials — saved lessons you can download as Word.",
   help3: "Subscription — plans and payment via Kaspi.",
   helpSupport: "Support", helpContact: "Questions and suggestions:",
@@ -207,6 +213,9 @@ const en: Dict = {
   litForTeacher: "For teacher (keys)", litKey: "Key", litCriteriaF: "Criterion", litTotalF: "Total points",
   litRegenQ: "↻ Regenerate", litDelQ: "Delete", litDownloadStudent: "Download for student", litDownloadTeacher: "Download for teacher",
   litReqStimulus: "Set the stimulus material first.", litPickTypes: "Pick at least one question type and PISA level.",
+  litReqTopic: "Enter a topic to generate the stimulus.", litTooShort: "The text is too short (min. ~200 characters).", litGenFailed: "Could not start generation.",
+  litTopicHint: "e.g. water resources of Kazakhstan", litAutoStimulus: "The stimulus will be generated automatically before the questions.",
+  litChars: "chars",
   pisaBadge: "PISA", pointsShort: "pts",
 };
 
