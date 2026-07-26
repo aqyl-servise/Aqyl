@@ -1765,6 +1765,35 @@ h1, h2, h3, h4 { line-height: 1.3; letter-spacing: -0.02em; margin: 0; }
   --muted: #A29FBF;
   --line: rgba(139,127,232,.22);
 }
+/* Глубина фона дашборда: мягкое индиго-свечение вместо плоской заливки.
+   Только оттенки индиго/лаванды — никаких посторонних цветов. */
+.aqyl-b2c.b2c-depth {
+  background:
+    radial-gradient(900px 520px at 50% 8%, rgba(139,127,232,.14), transparent 70%),
+    radial-gradient(700px 500px at 85% 40%, rgba(59,46,126,.07), transparent 65%),
+    var(--ink);
+}
+.b2c-theme-dark .aqyl-b2c.b2c-depth {
+  background:
+    radial-gradient(900px 520px at 50% 8%, rgba(59,46,126,.55), transparent 70%),
+    radial-gradient(700px 500px at 85% 40%, rgba(139,127,232,.10), transparent 65%),
+    var(--ink);
+}
+
+/* Ховеры дашборда: подъём главной кнопки, подсветка карточек урока.
+   Анимации гасятся общим правилом prefers-reduced-motion выше. */
+.aqyl-b2c .b2c-main-btn { transition: transform .12s ease; }
+.aqyl-b2c .b2c-main-btn:hover { transform: translateY(-2px); }
+.aqyl-b2c .b2c-lcard { transition: border-color .18s ease, transform .18s ease; }
+.aqyl-b2c .b2c-lcard:hover { border-color: var(--lavender); transform: translateY(-2px); }
+.aqyl-b2c .b2c-tool { transition: color .15s ease, border-color .15s ease; }
+.aqyl-b2c .b2c-tool:hover { color: var(--white); border-color: var(--lavender); }
+.aqyl-b2c .b2c-pill:hover { border-color: var(--lavender); }
+.aqyl-b2c .b2c-field:focus {
+  outline: none; border-color: var(--lavender);
+  box-shadow: 0 0 0 4px rgba(139,127,232,.16);
+}
+
 /* Плавающий тумблер темы воронки B2C (вне .aqyl-b2c → свои цвета). */
 .b2c-theme-fab {
   position: fixed; right: 18px; bottom: 18px; z-index: 50;

@@ -96,27 +96,27 @@ export default function B2CDashboardPage() {
   };
 
   return (
-    <div className="aqyl-b2c">
+    <div className="aqyl-b2c b2c-depth">
       {/* ── Шапка ── */}
-      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", padding: "18px 24px", borderBottom: "1px solid var(--line)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <AqylMark size={38} />
-          <div style={{ lineHeight: 1.15 }}>
-            <div style={{ fontWeight: 800, fontSize: 20, letterSpacing: "-.02em" }}>aqy<span style={{ color: "var(--amber)" }}>l</span></div>
-            <div style={{ fontSize: 13, color: "var(--muted)" }}>{t.hello}{firstName ? `, ${firstName}` : ""}</div>
+      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", padding: "22px 28px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
+          <span style={{ display: "inline-flex", filter: "drop-shadow(0 6px 16px rgba(59,46,126,.5))" }}><AqylMark size={52} /></span>
+          <div style={{ lineHeight: 1.2 }}>
+            <div style={{ fontWeight: 800, fontSize: 22, letterSpacing: "-.02em" }}>aqy<span style={{ color: "var(--amber)" }}>l</span></div>
+            <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 1 }}>{t.hello}{firstName ? `, ${firstName}` : ""}</div>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <LangSwitcher lang={lang} setLang={setLang} dark />
           <span style={{ fontSize: 12, padding: "5px 12px", borderRadius: 999, background: "rgba(139,127,232,.16)", color: "var(--lavender)", fontWeight: 700 }}>{isActive ? t.subActive : isTrial ? t.subTrial : t.subLimited}</span>
-          <button onClick={() => router.push("/dashboard/b2c/profile")} style={ghost}>👤 {t.profile}</button>
-          <button onClick={handleLogout} style={ghost}>{t.logout}</button>
+          <button onClick={() => router.push("/dashboard/b2c/profile")} className="b2c-pill" style={ghost}>👤 {t.profile}</button>
+          <button onClick={handleLogout} className="b2c-pill" style={ghost}>{t.logout}</button>
         </div>
       </header>
 
       <main style={{ maxWidth: 900, margin: "0 auto", padding: "32px 24px 64px" }}>
         {toast && (
-          <div style={{ ...banner, borderColor: toast.kind === "success" ? "var(--mint)" : "#e05757", marginBottom: 22 }}>
+          <div style={{ ...banner, borderColor: toast.kind === "success" ? "var(--mint)" : "var(--danger)", marginBottom: 22 }}>
             <span>{toast.text}</span>
             <button onClick={() => setToast(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "var(--muted)" }}>✕</button>
           </div>
@@ -124,7 +124,10 @@ export default function B2CDashboardPage() {
 
         {isTrial && (
           <div style={{ ...banner, marginBottom: 24 }}>
-            <span>{t.trialLeft.replace("{n}", String(trialLeft))}</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 11, color: "var(--muted)", fontSize: 15 }}>
+              <span aria-hidden style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--amber)", boxShadow: "0 0 10px var(--amber)", flex: "none" }} />
+              {t.trialLeft.replace("{n}", String(trialLeft))}
+            </span>
             {/* Вторичное действие — не янтарь: единственный янтарь на экране закреплён за «Собрать урок». */}
             <button onClick={() => router.push("/dashboard/b2c/subscribe")} style={btnSecondary}>{t.getSub}</button>
           </div>
@@ -140,35 +143,41 @@ export default function B2CDashboardPage() {
           <>
             {/* ── Сердце дашборда: ввод темы ── */}
             <section style={{ textAlign: "center", marginBottom: 30 }}>
-              <h1 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "clamp(30px,5vw,46px)", letterSpacing: "-.01em", margin: "8px 0 10px" }}>{t.heroTitle}</h1>
-              <p style={{ color: "var(--muted)", fontSize: 16, maxWidth: 560, margin: "0 auto 24px" }}>{t.heroSub}</p>
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", maxWidth: 640, margin: "0 auto" }}>
+              <h1 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "clamp(40px,6vw,68px)", letterSpacing: "-.02em", color: "var(--white)", margin: "44px 0 0" }}>{t.heroTitle}</h1>
+              <p style={{ color: "var(--muted)", fontSize: 19, lineHeight: 1.5, maxWidth: 560, margin: "16px auto 0" }}>{t.heroSub}</p>
+              <div style={{ display: "flex", gap: 14, flexWrap: "wrap", maxWidth: 820, margin: "40px auto 0", alignItems: "stretch" }}>
                 <input
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") buildLesson(); }}
                   placeholder={t.topicPlaceholder}
                   aria-label={t.heroTitle}
+                  className="b2c-field"
                   style={inputStyle}
                 />
-                <button onClick={buildLesson} style={{ ...btnPrimary, flex: "none" }}>{t.buildLesson} →</button>
+                <button onClick={buildLesson} className="b2c-main-btn" style={{ ...btnPrimary, flex: "none" }}>{t.buildLesson} →</button>
               </div>
             </section>
 
             {/* ── Фирменный конвейер ── */}
-            <div style={{ display: "flex", alignItems: "center", gap: 0, overflowX: "auto", padding: "6px 2px 18px", marginBottom: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", overflowX: "auto", margin: "34px auto 0", maxWidth: 960, padding: "2px 2px 6px" }}>
               {pipeline.map((step, i) => (
                 <span key={step} style={{ display: "inline-flex", alignItems: "center", flex: "none" }}>
-                  <span style={{ background: "var(--ink-2)", border: `1px solid ${i === 0 ? "var(--mint)" : "var(--line)"}`, color: i === 0 ? "var(--mint)" : "var(--white)", borderRadius: 11, padding: "9px 14px", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>{step}</span>
-                  {i < pipeline.length - 1 && <span aria-hidden style={{ color: "var(--lavender)", opacity: 0.7, padding: "0 8px", fontSize: 15 }}>→</span>}
+                  <span style={{
+                    background: "var(--ink-2)", border: `1px solid ${i === 0 ? "var(--mint)" : "var(--line)"}`,
+                    color: i === 0 ? "var(--mint)" : "var(--white)", borderRadius: 12, padding: "12px 18px",
+                    fontSize: 14, fontWeight: 600, whiteSpace: "nowrap",
+                    boxShadow: i === 0 ? "0 0 0 3px rgba(63,191,143,.12)" : undefined,
+                  }}>{step}</span>
+                  {i < pipeline.length - 1 && <span aria-hidden style={{ color: "var(--lavender)", opacity: 0.6, padding: "0 11px", fontSize: 15 }}>→</span>}
                 </span>
               ))}
             </div>
 
             {/* ── Мои уроки ── */}
             <section style={{ marginTop: 20 }}>
-              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
-                <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 22, margin: 0 }}>{t.myLessons}</h2>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", margin: "64px 0 20px" }}>
+                <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 30, color: "var(--white)", margin: 0 }}>{t.myLessons}</h2>
                 {lessons.length > 0 && <button onClick={() => router.push("/dashboard/b2c/materials")} style={linkBtn}>{t.materials} →</button>}
               </div>
               {lessons.length === 0 ? (
@@ -179,17 +188,21 @@ export default function B2CDashboardPage() {
                   <button onClick={buildLesson} style={btnSecondary}>{t.buildLesson} →</button>
                 </div>
               ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 14 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(250px,1fr))", gap: 16 }}>
                   {lessons.slice(0, 6).map((l) => {
                     const st = STT[l.status] ?? STT.draft;
+                    const subj = [l.subject, l.grade ? `${l.grade} ${t.gradeWord}` : null].filter(Boolean).join(" · ");
                     return (
-                      <button key={l.id} onClick={() => router.push("/dashboard/b2c/materials")} style={{ ...card, textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 8 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: st.color }}>● {st.label}</span>
-                          <span style={{ fontSize: 11, color: "var(--muted)" }}>{l.updatedAt ? new Date(l.updatedAt).toLocaleDateString() : ""}</span>
+                      <button key={l.id} onClick={() => router.push("/dashboard/b2c/materials")} className="b2c-lcard" style={{ ...card, textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 0 }}>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--mint)" }}>
+                          <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--mint)", flex: "none" }} />
+                          {subj || t.untitled}
+                        </span>
+                        <h4 style={{ fontSize: 17, fontWeight: 700, color: "var(--white)", margin: "10px 0 6px" }}>{l.lessonTitle?.trim() || t.untitled}</h4>
+                        <div style={{ fontSize: 13, color: "var(--muted)", display: "flex", justifyContent: "space-between", gap: 8 }}>
+                          <span style={{ color: st.color, fontWeight: 700 }}>{st.label}</span>
+                          <span>{l.updatedAt ? new Date(l.updatedAt).toLocaleDateString() : ""}</span>
                         </div>
-                        <div style={{ fontWeight: 700, fontSize: 15, color: "var(--white)" }}>{l.lessonTitle?.trim() || t.untitled}</div>
-                        <div style={{ fontSize: 13, color: "var(--muted)" }}>{[l.subject, l.grade ? `${l.grade} ${t.gradeWord}` : null].filter(Boolean).join(" · ")}</div>
                       </button>
                     );
                   })}
@@ -202,7 +215,7 @@ export default function B2CDashboardPage() {
               <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 12 }}>{t.moreTools}</div>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 {tools.map((tool) => (
-                  <button key={tool.key} onClick={() => router.push(tool.href)} style={toolBtn}>
+                  <button key={tool.key} onClick={() => router.push(tool.href)} className="b2c-tool" style={toolBtn}>
                     <span style={{ fontSize: 16 }}>{tool.icon}</span> {tool.label}
                   </button>
                 ))}
@@ -215,11 +228,12 @@ export default function B2CDashboardPage() {
   );
 }
 
-const ghost: React.CSSProperties = { background: "rgba(139,127,232,.10)", border: "1px solid var(--line)", color: "var(--white)", borderRadius: 10, padding: "7px 13px", cursor: "pointer", fontSize: 13, fontFamily: "inherit" };
-const banner: React.CSSProperties = { background: "var(--ink-2)", border: "1px solid var(--line)", color: "var(--white)", padding: "14px 18px", borderRadius: 12, fontSize: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" };
-const card: React.CSSProperties = { background: "var(--ink-2)", border: "1px solid var(--line)", borderRadius: "var(--radius)", padding: 20 };
-const btnPrimary: React.CSSProperties = { background: "var(--amber)", color: "var(--on-amber)", border: "none", borderRadius: 12, padding: "14px 24px", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 6px 20px rgba(245,166,35,.26)" };
-const btnSecondary: React.CSSProperties = { background: "transparent", color: "var(--white)", border: "1.5px solid var(--lavender)", borderRadius: 10, padding: "10px 18px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" };
-const toolBtn: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(139,127,232,.12)", color: "var(--lavender)", border: "1px solid var(--line)", borderRadius: 12, padding: "11px 16px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" };
+const ghost: React.CSSProperties = { background: "rgba(139,127,232,.06)", border: "1px solid var(--line)", color: "var(--white)", borderRadius: 12, padding: "10px 17px", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit" };
+const banner: React.CSSProperties = { background: "var(--ink-2)", border: "1px solid var(--line)", color: "var(--white)", padding: "20px 24px", borderRadius: 18, fontSize: 15, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 18, flexWrap: "wrap" };
+const card: React.CSSProperties = { background: "var(--ink-2)", border: "1px solid var(--line)", borderRadius: 18, padding: 20 };
+// Единственное главное действие на экране — янтарь со свечением снизу.
+const btnPrimary: React.CSSProperties = { background: "var(--amber)", color: "var(--on-amber)", border: "none", borderRadius: 18, padding: "0 30px", minHeight: 56, fontSize: 17, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 12px 34px rgba(245,166,35,.34)" };
+const btnSecondary: React.CSSProperties = { background: "transparent", color: "var(--white)", border: "1.5px solid var(--lavender)", borderRadius: 12, padding: "11px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" };
+const toolBtn: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 10, background: "rgba(139,127,232,.07)", color: "var(--muted)", border: "1px solid var(--line)", borderRadius: 12, padding: "13px 18px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" };
 const linkBtn: React.CSSProperties = { background: "none", border: "none", color: "var(--lavender)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" };
-const inputStyle: React.CSSProperties = { flex: 1, minWidth: 220, background: "var(--ink-2)", border: "1.5px solid var(--line)", borderRadius: 12, padding: "14px 16px", color: "var(--white)", fontFamily: "inherit", fontSize: 16 };
+const inputStyle: React.CSSProperties = { flex: 1, minWidth: 240, background: "var(--ink)", border: "1.5px solid var(--line)", borderRadius: 18, padding: "22px 24px", color: "var(--white)", fontFamily: "inherit", fontSize: 18 };
