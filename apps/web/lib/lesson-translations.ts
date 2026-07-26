@@ -78,7 +78,34 @@ const ru: Dict = {
   litReqTopic: "Укажите тему для генерации стимула.", litTooShort: "Текст слишком короткий (мин. ~200 символов).", litGenFailed: "Не удалось запустить генерацию.",
   litTopicHint: "напр. водные ресурсы Казахстана", litAutoStimulus: "Стимул сгенерируется автоматически перед заданиями.",
   litChars: "симв.",
-  pisaBadge: "PISA", pointsShort: "б.",
+  pisaBadge: "PISA", pointsShort: "б.", themeLight: "Светлая тема", themeDark: "Тёмная тема",
+  // onboarding
+  obSkip: "Пропустить →", obStep: "Шаг {n} из {m}",
+  obTitle1: "Добро пожаловать в Aqyl 👋", obSub1: "Мы поможем вам экономить до 3 часов в неделю на документации",
+  obC1t: "КМЖ за 30 секунд", obC1x: "Создавайте планы уроков по стандартам МОН РК",
+  obC2t: "Оценки и отчёты", obC2x: "Автоматические БЖБ/ТЖБ и аналитика",
+  obC3t: "Готовые материалы", obC3x: "Презентации и иллюстрации к урокам",
+  obStart: "Начать настройку →",
+  obTitle2: "Расскажите о себе", obSubjectL: "Предмет", obGradesL: "Классы", obLangL: "Язык обучения",
+  obRegionL: "Область (необязательно)", obRegionPick: "Выберите область…",
+  obTitle3: "Попробуйте прямо сейчас", obSub3: "Введите тему урока и получите план за 30 секунд",
+  obTopicL: "Тема урока", obGenDemo: "Сгенерировать демо-урок ✨", obGenerating: "Генерируем…",
+  obDemoLabel: "Демо-пример", obGoals: "Цели урока:", obStages: "Этапы урока:",
+  obThStage: "Этап", obThTime: "Время", obThTeacher: "Учитель", obThStudent: "Ученики",
+  obFullKmzh: "Создать полный КМЖ в дашборде →",
+  obTitle4: "Всё готово! 🎉", obTrialAll: "В пробном периоде доступны все функции бесплатно",
+  obTrialDays: "Дней пробного периода осталось: {n}.",
+  obCreateFirst: "Создать первый КМЖ", obExplore: "Изучить дашборд",
+  obLangRu: "Русский", obLangKz: "Қазақша", obLangMixed: "Смешанный",
+  obGr14: "1–4 класс", obGr59: "5–9 класс", obGr1011: "10–11 класс",
+  // subscribe
+  subTitle: "Оформление подписки",
+  subSubtitle: "Полный доступ к генерации КМЖ, презентаций и материалов. Оплата через Kaspi.",
+  subM1: "1 месяц", subM3: "3 месяца", subM12: "12 месяцев",
+  subPopular: "Популярный", subPerMonth: "в месяц",
+  subPay: "Оплатить через Kaspi", subPaying: "Переход к оплате…",
+  subPayError: "Не удалось создать платёж. Попробуйте позже.",
+  subFooter: "Оплата производится через сайт. Подписка продлевается вручную после каждого периода.",
 };
 
 const kz: Dict = {
@@ -147,7 +174,34 @@ const kz: Dict = {
   litReqTopic: "Стимул генерациясы үшін тақырыпты көрсетіңіз.", litTooShort: "Мәтін тым қысқа (кемінде ~200 таңба).", litGenFailed: "Генерацияны бастау мүмкін болмады.",
   litTopicHint: "мыс. Қазақстанның су ресурстары", litAutoStimulus: "Стимул тапсырмалардың алдында автоматты түрде жасалады.",
   litChars: "таңба",
-  pisaBadge: "PISA", pointsShort: "ұп.",
+  pisaBadge: "PISA", pointsShort: "ұп.", themeLight: "Ашық тема", themeDark: "Қараңғы тема",
+  // onboarding
+  obSkip: "Өткізіп жіберу →", obStep: "{m}-тен {n}-қадам",
+  obTitle1: "Aqyl-ға қош келдіңіз 👋", obSub1: "Құжаттамаға кететін аптасына 3 сағатқа дейін үнемдеуге көмектесеміз",
+  obC1t: "ҚМЖ 30 секундта", obC1x: "ҚР БҒМ стандарттары бойынша сабақ жоспарларын жасаңыз",
+  obC2t: "Бағалар мен есептер", obC2x: "Автоматты БЖБ/ТЖБ және аналитика",
+  obC3t: "Дайын материалдар", obC3x: "Сабаққа презентациялар мен суреттер",
+  obStart: "Баптауды бастау →",
+  obTitle2: "Өзіңіз туралы айтыңыз", obSubjectL: "Пән", obGradesL: "Сыныптар", obLangL: "Оқыту тілі",
+  obRegionL: "Облыс (міндетті емес)", obRegionPick: "Облысты таңдаңыз…",
+  obTitle3: "Дәл қазір байқап көріңіз", obSub3: "Сабақ тақырыбын енгізіп, 30 секундта жоспар алыңыз",
+  obTopicL: "Сабақ тақырыбы", obGenDemo: "Демо-сабақ жасау ✨", obGenerating: "Жасалуда…",
+  obDemoLabel: "Демо-үлгі", obGoals: "Сабақ мақсаттары:", obStages: "Сабақ кезеңдері:",
+  obThStage: "Кезең", obThTime: "Уақыт", obThTeacher: "Мұғалім", obThStudent: "Оқушылар",
+  obFullKmzh: "Дашбордта толық ҚМЖ жасау →",
+  obTitle4: "Бәрі дайын! 🎉", obTrialAll: "Сынақ мерзімінде барлық функциялар тегін қолжетімді",
+  obTrialDays: "Сынақ мерзімінен қалған күн саны: {n}.",
+  obCreateFirst: "Алғашқы ҚМЖ жасау", obExplore: "Дашбордты зерттеу",
+  obLangRu: "Орысша", obLangKz: "Қазақша", obLangMixed: "Аралас",
+  obGr14: "1–4 сынып", obGr59: "5–9 сынып", obGr1011: "10–11 сынып",
+  // subscribe
+  subTitle: "Жазылымды рәсімдеу",
+  subSubtitle: "ҚМЖ, презентациялар мен материалдар генерациясына толық қолжетімділік. Төлем Kaspi арқылы.",
+  subM1: "1 ай", subM3: "3 ай", subM12: "12 ай",
+  subPopular: "Танымал", subPerMonth: "айына",
+  subPay: "Kaspi арқылы төлеу", subPaying: "Төлемге өту…",
+  subPayError: "Төлем жасау мүмкін болмады. Кейінірек көріңіз.",
+  subFooter: "Төлем сайт арқылы жүргізіледі. Жазылым әр кезеңнен кейін қолмен ұзартылады.",
 };
 
 const en: Dict = {
@@ -216,7 +270,34 @@ const en: Dict = {
   litReqTopic: "Enter a topic to generate the stimulus.", litTooShort: "The text is too short (min. ~200 characters).", litGenFailed: "Could not start generation.",
   litTopicHint: "e.g. water resources of Kazakhstan", litAutoStimulus: "The stimulus will be generated automatically before the questions.",
   litChars: "chars",
-  pisaBadge: "PISA", pointsShort: "pts",
+  pisaBadge: "PISA", pointsShort: "pts", themeLight: "Light theme", themeDark: "Dark theme",
+  // onboarding
+  obSkip: "Skip →", obStep: "Step {n} of {m}",
+  obTitle1: "Welcome to Aqyl 👋", obSub1: "We'll help you save up to 3 hours a week on paperwork",
+  obC1t: "A lesson plan in 30 seconds", obC1x: "Create lesson plans to the MES RK standards",
+  obC2t: "Grades and reports", obC2x: "Automatic formative/summative assessment and analytics",
+  obC3t: "Ready-made materials", obC3x: "Presentations and illustrations for your lessons",
+  obStart: "Start setup →",
+  obTitle2: "Tell us about yourself", obSubjectL: "Subject", obGradesL: "Grades", obLangL: "Language of instruction",
+  obRegionL: "Region (optional)", obRegionPick: "Choose a region…",
+  obTitle3: "Try it right now", obSub3: "Enter a lesson topic and get a plan in 30 seconds",
+  obTopicL: "Lesson topic", obGenDemo: "Generate a demo lesson ✨", obGenerating: "Generating…",
+  obDemoLabel: "Demo example", obGoals: "Lesson objectives:", obStages: "Lesson stages:",
+  obThStage: "Stage", obThTime: "Time", obThTeacher: "Teacher", obThStudent: "Students",
+  obFullKmzh: "Create a full lesson plan in the dashboard →",
+  obTitle4: "All set! 🎉", obTrialAll: "During the trial all features are free",
+  obTrialDays: "Trial days remaining: {n}.",
+  obCreateFirst: "Create your first lesson plan", obExplore: "Explore the dashboard",
+  obLangRu: "Russian", obLangKz: "Kazakh", obLangMixed: "Mixed",
+  obGr14: "Grades 1–4", obGr59: "Grades 5–9", obGr1011: "Grades 10–11",
+  // subscribe
+  subTitle: "Subscription checkout",
+  subSubtitle: "Full access to lesson plan, presentation and material generation. Payment via Kaspi.",
+  subM1: "1 month", subM3: "3 months", subM12: "12 months",
+  subPopular: "Popular", subPerMonth: "per month",
+  subPay: "Pay with Kaspi", subPaying: "Redirecting to payment…",
+  subPayError: "Could not create the payment. Please try again later.",
+  subFooter: "Payment is made through the website. The subscription is renewed manually after each period.",
 };
 
 export const LT: Record<Lang, Dict> = { ru, kz, en };
@@ -232,6 +313,50 @@ export const VALUE_MONTHS: { month: string; label: Record<Lang, string>; value: 
   { month: "03", label: { ru: "Март", kz: "Наурыз", en: "March" }, value: { ru: "Творчество", kz: "Шығармашылық", en: "Creativity" } },
   { month: "04", label: { ru: "Апрель", kz: "Сәуір", en: "April" }, value: { ru: "Природа", kz: "Табиғат", en: "Nature" } },
   { month: "05", label: { ru: "Май", kz: "Мамыр", en: "May" }, value: { ru: "Знание", kz: "Білім", en: "Knowledge" } },
+];
+
+/**
+ * Предметы и области для онбординга.
+ * ВАЖНО: `value` — то, что уходит в API и хранится в БД (исторически русская
+ * строка). Менять его нельзя, иначе поедут уже сохранённые профили.
+ * Локализуется ТОЛЬКО подпись. Названия областей — в официальной форме.
+ */
+export const SUBJECT_OPTIONS: { value: string; label: Record<Lang, string> }[] = [
+  { value: "Математика", label: { ru: "Математика", kz: "Математика", en: "Mathematics" } },
+  { value: "Русский язык", label: { ru: "Русский язык", kz: "Орыс тілі", en: "Russian language" } },
+  { value: "Казахский язык", label: { ru: "Казахский язык", kz: "Қазақ тілі", en: "Kazakh language" } },
+  { value: "История", label: { ru: "История", kz: "Тарих", en: "History" } },
+  { value: "Физика", label: { ru: "Физика", kz: "Физика", en: "Physics" } },
+  { value: "Химия", label: { ru: "Химия", kz: "Химия", en: "Chemistry" } },
+  { value: "Биология", label: { ru: "Биология", kz: "Биология", en: "Biology" } },
+  { value: "География", label: { ru: "География", kz: "География", en: "Geography" } },
+  { value: "Английский язык", label: { ru: "Английский язык", kz: "Ағылшын тілі", en: "English language" } },
+  { value: "Информатика", label: { ru: "Информатика", kz: "Информатика", en: "Computer science" } },
+  { value: "Литература", label: { ru: "Литература", kz: "Әдебиет", en: "Literature" } },
+  { value: "Физкультура", label: { ru: "Физкультура", kz: "Дене шынықтыру", en: "Physical education" } },
+  { value: "Другое", label: { ru: "Другое", kz: "Басқа", en: "Other" } },
+];
+
+export const REGION_OPTIONS: { value: string; label: Record<Lang, string> }[] = [
+  { value: "Алматы", label: { ru: "Алматы", kz: "Алматы қаласы", en: "Almaty city" } },
+  { value: "Астана", label: { ru: "Астана", kz: "Астана қаласы", en: "Astana city" } },
+  { value: "Шымкент", label: { ru: "Шымкент", kz: "Шымкент қаласы", en: "Shymkent city" } },
+  { value: "Жамбылская", label: { ru: "Жамбылская область", kz: "Жамбыл облысы", en: "Zhambyl Region" } },
+  { value: "Карагандинская", label: { ru: "Карагандинская область", kz: "Қарағанды облысы", en: "Karaganda Region" } },
+  { value: "Восточно-Казахстанская", label: { ru: "Восточно-Казахстанская область", kz: "Шығыс Қазақстан облысы", en: "East Kazakhstan Region" } },
+  { value: "Западно-Казахстанская", label: { ru: "Западно-Казахстанская область", kz: "Батыс Қазақстан облысы", en: "West Kazakhstan Region" } },
+  { value: "Мангистауская", label: { ru: "Мангистауская область", kz: "Маңғыстау облысы", en: "Mangystau Region" } },
+  { value: "Актюбинская", label: { ru: "Актюбинская область", kz: "Ақтөбе облысы", en: "Aktobe Region" } },
+  { value: "Павлодарская", label: { ru: "Павлодарская область", kz: "Павлодар облысы", en: "Pavlodar Region" } },
+  { value: "Северо-Казахстанская", label: { ru: "Северо-Казахстанская область", kz: "Солтүстік Қазақстан облысы", en: "North Kazakhstan Region" } },
+  { value: "Костанайская", label: { ru: "Костанайская область", kz: "Қостанай облысы", en: "Kostanay Region" } },
+  { value: "Кызылординская", label: { ru: "Кызылординская область", kz: "Қызылорда облысы", en: "Kyzylorda Region" } },
+  { value: "Туркестанская", label: { ru: "Туркестанская область", kz: "Түркістан облысы", en: "Turkistan Region" } },
+  { value: "Акмолинская", label: { ru: "Акмолинская область", kz: "Ақмола облысы", en: "Akmola Region" } },
+  { value: "Атырауская", label: { ru: "Атырауская область", kz: "Атырау облысы", en: "Atyrau Region" } },
+  { value: "Абайская", label: { ru: "Абайская область", kz: "Абай облысы", en: "Abai Region" } },
+  { value: "Жетісу", label: { ru: "Жетысуская область", kz: "Жетісу облысы", en: "Zhetysu Region" } },
+  { value: "Улытау", label: { ru: "Улытауская область", kz: "Ұлытау облысы", en: "Ulytau Region" } },
 ];
 
 export function useLang(): [Lang, (l: Lang) => void] {

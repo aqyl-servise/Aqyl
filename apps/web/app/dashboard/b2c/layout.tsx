@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLang, LT } from "../../../lib/lesson-translations";
 
 /**
  * Layout воронки B2C: управляет темой (светлая по умолчанию, тёмная — опционально)
@@ -9,6 +10,8 @@ import { useEffect, useState } from "react";
  * Тумблер плавающий (fixed) — работает на всех страницах воронки без их правок.
  */
 export default function B2CLayout({ children }: { children: React.ReactNode }) {
+  const [lang] = useLang();
+  const t = LT[lang];
   const [dark, setDark] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -32,8 +35,8 @@ export default function B2CLayout({ children }: { children: React.ReactNode }) {
         type="button"
         onClick={toggle}
         className="b2c-theme-fab"
-        aria-label={dark ? "Светлая тема" : "Тёмная тема"}
-        title={dark ? "Светлая тема" : "Тёмная тема"}
+        aria-label={dark ? t.themeLight : t.themeDark}
+        title={dark ? t.themeLight : t.themeDark}
       >
         {mounted && dark ? "☀️" : "🌙"}
       </button>

@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { api, type B2CProfile } from "../../../../lib/api";
 import { getValidAccessToken } from "../../../../lib/auth";
 import { generateDemoKmzh, topicPlaceholder, type DemoKmzh } from "../../../../lib/onboarding-demo";
+import { useLang, LT, SUBJECT_OPTIONS, REGION_OPTIONS, type Lang } from "../../../../lib/lesson-translations";
+import { LangSwitcher } from "../../../../components/lang-switcher";
+
+type T = Record<string, string>;
 
 // Бренд-токены применяются через класс .aqyl-b2c на корне (см. globals.css).
 const BRAND = "var(--lavender)";
@@ -13,30 +17,18 @@ const DARK = "var(--white)";
 const STORAGE_KEY = "aqyl_onboarding_data";
 const TOTAL_STEPS = 4;
 
-const SUBJECTS = [
-  "Математика", "Русский язык", "Казахский язык", "История", "Физика",
-  "Химия", "Биология", "География", "Английский язык", "Информатика",
-  "Литература", "Физкультура", "Другое",
-];
-
+// Значения (value) исторически совпадают с русскими подписями и уходят в API —
+// их менять нельзя. Переводится только то, что видит учитель (см. label).
 const GRADE_OPTIONS = [
-  { label: "1-4 класс", value: "1-4" },
-  { label: "5-9 класс", value: "5-9" },
-  { label: "10-11 класс", value: "10-11" },
+  { key: "obGr14", value: "1-4" },
+  { key: "obGr59", value: "5-9" },
+  { key: "obGr1011", value: "10-11" },
 ];
 
 const LANGUAGES = [
-  { label: "Русский", value: "ru" },
-  { label: "Қазақша", value: "kz" },
-  { label: "Смешанный", value: "mixed" },
-];
-
-const REGIONS = [
-  "Алматы", "Астана", "Шымкент", "Жамбылская", "Карагандинская",
-  "Восточно-Казахстанская", "Западно-Казахстанская", "Мангистауская",
-  "Актюбинская", "Павлодарская", "Северо-Казахстанская", "Костанайская",
-  "Кызылординская", "Туркестанская", "Акмолинская", "Атырауская",
-  "Абайская", "Жетісу", "Улытау",
+  { key: "obLangRu", value: "ru" },
+  { key: "obLangKz", value: "kz" },
+  { key: "obLangMixed", value: "mixed" },
 ];
 
 function daysLeft(date: string | null): number {
@@ -66,6 +58,8 @@ function pill(active: boolean): React.CSSProperties {
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const [lang, setLang] = useLang();
+  const t = LT[lang];
   const [profile, setProfile] = useState<B2CProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -159,7 +153,7 @@ export default function OnboardingPage() {
   }
 
   if (loading) {
-    return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)" }}>Загрузка…</div>;
+    return <div className="aqyl-b2c" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)" }}>{t.loading}</div>;
   }
   if (!profile) return null;
 
@@ -178,22 +172,25 @@ export default function OnboardingPage() {
 
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "28px 20px 60px" }}>
         {/* Header: brand + progress + skip */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
-          <span style={{ color: BRAND, fontWeight: 800, fontSize: 22 }}>Aqyl</span>
-          {canSkip && (
-            <button
-              onClick={() => finishOnboarding()}
-              disabled={saving}
-              style={{ background: "none", border: "none", color: "var(--muted)", fontSize: 13, cursor: "pointer", fontWeight: 500 }}
-            >
-              Пропустить →
-            </button>
-          )}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 22 }}>
+          <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 22, color: "var(--white)" }}>aqy<span style={{ color: "var(--amber)" }}>l</span></span>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <LangSwitcher lang={lang} setLang={setLang} />
+            {canSkip && (
+              <button
+                onClick={() => finishOnboarding()}
+                disabled={saving}
+                style={{ background: "none", border: "none", color: "var(--muted)", fontSize: 13, cursor: "pointer", fontWeight: 500, fontFamily: "inherit" }}
+              >
+                {t.obSkip}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Progress bar */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
-          <span style={{ fontSize: 13, color: "var(--muted)", whiteSpace: "nowrap" }}>Шаг {step} из {TOTAL_STEPS}</span>
+          <span style={{ fontSize: 13, color: "var(--muted)", whiteSpace: "nowrap" }}>{t.obStep.replace("{n}", String(step)).replace("{m}", String(TOTAL_STEPS))}</span>
           <div style={{ display: "flex", gap: 8 }}>
             {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
               <span
@@ -209,14 +206,14 @@ export default function OnboardingPage() {
         </div>
 
         <div className="ob-step" key={step}>
-          {step === 1 && <StepWelcome onNext={() => setStep(2)} />}
+          {step === 1 && <StepWelcome onNext={() => setStep(2)} t={t} />}
           {step === 2 && (
             <StepInfo
               subject={subject} setSubject={setSubject}
               gradeLevels={gradeLevels} toggleGrade={toggleGrade}
               language={language} setLanguage={setLanguage}
               region={region} setRegion={setRegion}
-              onNext={() => setStep(3)}
+              onNext={() => setStep(3)} t={t} lang={lang}
             />
           )}
           {step === 3 && (
@@ -224,14 +221,14 @@ export default function OnboardingPage() {
               subject={subject} topic={topic} setTopic={setTopic}
               demo={demo} generating={generating}
               onGenerate={handleGenerateDemo}
-              onContinue={() => setStep(4)}
+              onContinue={() => setStep(4)} t={t}
             />
           )}
           {step === 4 && (
             <StepDone
               trialDays={trialDays} saving={saving}
               onCreate={() => finishOnboarding("create-kmzh")}
-              onExplore={() => finishOnboarding()}
+              onExplore={() => finishOnboarding()} t={t}
             />
           )}
         </div>
@@ -241,17 +238,17 @@ export default function OnboardingPage() {
 }
 
 // ── Step 1: Welcome ──────────────────────────────────────────────────────────
-function StepWelcome({ onNext }: { onNext: () => void }) {
+function StepWelcome({ onNext, t }: { onNext: () => void; t: T }) {
   const cards = [
-    { icon: "📝", title: "КМЖ за 30 секунд", text: "Создавайте планы уроков по стандартам МОН РК" },
-    { icon: "📊", title: "Оценки и отчёты", text: "Автоматические БЖБ/ТЖБ и аналитика" },
-    { icon: "🎯", title: "Готовые материалы", text: "Презентации и иллюстрации к урокам" },
+    { icon: "📝", title: t.obC1t, text: t.obC1x },
+    { icon: "📊", title: t.obC2t, text: t.obC2x },
+    { icon: "🎯", title: t.obC3t, text: t.obC3x },
   ];
   return (
     <div style={{ textAlign: "center" }}>
-      <h1 style={{ color: DARK, fontSize: 28, fontWeight: 800, margin: "0 0 8px" }}>Добро пожаловать в Aqyl 👋</h1>
+      <h1 style={{ fontFamily: "var(--font-display)", color: "var(--white)", fontSize: 30, fontWeight: 700, margin: "0 0 8px" }}>{t.obTitle1}</h1>
       <p style={{ color: "var(--muted)", fontSize: 16, margin: "0 0 28px" }}>
-        Мы поможем вам экономить до 3 часов в неделю на документации
+        {t.obSub1}
       </p>
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", marginBottom: 30 }}>
         {cards.map((c) => (
@@ -262,7 +259,7 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
           </div>
         ))}
       </div>
-      <button className="ob-btn-primary" onClick={onNext} style={primaryBtn}>Начать настройку →</button>
+      <button className="ob-btn-primary" onClick={onNext} style={primaryBtn}>{t.obStart}</button>
     </div>
   );
 }
@@ -273,43 +270,43 @@ function StepInfo(props: {
   gradeLevels: string[]; toggleGrade: (v: string) => void;
   language: string; setLanguage: (s: string) => void;
   region: string; setRegion: (s: string) => void;
-  onNext: () => void;
+  onNext: () => void; t: T; lang: Lang;
 }) {
-  const { subject, setSubject, gradeLevels, toggleGrade, language, setLanguage, region, setRegion, onNext } = props;
+  const { subject, setSubject, gradeLevels, toggleGrade, language, setLanguage, region, setRegion, onNext, t, lang } = props;
   const canProceed = subject && gradeLevels.length > 0 && language;
   return (
     <div>
-      <h1 style={{ color: DARK, fontSize: 24, fontWeight: 800, margin: "0 0 22px" }}>Расскажите о себе</h1>
+      <h1 style={{ fontFamily: "var(--font-display)", color: "var(--white)", fontSize: 26, fontWeight: 700, margin: "0 0 22px" }}>{t.obTitle2}</h1>
 
-      <FieldLabel>Предмет</FieldLabel>
+      <FieldLabel>{t.obSubjectL}</FieldLabel>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 22 }}>
-        {SUBJECTS.map((s) => (
-          <button key={s} onClick={() => setSubject(s)} style={pill(subject === s)}>{s}</button>
+        {SUBJECT_OPTIONS.map((s) => (
+          <button key={s.value} onClick={() => setSubject(s.value)} style={pill(subject === s.value)}>{s.label[lang]}</button>
         ))}
       </div>
 
-      <FieldLabel>Классы</FieldLabel>
+      <FieldLabel>{t.obGradesL}</FieldLabel>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 22 }}>
         {GRADE_OPTIONS.map((g) => (
-          <button key={g.value} onClick={() => toggleGrade(g.value)} style={pill(gradeLevels.includes(g.value))}>{g.label}</button>
+          <button key={g.value} onClick={() => toggleGrade(g.value)} style={pill(gradeLevels.includes(g.value))}>{t[g.key]}</button>
         ))}
       </div>
 
-      <FieldLabel>Язык обучения</FieldLabel>
+      <FieldLabel>{t.obLangL}</FieldLabel>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 22 }}>
         {LANGUAGES.map((l) => (
-          <button key={l.value} onClick={() => setLanguage(l.value)} style={pill(language === l.value)}>{l.label}</button>
+          <button key={l.value} onClick={() => setLanguage(l.value)} style={pill(language === l.value)}>{t[l.key]}</button>
         ))}
       </div>
 
-      <FieldLabel>Область (необязательно)</FieldLabel>
+      <FieldLabel>{t.obRegionL}</FieldLabel>
       <select
         value={region}
         onChange={(e) => setRegion(e.target.value)}
-        style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid var(--line)", fontSize: 15, marginBottom: 28, background: "var(--ink-2)", color: region ? DARK : "var(--muted)", boxSizing: "border-box" }}
+        style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid var(--line)", fontSize: 15, marginBottom: 28, background: "var(--ink-2)", color: region ? "var(--white)" : "var(--muted)", boxSizing: "border-box", fontFamily: "inherit" }}
       >
-        <option value="">Выберите область…</option>
-        {REGIONS.map((r) => <option key={r} value={r} style={{ color: DARK }}>{r}</option>)}
+        <option value="">{t.obRegionPick}</option>
+        {REGION_OPTIONS.map((r) => <option key={r.value} value={r.value} style={{ color: "var(--white)" }}>{r.label[lang]}</option>)}
       </select>
 
       <button
@@ -318,7 +315,7 @@ function StepInfo(props: {
         disabled={!canProceed}
         style={{ ...primaryBtn, width: "100%", opacity: canProceed ? 1 : 0.5, cursor: canProceed ? "pointer" : "not-allowed" }}
       >
-        Далее →
+        {t.next}
       </button>
     </div>
   );
@@ -328,20 +325,20 @@ function StepInfo(props: {
 function StepDemo(props: {
   subject: string; topic: string; setTopic: (s: string) => void;
   demo: DemoKmzh | null; generating: boolean;
-  onGenerate: () => void; onContinue: () => void;
+  onGenerate: () => void; onContinue: () => void; t: T;
 }) {
-  const { subject, topic, setTopic, demo, generating, onGenerate, onContinue } = props;
+  const { subject, topic, setTopic, demo, generating, onGenerate, onContinue, t } = props;
   return (
     <div>
-      <h1 style={{ color: DARK, fontSize: 24, fontWeight: 800, margin: "0 0 6px" }}>Попробуйте прямо сейчас</h1>
-      <p style={{ color: "var(--muted)", fontSize: 15, margin: "0 0 22px" }}>Введите тему урока и получите план за 30 секунд</p>
+      <h1 style={{ fontFamily: "var(--font-display)", color: "var(--white)", fontSize: 26, fontWeight: 700, margin: "0 0 6px" }}>{t.obTitle3}</h1>
+      <p style={{ color: "var(--muted)", fontSize: 15, margin: "0 0 22px" }}>{t.obSub3}</p>
 
-      <FieldLabel>Тема урока</FieldLabel>
+      <FieldLabel>{t.obTopicL}</FieldLabel>
       <input
         value={topic}
         onChange={(e) => setTopic(e.target.value)}
         placeholder={topicPlaceholder(subject)}
-        style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid var(--line)", fontSize: 15, marginBottom: 16, boxSizing: "border-box" }}
+        style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid var(--line)", background: "var(--ink)", color: "var(--white)", fontSize: 15, marginBottom: 16, boxSizing: "border-box", fontFamily: "inherit" }}
       />
 
       <button
@@ -350,28 +347,28 @@ function StepDemo(props: {
         disabled={!topic.trim() || generating}
         style={{ ...primaryBtn, width: "100%", opacity: !topic.trim() || generating ? 0.6 : 1, cursor: !topic.trim() || generating ? "not-allowed" : "pointer" }}
       >
-        {generating ? "Генерируем…" : "Сгенерировать демо-урок ✨"}
+        {generating ? t.obGenerating : t.obGenDemo}
       </button>
 
       {demo && (
-        <div style={{ marginTop: 24, background: "var(--ink-2)", borderRadius: 14, padding: "22px 20px", boxShadow: "0 4px 18px rgba(13,14,26,0.08)" }}>
-          <div style={{ fontSize: 12, color: GREEN, fontWeight: 700, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Демо-пример</div>
-          <h3 style={{ color: DARK, fontSize: 18, margin: "0 0 14px" }}>{demo.title}</h3>
+        <div style={{ marginTop: 24, background: "var(--ink-2)", borderRadius: 14, padding: "22px 20px", border: "1px solid var(--line)" }}>
+          <div style={{ fontSize: 12, color: GREEN, fontWeight: 700, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>{t.obDemoLabel}</div>
+          <h3 style={{ fontFamily: "var(--font-display)", color: "var(--white)", fontSize: 19, fontWeight: 700, margin: "0 0 14px" }}>{demo.title}</h3>
 
-          <div style={{ fontWeight: 700, color: DARK, fontSize: 14, marginBottom: 8 }}>Цели урока:</div>
+          <div style={{ fontWeight: 700, color: "var(--white)", fontSize: 14, marginBottom: 8 }}>{t.obGoals}</div>
           <ul style={{ margin: "0 0 18px", paddingLeft: 20, color: "var(--muted)", fontSize: 14, lineHeight: 1.7 }}>
             {demo.objectives.map((o, i) => <li key={i}>{o}</li>)}
           </ul>
 
-          <div style={{ fontWeight: 700, color: DARK, fontSize: 14, marginBottom: 10 }}>Этапы урока:</div>
+          <div style={{ fontWeight: 700, color: "var(--white)", fontSize: 14, marginBottom: 10 }}>{t.obStages}</div>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 460 }}>
               <thead>
                 <tr style={{ background: "var(--ink)", textAlign: "left", color: "var(--muted)" }}>
-                  <th style={th}>Этап</th>
-                  <th style={th}>Время</th>
-                  <th style={th}>Учитель</th>
-                  <th style={th}>Ученики</th>
+                  <th style={th}>{t.obThStage}</th>
+                  <th style={th}>{t.obThTime}</th>
+                  <th style={th}>{t.obThTeacher}</th>
+                  <th style={th}>{t.obThStudent}</th>
                 </tr>
               </thead>
               <tbody>
@@ -388,7 +385,7 @@ function StepDemo(props: {
           </div>
 
           <button className="ob-btn-primary" onClick={onContinue} style={{ ...primaryBtn, width: "100%", marginTop: 20 }}>
-            Создать полный КМЖ в дашборде →
+            {t.obFullKmzh}
           </button>
         </div>
       )}
@@ -397,23 +394,24 @@ function StepDemo(props: {
 }
 
 // ── Step 4: Done ─────────────────────────────────────────────────────────────
-function StepDone(props: { trialDays: number; saving: boolean; onCreate: () => void; onExplore: () => void }) {
-  const { trialDays, saving, onCreate, onExplore } = props;
+function StepDone(props: { trialDays: number; saving: boolean; onCreate: () => void; onExplore: () => void; t: T }) {
+  const { trialDays, saving, onCreate, onExplore, t } = props;
   return (
     <div style={{ textAlign: "center" }}>
-      <h1 style={{ color: DARK, fontSize: 28, fontWeight: 800, margin: "0 0 18px" }}>Всё готово! 🎉</h1>
+      <h1 style={{ fontFamily: "var(--font-display)", color: "var(--white)", fontSize: 30, fontWeight: 700, margin: "0 0 18px" }}>{t.obTitle4}</h1>
       <div style={{ background: "rgba(139,127,232,.14)", border: "1px solid var(--line)", borderRadius: 14, padding: "20px 22px", marginBottom: 26, textAlign: "left" }}>
-        <div style={{ fontWeight: 700, color: DARK, marginBottom: 8 }}>В пробном периоде доступны все функции бесплатно</div>
+        <div style={{ fontWeight: 700, color: "var(--white)", marginBottom: 8 }}>{t.obTrialAll}</div>
+        {/* Без склонения слова «день»: одна фраза корректна во всех трёх языках. */}
         <div style={{ color: "var(--muted)", fontSize: 14 }}>
-          Осталось <strong style={{ color: BRAND }}>{trialDays}</strong> {trialDays === 1 ? "день" : trialDays < 5 ? "дня" : "дней"} пробного периода.
+          {t.obTrialDays.replace("{n}", String(trialDays))}
         </div>
       </div>
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
         <button className="ob-btn-primary" onClick={onCreate} disabled={saving} style={{ ...primaryBtn, opacity: saving ? 0.7 : 1 }}>
-          Создать первый КМЖ
+          {t.obCreateFirst}
         </button>
         <button onClick={onExplore} disabled={saving} style={{ ...secondaryBtn, opacity: saving ? 0.7 : 1 }}>
-          Изучить дашборд
+          {t.obExplore}
         </button>
       </div>
     </div>
@@ -422,7 +420,7 @@ function StepDone(props: { trialDays: number; saving: boolean; onCreate: () => v
 
 // ── Shared bits ──────────────────────────────────────────────────────────────
 function FieldLabel({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontSize: 14, fontWeight: 700, color: DARK, marginBottom: 10 }}>{children}</div>;
+  return <div style={{ fontSize: 14, fontWeight: 700, color: "var(--white)", marginBottom: 10 }}>{children}</div>;
 }
 
 const primaryBtn: React.CSSProperties = {
