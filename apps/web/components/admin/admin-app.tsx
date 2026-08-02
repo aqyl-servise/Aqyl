@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { AuthUser } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
-import { AppLayout } from "../layout/app-layout";
+import { AppLayout, type NavItem } from "../layout/app-layout";
 import { SchoolProvider } from "../../contexts/school-context";
 import { SchoolSwitcher } from "./school-switcher";
 import { AdminDashboard } from "./admin-dashboard";
@@ -89,30 +89,30 @@ function AdminAppContent({ token, user, language, setLanguage, onLogout }: {
   );
 }
 
-function getNavItemsForRole(role: string, t: Record<string, string>, isGlobalAdmin: boolean) {
-  const dash = { key: "dashboard", label: t.nav_dashboard, icon: "⊞" };
-  const classrooms = { key: "classrooms", label: t.nav_classrooms, icon: "🏫" };
-  const students = { key: "students", label: t.nav_students, icon: "👩‍🎓" };
-  const teachers = { key: "teachers", label: t.nav_teachers, icon: "👨‍🏫" };
-  const analytics = { key: "school-analytics", label: t.nav_school_analytics, icon: "📈" };
-  const openLessons = { key: "open-lessons", label: t.nav_lessons, icon: "🎓" };
-  const schoolControl = { key: "school-control", label: t.nav_protocols, icon: "📋" };
-  const gifted = { key: "gifted", label: t.nav_gifted, icon: "⭐" };
-  const fl = { key: "fl", label: t.nav_fl ?? "Функц. грамотность", icon: "📚" };
-  const rating = { key: "rating", label: t.nav_rating ?? "Рейтинг учителей", icon: "🏆" };
-  const aiUsage = { key: "ai-usage", label: t.nav_ai_usage ?? "AI", icon: "🤖" };
-  const welfare = { key: "welfare", label: t.nav_education, icon: "🌱" };
-  const household = { key: "household", label: t.nav_household, icon: "🔧" };
-  const bbjm = { key: "bbjm", label: t.nav_bbjm, icon: "📑" };
-  const ktp = { key: "ktp-plans", label: t.nav_ktp_plans, icon: "📝" };
-  const attest = { key: "attestation", label: t.nav_attestation, icon: "🏆" };
-  const finalAttest = { key: "final-attestation", label: t.nav_final_attestation, icon: "📝" };
-  const psychologist = { key: "psychologist", label: t.nav_psychologist, icon: "🧠" };
-  const socialPed = { key: "social-pedagogue", label: t.nav_social_pedagogue, icon: "🤝" };
-  const schoolInfo = { key: "school-info", label: t.nav_school_info, icon: "🏫" };
-  const sorSoch = { key: "sor-soch", label: t.nav_sor_soch ?? "СОР/СОЧ", icon: "📄" };
-  const scheduleAdmin = { key: "schedule-admin", label: t.nav_schedule_admin ?? "Расписание", icon: "📅" };
-  const questionnaires = { key: "questionnaires", label: t.nav_questionnaires ?? "Анкеты", icon: "📋" };
+function getNavItemsForRole(role: string, t: Record<string, string>, isGlobalAdmin: boolean): NavItem[] {
+  const dash: NavItem = { key: "dashboard", label: t.nav_dashboard, icon: "grid" };
+  const classrooms: NavItem = { key: "classrooms", label: t.nav_classrooms, icon: "school" };
+  const students: NavItem = { key: "students", label: t.nav_students, icon: "graduation" };
+  const teachers: NavItem = { key: "teachers", label: t.nav_teachers, icon: "users" };
+  const analytics: NavItem = { key: "school-analytics", label: t.nav_school_analytics, icon: "chart-line" };
+  const openLessons: NavItem = { key: "open-lessons", label: t.nav_lessons, icon: "graduation" };
+  const schoolControl: NavItem = { key: "school-control", label: t.nav_protocols, icon: "clipboard" };
+  const gifted: NavItem = { key: "gifted", label: t.nav_gifted, icon: "star" };
+  const fl: NavItem = { key: "fl", label: t.nav_fl ?? "Функц. грамотность", icon: "books" };
+  const rating: NavItem = { key: "rating", label: t.nav_rating ?? "Рейтинг учителей", icon: "trophy" };
+  const aiUsage: NavItem = { key: "ai-usage", label: t.nav_ai_usage ?? "AI", icon: "ai" };
+  const welfare: NavItem = { key: "welfare", label: t.nav_education, icon: "sprout" };
+  const household: NavItem = { key: "household", label: t.nav_household, icon: "wrench" };
+  const bbjm: NavItem = { key: "bbjm", label: t.nav_bbjm, icon: "layers" };
+  const ktp: NavItem = { key: "ktp-plans", label: t.nav_ktp_plans, icon: "pencil" };
+  const attest: NavItem = { key: "attestation", label: t.nav_attestation, icon: "trophy" };
+  const finalAttest: NavItem = { key: "final-attestation", label: t.nav_final_attestation, icon: "pencil" };
+  const psychologist: NavItem = { key: "psychologist", label: t.nav_psychologist, icon: "brain" };
+  const socialPed: NavItem = { key: "social-pedagogue", label: t.nav_social_pedagogue, icon: "handshake" };
+  const schoolInfo: NavItem = { key: "school-info", label: t.nav_school_info, icon: "school" };
+  const sorSoch: NavItem = { key: "sor-soch", label: t.nav_sor_soch ?? "СОР/СОЧ", icon: "file" };
+  const scheduleAdmin: NavItem = { key: "schedule-admin", label: t.nav_schedule_admin ?? "Расписание", icon: "calendar" };
+  const questionnaires: NavItem = { key: "questionnaires", label: t.nav_questionnaires ?? "Анкеты", icon: "clipboard" };
 
   const baseNav = [
     dash, classrooms, students, teachers, analytics, openLessons, schoolControl,
@@ -136,16 +136,16 @@ function getNavItemsForRole(role: string, t: Record<string, string>, isGlobalAdm
   if (role === "principal") {
     return [
       ...baseNav,
-      { key: "users", label: t.nav_users, icon: "👥" },
-      { key: "registrations", label: t.nav_registrations, icon: "📬" },
+      { key: "users", label: t.nav_users, icon: "users" },
+      { key: "registrations", label: t.nav_registrations, icon: "inbox" },
     ];
   }
 
   if (role === "admin" && isGlobalAdmin) {
     return [...baseNav,
-      { key: "users", label: t.nav_users, icon: "👥" },
-      { key: "registrations", label: t.nav_registrations, icon: "📬" },
-      { key: "schools", label: t.nav_schools, icon: "🏛️" },
+      { key: "users", label: t.nav_users, icon: "users" },
+      { key: "registrations", label: t.nav_registrations, icon: "inbox" },
+      { key: "schools", label: t.nav_schools, icon: "bank" },
     ];
   }
   return baseNav;

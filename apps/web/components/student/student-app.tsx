@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { AuthUser } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
-import { AppLayout } from "../layout/app-layout";
+import { AppLayout, type NavItem } from "../layout/app-layout";
 import { StudentSchedulePanel } from "./student-schedule-panel";
 import { StudentAssignmentsPanel } from "./student-assignments-panel";
 import { FLStudentPanel } from "./fl-student-panel";
@@ -21,13 +21,13 @@ export function StudentApp({
   const [section, setSection] = useState<Section>("schedule");
   const t = translations[language];
 
-  const navItems = [
-    { key: "schedule", label: t.nav_student_schedule, icon: "📅" },
-    { key: "assignments", label: t.nav_student_assignments, icon: "📝" },
-    { key: "fl", label: t.nav_fl ?? "Функц. грамотность", icon: "📚" },
-    { key: "my-class", label: t.nav_my_classmates ?? "Мой класс", icon: "👥" },
-    { key: "my-teachers", label: t.nav_my_subject_teachers ?? "Мои учителя", icon: "👨‍🏫" },
-    { key: "questionnaires", label: t.nav_student_questionnaires ?? "Анкеты", icon: "📋" },
+  const navItems: NavItem[] = [
+    { key: "schedule", label: t.nav_student_schedule, icon: "calendar" },
+    { key: "assignments", label: t.nav_student_assignments, icon: "pencil" },
+    { key: "fl", label: t.nav_fl ?? "Функц. грамотность", icon: "books" },
+    { key: "my-class", label: t.nav_my_classmates ?? "Мой класс", icon: "users" },
+    { key: "my-teachers", label: t.nav_my_subject_teachers ?? "Мои учителя", icon: "users" },
+    { key: "questionnaires", label: t.nav_student_questionnaires ?? "Анкеты", icon: "clipboard" },
   ];
 
   return (

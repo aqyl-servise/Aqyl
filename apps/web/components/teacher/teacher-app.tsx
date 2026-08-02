@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { AuthUser } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
-import { AppLayout } from "../layout/app-layout";
+import { AppLayout, type NavItem } from "../layout/app-layout";
 import { TeacherDashboard } from "./teacher-dashboard";
 import { LessonGenerator } from "./lesson-generator";
 import { TaskGenerator } from "./task-generator";
@@ -37,29 +37,29 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
   const t = translations[language];
   const isClassTeacher = user.isClassTeacher === true;
 
-  const nav = [
-    { key: "dashboard", label: t.nav_dashboard, icon: "⊞" },
-    { key: "profile", label: t.nav_profile, icon: "👤" },
-    { key: "students", label: t.nav_students, icon: "👩‍🎓" },
-    { key: "ktp", label: t.nav_ktp, icon: "📝" },
-    { key: "tasks", label: t.nav_tasks, icon: "✏️" },
-    { key: "assignments", label: t.nav_assignments, icon: "📋" },
-    { key: "lessons", label: t.nav_lessons, icon: "🎓" },
-    { key: "my-ktp-ksp", label: t.nav_my_ktp_ksp ?? "Мои КТП/КСП", icon: "📂" },
-    { key: "materials", label: t.nav_materials ?? "Учебные материалы", icon: "🎨" },
-    ...(isClassTeacher ? [{ key: "my-class", label: t.nav_my_class ?? "Мой класс", icon: "🏫" }] : []),
-    ...(isClassTeacher ? [{ key: "analytics", label: t.nav_analytics, icon: "📊" }] : []),
-    ...(isClassTeacher ? [{ key: "class-hours", label: t.nav_class_hours, icon: "🕐" }] : []),
-    { key: "teacher-modo", label: t.nav_bbjm, icon: "📑" },
-    { key: "teacher-final", label: t.nav_final_attestation, icon: "🎓" },
-    { key: "gifted", label: t.nav_gifted, icon: "⭐" },
-    { key: "fl", label: t.nav_fl ?? "Функц. грамотность", icon: "📚" },
-    { key: "my-rating", label: t.nav_my_rating ?? "Мой рейтинг", icon: "🏆" },
-    { key: "sor-soch", label: t.nav_sor_soch ?? "СОР/СОЧ", icon: "📄" },
-    { key: "kmzh-generator", label: t.nav_kmzh ?? "КМЖ Генератор", icon: "📋" },
-    { key: "visualizer", label: t.nav_visualizer ?? "Визуализатор", icon: "🗺️" },
-    { key: "text-adapter", label: t.nav_text_adapter ?? "Адаптация текста", icon: "📖" },
-    ...(isClassTeacher ? [{ key: "malimet", label: t.nav_malimet ?? "Мәлімет", icon: "📄" }] : []),
+  const nav: NavItem[] = [
+    { key: "dashboard", label: t.nav_dashboard, icon: "grid" },
+    { key: "profile", label: t.nav_profile, icon: "user" },
+    { key: "students", label: t.nav_students, icon: "graduation" },
+    { key: "ktp", label: t.nav_ktp, icon: "pencil" },
+    { key: "tasks", label: t.nav_tasks, icon: "pencil" },
+    { key: "assignments", label: t.nav_assignments, icon: "clipboard" },
+    { key: "lessons", label: t.nav_lessons, icon: "graduation" },
+    { key: "my-ktp-ksp", label: t.nav_my_ktp_ksp ?? "Мои КТП/КСП", icon: "folder-open" },
+    { key: "materials", label: t.nav_materials ?? "Учебные материалы", icon: "palette" },
+    ...(isClassTeacher ? [{ key: "my-class", label: t.nav_my_class ?? "Мой класс", icon: "school" } as NavItem] : []),
+    ...(isClassTeacher ? [{ key: "analytics", label: t.nav_analytics, icon: "chart" } as NavItem] : []),
+    ...(isClassTeacher ? [{ key: "class-hours", label: t.nav_class_hours, icon: "clock" } as NavItem] : []),
+    { key: "teacher-modo", label: t.nav_bbjm, icon: "layers" },
+    { key: "teacher-final", label: t.nav_final_attestation, icon: "graduation" },
+    { key: "gifted", label: t.nav_gifted, icon: "star" },
+    { key: "fl", label: t.nav_fl ?? "Функц. грамотность", icon: "books" },
+    { key: "my-rating", label: t.nav_my_rating ?? "Мой рейтинг", icon: "trophy" },
+    { key: "sor-soch", label: t.nav_sor_soch ?? "СОР/СОЧ", icon: "file" },
+    { key: "kmzh-generator", label: t.nav_kmzh ?? "КМЖ Генератор", icon: "clipboard" },
+    { key: "visualizer", label: t.nav_visualizer ?? "Визуализатор", icon: "map" },
+    { key: "text-adapter", label: t.nav_text_adapter ?? "Адаптация текста", icon: "book" },
+    ...(isClassTeacher ? [{ key: "malimet", label: t.nav_malimet ?? "Мәлімет", icon: "file" } as NavItem] : []),
   ];
 
   function handleNav(key: string) {

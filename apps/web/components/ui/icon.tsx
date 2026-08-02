@@ -21,7 +21,8 @@ export type IconName =
   | "save" | "upload" | "download" | "palette" | "help" | "sun" | "moon" | "target"
   | "sprout" | "wrench" | "brain" | "handshake" | "lock" | "key" | "pin" | "puzzle"
   | "card" | "bank" | "phone" | "wallet" | "printer" | "globe" | "link" | "x-circle"
-  | "settings" | "bell" | "mail" | "image" | "laptop" | "layers" | "list" | "plus";
+  | "settings" | "bell" | "mail" | "image" | "laptop" | "layers" | "list" | "plus"
+  | "grid" | "check" | "close" | "chevron-left" | "chevron-right";
 
 // Пути в стиле обводки 24×24. Заливки нет — только stroke.
 const PATHS: Record<IconName, string> = {
@@ -93,6 +94,11 @@ const PATHS: Record<IconName, string> = {
   layers: "M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 17l9 5 9-5",
   list: "M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01",
   plus: "M12 5v14M5 12h14",
+  grid: "M4 4h7v7H4V4zM13 4h7v7h-7V4zM4 13h7v7H4v-7zM13 13h7v7h-7v-7z",
+  check: "M5 13l4 4L19 7",
+  close: "M6 6l12 12M18 6L6 18",
+  "chevron-left": "M15 6l-6 6 6 6",
+  "chevron-right": "M9 6l6 6-6 6",
 };
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {

@@ -6,8 +6,9 @@ import { LangSwitcher } from "../aqyl-app";
 import { AiChat, AiChatButton } from "../ai/ai-chat";
 import { ThemeToggle } from "../ui/theme-toggle";
 import { AiUsageProvider, useAiUsage } from "../../contexts/ai-usage-context";
+import { Icon, type IconName } from "../ui/icon";
 
-type NavItem = { key: string; label: string; icon: string };
+export type NavItem = { key: string; label: string; icon: IconName };
 
 function AiUsageIndicator({ language }: { language: Language }) {
   const { usage, isLimited } = useAiUsage();
@@ -125,7 +126,7 @@ function AppLayoutInner({
                 className={`al-nav-item${activeSection === item.key ? " active" : ""}`}
                 onClick={() => onNav(item.key)}
               >
-                <span className="al-nav-icon">{item.icon}</span>
+                <span className="al-nav-icon"><Icon name={item.icon} size={17} /></span>
                 <span>{item.label}</span>
               </button>
             ))}
