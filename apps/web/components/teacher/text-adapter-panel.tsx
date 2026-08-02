@@ -2,6 +2,7 @@
 import { useRef, useState } from "react";
 import { api, type AdaptationResult, type AdaptationRecord } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
+import { Icon } from "../ui/icon";
 
 const MAX_CHARS = 8000;
 
@@ -364,7 +365,7 @@ export function TextAdapterPanel({
   return (
     <div className="page" style={{ padding: "16px 12px" }}>
       <h1 className="page-title" style={{ marginBottom: 16 }}>
-        📖 {t.ta_title}
+        <Icon name="book" size={16} /> {t.ta_title}
       </h1>
 
       {/* ── Tabs ──────────────────────────────────────────────── */}
@@ -564,7 +565,7 @@ export function TextAdapterPanel({
         <div style={{ flex: 1, minWidth: 0 }}>
           {!result && !isGenerating && (
             <div className="card" style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>📖</div>
+              <div style={{ fontSize: 40, marginBottom: 12 }}><Icon name="book" size={40} strokeWidth={1.3} /> </div>
               <p>{t.ta_result_placeholder}</p>
             </div>
           )}
@@ -698,12 +699,12 @@ export function TextAdapterPanel({
                 </button>
                 {saveSuccess && (
                   <span style={{ fontSize: 13, color: "#15803d", fontWeight: 600 }}>
-                    ✓ {t.ta_saved_toast}
+                    <Icon name="check" size={15} /> {t.ta_saved_toast}
                   </span>
                 )}
                 {isCopied && (
                   <span style={{ fontSize: 13, color: "#15803d", fontWeight: 600 }}>
-                    ✓ {t.ta_copied_toast}
+                    <Icon name="check" size={15} /> {t.ta_copied_toast}
                   </span>
                 )}
               </div>
@@ -723,7 +724,7 @@ export function TextAdapterPanel({
 
           {!isLoadingHistory && adaptations && adaptations.length === 0 && (
             <div className="card" style={{ padding: 32, textAlign: "center", color: "var(--muted)" }}>
-              <div style={{ fontSize: 36, marginBottom: 12 }}>📚</div>
+              <div style={{ fontSize: 36, marginBottom: 12 }}><Icon name="books" size={36} strokeWidth={1.3} /> </div>
               <p>{t.ta_history_empty}</p>
             </div>
           )}

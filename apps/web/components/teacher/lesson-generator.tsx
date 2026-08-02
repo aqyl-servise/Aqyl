@@ -2,6 +2,7 @@
 import { FormEvent, useState } from "react";
 import { api } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
+import { Icon } from "../ui/icon";
 
 const SUBJECTS = ["Математика","Физика","Химия","Биология","История","Казахский язык","Русский язык","Русская литература","Английский язык","Информатика","География","Казахская литература"];
 const GRADES = Array.from({ length: 11 }, (_, i) => i + 1);
@@ -70,7 +71,7 @@ export function LessonGenerator({ token, language, t }: { token: string; languag
 
   return (
     <div className="page">
-      <h1 className="page-title">📝 {t.lessonPlan}</h1>
+      <h1 className="page-title"><Icon name="pencil" size={16} /> {t.lessonPlan}</h1>
       <div className="main-grid">
         <div className="card">
           <h3 className="card-title">Параметры</h3>
@@ -95,9 +96,9 @@ export function LessonGenerator({ token, language, t }: { token: string; languag
               <label className="field-label">{t.objective}</label>
               <textarea name="objectives" className="textarea" defaultValue="Ученики научатся решать линейные уравнения." />
             </div>
-            {error && <div className="alert alert-error">⚠ {error}</div>}
+            {error && <div className="alert alert-error"><Icon name="warning" size={16} /> {error}</div>}
             <button className="btn btn-primary" disabled={busy} type="submit">
-              {busy ? "⏳ Генерация..." : `✨ ${t.generate}`}
+              {busy ? "⏳ Генерация..." : `${t.generate}`}
             </button>
           </form>
         </div>
@@ -114,7 +115,7 @@ export function LessonGenerator({ token, language, t }: { token: string; languag
                     fontSize: 12, padding: "2px 8px", borderRadius: 12,
                     fontWeight: 500, whiteSpace: "nowrap",
                   }}>
-                    ⚡ {t.kmzh_from_cache}
+                    <Icon name="bolt" size={16} /> {t.kmzh_from_cache}
                   </span>
                 )}
               </div>
@@ -126,7 +127,7 @@ export function LessonGenerator({ token, language, t }: { token: string; languag
                   type="button"
                   title={t.kmzh_regenerate}
                 >
-                  🔄 {t.kmzh_regenerate}
+                  <Icon name="refresh" size={16} /> {t.kmzh_regenerate}
                 </button>
                 <button className="btn btn-outline btn-sm" onClick={handleExport}>↓ {t.exportPdf}</button>
               </div>
@@ -155,7 +156,7 @@ export function LessonGenerator({ token, language, t }: { token: string; languag
               ))}
             </div>
             {result.homework != null && (
-              <div className="hw-box"><span className="hw-label">📚 {t.homework}:</span><span>{String(result.homework)}</span></div>
+              <div className="hw-box"><span className="hw-label"><Icon name="books" size={16} /> {t.homework}:</span><span>{String(result.homework)}</span></div>
             )}
           </div>
         )}

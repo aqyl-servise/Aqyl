@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import { Language } from "../../lib/translations";
 import { handleError } from "../../lib/handle-error";
+import { Icon } from "../ui/icon";
 
 type Overview = Awaited<ReturnType<typeof api.getAdminOverview>>;
 
@@ -19,17 +20,17 @@ export function AdminDashboard({ token, language, t }: { token: string; language
     <div className="page">
       <h1 className="page-title">{t.nav_dashboard}</h1>
       <div className="stats-row">
-        <StatCard icon="👨‍🏫" label={t.nav_teachers} value={data.teachers} color="blue" />
-        <StatCard icon="🏫" label={t.classes} value={data.classrooms} color="purple" />
-        <StatCard icon="👩‍🎓" label={t.students} value={data.students} color="green" />
-        <StatCard icon="📊" label={t.averageScore} value={`${data.avgScore}%`} color="orange" />
+        <StatCard icon="‍" label={t.nav_teachers} value={data.teachers} color="blue" />
+        <StatCard icon="" label={t.classes} value={data.classrooms} color="purple" />
+        <StatCard icon="‍" label={t.students} value={data.students} color="green" />
+        <StatCard icon="" label={t.averageScore} value={`${data.avgScore}%`} color="orange" />
       </div>
       <div className="stats-row" style={{ marginTop: 0 }}>
-        <StatCard icon="📄" label={t.documents} value={data.documents} color="blue" />
-        <StatCard icon="🎓" label={t.nav_lessons} value={data.openLessons} color="purple" />
-        <StatCard icon="📋" label={t.nav_protocols} value={data.protocols} color="green" />
+        <StatCard icon="" label={t.documents} value={data.documents} color="blue" />
+        <StatCard icon="" label={t.nav_lessons} value={data.openLessons} color="purple" />
+        <StatCard icon="" label={t.nav_protocols} value={data.protocols} color="green" />
         <div className="stat-card" style={{ background: "var(--accent-light)", border: "2px dashed var(--accent)" }}>
-          <span style={{ fontSize: 28 }}>📱</span>
+          <span style={{ fontSize: 28 }}><Icon name="phone" size={16} /> </span>
           <div>
             <p className="stat-label">Всего пользователей</p>
             <p className="stat-value">{data.teachers + data.students}</p>

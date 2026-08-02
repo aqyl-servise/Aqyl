@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { api } from "../lib/api";
 import { Language, translations } from "../lib/translations";
 import { PasswordInput } from "./ui/password-input";
+import { Icon } from "./ui/icon";
 
 type View = "login" | "register" | "success" | "forgot";
 
@@ -212,7 +213,7 @@ function LoginForm({ t, busy, error, onSubmit, onRegister, onForgot }: {
           <label className="field-label" htmlFor="password">{t.password}</label>
           <PasswordInput id="password" name="password" required />
         </div>
-        {error && <div className="alert alert-error"><span>⚠</span> {error}</div>}
+        {error && <div className="alert alert-error"><span><Icon name="warning" size={16} /> </span> {error}</div>}
         <button className="btn btn-primary btn-full" type="submit" disabled={busy}>
           {busy ? <span className="spinner" /> : t.signIn}
         </button>
@@ -287,7 +288,7 @@ function RegisterForm({ t, busy, error, onSubmit, onBack }: {
           <label className="field-label">{t.schoolName}</label>
           <input name="schoolName" type="text" required className="input" placeholder={t.app_school_placeholder} />
         </div>
-        {error && <div className="alert alert-error"><span>⚠</span> {error}</div>}
+        {error && <div className="alert alert-error"><span><Icon name="warning" size={16} /> </span> {error}</div>}
         <button className="btn btn-primary btn-full" type="submit" disabled={busy}>
           {busy ? <span className="spinner" /> : t.submitRequest}
         </button>
@@ -303,7 +304,7 @@ function RegisterForm({ t, busy, error, onSubmit, onBack }: {
 function SuccessView({ t, onBack }: { t: Record<string, string>; onBack: () => void }) {
   return (
     <div style={{ textAlign: "center", padding: "24px 0" }}>
-      <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+      <div style={{ fontSize: 48, marginBottom: 16 }}><Icon name="check-circle" size={44} strokeWidth={1.3} /> </div>
       <p style={{ fontSize: 15, lineHeight: 1.6, marginBottom: 24, color: "var(--text)" }}>
         {t.pendingApproval}
       </p>
@@ -337,7 +338,7 @@ function ForgotPasswordView({ t, onBack }: { t: Record<string, string>; onBack: 
   if (sent) {
     return (
       <div style={{ textAlign: "center", padding: "24px 0" }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>📬</div>
+        <div style={{ fontSize: 48, marginBottom: 16 }}><Icon name="inbox" size={44} strokeWidth={1.3} /> </div>
         <p style={{ fontSize: 15, lineHeight: 1.6, marginBottom: 24, color: "var(--text)" }}>
           {t.forgotPasswordSent}
         </p>
@@ -359,7 +360,7 @@ function ForgotPasswordView({ t, onBack }: { t: Record<string, string>; onBack: 
           <label className="field-label" htmlFor="fp-email">{t.email}</label>
           <input id="fp-email" name="email" type="email" required className="input" />
         </div>
-        {error && <div className="alert alert-error"><span>⚠</span> {error}</div>}
+        {error && <div className="alert alert-error"><span><Icon name="warning" size={16} /> </span> {error}</div>}
         <button className="btn btn-primary btn-full" type="submit" disabled={busy}>
           {busy ? <span className="spinner" /> : t.sendResetLink}
         </button>

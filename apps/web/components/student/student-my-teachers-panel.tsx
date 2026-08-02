@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
+import { Icon } from "../ui/icon";
 
 type TeacherAssignment = { id: string; subject: string; teacher: { id: string; fullName: string; subject?: string; experience?: number; category?: string } };
 
@@ -25,7 +26,7 @@ export function StudentMyTeachersPanel({ token, t }: { token: string; t: Record<
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {items.map(item => (
           <div key={item.id} className="card" style={{ padding: 16, display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--primary-alpha, rgba(127,119,221,0.15))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>👨‍🏫</div>
+            <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--primary-alpha, rgba(127,119,221,0.15))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}><Icon name="user" size={16} /> ‍<Icon name="school" size={16} /> </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 600 }}>{item.teacher.fullName}</div>
               <div style={{ fontSize: 13, color: "var(--primary)", marginTop: 2 }}>{item.subject}</div>

@@ -4,6 +4,7 @@ import { api, ClassroomItem } from "../../lib/api";
 import { Language } from "../../lib/translations";
 import { FileManager } from "../ui/file-manager";
 import { fmLabels } from "./teacher-sections-utils";
+import { Icon } from "../ui/icon";
 
 type KtpReviewRow = { fileId: string; fileName: string; section: string | null; status: string; comment: string | null; reviewedAt: string | null };
 
@@ -64,7 +65,7 @@ export function TeacherKtpKspSection({ token, userId, language, t }: {
 
   return (
     <div className="page">
-      <h1 className="page-title">📂 {t.nav_my_ktp_ksp ?? "Мои КТП/КСП"}</h1>
+      <h1 className="page-title"><Icon name="folder-open" size={16} /> {t.nav_my_ktp_ksp ?? "Мои КТП/КСП"}</h1>
       <div className="sc-tabs">
         <button className={`sc-tab${tab === "ktp" ? " sc-tab-active" : ""}`} onClick={() => setTab("ktp")}>
           {t.ktp_tab_ktp}
@@ -73,7 +74,7 @@ export function TeacherKtpKspSection({ token, userId, language, t }: {
           {t.ktp_tab_ksp}
         </button>
         <button className={`sc-tab${tab === "status" ? " sc-tab-active" : ""}`} onClick={() => setTab("status")}>
-          ✅ {t.ktp_my_reviews ?? "Статус проверки"}
+          <Icon name="check-circle" size={16} /> {t.ktp_my_reviews ?? "Статус проверки"}
         </button>
       </div>
       <div className="card" style={{ marginTop: 0 }}>
@@ -97,12 +98,12 @@ export function TeacherKtpKspSection({ token, userId, language, t }: {
                   className="btn btn-outline btn-sm"
                   onClick={() => setShowClassroomPicker(v => !v)}
                 >
-                  🏫 {selectedClassrooms.length > 0
+                  <Icon name="school" size={16} /> {selectedClassrooms.length > 0
                     ? classrooms.filter(c => selectedClassrooms.includes(c.id)).map(c => c.name).join(", ")
                     : (t.ksp_select_classes ?? "Выбрать классы")}
                 </button>
                 {selectedClassrooms.length > 0 && (
-                  <button className="btn btn-ghost btn-sm" onClick={() => { setSelectedClassrooms([]); selectedRef.current = []; }}>✕</button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => { setSelectedClassrooms([]); selectedRef.current = []; }}><Icon name="close" size={15} /> </button>
                 )}
               </div>
               {showClassroomPicker && classrooms.length > 0 && (

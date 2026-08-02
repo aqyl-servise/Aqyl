@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
+import { Icon } from "../ui/icon";
 
 type Summary = { totalCount: number; totalCostKzt: number; activeTeachers: number; period: string };
 type TeacherRow = { userId: string; teacherName: string; subject: string; todayCount: number; weekCount: number; monthCount: number; costKzt: number };
@@ -56,12 +57,12 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
 
   return (
     <div style={{ padding: "24px", maxWidth: 1100 }}>
-      <h2 style={{ margin: "0 0 20px", fontSize: 22 }}>🤖 {t.nav_ai_usage}</h2>
+      <h2 style={{ margin: "0 0 20px", fontSize: 22 }}><Icon name="ai" size={16} /> {t.nav_ai_usage}</h2>
 
       {/* Token package status card */}
       <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "16px 20px", marginBottom: 24 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <span style={{ fontWeight: 600, fontSize: 15 }}>🎯 Токены школы</span>
+          <span style={{ fontWeight: 600, fontSize: 15 }}><Icon name="target" size={16} /> Токены школы</span>
           {loading ? (
             <span style={{ color: "#94a3b8" }}>Загрузка...</span>
           ) : isPilot ? (
@@ -100,17 +101,17 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
       {/* Top summary cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 28 }}>
         <SummaryCard
-          icon="📊"
+          icon=""
           label={t.ai_requests_today}
           value={loading ? "..." : String(summary?.totalCount ?? 0)}
         />
         <SummaryCard
-          icon="💰"
+          icon=""
           label={t.ai_cost_month}
           value={loading ? "..." : `${(summary?.totalCostKzt ?? 0).toFixed(2)} ₸`}
         />
         <SummaryCard
-          icon="👤"
+          icon=""
           label={t.ai_most_active}
           value={loading ? "..." : (mostActive ? `${mostActive.teacherName} (${mostActive.count})` : "—")}
         />
@@ -118,7 +119,7 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
 
       {/* Teacher table */}
       <div style={{ background: "var(--bg-card, #fff)", borderRadius: 10, padding: 20, marginBottom: 24, boxShadow: "0 1px 4px rgba(0,0,0,0.07)" }}>
-        <h3 style={{ margin: "0 0 14px", fontSize: 16 }}>📋 {t.nav_teachers}</h3>
+        <h3 style={{ margin: "0 0 14px", fontSize: 16 }}><Icon name="clipboard" size={16} /> {t.nav_teachers}</h3>
         {loading ? (
           <p style={{ color: "var(--text-secondary, #888)" }}>{t.loading}</p>
         ) : teachers.length === 0 ? (
@@ -157,7 +158,7 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
 
       {/* 30-day chart */}
       <div style={{ background: "var(--bg-card, #fff)", borderRadius: 10, padding: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.07)", marginBottom: 24 }}>
-        <h3 style={{ margin: "0 0 16px", fontSize: 16 }}>📈 {t.ai_chart_title}</h3>
+        <h3 style={{ margin: "0 0 16px", fontSize: 16 }}><Icon name="chart-line" size={16} /> {t.ai_chart_title}</h3>
         {chart.length === 0 ? (
           <p style={{ color: "var(--text-secondary, #888)" }}>{t.ai_no_data}</p>
         ) : (
@@ -185,7 +186,7 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
       {/* KMZh cache stats */}
       <div style={{ background: "var(--bg-card, #fff)", borderRadius: 10, padding: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.07)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <h3 style={{ margin: 0, fontSize: 16 }}>⚡ {t.kmzh_cache_stats}</h3>
+          <h3 style={{ margin: 0, fontSize: 16 }}><Icon name="bolt" size={16} /> {t.kmzh_cache_stats}</h3>
           {role === "admin" && (
             <button
               className="btn btn-outline btn-sm"
@@ -193,7 +194,7 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
               disabled={clearing}
               style={{ color: "#d32f2f", borderColor: "#d32f2f" }}
             >
-              🗑 {t.kmzh_clear_cache}
+              <Icon name="trash" size={16} /> {t.kmzh_clear_cache}
             </button>
           )}
         </div>
@@ -234,9 +235,9 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
       </div>
       {/* Isolation status indicator */}
       <div style={{ marginTop: 28, padding: "10px 16px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ color: "#16a34a", fontSize: 16 }}>🔒</span>
+        <span style={{ color: "#16a34a", fontSize: 16 }}><Icon name="lock" size={16} /> </span>
         <span style={{ fontSize: 13, color: "#15803d", fontWeight: 500 }}>
-          Изоляция школьных данных: Активна ✓
+          Изоляция школьных данных: Активна <Icon name="check" size={15} /> 
         </span>
       </div>
     </div>

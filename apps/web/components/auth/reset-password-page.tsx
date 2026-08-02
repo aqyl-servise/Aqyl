@@ -3,6 +3,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "../../lib/api";
 import { PasswordInput } from "../ui/password-input";
+import { Icon } from "../ui/icon";
 
 type Step = "form" | "success" | "invalid";
 
@@ -50,7 +51,7 @@ export function ResetPasswordPage() {
       <div className="login-bg" />
       <div className="login-card">
         <div className="login-logo">
-          <span className="logo-icon">✦</span>
+          <span className="logo-icon"><Icon name="sparkles" size={15} /> </span>
           <div>
             <h1 className="logo-name">Aqyl</h1>
             <p className="logo-sub">Цифровая школа</p>
@@ -82,7 +83,7 @@ export function ResetPasswordPage() {
                 <PasswordInput id="confirm" name="confirm" required minLength={6} placeholder="Повторите пароль" />
               </div>
               {error && (
-                <div className="alert alert-error"><span>⚠</span> {error}</div>
+                <div className="alert alert-error"><span><Icon name="warning" size={16} /> </span> {error}</div>
               )}
               <button className="btn btn-primary btn-full" type="submit" disabled={busy}>
                 {busy ? <span className="spinner" /> : "Сохранить пароль"}

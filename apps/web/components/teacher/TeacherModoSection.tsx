@@ -4,6 +4,7 @@ import { api, StudentRow } from "../../lib/api";
 import { Language } from "../../lib/translations";
 import { FileManager } from "../ui/file-manager";
 import { fmLabels } from "./teacher-sections-utils";
+import { Icon } from "../ui/icon";
 
 type ModoTab = "students" | "materials" | "corrections";
 
@@ -33,7 +34,7 @@ export function TeacherModoSection({ token, userId, language, t }: {
 
   return (
     <div className="page">
-      <h1 className="page-title">📑 {t.nav_bbjm}</h1>
+      <h1 className="page-title"><Icon name="layers" size={16} /> {t.nav_bbjm}</h1>
       <div className="sc-tabs">
         {TABS.map(tb => (
           <button key={tb.key} className={`sc-tab${tab === tb.key ? " sc-tab-active" : ""}`} onClick={() => setTab(tb.key)}>

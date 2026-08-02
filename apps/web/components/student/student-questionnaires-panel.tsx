@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
+import { Icon } from "../ui/icon";
 
 type QItem = { id: string; title: string; description?: string; status: string; content?: string; myResponse: { id: string; submittedAt?: string } | null; createdAt: string };
 
@@ -47,7 +48,7 @@ export function StudentQuestionnairesPanel({ token, t }: { token: string; t: Rec
 
         {done === active.id ? (
           <div className="card" style={{ textAlign: "center", padding: 40 }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
+            <div style={{ fontSize: 40, marginBottom: 12 }}><Icon name="check-circle" size={40} strokeWidth={1.3} /> </div>
             <div style={{ fontWeight: 600 }}>{t.quest_done}</div>
           </div>
         ) : (
@@ -100,7 +101,7 @@ export function StudentQuestionnairesPanel({ token, t }: { token: string; t: Rec
                 {item.description && <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>{item.description}</div>}
               </div>
               {item.myResponse ? (
-                <span style={{ fontSize: 13, color: "#3DB88E", fontWeight: 600 }}>✓ {t.quest_done}</span>
+                <span style={{ fontSize: 13, color: "#3DB88E", fontWeight: 600 }}><Icon name="check" size={15} /> {t.quest_done}</span>
               ) : (
                 <button className="btn btn-sm btn-primary" onClick={() => openQuestionnaire(item)}>{t.quest_respond}</button>
               )}

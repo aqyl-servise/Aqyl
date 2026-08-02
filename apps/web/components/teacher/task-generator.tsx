@@ -2,6 +2,7 @@
 import { FormEvent, useState } from "react";
 import { api } from "../../lib/api";
 import { Language } from "../../lib/translations";
+import { Icon } from "../ui/icon";
 
 const SUBJECTS = ["Математика","Физика","Химия","Биология","История","Казахский язык","Русский язык","Английский язык","Информатика"];
 
@@ -39,7 +40,7 @@ export function TaskGenerator({ token, language, t }: { token: string; language:
 
   return (
     <div className="page">
-      <h1 className="page-title">✏️ {t.taskSet}</h1>
+      <h1 className="page-title"><Icon name="pencil" size={16} /> {t.taskSet}</h1>
       <div className="main-grid">
         <div className="card">
           <h3 className="card-title">Параметры</h3>
@@ -65,9 +66,9 @@ export function TaskGenerator({ token, language, t }: { token: string; language:
               </div>
               <Field label={t.questions} name="questionCount" type="number" defaultValue="5" />
             </div>
-            {error && <div className="alert alert-error">⚠ {error}</div>}
+            {error && <div className="alert alert-error"><Icon name="warning" size={16} /> {error}</div>}
             <button className="btn btn-primary" disabled={busy}>
-              {busy ? <><span className="spinner" /> Генерирую...</> : `✦ ${t.generate}`}
+              {busy ? <><span className="spinner" /> Генерирую...</> : `${t.generate}`}
             </button>
           </form>
         </div>

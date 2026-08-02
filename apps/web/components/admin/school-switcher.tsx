@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { api } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 import { useSchool } from "../../contexts/school-context";
+import { Icon } from "../ui/icon";
 
 type SchoolOption = { id: string; name: string; city?: string | null; isActive?: boolean };
 
@@ -51,7 +52,7 @@ export function SchoolSwitcher({ token, language }: { token: string; language: L
           transition: "background 0.15s",
         }}
       >
-        <span style={{ fontSize: 14 }}>🏫</span>
+        <span style={{ fontSize: 14 }}><Icon name="school" size={16} /> </span>
         <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: selectedSchoolId ? 600 : 400 }}>
           {selectedSchoolName}
         </span>
@@ -92,9 +93,9 @@ export function SchoolSwitcher({ token, language }: { token: string; language: L
                 borderBottom: "1px solid var(--border, rgba(255,255,255,0.06))",
               }}
             >
-              <span>🌐</span>
+              <span><Icon name="globe" size={16} /> </span>
               <span style={{ flex: 1 }}>{t.school_switch_all}</span>
-              {selectedSchoolId === null && <span style={{ color: "var(--primary, #6366f1)", fontWeight: 700 }}>✓</span>}
+              {selectedSchoolId === null && <span style={{ color: "var(--primary, #6366f1)", fontWeight: 700 }}><Icon name="check" size={15} /> </span>}
             </button>
             {filtered.map((school) => (
               <button
@@ -108,7 +109,7 @@ export function SchoolSwitcher({ token, language }: { token: string; language: L
                   borderBottom: "1px solid var(--border, rgba(255,255,255,0.04))",
                 }}
               >
-                <span>🏫</span>
+                <span><Icon name="school" size={16} /> </span>
                 <div style={{ flex: 1, overflow: "hidden" }}>
                   <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500 }}>
                     {school.name}
@@ -119,7 +120,7 @@ export function SchoolSwitcher({ token, language }: { token: string; language: L
                     </div>
                   )}
                 </div>
-                {selectedSchoolId === school.id && <span style={{ color: "var(--primary, #6366f1)", fontWeight: 700, flexShrink: 0 }}>✓</span>}
+                {selectedSchoolId === school.id && <span style={{ color: "var(--primary, #6366f1)", fontWeight: 700, flexShrink: 0 }}><Icon name="check" size={15} /> </span>}
               </button>
             ))}
             {filtered.length === 0 && (

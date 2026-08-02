@@ -16,9 +16,9 @@ function AiUsageIndicator({ language }: { language: Language }) {
   const { count, limit, percentage } = usage;
 
   let color = "#4caf50";
-  let icon = "🤖";
-  if (percentage >= 100) { color = "#f44336"; icon = "🚫"; }
-  else if (percentage >= 80) { color = "#ff9800"; icon = "⚠️"; }
+  let icon = "";
+  if (percentage >= 100) { color = "#f44336"; icon = ""; }
+  else if (percentage >= 80) { color = "#ff9800"; icon = ""; }
   else if (percentage >= 60) { color = "#ffc107"; }
 
   const label = isLimited ? translations[language].ai_limit_reached : `${count}/${limit}`;
@@ -41,7 +41,7 @@ function AiWarningBanner() {
       display: "flex", alignItems: "center", justifyContent: "space-between",
       fontSize: 14, fontWeight: 500,
     }}>
-      <span>⚠️ {warningMessage}. Лимит обновляется в полночь.</span>
+      <span><Icon name="warning" size={16} /> {warningMessage}. Лимит обновляется в полночь.</span>
       <button onClick={dismissWarning} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", fontSize: 18, lineHeight: 1 }}>×</button>
     </div>
   );
@@ -58,7 +58,7 @@ function AiLimitModal({ onClose, language }: { onClose: () => void; language: La
         background: "var(--bg-card, #fff)", borderRadius: 12, padding: "28px 32px",
         maxWidth: 400, textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
       }} onClick={e => e.stopPropagation()}>
-        <div style={{ fontSize: 40, marginBottom: 12 }}>🚫</div>
+        <div style={{ fontSize: 40, marginBottom: 12 }}><Icon name="ban" size={40} strokeWidth={1.3} /> </div>
         <h3 style={{ margin: "0 0 8px", fontSize: 18 }}>{t.ai_limit_modal_title} (20/20)</h3>
         <p style={{ margin: "0 0 20px", color: "var(--text-secondary, #666)", fontSize: 14 }}>{t.ai_limit_modal_body}</p>
         <button className="btn btn-primary" onClick={onClose}>{t.ai_limit_modal_ok}</button>

@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { api, AuthUser, API_URL } from "../../lib/api";
 import { Language } from "../../lib/translations";
 import { handleError } from "../../lib/handle-error";
+import { Icon } from "../ui/icon";
 
 interface StudentRef {
   id: string;
@@ -219,7 +220,7 @@ export function MalimetPanel({ token, language, teacher }: {
     setSaveMsg("");
     try {
       await api.saveMalimet(token, { formData: buildFormData(), lang: state.lang });
-      setSaveMsg("✓ Сохранено");
+      setSaveMsg("Сохранено");
       setTimeout(() => setSaveMsg(""), 3000);
     } catch { setSaveMsg("Ошибка сохранения"); }
     setSaving(false);
@@ -298,7 +299,7 @@ export function MalimetPanel({ token, language, teacher }: {
   if (!teacher.managedClassroomId) {
     return (
       <div className="page">
-        <h1 className="page-title">📋 {L.title}</h1>
+        <h1 className="page-title"><Icon name="clipboard" size={16} /> {L.title}</h1>
         <div className="card"><p className="fm-empty">Вы не являетесь классным руководителем.</p></div>
       </div>
     );
@@ -307,7 +308,7 @@ export function MalimetPanel({ token, language, teacher }: {
   if (loading) {
     return (
       <div className="page">
-        <h1 className="page-title">📋 {L.title}</h1>
+        <h1 className="page-title"><Icon name="clipboard" size={16} /> {L.title}</h1>
         <div className="card"><p className="fm-empty">Загрузка...</p></div>
       </div>
     );
@@ -338,7 +339,7 @@ export function MalimetPanel({ token, language, teacher }: {
 
       <div className="page-header" style={{ marginBottom: 12 }}>
         <h1 className="page-title" style={{ margin: 0 }}>
-          📋 {isKz ? "Мәлімет / Сведения" : "Сведения / Мәлімет"}
+          <Icon name="clipboard" size={16} /> {isKz ? "Мәлімет / Сведения" : "Сведения / Мәлімет"}
         </h1>
       </div>
 
@@ -440,7 +441,7 @@ export function MalimetPanel({ token, language, teacher }: {
                 <label style={{ fontSize: 11, color: "var(--muted)" }}>
                   {L.allStudents}
                   {!state.endCountOverridden && (
-                    <span style={{ marginLeft: 4, color: "var(--primary)", fontSize: 10 }}>⚡ авто</span>
+                    <span style={{ marginLeft: 4, color: "var(--primary)", fontSize: 10 }}><Icon name="bolt" size={16} /> авто</span>
                   )}
                 </label>
                 <input type="number" min={0} className="input"
@@ -508,11 +509,11 @@ export function MalimetPanel({ token, language, teacher }: {
               {downloading === "pdf" ? "..." : "PDF"}
             </button>
             <button className="btn btn-ghost btn-sm" onClick={() => window.print()}>
-              🖨
+              <Icon name="printer" size={16} /> 
             </button>
           </div>
           {saveMsg && (
-            <p style={{ marginTop: 8, fontSize: 12, color: saveMsg.startsWith("✓") ? "var(--success, #16a34a)" : "var(--danger, #ef4444)" }}>
+            <p style={{ marginTop: 8, fontSize: 12, color: saveMsg.startsWith("") ? "var(--success, #16a34a)" : "var(--danger, #ef4444)" }}>
               {saveMsg}
             </p>
           )}
@@ -604,7 +605,7 @@ export function MalimetPanel({ token, language, teacher }: {
             </h3>
             <input
               className="input" style={{ marginBottom: 10 }}
-              placeholder="🔍 Поиск..."
+              placeholder="Поиск..."
               value={pickerSearch}
               onChange={e => setPickerSearch(e.target.value)}
               autoFocus

@@ -4,6 +4,7 @@ import { api, AuthUser } from "../../lib/api";
 import { Language } from "../../lib/translations";
 import { FileManager } from "../ui/file-manager";
 import { fmLabels } from "./teacher-sections-utils";
+import { Icon } from "../ui/icon";
 
 type AnalyticsView = "quality" | "class" | "by-subject" | "classroom-subjects";
 type SubjectTeacherRow = { id: string; subject: string; teacher: { id: string; fullName: string } };
@@ -30,7 +31,7 @@ export function TeacherAnalyticsSection({ token, user, language, t }: {
 
   return (
     <div className="page">
-      <h1 className="page-title">📊 {t.nav_analytics}</h1>
+      <h1 className="page-title"><Icon name="chart" size={16} /> {t.nav_analytics}</h1>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
         {(["quality", "class", "by-subject"] as const).map(key => {
           const labels2: Record<string, string> = {
@@ -44,7 +45,7 @@ export function TeacherAnalyticsSection({ token, user, language, t }: {
               className={`btn ${active === key ? "btn-primary" : "btn-outline"}`}
               onClick={() => { setActive(p => p === key ? null : key); setSelectedSubjectTeacher(null); }}
             >
-              {key === "quality" ? "📈" : key === "class" ? "📋" : "📚"} {labels2[key]}
+              {key === "quality" ? "" : key === "class" ? "" : ""} {labels2[key]}
             </button>
           );
         })}
@@ -53,7 +54,7 @@ export function TeacherAnalyticsSection({ token, user, language, t }: {
             className={`btn ${active === "classroom-subjects" ? "btn-primary" : "btn-outline"}`}
             onClick={() => { setActive(p => p === "classroom-subjects" ? null : "classroom-subjects"); setSelectedSubjectTeacher(null); }}
           >
-            🏫 {t.analytics_classroom_subjects ?? "Предметы класса"}
+            <Icon name="school" size={16} /> {t.analytics_classroom_subjects ?? "Предметы класса"}
           </button>
         )}
       </div>
@@ -100,7 +101,7 @@ export function TeacherAnalyticsSection({ token, user, language, t }: {
                     <div style={{ fontSize: 12, color: "var(--muted)" }}>{st.teacher.fullName}</div>
                   </div>
                   <button className="btn btn-outline btn-sm" onClick={() => setSelectedSubjectTeacher(st)}>
-                    📂 {t.sc_documents_btn}
+                    <Icon name="folder-open" size={16} /> {t.sc_documents_btn}
                   </button>
                 </div>
               ))}

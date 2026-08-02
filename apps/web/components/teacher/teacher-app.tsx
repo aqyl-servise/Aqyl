@@ -27,6 +27,7 @@ import { TeacherModoSection } from "./TeacherModoSection";
 import { TeacherFinalSection } from "./TeacherFinalSection";
 import { TeacherGiftedSection } from "./TeacherGiftedSection";
 import { TeacherMyClassSection } from "./TeacherMyClassSection";
+import { Icon } from "../ui/icon";
 
 export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
   token: string; user: AuthUser; language: Language;
@@ -87,7 +88,7 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
       )}
       {section === "class-hours" && isClassTeacher && (
         <div className="page">
-          <h1 className="page-title">🕐 {t.nav_class_hours}</h1>
+          <h1 className="page-title"><Icon name="clock" size={16} /> {t.nav_class_hours}</h1>
           {user.managedClassroomName && (
             <p className="muted" style={{ marginTop: -8, marginBottom: 12, fontSize: 14 }}>
               Класс: <strong>{user.managedClassroomName}</strong>

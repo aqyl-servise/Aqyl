@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { api } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 import { FileManager } from "../ui/file-manager";
+import { Icon } from "../ui/icon";
 
 type SiTab = "license" | "med" | "land" | "ses" | "passport" | "general";
 
@@ -99,7 +100,7 @@ export function SchoolInfoPanel({ token, language, userRole }: Props) {
 
   return (
     <div className="page">
-      <h1 className="page-title">🏫 {t.nav_school_info}</h1>
+      <h1 className="page-title"><Icon name="school" size={16} /> {t.nav_school_info}</h1>
 
       <div className="sc-tabs">
         {TABS.map(tb => (
@@ -148,7 +149,7 @@ export function SchoolInfoPanel({ token, language, userRole }: Props) {
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     {!editing ? (
                       <button className="btn btn-primary btn-sm" onClick={startEdit}>
-                        ✏️ {t.si_edit}
+                        <Icon name="pencil" size={16} /> {t.si_edit}
                       </button>
                     ) : (
                       <>
@@ -160,7 +161,7 @@ export function SchoolInfoPanel({ token, language, userRole }: Props) {
                         </button>
                       </>
                     )}
-                    {saved && <span style={{ color: "var(--success)", fontSize: 13 }}>✓ {t.si_saved}</span>}
+                    {saved && <span style={{ color: "var(--success)", fontSize: 13 }}><Icon name="check" size={15} /> {t.si_saved}</span>}
                   </div>
                 )}
               </>

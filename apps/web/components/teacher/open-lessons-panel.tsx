@@ -5,6 +5,7 @@ import { Language } from "../../lib/translations";
 import { FileManager } from "../ui/file-manager";
 import { LessonAnalysisForm } from "./lesson-analysis-form";
 import { handleError } from "../../lib/handle-error";
+import { Icon } from "../ui/icon";
 
 type Lesson = {
   id: string; subject: string; classroomId?: string; cabinet?: string; lessonTime?: string;
@@ -89,7 +90,7 @@ export function OpenLessonsPanel({
         <div className="page">
           <div className="page-header">
             <button className="btn btn-ghost btn-sm" onClick={() => setView({ type: "list" })}>← {t.back}</button>
-            <h1 className="page-title">📋 {t.lesson_analysis_tab ?? "Анализ урока"}</h1>
+            <h1 className="page-title"><Icon name="clipboard" size={16} /> {t.lesson_analysis_tab ?? "Анализ урока"}</h1>
           </div>
           <div className="card" style={{ textAlign: "center", padding: "48px 24px" }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
@@ -139,7 +140,7 @@ export function OpenLessonsPanel({
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">🎓 {t.nav_lessons}</h1>
+        <h1 className="page-title"><Icon name="graduation" size={16} /> {t.nav_lessons}</h1>
         {!isAdmin && (
           <button className="btn btn-primary btn-sm" onClick={() => setView({ type: "form" })}>+ {t.lesson_add}</button>
         )}
@@ -153,7 +154,7 @@ export function OpenLessonsPanel({
               className={`role-tab${analysisFilter === f ? " active" : ""}`}
               onClick={() => setAnalysisFilter(f)}>
               {f === "all" ? (t.all ?? "Все")
-                : f === "with_analysis" ? `✅ ${t.lesson_filter_with_analysis ?? "С анализом"}`
+                : f === "with_analysis" ? `${t.lesson_filter_with_analysis ?? "С анализом"}`
                 : `⏳ ${t.lesson_filter_without_analysis ?? "Без анализа"}`}
             </button>
           ))}
@@ -195,7 +196,7 @@ export function OpenLessonsPanel({
                           analysisReady ? (
                             <span className="score-chip score-high" style={{ cursor: "pointer" }}
                               onClick={() => setView({ type: "analysis", lesson: l, readOnly: true })}>
-                              👁 {t.lesson_analysis_ready ?? "Анализ готов"}
+                              <Icon name="eye" size={16} /> {t.lesson_analysis_ready ?? "Анализ готов"}
                             </span>
                           ) : l.status === "conducted" ? (
                             <span className="score-chip badge">
@@ -245,7 +246,7 @@ export function OpenLessonsPanel({
                               </button>
                               <button className="btn btn-outline btn-sm"
                                 onClick={() => setView({ type: "analysis", lesson: l, readOnly: true })}>
-                                📋 {t.lesson_analysis_tab ?? "Анализ урока"}
+                                <Icon name="clipboard" size={16} /> {t.lesson_analysis_tab ?? "Анализ урока"}
                               </button>
                             </>
                           )}

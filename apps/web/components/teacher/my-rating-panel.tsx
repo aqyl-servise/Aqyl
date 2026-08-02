@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { api, TeacherRating, TeacherViolation } from "../../lib/api";
 import { translations, Language } from "../../lib/translations";
+import { Icon } from "../ui/icon";
 
 interface Props {
   token: string;
@@ -74,9 +75,9 @@ export function MyRatingPanel({ token, language }: Props) {
   }, [token, period, periodNumber, academicYear]);
 
   const TABS = [
-    { key: "overview"   as const, label: t.rating_overview   ?? "Обзор",       icon: "📊" },
-    { key: "violations" as const, label: t.rating_violations ?? "Нарушения",   icon: "⚠️" },
-    { key: "history"    as const, label: t.rating_history    ?? "История",     icon: "📈" },
+    { key: "overview"   as const, label: t.rating_overview   ?? "Обзор",       icon: "" },
+    { key: "violations" as const, label: t.rating_violations ?? "Нарушения",   icon: "" },
+    { key: "history"    as const, label: t.rating_history    ?? "История",     icon: "" },
   ];
 
   const scoreColor = rating ? scoreAccentColor(rating.totalScore) : "var(--accent)";
@@ -85,7 +86,7 @@ export function MyRatingPanel({ token, language }: Props) {
     <div className="page">
       {/* Header */}
       <div className="page-header">
-        <h1 className="page-title">🏆 {t.nav_my_rating ?? "Мой рейтинг"}</h1>
+        <h1 className="page-title"><Icon name="trophy" size={16} /> {t.nav_my_rating ?? "Мой рейтинг"}</h1>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <div className="role-tabs">
             {(["year", "semester", "quarter"] as const).map(p => (
@@ -133,7 +134,7 @@ export function MyRatingPanel({ token, language }: Props) {
             !rating ? (
               <div className="card">
                 <div style={{ textAlign: "center", padding: "40px 0" }}>
-                  <div style={{ fontSize: 56, marginBottom: 16 }}>🏆</div>
+                  <div style={{ fontSize: 56, marginBottom: 16 }}><Icon name="trophy" size={44} strokeWidth={1.3} /> </div>
                   <p style={{ fontSize: 16, fontWeight: 600, color: "var(--text)", margin: "0 0 8px" }}>
                     {t.rating_no_data ?? "Рейтинг ещё не рассчитан"}
                   </p>
@@ -174,11 +175,11 @@ export function MyRatingPanel({ token, language }: Props) {
                       )}
                     </div>
                     {rating.rank === 1 && (
-                      <div style={{ marginTop: 12, fontSize: 13, opacity: 0.9, fontWeight: 500 }}>🥇 Лучший учитель школы!</div>
+                      <div style={{ marginTop: 12, fontSize: 13, opacity: 0.9, fontWeight: 500 }}><Icon name="medal" size={16} /> Лучший учитель школы!</div>
                     )}
                     {rating.rank != null && rating.rank <= 3 && rating.rank > 1 && (
                       <div style={{ marginTop: 12, fontSize: 13, opacity: 0.9, fontWeight: 500 }}>
-                        {rating.rank === 2 ? "🥈" : "🥉"} Вы в тройке лидеров!
+                        {rating.rank === 2 ? "" : ""} Вы в тройке лидеров!
                       </div>
                     )}
                   </div>
@@ -228,7 +229,7 @@ export function MyRatingPanel({ token, language }: Props) {
             <div className="card" style={{ gap: 0, padding: 0, overflow: "hidden" }}>
               {violations.length === 0 ? (
                 <div style={{ padding: 48, textAlign: "center" }}>
-                  <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
+                  <div style={{ fontSize: 40, marginBottom: 12 }}><Icon name="check-circle" size={40} strokeWidth={1.3} /> </div>
                   <p style={{ fontWeight: 600, color: "var(--success)", margin: "0 0 6px" }}>{t.no_violations ?? "Замечаний нет"}</p>
                   <p className="empty-state">Продолжайте в том же духе!</p>
                 </div>

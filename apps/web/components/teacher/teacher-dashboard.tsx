@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import { Language } from "../../lib/translations";
 import { handleError } from "../../lib/handle-error";
+import { Icon } from "../ui/icon";
 
 type DashData = Awaited<ReturnType<typeof api.getDashboard>>;
 
@@ -19,15 +20,15 @@ export function TeacherDashboard({ token, language, t }: { token: string; langua
     <div className="page">
       <h1 className="page-title">{t.nav_dashboard}</h1>
       <div className="stats-row">
-        <StatCard icon="🏫" label={t.classes} value={data.summary.totalClasses} color="blue" />
-        <StatCard icon="👩‍🎓" label={t.students} value={data.summary.totalStudents} color="purple" />
-        <StatCard icon="📊" label={t.averageScore} value={`${data.summary.averageScore}%`} color="green" />
-        <StatCard icon="📄" label={t.documents} value={data.summary.generatedDocuments} color="orange" />
+        <StatCard icon="" label={t.classes} value={data.summary.totalClasses} color="blue" />
+        <StatCard icon="‍" label={t.students} value={data.summary.totalStudents} color="purple" />
+        <StatCard icon="" label={t.averageScore} value={`${data.summary.averageScore}%`} color="green" />
+        <StatCard icon="" label={t.documents} value={data.summary.generatedDocuments} color="orange" />
       </div>
 
       <div className="main-grid">
         <div className="card">
-          <h3 className="card-title">📋 {t.classes}</h3>
+          <h3 className="card-title"><Icon name="clipboard" size={16} /> {t.classes}</h3>
           <table className="data-table">
             <thead><tr><th>{t.name}</th><th>{t.subject}</th><th>{t.students}</th></tr></thead>
             <tbody>
@@ -39,7 +40,7 @@ export function TeacherDashboard({ token, language, t }: { token: string; langua
         </div>
 
         <div className="card">
-          <h3 className="card-title">📉 {t.weakTopics}</h3>
+          <h3 className="card-title"><Icon name="chart-down" size={16} /> {t.weakTopics}</h3>
           {data.topicPerformance.length === 0 ? <p className="empty-state">{t.noData}</p> : (
             <ul className="topic-list">
               {data.topicPerformance.map((tp) => (
@@ -55,8 +56,8 @@ export function TeacherDashboard({ token, language, t }: { token: string; langua
         </div>
 
         <div className="card">
-          <h3 className="card-title">⚠️ {t.weakStudents}</h3>
-          {data.strugglingStudents.length === 0 ? <p className="empty-state">Все успевают ✓</p> : (
+          <h3 className="card-title"><Icon name="warning" size={16} /> {t.weakStudents}</h3>
+          {data.strugglingStudents.length === 0 ? <p className="empty-state">Все успевают <Icon name="check" size={15} /> </p> : (
             <ul className="doc-list">
               {data.strugglingStudents.map((s) => (
                 <li key={s.id} className="doc-item">
@@ -69,7 +70,7 @@ export function TeacherDashboard({ token, language, t }: { token: string; langua
         </div>
 
         <div className="card">
-          <h3 className="card-title">📄 {t.recentDocs}</h3>
+          <h3 className="card-title"><Icon name="file" size={16} /> {t.recentDocs}</h3>
           {data.recentDocuments.length === 0 ? <p className="empty-state">{t.noData}</p> : (
             <ul className="doc-list">
               {data.recentDocuments.map((d) => (

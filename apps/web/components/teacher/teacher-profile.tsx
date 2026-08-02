@@ -2,6 +2,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { api, AuthUser, StudentRow } from "../../lib/api";
 import { Language } from "../../lib/translations";
+import { Icon } from "../ui/icon";
 
 const CATEGORIES = [
   { value: "", key: "attest_category_none" },
@@ -105,9 +106,9 @@ export function TeacherProfile({ token, user, language, t }: { token: string; us
             <label className="field-label">{t.achievements}</label>
             <textarea name="achievements" className="textarea" defaultValue="" />
           </div>
-          {saved && <div className="alert alert-success">✓ Профиль сохранён</div>}
+          {saved && <div className="alert alert-success"><Icon name="check" size={15} /> Профиль сохранён</div>}
           <button className="btn btn-primary" type="submit" disabled={busy}>
-            {busy ? <span className="spinner" /> : `💾 ${t.save}`}
+            {busy ? <span className="spinner" /> : `${t.save}`}
           </button>
         </form>
       </div>
@@ -117,7 +118,7 @@ export function TeacherProfile({ token, user, language, t }: { token: string; us
       {isClassTeacher && (
         <div className="card" style={{ maxWidth: 640, marginTop: 16 }}>
           <h3 className="card-title">
-            👩‍🎓 Мои ученики
+            <Icon name="user" size={16} /> ‍<Icon name="graduation" size={16} /> Мои ученики
             {user.managedClassroomName && (
               <span className="muted" style={{ fontWeight: 400, fontSize: 14, marginLeft: 8 }}>
                 {user.managedClassroomName}
@@ -175,7 +176,7 @@ function AttestationCard({ attestation, t }: { attestation: AttestationData | nu
 
   return (
     <div className="card" style={{ maxWidth: 640, marginTop: 16 }}>
-      <h3 className="card-title">🏅 {t.attest_info ?? "Данные аттестации"}</h3>
+      <h3 className="card-title"><Icon name="medal" size={16} /> {t.attest_info ?? "Данные аттестации"}</h3>
       {isEmpty ? (
         <p className="muted" style={{ fontSize: 14 }}>{t.attest_empty ?? "Данные аттестации не заполнены"}</p>
       ) : (
@@ -186,19 +187,19 @@ function AttestationCard({ attestation, t }: { attestation: AttestationData | nu
           <AttestRow label={t.attest_ozp_result ?? "Результат ОЗП"} value={attestation.ozpResult ?? "—"} />
           {attestation.diplomaFileUrl && (
             <AttestRow label={t.attest_diploma ?? "Диплом"}>
-              <a href={attestation.diplomaFileUrl} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">📄 {t.ktp_open_pdf ?? "Открыть"}</a>
+              <a href={attestation.diplomaFileUrl} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm"><Icon name="file" size={16} /> {t.ktp_open_pdf ?? "Открыть"}</a>
             </AttestRow>
           )}
           {attestation.ozpFileUrl && (
             <AttestRow label={t.attest_ozp_doc ?? "ОЗП документ"}>
-              <a href={attestation.ozpFileUrl} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">📄 {t.ktp_open_pdf ?? "Открыть"}</a>
+              <a href={attestation.ozpFileUrl} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm"><Icon name="file" size={16} /> {t.ktp_open_pdf ?? "Открыть"}</a>
             </AttestRow>
           )}
           {(attestation.coursesFileUrls ?? []).length > 0 && (
             <AttestRow label={t.attest_courses ?? "Курсы ПК"}>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {attestation.coursesFileUrls!.map((url, i) => (
-                  <a key={i} href={url} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">📄 {i + 1}</a>
+                  <a key={i} href={url} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm"><Icon name="file" size={16} /> {i + 1}</a>
                 ))}
               </div>
             </AttestRow>
@@ -207,7 +208,7 @@ function AttestationCard({ attestation, t }: { attestation: AttestationData | nu
             <AttestRow label={t.attest_files ?? "Документы аттестации"}>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {attestation.protocolsFileUrls!.map((url, i) => (
-                  <a key={i} href={url} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">📄 {i + 1}</a>
+                  <a key={i} href={url} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm"><Icon name="file" size={16} /> {i + 1}</a>
                 ))}
               </div>
             </AttestRow>

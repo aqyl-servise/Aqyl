@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { api, ScheduleRow } from "../../lib/api";
+import { Icon } from "../ui/icon";
 
 const DAY_KEYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;
 
@@ -58,13 +59,13 @@ export function StudentSchedulePanel({ token, t }: { token: string; t: Record<st
     schedule.find((r) => r.dayOfWeek === day && r.period === period);
 
   if (loading) return <p className="muted">{t.loading}</p>;
-  if (error) return <div className="alert alert-error"><span>⚠</span> {error}</div>;
+  if (error) return <div className="alert alert-error"><span><Icon name="warning" size={16} /> </span> {error}</div>;
   if (schedule.length === 0) return <p className="empty-state">{t.no_schedule}</p>;
 
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">📅 {t.nav_student_schedule}</h1>
+        <h1 className="page-title"><Icon name="calendar" size={16} /> {t.nav_student_schedule}</h1>
         {todayDow && (
           <span className="role-chip role-teacher">
             {t.today_schedule}: {t[DAY_KEYS[todayDow - 1]]}

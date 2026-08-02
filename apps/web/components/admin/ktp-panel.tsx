@@ -4,6 +4,7 @@ import { api, API_URL, ClassroomItem } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 import { FileManager } from "../ui/file-manager";
 import { handleError } from "../../lib/handle-error";
+import { Icon } from "../ui/icon";
 
 type KtpFile = Awaited<ReturnType<typeof api.getKtpFiles>>[number];
 type KtpStatus = "unchecked" | "reviewing" | "approved" | "revision";
@@ -139,7 +140,7 @@ function ReviewPane({
           }}>
             {/* File info row */}
             <div style={{ display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 22 }}>{isPdf ? "📄" : "📎"}</span>
+              <span style={{ fontSize: 22 }}>{isPdf ? "" : ""}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: 14, wordBreak: "break-word" }}>{f.originalName}</div>
                 <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
@@ -149,7 +150,7 @@ function ReviewPane({
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
                 {statusBadge(rev.status, t)}
                 <button className="btn btn-outline btn-sm" onClick={() => openFile(f.filename, f.originalName, token)}>
-                  {isPdf ? `👁 ${t.ktp_open_pdf}` : `⬇ ${t.fm_download}`}
+                  {isPdf ? `${t.ktp_open_pdf}` : `⬇ ${t.fm_download}`}
                 </button>
               </div>
             </div>
@@ -187,7 +188,7 @@ function ReviewPane({
                   onClick={() => handleSave(f.id)}
                   disabled={saving[f.id]}
                 >
-                  {saving[f.id] ? t.loading : saved[f.id] ? `✓ ${t.ktp_review_saved}` : t.ktp_save_review}
+                  {saving[f.id] ? t.loading : saved[f.id] ? `${t.ktp_review_saved}` : t.ktp_save_review}
                 </button>
               </div>
             )}
@@ -195,7 +196,7 @@ function ReviewPane({
             {/* Show existing comment to non-admins */}
             {!isAdmin && f.review?.comment && (
               <div style={{ fontSize: 13, color: "var(--muted)", background: "var(--surface)", borderRadius: 6, padding: "8px 12px" }}>
-                💬 {f.review.comment}
+                <Icon name="message" size={16} /> {f.review.comment}
               </div>
             )}
           </div>
@@ -217,7 +218,7 @@ function KspFileList({ files, classroomsMap, t, token }: {
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {files.map(f => (
         <div key={f.id} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 12px", background: "var(--surface)", borderRadius: 8, border: "1px solid var(--border)" }}>
-          <span style={{ fontSize: 20 }}>📄</span>
+          <span style={{ fontSize: 20 }}><Icon name="file" size={16} /> </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 500, fontSize: 13, wordBreak: "break-word" }}>{f.originalName}</div>
             <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
@@ -228,7 +229,7 @@ function KspFileList({ files, classroomsMap, t, token }: {
               <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
                 {f.assignedClassrooms.map(cid => (
                   <span key={cid} style={{ fontSize: 11, padding: "2px 7px", borderRadius: 12, background: "var(--primary-light, #e0f0ff)", color: "var(--primary, #2563eb)", fontWeight: 600 }}>
-                    🏫 {classroomsMap[cid] ?? cid}
+                    <Icon name="school" size={16} /> {classroomsMap[cid] ?? cid}
                   </span>
                 ))}
               </div>
@@ -310,7 +311,7 @@ function AllKspTab({ token, t }: { token: string; t: Record<string, string> }) {
         </select>
         {(filterTeacher || filterClassroom) && (
           <button className="btn btn-ghost btn-sm" onClick={() => { setFilterTeacher(""); setFilterClassroom(""); }}>
-            ✕ {t.cancel}
+            <Icon name="close" size={15} /> {t.cancel}
           </button>
         )}
       </div>
@@ -321,7 +322,7 @@ function AllKspTab({ token, t }: { token: string; t: Record<string, string> }) {
         groups.map(group => (
           <div key={group.teacher} style={{ marginBottom: 20 }}>
             <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 10, color: "var(--primary, #2563eb)" }}>
-              👤 {group.teacher} <span style={{ color: "var(--muted)", fontWeight: 400 }}>({group.files.length})</span>
+              <Icon name="user" size={16} /> {group.teacher} <span style={{ color: "var(--muted)", fontWeight: 400 }}>({group.files.length})</span>
             </h3>
             <KspFileList files={group.files} classroomsMap={classroomsMap} t={t} token={token} />
           </div>
@@ -404,7 +405,7 @@ function TeacherUploadsTab({ token, language, t }: { token: string; language: La
                 <td>{tc.subject ?? "—"}</td>
                 <td>
                   <button className="btn btn-outline btn-sm" onClick={() => setSelected(tc)}>
-                    📁 {t.sc_documents_btn}
+                    <Icon name="folder" size={16} /> {t.sc_documents_btn}
                   </button>
                 </td>
               </tr>
@@ -437,7 +438,7 @@ export function KtpPanel({ token, language, userRole }: Props) {
 
   return (
     <div className="page">
-      <h1 className="page-title">📝 {t.nav_ktp_plans}</h1>
+      <h1 className="page-title"><Icon name="pencil" size={16} /> {t.nav_ktp_plans}</h1>
 
       <div className="sc-tabs">
         {TABS.map((tb) => (

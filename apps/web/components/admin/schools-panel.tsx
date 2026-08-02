@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import { Language } from "../../lib/translations";
+import { Icon } from "../ui/icon";
 
 type SchoolRow = {
   id: string;
@@ -95,7 +96,7 @@ export function SchoolsPanel({ token, language, t }: {
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">🏫 {t.nav_schools}</h1>
+        <h1 className="page-title"><Icon name="school" size={16} /> {t.nav_schools}</h1>
         <button className="btn btn-primary" onClick={() => { setShowForm(true); setFormError(""); }}>
           {t.school_add_btn}
         </button>
@@ -231,7 +232,7 @@ export function SchoolsPanel({ token, language, t }: {
                       display: "inline-flex", alignItems: "center", gap: 4,
                       fontWeight: 600, color: school.userCount > 0 ? "var(--primary)" : "var(--muted)",
                     }}>
-                      👥 {school.userCount}
+                      <Icon name="users" size={16} /> {school.userCount}
                     </span>
                   </td>
                   <td className="muted" style={{ whiteSpace: "nowrap" }}>

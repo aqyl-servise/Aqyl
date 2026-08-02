@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 import { FileManager } from "../ui/file-manager";
+import { Icon } from "../ui/icon";
 
 type SchoolStats = Awaited<ReturnType<typeof api.getSchoolStats>>;
 type ClassStats = Awaited<ReturnType<typeof api.getClassesStats>>[number];
@@ -75,7 +76,7 @@ function TeacherAnalyticsDocsCard({ token, labels, tl }: { token: string; labels
 
   return (
     <div className="card">
-      <h3 style={{ fontWeight: 600, marginBottom: 16, fontSize: 14 }}>👩‍🏫 {tl.nav_teachers} — {tl.nav_analytics}</h3>
+      <h3 style={{ fontWeight: 600, marginBottom: 16, fontSize: 14 }}><Icon name="user" size={16} /> ‍<Icon name="school" size={16} /> {tl.nav_teachers} — {tl.nav_analytics}</h3>
       {!selected ? (
         !loaded ? (
           <p className="fm-empty">{tl.loading}</p>
@@ -93,7 +94,7 @@ function TeacherAnalyticsDocsCard({ token, labels, tl }: { token: string; labels
                   <option value="">{tl.all_subjects}</option>
                   {subjects.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
-                {subjectFilter && <button className="btn btn-ghost btn-sm" onClick={() => setSubjectFilter("")}>✕</button>}
+                {subjectFilter && <button className="btn btn-ghost btn-sm" onClick={() => setSubjectFilter("")}><Icon name="close" size={15} /> </button>}
               </div>
             )}
             {filtered.length === 0 ? (
@@ -106,7 +107,7 @@ function TeacherAnalyticsDocsCard({ token, labels, tl }: { token: string; labels
                     <tr key={tc.id}>
                       <td>{tc.fullName}</td>
                       <td>{tc.subject ?? "—"}</td>
-                      <td><button className="btn btn-outline btn-sm" onClick={() => setSelected(tc)}>📂 {tl.sc_documents_btn}</button></td>
+                      <td><button className="btn btn-outline btn-sm" onClick={() => setSelected(tc)}><Icon name="folder-open" size={16} /> {tl.sc_documents_btn}</button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -262,7 +263,7 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
 
   return (
     <div className="page">
-      <h1 className="page-title">📈 {t.nav_school_analytics}</h1>
+      <h1 className="page-title"><Icon name="chart-line" size={16} /> {t.nav_school_analytics}</h1>
 
       <div className="sc-tabs">
         {TABS.map((tb) => (
@@ -283,23 +284,23 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
               className={`sc-tab${dataSource === "live" ? " sc-tab-active" : ""}`}
               onClick={() => setDataSource("live")}
             >
-              📊 {tl.analytics_live ?? "Живые данные"}
+              <Icon name="chart" size={16} /> {tl.analytics_live ?? "Живые данные"}
             </button>
             <button
               className={`sc-tab${dataSource === "upload" ? " sc-tab-active" : ""}`}
               onClick={() => setDataSource("upload")}
             >
-              📁 {tl.analytics_uploaded ?? "Загруженные данные"}
+              <Icon name="folder" size={16} /> {tl.analytics_uploaded ?? "Загруженные данные"}
             </button>
           </div>
 
           {/* Excel upload view */}
           {dataSource === "upload" && (
             <div className="card" style={{ maxWidth: 560, marginBottom: 16 }}>
-              <h3 className="card-title">📁 {tl.analytics_uploaded ?? "Загруженные данные"}</h3>
+              <h3 className="card-title"><Icon name="folder" size={16} /> {tl.analytics_uploaded ?? "Загруженные данные"}</h3>
               <form onSubmit={handleExcelUpload} className="form-stack">
                 <div className="file-drop-zone">
-                  <span>📁</span>
+                  <span><Icon name="folder" size={16} /> </span>
                   <p>Excel / CSV — Student / Class / Topic / Score / MaxScore</p>
                   <input name="file" type="file" accept=".xlsx,.xls,.csv" required className="input file-input" />
                 </div>
@@ -314,9 +315,9 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
                   <div style={{ marginTop: 16 }}>
                     {sum && (
                       <div className="stats-row" style={{ marginBottom: 12 }}>
-                        <div className="stat-card stat-blue"><span className="stat-icon">📊</span><div><p className="stat-label">{t.averageScore}</p><p className="stat-value">{String(sum.averageScore)}%</p></div></div>
-                        <div className="stat-card stat-green"><span className="stat-icon">👩‍🎓</span><div><p className="stat-label">{t.students}</p><p className="stat-value">{String(sum.uniqueStudents)}</p></div></div>
-                        <div className="stat-card stat-purple"><span className="stat-icon">🏫</span><div><p className="stat-label">{t.classes}</p><p className="stat-value">{String(sum.uniqueClasses)}</p></div></div>
+                        <div className="stat-card stat-blue"><span className="stat-icon"><Icon name="chart" size={16} /> </span><div><p className="stat-label">{t.averageScore}</p><p className="stat-value">{String(sum.averageScore)}%</p></div></div>
+                        <div className="stat-card stat-green"><span className="stat-icon"><Icon name="user" size={16} /> ‍<Icon name="graduation" size={16} /> </span><div><p className="stat-label">{t.students}</p><p className="stat-value">{String(sum.uniqueStudents)}</p></div></div>
+                        <div className="stat-card stat-purple"><span className="stat-icon"><Icon name="school" size={16} /> </span><div><p className="stat-label">{t.classes}</p><p className="stat-value">{String(sum.uniqueClasses)}</p></div></div>
                       </div>
                     )}
                     {topics.length > 0 && (
@@ -338,7 +339,7 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
               {/* Big metrics */}
               <div className="stats-row">
                 <div className="stat-card stat-blue">
-                  <span className="stat-icon">📊</span>
+                  <span className="stat-icon"><Icon name="chart" size={16} /> </span>
                   <div>
                     <p className="stat-label">{tl.san_school_avg}</p>
                     <p className="stat-value">{stats.avgScore}%</p>
@@ -348,15 +349,15 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
                   </div>
                 </div>
                 <div className="stat-card stat-green">
-                  <span className="stat-icon">👩‍🎓</span>
+                  <span className="stat-icon"><Icon name="user" size={16} /> ‍<Icon name="graduation" size={16} /> </span>
                   <div><p className="stat-label">{t.students}</p><p className="stat-value">{stats.totalStudents}</p></div>
                 </div>
                 <div className="stat-card stat-purple">
-                  <span className="stat-icon">🏫</span>
+                  <span className="stat-icon"><Icon name="school" size={16} /> </span>
                   <div><p className="stat-label">{t.classes}</p><p className="stat-value">{stats.totalClassrooms}</p></div>
                 </div>
                 <div className="stat-card stat-orange">
-                  <span className="stat-icon">✅</span>
+                  <span className="stat-icon"><Icon name="check-circle" size={16} /> </span>
                   <div>
                     <p className="stat-label">{tl.san_submission_rate}</p>
                     <p className="stat-value">{stats.submissionRate}%</p>
@@ -368,11 +369,11 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
                 {liveSummary && (
                   <>
                     <div className="stat-card stat-blue">
-                      <span className="stat-icon">👨‍🏫</span>
+                      <span className="stat-icon"><Icon name="user" size={16} /> ‍<Icon name="school" size={16} /> </span>
                       <div><p className="stat-label">{tl.analytics_teachers ?? "Учителей"}</p><p className="stat-value">{liveSummary.totalTeachers}</p></div>
                     </div>
                     <div className="stat-card stat-green">
-                      <span className="stat-icon">📝</span>
+                      <span className="stat-icon"><Icon name="pencil" size={16} /> </span>
                       <div><p className="stat-label">{tl.analytics_this_month ?? "Заданий в этом месяце"}</p><p className="stat-value">{liveSummary.assignmentsThisMonth}</p></div>
                     </div>
                   </>
@@ -400,7 +401,7 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                 {/* Top 5 */}
                 <div className="card">
-                  <h3 style={{ fontWeight: 600, marginBottom: 12, fontSize: 14 }}>🏆 {tl.san_top_students}</h3>
+                  <h3 style={{ fontWeight: 600, marginBottom: 12, fontSize: 14 }}><Icon name="trophy" size={16} /> {tl.san_top_students}</h3>
                   {stats.topStudents.length === 0 ? <p className="fm-empty">{t.noData}</p> : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {stats.topStudents.map((s, i) => (
@@ -419,7 +420,7 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
 
                 {/* Bottom 5 */}
                 <div className="card">
-                  <h3 style={{ fontWeight: 600, marginBottom: 12, fontSize: 14 }}>⚠️ {tl.san_bottom_students}</h3>
+                  <h3 style={{ fontWeight: 600, marginBottom: 12, fontSize: 14 }}><Icon name="warning" size={16} /> {tl.san_bottom_students}</h3>
                   {stats.bottomStudents.length === 0 ? <p className="fm-empty">{t.noData}</p> : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {stats.bottomStudents.map((s, i) => (
@@ -512,7 +513,7 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
                         </td>
                         <td>
                           <button className="btn btn-outline btn-sm" onClick={() => setSelectedClass(c)}>
-                            👁 {t.students}
+                            <Icon name="eye" size={16} /> {t.students}
                           </button>
                         </td>
                       </tr>
@@ -565,7 +566,7 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
             <>
               <input
                 className="input" style={{ maxWidth: 360, marginBottom: 16 }}
-                placeholder={`🔍 ${tl.san_student_search}`}
+                placeholder={`${tl.san_student_search}`}
                 value={studentQ}
                 onChange={(e) => setStudentQ(e.target.value)}
               />
@@ -584,7 +585,7 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
                         <td><span className={`score-chip ${scoreClass(s.overallAvg)}`}>{s.overallAvg}%</span></td>
                         <td>
                           <button className="btn btn-outline btn-sm" onClick={() => setSelectedStudent(s)}>
-                            👁 {tl.san_student_card}
+                            <Icon name="eye" size={16} /> {tl.san_student_card}
                           </button>
                         </td>
                       </tr>
@@ -603,12 +604,12 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
           <div style={{ marginBottom: 20 }}>
             <p style={{ color: "var(--muted)", marginBottom: 16, fontSize: 14 }}>{tl.san_ai_hint}</p>
             <button className="btn btn-primary" onClick={handleAiAnalyze} disabled={aiLoading}>
-              {aiLoading ? `⏳ ${tl.san_analyzing}` : `🤖 ${tl.san_analyze_btn}`}
+              {aiLoading ? `⏳ ${tl.san_analyzing}` : `${tl.san_analyze_btn}`}
             </button>
           </div>
           {aiResult && (
             <div style={{ background: "var(--bg)", borderRadius: 10, padding: 20, border: "1px solid var(--border)" }}>
-              <h3 style={{ fontWeight: 600, marginBottom: 12, fontSize: 14 }}>📋 {tl.san_ai_result}</h3>
+              <h3 style={{ fontWeight: 600, marginBottom: 12, fontSize: 14 }}><Icon name="clipboard" size={16} /> {tl.san_ai_result}</h3>
               <div style={{ fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-wrap", color: "var(--fg)" }}>
                 {aiResult}
               </div>
@@ -621,11 +622,11 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
       {tab === "docs" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 0 }}>
           <div className="card">
-            <h3 style={{ fontWeight: 600, marginBottom: 16, fontSize: 14 }}>📂 {tl.san_docs_quality}</h3>
+            <h3 style={{ fontWeight: 600, marginBottom: 16, fontSize: 14 }}><Icon name="folder-open" size={16} /> {tl.san_docs_quality}</h3>
             <FileManager token={token} section="analytics-quality" canEdit canUpload labels={labels} />
           </div>
           <div className="card">
-            <h3 style={{ fontWeight: 600, marginBottom: 16, fontSize: 14 }}>📂 {tl.san_docs_progress}</h3>
+            <h3 style={{ fontWeight: 600, marginBottom: 16, fontSize: 14 }}><Icon name="folder-open" size={16} /> {tl.san_docs_progress}</h3>
             <FileManager token={token} section="analytics-progress" canEdit canUpload labels={labels} />
           </div>
           <TeacherAnalyticsDocsCard token={token} labels={labels} tl={tl} />

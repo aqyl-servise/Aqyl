@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { api, ClassroomOption } from "../../lib/api";
 import { Language } from "../../lib/translations";
+import { Icon } from "../ui/icon";
 
 type ScheduleItem = {
   id: string; title?: string; topic: string; dayOfWeek?: string; time?: string;
@@ -195,8 +196,8 @@ export function ClassHoursSchedulePanel({ token, language, isAdmin }: Props) {
           {classrooms.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
         <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-          <button className="btn btn-outline btn-sm" onClick={exportExcel}>📊 Excel</button>
-          <button className="btn btn-outline btn-sm" onClick={exportPrint}>🖨️ Печать</button>
+          <button className="btn btn-outline btn-sm" onClick={exportExcel}><Icon name="chart" size={16} /> Excel</button>
+          <button className="btn btn-outline btn-sm" onClick={exportPrint}><Icon name="printer" size={16} /> Печать</button>
         </div>
       </div>
 
@@ -264,7 +265,7 @@ export function ClassHoursSchedulePanel({ token, language, isAdmin }: Props) {
           <div className="modal-card" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
               <h3 style={{ margin: 0 }}>{form.id ? "Редактировать" : "Новый классный час"}</h3>
-              <button className="btn btn-ghost btn-sm" onClick={() => setShowForm(false)}>✕</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowForm(false)}><Icon name="close" size={15} /> </button>
             </div>
             <div className="form-stack">
               <div className="form-row">
@@ -335,7 +336,7 @@ export function ClassHoursSchedulePanel({ token, language, isAdmin }: Props) {
           <div className="modal-card" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
               <h3 style={{ margin: 0 }}>История изменений</h3>
-              <button className="btn btn-ghost btn-sm" onClick={() => setHistory(null)}>✕</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setHistory(null)}><Icon name="close" size={15} /> </button>
             </div>
             {history.items.length === 0 ? (
               <p className="muted">Нет изменений</p>
@@ -407,21 +408,21 @@ function ClassHourCard({
           {item.comment && <div style={{ fontSize: 11, marginBottom: 6 }}>{item.comment}</div>}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
             <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "2px 8px" }} onClick={onEdit}>
-              ✏️ Изменить
+              <Icon name="pencil" size={16} /> Изменить
             </button>
             {item.status === "planned" && (
               <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "2px 8px", color: "#22c55e" }}
                 onClick={onMarkConducted}>
-                ✓ Провести
+                <Icon name="check" size={15} /> Провести
               </button>
             )}
             <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "2px 8px" }} onClick={onHistory}>
-              📋 История
+              <Icon name="clipboard" size={16} /> История
             </button>
             <button className="btn btn-ghost btn-sm"
               style={{ fontSize: 10, padding: "2px 8px", color: "var(--danger, #ef4444)" }}
               onClick={onDelete}>
-              🗑️ Удалить
+              <Icon name="trash" size={16} /> Удалить
             </button>
           </div>
         </div>

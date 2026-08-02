@@ -2,6 +2,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import { Language } from "../../lib/translations";
+import { Icon } from "../ui/icon";
 
 type Assignment = Awaited<ReturnType<typeof api.getMyAssignments>>[number];
 type Classroom = { id: string; name: string };
@@ -103,7 +104,7 @@ export function AssignmentsPanel({ token, language, t }: { token: string; langua
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">📋 {t.nav_assignments}</h1>
+        <h1 className="page-title"><Icon name="clipboard" size={16} /> {t.nav_assignments}</h1>
         <button className="btn btn-primary btn-sm" onClick={() => setView("create")}>
           + Создать задание
         </button>
@@ -238,16 +239,16 @@ function CreateAssignmentView({ token, classrooms, t, onSaved, onCancel }: {
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">📋 Создать задание</h1>
+        <h1 className="page-title"><Icon name="clipboard" size={16} /> Создать задание</h1>
         <button className="btn btn-ghost btn-sm" onClick={onCancel}>← Назад</button>
       </div>
 
       <div className="sc-tabs" style={{ marginBottom: 0 }}>
         <button className={`sc-tab${mode === "manual" ? " sc-tab-active" : ""}`} onClick={() => setMode("manual")}>
-          ✏️ Вручную
+          <Icon name="pencil" size={16} /> Вручную
         </button>
         <button className={`sc-tab${mode === "ai" ? " sc-tab-active" : ""}`} onClick={() => setMode("ai")}>
-          🤖 AI-генерация
+          <Icon name="ai" size={16} /> AI-генерация
         </button>
       </div>
 
@@ -282,7 +283,7 @@ function CreateAssignmentView({ token, classrooms, t, onSaved, onCancel }: {
                 </div>
               </div>
               <button className="btn btn-outline btn-sm" type="submit" disabled={generating}>
-                {generating ? <span className="spinner" /> : "🤖 Сгенерировать"}
+                {generating ? <span className="spinner" /> : "Сгенерировать"}
               </button>
             </form>
             {aiResult && (
@@ -338,10 +339,10 @@ function CreateAssignmentView({ token, classrooms, t, onSaved, onCancel }: {
             <label className="field-label">Описание{aiResult ? " (необязательно — AI-контент уже будет добавлен)" : ""}</label>
             <textarea name="description" className="textarea" rows={4} placeholder="Описание задания..." />
           </div>
-          {error && <div className="alert alert-error"><span>⚠</span> {error}</div>}
+          {error && <div className="alert alert-error"><span><Icon name="warning" size={16} /> </span> {error}</div>}
           <div className="form-row">
             <button className="btn btn-outline" type="submit" disabled={saving}>
-              {saving ? <span className="spinner" /> : "💾 Сохранить как черновик"}
+              {saving ? <span className="spinner" /> : "Сохранить как черновик"}
             </button>
             <button type="button" className="btn btn-ghost" onClick={onCancel}>Отмена</button>
           </div>
@@ -370,7 +371,7 @@ function AssignmentDetail({ assignment, busy, t, onPublish, onClose, onBack }: {
         <div style={{ display: "flex", gap: 8 }}>
           {(assignment.status === "draft") && (
             <button className="btn btn-primary btn-sm" disabled={busy} onClick={onPublish}>
-              📤 Отправить ученикам
+              <Icon name="upload" size={16} /> Отправить ученикам
             </button>
           )}
           {(assignment.status === "published" || assignment.status === "active") && (

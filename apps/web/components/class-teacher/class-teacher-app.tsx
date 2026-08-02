@@ -5,6 +5,7 @@ import { Language, translations } from "../../lib/translations";
 import { AppLayout, type NavItem } from "../layout/app-layout";
 import { ClassHoursSchedulePanel } from "../admin/class-hours-schedule";
 import { OpenLessonsPanel } from "../teacher/open-lessons-panel";
+import { Icon } from "../ui/icon";
 
 export function ClassTeacherApp({ token, user, language, setLanguage, onLogout }: {
   token: string; user: AuthUser; language: Language;
@@ -24,7 +25,7 @@ export function ClassTeacherApp({ token, user, language, setLanguage, onLogout }
       {section === "class-hours" && (
         <div className="page">
           <div className="page-header">
-            <h1 className="page-title">🕐 {t.nav_class_hours}</h1>
+            <h1 className="page-title"><Icon name="clock" size={16} /> {t.nav_class_hours}</h1>
           </div>
           <div className="card">
             <ClassHoursSchedulePanel token={token} language={language} isAdmin={false} />

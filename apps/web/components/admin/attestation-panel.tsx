@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { api } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 import { FileManager } from "../ui/file-manager";
+import { Icon } from "../ui/icon";
 
 type AttestRow = Awaited<ReturnType<typeof api.getAttestations>>[number];
 type AttestCategory = "none" | "second" | "first" | "highest";
@@ -126,7 +127,7 @@ export function AttestationPanel({ token, language, userRole }: Props) {
           <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}>
             ← {t.attest_back}
           </button>
-          <h1 className="page-title">🏆 {selected.teacher.fullName}</h1>
+          <h1 className="page-title"><Icon name="trophy" size={16} /> {selected.teacher.fullName}</h1>
         </div>
 
         <div className="sc-tabs">
@@ -194,7 +195,7 @@ export function AttestationPanel({ token, language, userRole }: Props) {
                   onClick={handleSave}
                   disabled={saving}
                 >
-                  {saving ? t.loading : saved ? `✓ ${t.attest_saved}` : t.attest_save}
+                  {saving ? t.loading : saved ? `${t.attest_saved}` : t.attest_save}
                 </button>
               )}
             </div>
@@ -235,10 +236,10 @@ export function AttestationPanel({ token, language, userRole }: Props) {
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">🏆 {t.nav_attestation}</h1>
+        <h1 className="page-title"><Icon name="trophy" size={16} /> {t.nav_attestation}</h1>
         <input
           className="input" style={{ maxWidth: 260 }}
-          placeholder={`🔍 ${t.search}...`}
+          placeholder={`${t.search}...`}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -287,7 +288,7 @@ export function AttestationPanel({ token, language, userRole }: Props) {
                       className="btn btn-outline btn-sm"
                       onClick={() => openTeacher(row)}
                     >
-                      {canEdit ? "✏️ Открыть" : "👁 Просмотр"}
+                      {canEdit ? "Открыть" : "Просмотр"}
                     </button>
                   </td>
                 </tr>

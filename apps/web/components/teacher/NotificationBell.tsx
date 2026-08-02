@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { api } from "../../lib/api";
+import { Icon } from "../ui/icon";
 
 type TeacherNotification = { id: string; type: string; title: string; message: string; isRead: boolean; createdAt: string };
 
@@ -78,7 +79,7 @@ export function NotificationBell({ token, t }: { token: string; t: Record<string
         }}
         title={t.notifications_title ?? "Уведомления"}
       >
-        🔔
+        <Icon name="bell" size={16} /> 
         {unread > 0 && (
           <span style={{
             position: "absolute", top: -4, right: -4,

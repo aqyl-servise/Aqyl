@@ -3,6 +3,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { api, API_URL, SorSochDoc } from "../../lib/api";
 import { Language } from "../../lib/translations";
 import { handleError } from "../../lib/handle-error";
+import { Icon } from "../ui/icon";
 
 type Classroom = { id: string; name: string };
 
@@ -107,7 +108,7 @@ export function SorSochPanel({ token, language, t, isAdmin, userRole }: {
 
   return (
     <div className="page">
-      <h1 className="page-title">📄 {t.sor_soch_title}</h1>
+      <h1 className="page-title"><Icon name="file" size={16} /> {t.sor_soch_title}</h1>
 
       <div className="sc-tabs">
         <button className={`sc-tab${tab === "sor" ? " sc-tab-active" : ""}`} onClick={() => { setTab("sor"); setAdding(false); }}>
@@ -229,11 +230,11 @@ export function SorSochPanel({ token, language, t, isAdmin, userRole }: {
                         <>
                           <button className="btn btn-ghost btn-sm" title={t.sor_rename}
                             onClick={() => { setRenaming(doc); setRenameTitle(doc.title); }}>
-                            ✏️
+                            <Icon name="pencil" size={16} /> 
                           </button>
                           <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }}
                             onClick={() => handleDelete(doc.id)}>
-                            🗑
+                            <Icon name="trash" size={16} /> 
                           </button>
                         </>
                       )}

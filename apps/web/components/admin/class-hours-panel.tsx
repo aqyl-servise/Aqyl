@@ -3,6 +3,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import { Language } from "../../lib/translations";
 import { handleError } from "../../lib/handle-error";
+import { Icon } from "../ui/icon";
 
 type ClassHour = Awaited<ReturnType<typeof api.getAllClassHours>>[number];
 type MyClassHour = Awaited<ReturnType<typeof api.getMyClassHours>>[number];
@@ -51,7 +52,7 @@ export function ClassHoursPanel({ token, language, t, isAdmin }: { token: string
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">🕐 {t.nav_class_hours}</h1>
+        <h1 className="page-title"><Icon name="clock" size={16} /> {t.nav_class_hours}</h1>
         {!isAdmin && <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ Создать</button>}
       </div>
 

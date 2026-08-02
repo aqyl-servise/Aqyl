@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { api, AuthUser, ClassroomFullInfo } from "../../lib/api";
 import { Language } from "../../lib/translations";
+import { Icon } from "../ui/icon";
 
 export function TeacherMyClassSection({ token, user, language: _language, t }: {
   token: string; user: AuthUser; language: Language; t: Record<string, string>;
@@ -37,13 +38,13 @@ export function TeacherMyClassSection({ token, user, language: _language, t }: {
   if (!user.managedClassroomId) {
     return (
       <div className="page">
-        <h1 className="page-title">🏫 {t.nav_my_class ?? "Мой класс"}</h1>
+        <h1 className="page-title"><Icon name="school" size={16} /> {t.nav_my_class ?? "Мой класс"}</h1>
         <div className="card"><p className="fm-empty">Вы не являетесь классным руководителем.</p></div>
       </div>
     );
   }
-  if (loading) return <div className="page"><h1 className="page-title">🏫 {t.nav_my_class ?? "Мой класс"}</h1><div className="card"><p className="fm-empty">{t.loading}</p></div></div>;
-  if (!info) return <div className="page"><h1 className="page-title">🏫 {t.nav_my_class ?? "Мой класс"}</h1><div className="card"><p className="fm-empty">{t.noData}</p></div></div>;
+  if (loading) return <div className="page"><h1 className="page-title"><Icon name="school" size={16} /> {t.nav_my_class ?? "Мой класс"}</h1><div className="card"><p className="fm-empty">{t.loading}</p></div></div>;
+  if (!info) return <div className="page"><h1 className="page-title"><Icon name="school" size={16} /> {t.nav_my_class ?? "Мой класс"}</h1><div className="card"><p className="fm-empty">{t.noData}</p></div></div>;
 
   const filtered = info.students.filter(s =>
     s.fullName.toLowerCase().includes(search.toLowerCase()) ||
@@ -53,8 +54,8 @@ export function TeacherMyClassSection({ token, user, language: _language, t }: {
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">🏫 {info.name} — {info.grade} класс</h1>
-        <button className="btn btn-outline btn-sm" onClick={exportCsv}>📊 Экспорт CSV</button>
+        <h1 className="page-title"><Icon name="school" size={16} /> {info.name} — {info.grade} класс</h1>
+        <button className="btn btn-outline btn-sm" onClick={exportCsv}><Icon name="chart" size={16} /> Экспорт CSV</button>
       </div>
 
       <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
@@ -79,7 +80,7 @@ export function TeacherMyClassSection({ token, user, language: _language, t }: {
       <div className="card" style={{ marginTop: 0 }}>
         <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
           <h3 style={{ margin: 0, fontSize: 15, flex: 1 }}>Список учеников</h3>
-          <input className="input" style={{ maxWidth: 240 }} placeholder="🔍 Поиск..."
+          <input className="input" style={{ maxWidth: 240 }} placeholder="Поиск..."
             value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         {filtered.length === 0 ? <p className="fm-empty">{t.noData}</p> : (

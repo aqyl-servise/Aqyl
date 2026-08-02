@@ -4,6 +4,7 @@ import { api, AuthUser, StudentRow, GiftedAssignment } from "../../lib/api";
 import { Language } from "../../lib/translations";
 import { FileManager } from "../ui/file-manager";
 import { fmLabels } from "./teacher-sections-utils";
+import { Icon } from "../ui/icon";
 
 export function TeacherGiftedSection({ token, userId, language, t, user }: {
   token: string; userId: string; language: Language; t: Record<string, string>; user: AuthUser;
@@ -69,25 +70,25 @@ export function TeacherGiftedSection({ token, userId, language, t, user }: {
 
   return (
     <div className="page">
-      <h1 className="page-title">⭐ {t.nav_gifted}</h1>
+      <h1 className="page-title"><Icon name="star" size={16} /> {t.nav_gifted}</h1>
       <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
         <button
           className={`btn ${active === "achievements" ? "btn-primary" : "btn-outline"}`}
           onClick={() => setActive(p => p === "achievements" ? null : "achievements")}
         >
-          🏆 {t.gifted_my_achievements ?? "Мои достижения"}
+          <Icon name="trophy" size={16} /> {t.gifted_my_achievements ?? "Мои достижения"}
         </button>
         <button
           className={`btn ${active === "workplan" ? "btn-primary" : "btn-outline"}`}
           onClick={() => setActive(p => p === "workplan" ? null : "workplan")}
         >
-          📋 {t.gifted_my_workplan ?? "Мой план работы"}
+          <Icon name="clipboard" size={16} /> {t.gifted_my_workplan ?? "Мой план работы"}
         </button>
         <button
           className={`btn ${active === "my-students" ? "btn-primary" : "btn-outline"}`}
           onClick={() => setActive(p => p === "my-students" ? null : "my-students")}
         >
-          👩‍🎓 Мои ученики
+          <Icon name="user" size={16} /> ‍<Icon name="graduation" size={16} /> Мои ученики
         </button>
       </div>
 
@@ -110,12 +111,12 @@ export function TeacherGiftedSection({ token, userId, language, t, user }: {
               <h3 style={{ margin: 0, fontSize: 15, flex: 1 }}>Мои ученики</h3>
               <input
                 className="input" style={{ maxWidth: 220 }}
-                placeholder="🔍 Поиск по имени..."
+                placeholder="Поиск по имени..."
                 value={studentSearch}
                 onChange={e => setStudentSearch(e.target.value)}
               />
               <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>
-                ⭐ Добавить одаренного ученика
+                <Icon name="star" size={16} /> Добавить одаренного ученика
               </button>
             </div>
             {!studentsLoaded ? (
@@ -135,7 +136,7 @@ export function TeacherGiftedSection({ token, userId, language, t, user }: {
                       <td className="muted">{s.classroom.name}</td>
                       <td style={{ fontFamily: "monospace", fontSize: 13 }}>{s.iin ?? "—"}</td>
                       <td className="muted">{s.parentName ?? "—"}</td>
-                      <td>{giftedStudentIds.has(s.id) && <span title="Одарённый">⭐</span>}</td>
+                      <td>{giftedStudentIds.has(s.id) && <span title="Одарённый"><Icon name="star" size={16} /> </span>}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -152,11 +153,11 @@ export function TeacherGiftedSection({ token, userId, language, t, user }: {
                   {giftedList.map((g, idx) => (
                     <tr key={g.id}>
                       <td style={{ color: "var(--muted)", width: 36 }}>{idx + 1}</td>
-                      <td className="table-name">⭐ {g.student?.fullName ?? "—"}</td>
+                      <td className="table-name"><Icon name="star" size={16} /> {g.student?.fullName ?? "—"}</td>
                       <td className="muted">{g.student?.classroom?.name ?? "—"}</td>
                       <td>
                         <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }}
-                          onClick={() => handleRemoveGifted(g.id)}>🗑</button>
+                          onClick={() => handleRemoveGifted(g.id)}><Icon name="trash" size={16} /> </button>
                       </td>
                     </tr>
                   ))}
@@ -173,7 +174,7 @@ export function TeacherGiftedSection({ token, userId, language, t, user }: {
             <h3 style={{ marginBottom: 12 }}>Добавить одаренного ученика</h3>
             <input
               className="input" style={{ marginBottom: 12 }}
-              placeholder="🔍 Поиск по имени..."
+              placeholder="Поиск по имени..."
               value={modalSearch}
               onChange={e => setModalSearch(e.target.value)}
               autoFocus
@@ -193,7 +194,7 @@ export function TeacherGiftedSection({ token, userId, language, t, user }: {
                         <td className="muted">{s.classroom.name}</td>
                         <td>
                           {giftedStudentIds.has(s.id) ? (
-                            <span style={{ color: "var(--muted)", fontSize: 12 }}>⭐ Уже добавлен</span>
+                            <span style={{ color: "var(--muted)", fontSize: 12 }}><Icon name="star" size={16} /> Уже добавлен</span>
                           ) : (
                             <button className="btn btn-primary btn-sm" disabled={addBusy}
                               onClick={() => handleAddGifted(s.id)}>

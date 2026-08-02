@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
+import { Icon } from "../ui/icon";
 
 type Lesson = {
   id: string; subject: string; classroomId?: string; cabinet?: string; lessonTime?: string;
@@ -159,7 +160,7 @@ export function LessonAnalysisForm({ token, language, lesson, classroomName, rea
     <div className="page">
       <div className="page-header">
         <button className="btn btn-ghost btn-sm" onClick={onClose}>← {t.back}</button>
-        <h1 className="page-title">📋 {t.lesson_analysis_title}</h1>
+        <h1 className="page-title"><Icon name="clipboard" size={16} /> {t.lesson_analysis_title}</h1>
         <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
           {!readOnly && (
             <>
@@ -172,7 +173,7 @@ export function LessonAnalysisForm({ token, language, lesson, classroomName, rea
             </>
           )}
           {analysis && !analysis.isDraft && (
-            <button className="btn btn-outline btn-sm" onClick={handlePdf}>📄 {t.exportPdf}</button>
+            <button className="btn btn-outline btn-sm" onClick={handlePdf}><Icon name="file" size={16} /> {t.exportPdf}</button>
           )}
         </div>
       </div>
@@ -250,7 +251,7 @@ export function LessonAnalysisForm({ token, language, lesson, classroomName, rea
                     {!readOnly && (
                       <td>
                         <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }}
-                          onClick={() => setSurveyRows((r) => r.filter((_, i) => i !== ri))}>✕</button>
+                          onClick={() => setSurveyRows((r) => r.filter((_, i) => i !== ri))}><Icon name="close" size={15} /> </button>
                       </td>
                     )}
                   </tr>
@@ -287,7 +288,7 @@ export function LessonAnalysisForm({ token, language, lesson, classroomName, rea
                     {!readOnly && (
                       <td>
                         <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }}
-                          onClick={() => setProgressRows((r) => r.filter((_, i) => i !== ri))}>✕</button>
+                          onClick={() => setProgressRows((r) => r.filter((_, i) => i !== ri))}><Icon name="close" size={15} /> </button>
                       </td>
                     )}
                   </tr>
@@ -350,7 +351,7 @@ export function LessonAnalysisForm({ token, language, lesson, classroomName, rea
             </>
           )}
           {analysis && !analysis.isDraft && (
-            <button className="btn btn-outline" onClick={handlePdf}>📄 {t.exportPdf}</button>
+            <button className="btn btn-outline" onClick={handlePdf}><Icon name="file" size={16} /> {t.exportPdf}</button>
           )}
           <button className="btn btn-ghost" onClick={onClose}>← {t.back}</button>
         </div>

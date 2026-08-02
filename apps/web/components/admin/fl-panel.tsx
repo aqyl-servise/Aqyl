@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { api } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
+import { Icon } from "../ui/icon";
 
 type Tab = "dashboard" | "analytics" | "reports";
 
@@ -30,7 +31,7 @@ export function FLAdminPanel({ token, language, userRole }: { token: string; lan
     math: t.fl_math ?? "Математическая грамотность",
     science: t.fl_science ?? "Естественнонаучная грамотность",
   };
-  const dirIcon: Record<string, string> = { reading: "📖", math: "🔢", science: "🔬" };
+  const dirIcon: Record<string, string> = { reading: "", math: "", science: "" };
 
   function exportCsv() {
     if (!analytics) return;
@@ -49,7 +50,7 @@ export function FLAdminPanel({ token, language, userRole }: { token: string; lan
 
   return (
     <div className="page">
-      <h1 className="page-title">📚 {t.fl_module ?? "Функциональная грамотность"}</h1>
+      <h1 className="page-title"><Icon name="books" size={16} /> {t.fl_module ?? "Функциональная грамотность"}</h1>
 
       <div className="sc-tabs">
         {(["dashboard", "analytics", "reports"] as Tab[]).map(k => {
@@ -79,7 +80,7 @@ export function FLAdminPanel({ token, language, userRole }: { token: string; lan
               <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
                 {(analytics.directionStats ?? []).map(ds => (
                   <div key={ds.direction} className="card" style={{ flex: "1 1 180px", textAlign: "center", padding: "16px 20px" }}>
-                    <div style={{ fontSize: 28 }}>{dirIcon[ds.direction] ?? "📊"}</div>
+                    <div style={{ fontSize: 28 }}>{dirIcon[ds.direction] ?? ""}</div>
                     <div style={{ fontSize: 22, fontWeight: 700, color: "var(--primary)", marginTop: 6 }}>{ds.avg}</div>
                     <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>{dirLabel[ds.direction] ?? ds.direction}</div>
                     <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>({ds.count} результатов)</div>
@@ -110,9 +111,9 @@ export function FLAdminPanel({ token, language, userRole }: { token: string; lan
                       <tr>
                         <th>#</th>
                         <th>Класс</th>
-                        <th>📖 Чтение</th>
-                        <th>🔢 Математика</th>
-                        <th>🔬 Наука</th>
+                        <th><Icon name="book" size={16} /> Чтение</th>
+                        <th><Icon name="hash" size={16} /> Математика</th>
+                        <th><Icon name="flask" size={16} /> Наука</th>
                         <th>Средний</th>
                       </tr>
                     </thead>
@@ -217,10 +218,10 @@ export function FLAdminPanel({ token, language, userRole }: { token: string; lan
           <h3 style={{ marginBottom: 16, fontSize: 15 }}>Экспорт данных</h3>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <button className="btn btn-primary" onClick={exportCsv}>
-              📊 {t.fl_export_excel ?? "Экспорт Excel"}
+              <Icon name="chart" size={16} /> {t.fl_export_excel ?? "Экспорт Excel"}
             </button>
             <button className="btn btn-outline" onClick={() => alert(t.fl_in_development ?? "В разработке")}>
-              📄 {t.fl_export_pdf ?? "Экспорт PDF"}
+              <Icon name="file" size={16} /> {t.fl_export_pdf ?? "Экспорт PDF"}
             </button>
           </div>
           <p style={{ marginTop: 12, fontSize: 13, color: "var(--muted)" }}>

@@ -2,6 +2,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { api, ClassroomItem, StudentRow } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
+import { Icon } from "../ui/icon";
 
 type TeacherOption = { id: string; fullName: string };
 type SubjectAssignment = { id: string; teacherId: string; subject: string; teacher: { id: string; fullName: string } };
@@ -108,7 +109,7 @@ export function ClassroomsPanel({ token, language, t, userRole }: {
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">🏫 {t.nav_classrooms}</h1>
+        <h1 className="page-title"><Icon name="school" size={16} /> {t.nav_classrooms}</h1>
         <button className="btn btn-primary btn-sm" onClick={() => { setAdding(true); setFormError(null); }}>
           + {t.createClassroom}
         </button>
@@ -152,26 +153,26 @@ export function ClassroomsPanel({ token, language, t, userRole }: {
                     <div style={{ display: "flex", gap: 4 }}>
                       <button className="btn btn-ghost btn-sm" title={t.editClassroom}
                         onClick={() => { setEditing(c); setFormError(null); }}>
-                        ✏️
+                        <Icon name="pencil" size={16} /> 
                       </button>
                       <button className="btn btn-ghost btn-sm" title={tFull.cr_subject_teachers ?? "Учителя-предметники"}
                         onClick={() => setSubjectClassroom(c)}>
-                        👩‍🏫
+                        <Icon name="user" size={16} /> ‍<Icon name="school" size={16} /> 
                       </button>
                       <button className="btn btn-ghost btn-sm" title="Список класса"
                         onClick={() => setClassListClassroom(c)}>
-                        📋
+                        <Icon name="clipboard" size={16} /> 
                       </button>
                       {c.studentCount > 0 && (
                         <button className="btn btn-ghost btn-sm" title={t.bulkTransfer}
                           onClick={() => { setBulkFrom(c); setBulkToId(""); }}>
-                          🔄
+                          <Icon name="refresh" size={16} /> 
                         </button>
                       )}
                       {canDelete && (
                         <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }}
                           title="Удалить" onClick={() => handleDelete(c.id)}>
-                          🗑
+                          <Icon name="trash" size={16} /> 
                         </button>
                       )}
                     </div>
@@ -281,7 +282,7 @@ function ClassroomForm({ teachers, t, onSubmit, onCancel, busy, error, defaults 
           ))}
         </select>
       </div>
-      {error && <div className="alert alert-error"><span>⚠</span> {error}</div>}
+      {error && <div className="alert alert-error"><span><Icon name="warning" size={16} /> </span> {error}</div>}
       <div className="form-row">
         <button className="btn btn-primary" type="submit" disabled={busy}>
           {busy ? <span className="spinner" /> : t.save}
@@ -414,7 +415,7 @@ function SubjectTeachersModal({ token, classroom, allTeachers, t, onClose }: {
                   <td>{a.teacher.fullName}</td>
                   <td>{a.subject}</td>
                   <td>
-                    <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }} onClick={() => handleRemove(a.id)}>🗑</button>
+                    <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }} onClick={() => handleRemove(a.id)}><Icon name="trash" size={16} /> </button>
                   </td>
                 </tr>
               ))}
@@ -435,7 +436,7 @@ function SubjectTeachersModal({ token, classroom, allTeachers, t, onClose }: {
               <input className="input" placeholder={t.cr_assign_subject ?? "Предмет"} value={subject} onChange={e => setSubject(e.target.value)} required />
             </div>
           </div>
-          {error && <div className="alert alert-error">⚠ {error}</div>}
+          {error && <div className="alert alert-error"><Icon name="warning" size={16} /> {error}</div>}
           <div className="form-row">
             <button className="btn btn-primary btn-sm" type="submit" disabled={saving}>{saving ? <span className="spinner" /> : t.add}</button>
             <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>{t.close}</button>

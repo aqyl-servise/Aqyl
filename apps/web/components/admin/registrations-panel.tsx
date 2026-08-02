@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import { Language } from "../../lib/translations";
+import { Icon } from "../ui/icon";
 
 type PendingUser = {
   id: string;
@@ -74,7 +75,7 @@ export function RegistrationsPanel({ token, language, t }: {
     <div className="page">
       <div className="page-header">
         <h1 className="page-title">
-          📬 {t.pendingRegistrations}
+          <Icon name="inbox" size={16} /> {t.pendingRegistrations}
           {pendingCount > 0 && (
             <span style={{ marginLeft: 8, background: "var(--danger)", color: "#fff", borderRadius: 12, padding: "2px 10px", fontSize: 13 }}>
               {pendingCount}
@@ -145,7 +146,7 @@ export function RegistrationsPanel({ token, language, t }: {
                             disabled={busy === u.id}
                             onClick={() => handleApprove(u.id, u.role)}
                           >
-                            {busy === u.id ? <span className="spinner" /> : "✓ " + t.approve}
+                            {busy === u.id ? <span className="spinner" /> : "" + t.approve}
                           </button>
                           <button
                             className="btn btn-ghost btn-sm"
@@ -153,7 +154,7 @@ export function RegistrationsPanel({ token, language, t }: {
                             disabled={busy === u.id}
                             onClick={() => handleReject(u.id)}
                           >
-                            ✕ {t.reject}
+                            <Icon name="close" size={15} /> {t.reject}
                           </button>
                         </div>
                       </div>

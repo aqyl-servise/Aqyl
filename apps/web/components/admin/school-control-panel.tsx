@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { api } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 import { FileManager } from "../ui/file-manager";
+import { Icon } from "../ui/icon";
 
 const PED_COUNCIL_FOLDERS = [
   "Педкеңес №1 (2025-2026)",
@@ -97,7 +98,7 @@ export function SchoolControlPanel({ token, language, userRole }: Props) {
 
   return (
     <div className="page">
-      <h1 className="page-title">📋 {t.nav_protocols}</h1>
+      <h1 className="page-title"><Icon name="clipboard" size={16} /> {t.nav_protocols}</h1>
 
       {/* Tab bar */}
       <div className="sc-tabs">
@@ -165,7 +166,7 @@ export function SchoolControlPanel({ token, language, userRole }: Props) {
                 ← {t.sc_tab_young}
               </button>
               <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>
-                📁 {selectedTeacher.fullName}
+                <Icon name="folder" size={16} /> {selectedTeacher.fullName}
               </h2>
               <FileManager
                 token={token}
@@ -219,7 +220,7 @@ export function SchoolControlPanel({ token, language, userRole }: Props) {
                               className="btn btn-outline btn-sm"
                               onClick={() => setSelectedTeacher(teacher)}
                             >
-                              📁 {t.sc_documents_btn}
+                              <Icon name="folder" size={16} /> {t.sc_documents_btn}
                             </button>
                           </td>
                         </tr>

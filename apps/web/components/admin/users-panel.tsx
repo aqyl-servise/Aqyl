@@ -3,6 +3,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { api, AuthUser, ClassroomOption, UserRole } from "../../lib/api";
 import { Language } from "../../lib/translations";
 import { PasswordInput } from "../ui/password-input";
+import { Icon } from "../ui/icon";
 
 const ALL_ROLES: UserRole[] = [
   "teacher", "class_teacher", "admin", "principal",
@@ -161,16 +162,16 @@ export function UsersPanel({ token, language, t, currentUserId }: {
           borderRadius: 10, fontWeight: 600, fontSize: 14,
           boxShadow: "0 4px 16px rgba(0,0,0,.18)", display: "flex", alignItems: "center", gap: 8,
         }}>
-          ✓ {toast}
+          <Icon name="check" size={15} /> {toast}
         </div>
       )}
       <div className="page-header">
-        <h1 className="page-title">👥 {t.nav_users}</h1>
+        <h1 className="page-title"><Icon name="users" size={16} /> {t.nav_users}</h1>
         <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ {t.add}</button>
       </div>
 
       <div className="filter-row">
-        <input className="input" style={{ maxWidth: 260 }} placeholder={`🔍 ${t.search}...`}
+        <input className="input" style={{ maxWidth: 260 }} placeholder={`${t.search}...`}
           value={search} onChange={(e) => setSearch(e.target.value)} />
         <select className="input" style={{ minWidth: 200 }} value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
           <option value="all">{t.all}</option>
@@ -244,7 +245,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
               </>
             ) : (
               <>
-                <h3 style={{ marginBottom: 12, color: "#991b1b" }}>🗑 {t.users_delete_title}</h3>
+                <h3 style={{ marginBottom: 12, color: "#991b1b" }}><Icon name="trash" size={16} /> {t.users_delete_title}</h3>
                 <p style={{ color: "#64748b", marginBottom: 20, lineHeight: 1.5 }}>
                   {t.users_delete_body}<br />
                   <strong>{confirmModal.user.fullName}</strong>
@@ -325,7 +326,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
                           onClick={() => setPasswordTarget(u)}
                           title={t.users_change_password}
                         >
-                          🔑
+                          <Icon name="key" size={16} /> 
                         </button>
                       )}
                       {!isSelf(u) && (
@@ -358,7 +359,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
                             onClick={() => setConfirmModal({ kind: "delete", user: u })}
                             title={t.teacher_delete}
                           >
-                            🗑
+                            <Icon name="trash" size={16} /> 
                           </button>
                         </>
                       )}
@@ -492,7 +493,7 @@ function PasswordModal({ user, token, t, onClose, onSuccess }: {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" style={{ maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ marginBottom: 4 }}>🔑 {t.users_password_title}</h3>
+        <h3 style={{ marginBottom: 4 }}><Icon name="key" size={16} /> {t.users_password_title}</h3>
         <p style={{ color: "#64748b", fontSize: 13, marginBottom: 20 }}>{user.fullName}</p>
         <form onSubmit={handleSubmit} className="form-stack">
           <div className="field">

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import { Language } from "../../lib/translations";
 import { FileManager } from "../ui/file-manager";
+import { Icon } from "../ui/icon";
 
 type Teacher = Awaited<ReturnType<typeof api.getAdminTeachers>>[number];
 
@@ -32,8 +33,8 @@ export function TeacherListPanel({ token, language, t }: { token: string; langua
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">👨‍🏫 {t.nav_teachers}</h1>
-        <input className="input" style={{ maxWidth: 260 }} placeholder={`🔍 ${t.search}...`} value={search} onChange={(e) => setSearch(e.target.value)} />
+        <h1 className="page-title"><Icon name="user" size={16} /> ‍<Icon name="school" size={16} /> {t.nav_teachers}</h1>
+        <input className="input" style={{ maxWidth: 260 }} placeholder={`${t.search}...`} value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
       <div className="card">
         {filtered.length === 0 ? <p className="empty-state">{t.noData}</p> : (
@@ -104,15 +105,15 @@ function TeacherProfileModal({ teacher, token, t, onClose }: {
             <h2 style={{ margin: "0 0 4px" }}>{teacher.fullName}</h2>
             <p className="muted" style={{ fontSize: 13, margin: 0 }}>{teacher.email}</p>
           </div>
-          <button className="btn btn-ghost btn-sm" onClick={onClose}>✕</button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose}><Icon name="close" size={15} /> </button>
         </div>
 
         <div className="sc-tabs" style={{ marginBottom: 0 }}>
           <button className={`sc-tab${tab === "info" ? " sc-tab-active" : ""}`} onClick={() => setTab("info")}>
-            👤 {t.tab_info}
+            <Icon name="user" size={16} /> {t.tab_info}
           </button>
           <button className={`sc-tab${tab === "docs" ? " sc-tab-active" : ""}`} onClick={() => setTab("docs")}>
-            📂 {t.documents}
+            <Icon name="folder-open" size={16} /> {t.documents}
           </button>
         </div>
 

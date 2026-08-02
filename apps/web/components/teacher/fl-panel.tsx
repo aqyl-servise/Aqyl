@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { api, FLTask, FLAssignment, FLSubmission } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
+import { Icon } from "../ui/icon";
 
 type Tab = "bank" | "works" | "analytics";
 
@@ -30,9 +31,9 @@ const FORMATS = [
 
 function dirBadge(dir?: string) {
   const map: Record<string, { label: string; color: string }> = {
-    reading: { label: "📖 Чтение", color: "#8B7FE8" },
-    math: { label: "🔢 Математика", color: "#3B2E7E" },
-    science: { label: "🔬 Наука", color: "#3FBF8F" },
+    reading: { label: "Чтение", color: "#8B7FE8" },
+    math: { label: "Математика", color: "#3B2E7E" },
+    science: { label: "Наука", color: "#3FBF8F" },
   };
   const d = dir ? map[dir] : null;
   if (!d) return null;
@@ -141,7 +142,7 @@ function AddTaskModal({ token, onClose, onSaved, initialData }: {
                 <div key={i} style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
                   <input type="radio" checked={opt.isCorrect} onChange={() => setOption(i, "isCorrect", true)} title="Правильный" />
                   <input className="input" style={{ flex: 1 }} placeholder={`Вариант ${i + 1}`} value={opt.text} onChange={e => setOption(i, "text", e.target.value)} />
-                  <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }} onClick={() => removeOption(i)}>✕</button>
+                  <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }} onClick={() => removeOption(i)}><Icon name="close" size={15} /> </button>
                 </div>
               ))}
             </div>
@@ -181,7 +182,7 @@ function AiGenerateModal({ token, onClose, onGenerated }: {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" style={{ maxWidth: 560, maxHeight: "90vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
-        <h3 style={{ marginBottom: 16 }}>🤖 Сгенерировать задание с ИИ</h3>
+        <h3 style={{ marginBottom: 16 }}><Icon name="ai" size={16} /> Сгенерировать задание с ИИ</h3>
         {!result ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <input className="input" placeholder="Тема *" value={form.topic} onChange={e => set("topic", e.target.value)} />
@@ -201,7 +202,7 @@ function AiGenerateModal({ token, onClose, onGenerated }: {
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
               <button className="btn btn-ghost" onClick={onClose}>Отмена</button>
               <button className="btn btn-primary" disabled={loading || !form.topic.trim()} onClick={generate}>
-                {loading ? "Генерирую..." : "🤖 Сгенерировать"}
+                {loading ? "Генерирую..." : "Сгенерировать"}
               </button>
             </div>
           </div>
@@ -214,13 +215,13 @@ function AiGenerateModal({ token, onClose, onGenerated }: {
                 <div style={{ marginTop: 8 }}>
                   {result.options.map((o, i) => (
                     <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4 }}>
-                      <span style={{ color: o.isCorrect ? "#10b981" : "var(--muted)", fontWeight: o.isCorrect ? 700 : 400 }}>{o.isCorrect ? "✓" : "○"}</span>
+                      <span style={{ color: o.isCorrect ? "#10b981" : "var(--muted)", fontWeight: o.isCorrect ? 700 : 400 }}>{o.isCorrect ? "" : "○"}</span>
                       <span style={{ fontSize: 13 }}>{o.text}</span>
                     </div>
                   ))}
                 </div>
               )}
-              {result.correctAnswer && <div style={{ marginTop: 8, fontSize: 13, color: "#10b981" }}>✓ {result.correctAnswer}</div>}
+              {result.correctAnswer && <div style={{ marginTop: 8, fontSize: 13, color: "#10b981" }}><Icon name="check" size={15} /> {result.correctAnswer}</div>}
             </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button className="btn btn-ghost" onClick={() => setResult(null)}>Изменить параметры</button>
@@ -295,7 +296,7 @@ function CreateAssignmentModal({ token, tasks, onClose, onSaved }: {
           <div style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
               <span style={{ fontWeight: 500, fontSize: 13 }}>Выбрать задания ({selectedTaskIds.length})</span>
-              <input className="input" style={{ flex: 1, maxWidth: 220 }} placeholder="🔍 Поиск..." value={taskSearch} onChange={e => setTaskSearch(e.target.value)} />
+              <input className="input" style={{ flex: 1, maxWidth: 220 }} placeholder="Поиск..." value={taskSearch} onChange={e => setTaskSearch(e.target.value)} />
             </div>
             <div style={{ maxHeight: 200, overflowY: "auto" }}>
               {filteredTasks.length === 0 ? <p className="fm-empty" style={{ padding: 8 }}>Нет заданий</p> : filteredTasks.map(t => (
@@ -465,7 +466,7 @@ export function FLTeacherPanel({ token, language }: { token: string; language: L
 
   return (
     <div className="page">
-      <h1 className="page-title">📚 {t.fl_module ?? "Функциональная грамотность"}</h1>
+      <h1 className="page-title"><Icon name="books" size={16} /> {t.fl_module ?? "Функциональная грамотность"}</h1>
 
       <div className="sc-tabs">
         {([
@@ -491,9 +492,9 @@ export function FLTeacherPanel({ token, language }: { token: string; language: L
               {DIFFICULTIES.map(d => <option key={d.value} value={d.value}>{d.label || "Сложность"}</option>)}
             </select>
             <input className="input" style={{ width: 80 }} type="number" placeholder="Класс" min={1} max={11} value={gradeFilter} onChange={e => setGradeFilter(e.target.value)} />
-            <input className="input" style={{ flex: 1, minWidth: 160 }} placeholder="🔍 Поиск по названию..." value={search} onChange={e => setSearch(e.target.value)} />
+            <input className="input" style={{ flex: 1, minWidth: 160 }} placeholder="Поиск по названию..." value={search} onChange={e => setSearch(e.target.value)} />
             <button className="btn btn-primary btn-sm" onClick={() => { setAiInitialData(undefined); setShowAddTask(true); }}>+ {t.fl_create_task ?? "Добавить"}</button>
-            <button className="btn btn-outline btn-sm" onClick={() => setShowAiModal(true)}>🤖 {t.fl_generate_ai ?? "ИИ"}</button>
+            <button className="btn btn-outline btn-sm" onClick={() => setShowAiModal(true)}><Icon name="ai" size={16} /> {t.fl_generate_ai ?? "ИИ"}</button>
           </div>
 
           {/* Task cards */}
@@ -514,7 +515,7 @@ export function FLTeacherPanel({ token, language }: { token: string; language: L
                   <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{task.title}</div>
                   <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{task.description}</div>
                   <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                    <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }} onClick={() => handleDeleteTask(task.id)}>🗑</button>
+                    <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }} onClick={() => handleDeleteTask(task.id)}><Icon name="trash" size={16} /> </button>
                   </div>
                 </div>
               ))}
@@ -644,9 +645,9 @@ export function FLTeacherPanel({ token, language }: { token: string; language: L
                   <tr>
                     <th>#</th>
                     <th>Ученик</th>
-                    <th>📖 Чтение</th>
-                    <th>🔢 Математика</th>
-                    <th>🔬 Наука</th>
+                    <th><Icon name="book" size={16} /> Чтение</th>
+                    <th><Icon name="hash" size={16} /> Математика</th>
+                    <th><Icon name="flask" size={16} /> Наука</th>
                     <th>Работ сдано</th>
                   </tr>
                 </thead>

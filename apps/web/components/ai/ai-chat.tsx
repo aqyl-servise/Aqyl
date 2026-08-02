@@ -2,6 +2,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { api } from "../../lib/api";
 import { useAiUsage } from "../../contexts/ai-usage-context";
+import { Icon } from "../ui/icon";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -99,7 +100,7 @@ export function AiChat({ token, currentSection, open, onClose, language = "ru" }
     } catch (err: unknown) {
       const status = (err as { status?: number })?.status;
       if (status === 429) {
-        setMessages((prev) => [...prev, { role: "assistant", content: "🚫 Дневной лимит AI-запросов исчерпан (20/20). Обновится в полночь." }]);
+        setMessages((prev) => [...prev, { role: "assistant", content: "Дневной лимит AI-запросов исчерпан (20/20). Обновится в полночь." }]);
       } else {
         setMessages((prev) => [...prev, { role: "assistant", content: "Произошла ошибка. Попробуйте ещё раз." }]);
       }
@@ -121,9 +122,9 @@ export function AiChat({ token, currentSection, open, onClose, language = "ru" }
       {/* Header */}
       <div className="ai-panel-header">
         <span style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 15 }}>
-          <span style={{ fontSize: 18 }}>✦</span> Aqyl AI
+          <span style={{ fontSize: 18 }}><Icon name="sparkles" size={15} /> </span> Aqyl AI
         </span>
-        <button className="ai-close-btn" onClick={onClose} aria-label="Закрыть">✕</button>
+        <button className="ai-close-btn" onClick={onClose} aria-label="Закрыть"><Icon name="close" size={15} /> </button>
       </div>
 
       {/* Messages */}
@@ -181,7 +182,7 @@ export function AiChatButton({ open, onClick }: { open: boolean; onClick: () => 
       aria-label="ИИ Помощник"
       title="ИИ Помощник"
     >
-      <span className="ai-fab-icon">✦</span>
+      <span className="ai-fab-icon"><Icon name="sparkles" size={15} /> </span>
       <span className="ai-fab-label">ИИ Помощник</span>
     </button>
   );

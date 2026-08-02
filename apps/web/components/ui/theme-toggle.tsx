@@ -2,9 +2,9 @@
 import { useTheme, type Theme } from "../../hooks/use-theme";
 
 const OPTIONS: { value: Theme; icon: string; label: string }[] = [
-  { value: "light",  icon: "☀️", label: "Светлая" },
-  { value: "dark",   icon: "🌙", label: "Тёмная" },
-  { value: "system", icon: "💻", label: "Системная" },
+  { value: "light",  icon: "", label: "Светлая" },
+  { value: "dark",   icon: "", label: "Тёмная" },
+  { value: "system", icon: "", label: "Системная" },
 ];
 
 export function ThemeToggle() {

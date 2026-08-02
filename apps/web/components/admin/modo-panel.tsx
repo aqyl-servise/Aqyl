@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { api, StudentRow } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 import { FileManager } from "../ui/file-manager";
+import { Icon } from "../ui/icon";
 
 type ModoTab = "order" | "action-plan" | "monitoring" | "student-info";
 type MonSub = "teacher-works" | "corrections" | "diagrams";
@@ -50,10 +51,10 @@ function TeacherModoFilesView({ token, teacher, labels, canEdit }: {
     <div>
       <div className="sc-tabs" style={{ marginBottom: 12 }}>
         <button className={`sc-tab${fileTab === "materials" ? " sc-tab-active" : ""}`} onClick={() => setFileTab("materials")}>
-          📁 Материалы
+          <Icon name="folder" size={16} /> Материалы
         </button>
         <button className={`sc-tab${fileTab === "corrections-teacher" ? " sc-tab-active" : ""}`} onClick={() => setFileTab("corrections-teacher")}>
-          📝 Работы над ошибками
+          <Icon name="pencil" size={16} /> Работы над ошибками
         </button>
       </div>
       {fileTab === "materials" && (
@@ -151,7 +152,7 @@ export function ModoPanel({ token, language, userRole }: Props) {
 
   return (
     <div className="page">
-      <h1 className="page-title">📑 {t.nav_bbjm}</h1>
+      <h1 className="page-title"><Icon name="layers" size={16} /> {t.nav_bbjm}</h1>
 
       {/* Main tab bar */}
       <div className="sc-tabs">
@@ -210,7 +211,7 @@ export function ModoPanel({ token, language, userRole }: Props) {
                     ← {t.modo_teacher_works}
                   </button>
                   <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>
-                    📁 {selectedTeacher.fullName}
+                    <Icon name="folder" size={16} /> {selectedTeacher.fullName}
                   </h2>
                   <TeacherModoFilesView
                     token={token}
@@ -268,7 +269,7 @@ export function ModoPanel({ token, language, userRole }: Props) {
                                 className="btn btn-outline btn-sm"
                                 onClick={() => setSelectedTeacher(teacher)}
                               >
-                                📁 {t.modo_teacher_files_btn}
+                                <Icon name="folder" size={16} /> {t.modo_teacher_files_btn}
                               </button>
                             </td>
                           </tr>

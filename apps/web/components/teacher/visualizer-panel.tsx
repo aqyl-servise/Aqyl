@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { api, type DiagramRecord } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 import { jsonToMermaid, type DiagramContract } from "../../lib/json-to-mermaid";
+import { Icon } from "../ui/icon";
 
 // ─── Diagram type metadata (icon + i18n label key) ─────────────────────────────
 
@@ -424,7 +425,7 @@ export function VisualizerPanel({
   return (
     <div className="page" style={{ padding: "16px 12px" }}>
       <h1 className="page-title" style={{ marginBottom: 16 }}>
-        🗺️ {t.visualizer_title}
+        <Icon name="map" size={16} /> {t.visualizer_title}
       </h1>
 
       {/* ── Tabs ──────────────────────────────────────────────── */}
@@ -568,7 +569,7 @@ export function VisualizerPanel({
           <div className={`card theme-${theme}`} style={{ padding: 16, minHeight: 360, display: "flex", alignItems: "center", justifyContent: "center" }}>
             {!diagramContract && !isGenerating && (
               <div style={{ textAlign: "center", color: "var(--muted)" }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>🗺️</div>
+                <div style={{ fontSize: 40, marginBottom: 12 }}><Icon name="map" size={40} strokeWidth={1.3} /> </div>
                 <p>{t.visualizer_preview_placeholder}</p>
               </div>
             )}
@@ -582,7 +583,7 @@ export function VisualizerPanel({
 
             {diagramContract && !isGenerating && renderError && (
               <div style={{ textAlign: "center", color: "#b91c1c" }}>
-                <div style={{ fontSize: 32, marginBottom: 10 }}>⚠️</div>
+                <div style={{ fontSize: 32, marginBottom: 10 }}><Icon name="warning" size={32} strokeWidth={1.3} /> </div>
                 <p style={{ fontWeight: 600 }}>{t.visualizer_render_error}</p>
                 <p style={{ fontSize: 12, marginTop: 6, color: "var(--muted)" }}>{renderError}</p>
               </div>
@@ -603,7 +604,7 @@ export function VisualizerPanel({
         <div style={{ flex: "0 0 280px", minWidth: 240 }}>
           {!diagramContract ? (
             <div className="card" style={{ padding: 16, textAlign: "center", color: "var(--muted)" }}>
-              <div style={{ fontSize: 28, marginBottom: 10 }}>✏️</div>
+              <div style={{ fontSize: 28, marginBottom: 10 }}><Icon name="pencil" size={28} strokeWidth={1.3} /> </div>
               <p style={{ fontSize: 13 }}>{t.visualizer_preview_placeholder}</p>
             </div>
           ) : (
@@ -701,7 +702,7 @@ export function VisualizerPanel({
                     textAlign: "center",
                   }}
                 >
-                  ✓ {t.visualizer_saved_toast}
+                  <Icon name="check" size={15} /> {t.visualizer_saved_toast}
                 </div>
               )}
 
@@ -763,7 +764,7 @@ export function VisualizerPanel({
 
           {!isLoadingDiagrams && diagrams && diagrams.length === 0 && (
             <div className="card" style={{ padding: 32, textAlign: "center", color: "var(--muted)" }}>
-              <div style={{ fontSize: 36, marginBottom: 12 }}>🗂️</div>
+              <div style={{ fontSize: 36, marginBottom: 12 }}><Icon name="files" size={36} strokeWidth={1.3} /> </div>
               <p>{t.visualizer_history_empty}</p>
             </div>
           )}

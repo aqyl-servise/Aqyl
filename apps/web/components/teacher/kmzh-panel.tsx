@@ -18,6 +18,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { api } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 import type { AuthUser } from "../../lib/api";
+import { Icon } from "../ui/icon";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -281,7 +282,7 @@ export function KmzhPanel({
         grade: form.grade,
         date: form.date,
       });
-      setSaveMsg("✓ " + t.success_saved);
+      setSaveMsg("" + t.success_saved);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -316,7 +317,7 @@ export function KmzhPanel({
   return (
     <div className="page" style={{ padding: "16px 12px" }}>
       <h1 className="page-title" style={{ marginBottom: 16 }}>
-        📋 {t.nav_kmzh ?? "КМЖ Генератор"}
+        <Icon name="clipboard" size={16} /> {t.nav_kmzh ?? "КМЖ Генератор"}
       </h1>
 
       <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
@@ -411,7 +412,7 @@ export function KmzhPanel({
         <div style={{ flex: 1, minWidth: 0 }}>
           {!result && !loading && (
             <div className="card" style={{ padding: 32, textAlign: "center", color: "var(--muted)" }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
+              <div style={{ fontSize: 40, marginBottom: 12 }}><Icon name="clipboard" size={40} strokeWidth={1.3} /> </div>
               <p>{t.kmzh_form_hint}</p>
             </div>
           )}
@@ -429,7 +430,7 @@ export function KmzhPanel({
               <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
                 {result.meta.fromCache && (
                   <span style={{ padding: "4px 10px", background: "#dcfce7", color: "#15803d", borderRadius: 12, fontSize: 12, fontWeight: 600 }}>
-                    ⚡ {t.kmzh_from_cache ?? "Из кэша — мгновенно"}
+                    <Icon name="bolt" size={16} /> {t.kmzh_from_cache ?? "Из кэша — мгновенно"}
                   </span>
                 )}
 
@@ -439,7 +440,7 @@ export function KmzhPanel({
                   disabled={!canRegen || loading}
                   title={!canRegen ? (t.kmzh_regen_limit ?? "Лимит исчерпан") : undefined}
                 >
-                  🔄 {t.kmzh_regenerate ?? "Перегенерировать"}
+                  <Icon name="refresh" size={16} /> {t.kmzh_regenerate ?? "Перегенерировать"}
                   {" "}
                   <span style={{ fontSize: 11, fontWeight: 700, color: !canRegen ? "var(--danger, #ef4444)" : undefined }}>
                     {regenCount}/{maxRegen}{!canRegen ? ` — ${t.kmzh_regen_limit ?? "лимит"}` : ""}
@@ -447,15 +448,15 @@ export function KmzhPanel({
                 </button>
 
                 <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                  💾 {t.kmzh_save ?? "Сохранить план"}
+                  <Icon name="save" size={16} /> {t.kmzh_save ?? "Сохранить план"}
                 </button>
 
                 <button className="btn btn-outline" disabled title="В разработке">
-                  📄 {t.kmzh_download_word ?? "Скачать Word"}
+                  <Icon name="file" size={16} /> {t.kmzh_download_word ?? "Скачать Word"}
                 </button>
 
                 <button className="btn btn-outline" disabled title="В разработке">
-                  📑 {t.kmzh_download_pdf ?? "Скачать PDF"}
+                  <Icon name="layers" size={16} /> {t.kmzh_download_pdf ?? "Скачать PDF"}
                 </button>
 
                 {saveMsg && (

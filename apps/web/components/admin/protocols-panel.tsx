@@ -2,6 +2,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import { Language } from "../../lib/translations";
+import { Icon } from "../ui/icon";
 
 type Protocol = Awaited<ReturnType<typeof api.getProtocols>>[number];
 
@@ -45,7 +46,7 @@ export function ProtocolsPanel({ token, language, t }: { token: string; language
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">📋 {t.nav_protocols}</h1>
+        <h1 className="page-title"><Icon name="clipboard" size={16} /> {t.nav_protocols}</h1>
         <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ Создать</button>
       </div>
 

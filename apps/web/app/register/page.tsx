@@ -157,7 +157,7 @@ export default function RegisterPage() {
                 return (
                   <div key={label} style={{ display: "contents" }}>
                     <div className={`pub-step ${cls}`}>
-                      <span className="pub-step-dot">{step > n ? "✓" : n}</span>
+                      <span className="pub-step-dot">{step > n ? "" : n}</span>
                       <span className="pub-step-label">{label}</span>
                     </div>
                     {n < STEPS.length && <span className="pub-step-line" />}

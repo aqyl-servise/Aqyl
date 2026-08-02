@@ -2,6 +2,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { api, API_URL, AssignmentWithSubmission } from "../../lib/api";
 import { handleError } from "../../lib/handle-error";
+import { Icon } from "../ui/icon";
 
 type Filter = "all" | "new" | "submitted" | "graded";
 
@@ -102,7 +103,7 @@ export function StudentAssignmentsPanel({ token, t }: { token: string; t: Record
   }
 
   if (loading) return <p className="muted">{t.loading}</p>;
-  if (error) return <div className="alert alert-error"><span>⚠</span> {error}</div>;
+  if (error) return <div className="alert alert-error"><span><Icon name="warning" size={16} /> </span> {error}</div>;
 
   const filterBtns: { key: Filter; label: string }[] = [
     { key: "all", label: t.filter_all },
@@ -114,12 +115,12 @@ export function StudentAssignmentsPanel({ token, t }: { token: string; t: Record
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">📝 {t.nav_student_assignments}</h1>
+        <h1 className="page-title"><Icon name="pencil" size={16} /> {t.nav_student_assignments}</h1>
       </div>
 
       {successMsg && (
         <div className="alert" style={{ background: "var(--success-light, #d4edda)", color: "var(--success, #155724)", marginBottom: 16 }}>
-          ✅ {successMsg}
+          <Icon name="check-circle" size={16} /> {successMsg}
         </div>
       )}
 
@@ -162,15 +163,15 @@ export function StudentAssignmentsPanel({ token, t }: { token: string; t: Record
                   <div style={{ flex: 1 }}>
                     <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{a.title}</h3>
                     <div className="muted" style={{ fontSize: 12, marginTop: 4, display: "flex", gap: 12, flexWrap: "wrap" }}>
-                      <span>📚 {a.subject}</span>
-                      {a.teacher && <span>👤 {a.teacher.fullName}</span>}
+                      <span><Icon name="books" size={16} /> {a.subject}</span>
+                      {a.teacher && <span><Icon name="user" size={16} /> {a.teacher.fullName}</span>}
                       {a.dueDate && (
                         <span style={{ color: overdue ? "var(--danger)" : undefined }}>
                           ⏰ {t.deadline}: {new Date(a.dueDate).toLocaleDateString("ru-RU")}
                           {overdue && " (!"}
                         </span>
                       )}
-                      <span>🏆 {t.maxScore}: {a.maxScore}</span>
+                      <span><Icon name="trophy" size={16} /> {t.maxScore}: {a.maxScore}</span>
                     </div>
                     {a.description && (
                       <p style={{ marginTop: 8, fontSize: 13, color: "var(--text-secondary, #555)" }}>
@@ -199,7 +200,7 @@ export function StudentAssignmentsPanel({ token, t }: { token: string; t: Record
                         className="btn btn-ghost btn-sm"
                         onClick={() => { setSubmitting(a); setSuccessMsg(null); }}
                       >
-                        ✏️ Изменить
+                        <Icon name="pencil" size={16} /> Изменить
                       </button>
                     )}
                   </div>
@@ -212,7 +213,7 @@ export function StudentAssignmentsPanel({ token, t }: { token: string; t: Record
                 )}
                 {a.submission?.fileUrl && (
                   <div style={{ marginTop: 6, fontSize: 13 }}>
-                    📎 <button className="btn btn-ghost btn-sm" onClick={() => openSubmittedFile(a.submission!.fileUrl!, token)}>Прикреплённый файл</button>
+                    <Icon name="paperclip" size={16} /> <button className="btn btn-ghost btn-sm" onClick={() => openSubmittedFile(a.submission!.fileUrl!, token)}>Прикреплённый файл</button>
                   </div>
                 )}
               </div>

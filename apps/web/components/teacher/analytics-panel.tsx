@@ -2,6 +2,7 @@
 import { FormEvent, useState } from "react";
 import { api } from "../../lib/api";
 import { Language } from "../../lib/translations";
+import { Icon } from "../ui/icon";
 
 export function AnalyticsPanel({ token, language, t }: { token: string; language: Language; t: Record<string, string> }) {
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
@@ -25,18 +26,18 @@ export function AnalyticsPanel({ token, language, t }: { token: string; language
 
   return (
     <div className="page">
-      <h1 className="page-title">📊 {t.analytics}</h1>
+      <h1 className="page-title"><Icon name="chart" size={16} /> {t.analytics}</h1>
       <div className="main-grid">
         <div className="card">
           <h3 className="card-title">Загрузка данных</h3>
           <form onSubmit={handleUpload} className="form-stack">
             <div className="file-drop-zone">
-              <span>📁</span>
+              <span><Icon name="folder" size={16} /> </span>
               <p>Excel / CSV файл с данными успеваемости</p>
               <input name="file" type="file" accept=".xlsx,.xls,.csv" required className="input file-input" />
             </div>
             <p className="hint">{t.analyticsHint}</p>
-            {error && <div className="alert alert-error">⚠ {error}</div>}
+            {error && <div className="alert alert-error"><Icon name="warning" size={16} /> {error}</div>}
             <button className="btn btn-primary" disabled={busy}>
               {busy ? <><span className="spinner" /> Анализирую...</> : "↑ Загрузить и анализировать"}
             </button>

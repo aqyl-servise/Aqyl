@@ -2,6 +2,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import { Language } from "../../lib/translations";
+import { Icon } from "../ui/icon";
 
 type StudentRow = {
   id: string;
@@ -173,14 +174,14 @@ export function StudentsPanel({ token, language, t, userRole }: {
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">👩‍🎓 {t.nav_students}</h1>
+        <h1 className="page-title"><Icon name="user" size={16} /> ‍<Icon name="graduation" size={16} /> {t.nav_students}</h1>
         <button className="btn btn-primary btn-sm" onClick={() => { setAdding(true); setFormError(null); }}>
           + {t.addStudentTitle}
         </button>
       </div>
 
       <div className="filter-row">
-        <input className="input" style={{ maxWidth: 260 }} placeholder={`🔍 ${t.search}...`}
+        <input className="input" style={{ maxWidth: 260 }} placeholder={`${t.search}...`}
           value={search} onChange={(e) => setSearch(e.target.value)} />
         {isTeacher ? (
           <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
@@ -372,11 +373,11 @@ export function StudentsPanel({ token, language, t, userRole }: {
                   <td>
                     <div style={{ display: "flex", gap: 4 }}>
                       <button className="btn btn-ghost btn-sm" onClick={() => { setEditing(s); setFormError(null); }}>
-                        ✏️
+                        <Icon name="pencil" size={16} /> 
                       </button>
                       <button className="btn btn-ghost btn-sm" title={t.transferStudent}
                         onClick={() => { setTransferring(s); setTransferClassroomId(""); setTransferNote(""); }}>
-                        🔄
+                        <Icon name="refresh" size={16} /> 
                       </button>
                       <button
                         className="btn btn-ghost btn-sm"
@@ -384,12 +385,12 @@ export function StudentsPanel({ token, language, t, userRole }: {
                         style={{ color: s.userId ? "var(--success, #28a745)" : undefined }}
                         onClick={() => { setLinking(s); setLinkUserId(s.userId ?? ""); }}
                       >
-                        🔗
+                        <Icon name="link" size={16} /> 
                       </button>
                       {canDelete && (
                         <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)" }}
                           onClick={() => handleDelete(s.id)}>
-                          🗑
+                          <Icon name="trash" size={16} /> 
                         </button>
                       )}
                     </div>
@@ -486,7 +487,7 @@ function StudentForm({ classrooms, classTeachers, t, onSubmit, onCancel, busy, e
         </div>
       </div>
 
-      {error && <div className="alert alert-error"><span>⚠</span> {error}</div>}
+      {error && <div className="alert alert-error"><span><Icon name="warning" size={16} /> </span> {error}</div>}
 
       <div className="form-row">
         <button className="btn btn-primary" type="submit" disabled={busy}>

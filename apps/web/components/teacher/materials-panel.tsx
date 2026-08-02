@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { api, API_URL, AuthUser, ClassroomItem } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 import { handleError } from "../../lib/handle-error";
+import { Icon } from "../ui/icon";
 
 type TabType = "presentations" | "illustrations" | "tasks";
 
@@ -156,14 +157,14 @@ function PresentationsTab({ token, t }: { token: string; t: Record<string, strin
 
         <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 10 }}>
           <button className="btn btn-outline btn-sm" onClick={() => fileRef.current?.click()}>
-            📎 {t.mat_attach_file ?? "Прикрепить файл"}
+            <Icon name="paperclip" size={16} /> {t.mat_attach_file ?? "Прикрепить файл"}
           </button>
           {attachedFile && (
             <span style={{ fontSize: 13, color: "var(--muted)" }}>
               {attachedFile.name}
               <button className="btn btn-ghost btn-sm" style={{ marginLeft: 4, padding: "0 4px" }}
                 onClick={() => { setAttachedFile(null); setAttachedText(""); if (fileRef.current) fileRef.current.value = ""; }}>
-                ✕
+                <Icon name="close" size={15} /> 
               </button>
             </span>
           )}
@@ -180,7 +181,7 @@ function PresentationsTab({ token, t }: { token: string; t: Record<string, strin
           onChange={e => setPrompt(e.target.value)}
         />
 
-        {error && <div className="alert alert-error" style={{ marginTop: 8 }}>⚠ {error}</div>}
+        {error && <div className="alert alert-error" style={{ marginTop: 8 }}><Icon name="warning" size={16} /> {error}</div>}
 
         <button
           className="btn btn-primary"
@@ -188,13 +189,13 @@ function PresentationsTab({ token, t }: { token: string; t: Record<string, strin
           disabled={busy || !prompt.trim()}
           onClick={handleGenerate}
         >
-          {busy ? <><span className="spinner" /> {t.mat_generating ?? "Генерирую..."}</> : `✦ ${t.mat_generate_pres ?? "Сгенерировать презентацию"}`}
+          {busy ? <><span className="spinner" /> {t.mat_generating ?? "Генерирую..."}</> : `${t.mat_generate_pres ?? "Сгенерировать презентацию"}`}
         </button>
 
         {result && result.status === "ready" && (
           <div className="card" style={{ marginTop: 16, border: "2px solid var(--primary)", borderRadius: 10 }}>
             <div style={{ fontWeight: 600, color: "var(--primary)", marginBottom: 8 }}>
-              ✅ {t.mat_ready ?? "Готово!"} — {result.title}
+              <Icon name="check-circle" size={16} /> {t.mat_ready ?? "Готово!"} — {result.title}
             </div>
             <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
               {result.slideCount} слайдов
@@ -217,7 +218,7 @@ function PresentationsTab({ token, t }: { token: string; t: Record<string, strin
       <div style={{ flex: "0 0 calc(35% - 20px)", minWidth: 0 }}>
         <div className="card" style={{ marginBottom: 0 }}>
           <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>
-            📁 {t.mat_my_presentations ?? "Мои презентации"}
+            <Icon name="folder" size={16} /> {t.mat_my_presentations ?? "Мои презентации"}
           </h3>
           {listLoading ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -246,7 +247,7 @@ function PresentationsTab({ token, t }: { token: string; t: Record<string, strin
                     )}
                     <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)", fontSize: 12 }}
                       onClick={() => handleDelete(p.id)}>
-                      🗑
+                      <Icon name="trash" size={16} /> 
                     </button>
                   </div>
                 </div>
@@ -326,14 +327,14 @@ function IllustrationsTab({ token, t }: { token: string; t: Record<string, strin
 
         <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 10 }}>
           <button className="btn btn-outline btn-sm" onClick={() => fileRef.current?.click()}>
-            📎 {t.mat_attach_file ?? "Прикрепить файл"}
+            <Icon name="paperclip" size={16} /> {t.mat_attach_file ?? "Прикрепить файл"}
           </button>
           {attachedFile && (
             <span style={{ fontSize: 13, color: "var(--muted)" }}>
               {attachedFile.name}
               <button className="btn btn-ghost btn-sm" style={{ marginLeft: 4, padding: "0 4px" }}
                 onClick={() => { setAttachedFile(null); setAttachedText(""); if (fileRef.current) fileRef.current.value = ""; }}>
-                ✕
+                <Icon name="close" size={15} /> 
               </button>
             </span>
           )}
@@ -350,7 +351,7 @@ function IllustrationsTab({ token, t }: { token: string; t: Record<string, strin
           onChange={e => setPrompt(e.target.value)}
         />
 
-        {error && <div className="alert alert-error" style={{ marginTop: 8 }}>⚠ {error}</div>}
+        {error && <div className="alert alert-error" style={{ marginTop: 8 }}><Icon name="warning" size={16} /> {error}</div>}
 
         <button
           className="btn btn-primary"
@@ -358,13 +359,13 @@ function IllustrationsTab({ token, t }: { token: string; t: Record<string, strin
           disabled={busy || !prompt.trim()}
           onClick={handleGenerate}
         >
-          {busy ? <><span className="spinner" /> {t.mat_generating ?? "Генерирую..."}</> : `✦ ${t.mat_generate_illus ?? "Сгенерировать иллюстрацию"}`}
+          {busy ? <><span className="spinner" /> {t.mat_generating ?? "Генерирую..."}</> : `${t.mat_generate_illus ?? "Сгенерировать иллюстрацию"}`}
         </button>
 
         {result && result.status === "ready" && result.imageUrl && (
           <div className="card" style={{ marginTop: 16, border: "2px solid var(--primary)", borderRadius: 10 }}>
             <div style={{ fontWeight: 600, color: "var(--primary)", marginBottom: 12 }}>
-              ✅ {t.mat_ready ?? "Готово!"} — {result.title}
+              <Icon name="check-circle" size={16} /> {t.mat_ready ?? "Готово!"} — {result.title}
             </div>
             <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", marginBottom: 12, background: "#fff" }}>
               <AuthImage
@@ -392,7 +393,7 @@ function IllustrationsTab({ token, t }: { token: string; t: Record<string, strin
       <div style={{ flex: "0 0 calc(35% - 20px)", minWidth: 0 }}>
         <div className="card" style={{ marginBottom: 0 }}>
           <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>
-            🎨 {t.mat_my_illustrations ?? "Мои иллюстрации"}
+            <Icon name="palette" size={16} /> {t.mat_my_illustrations ?? "Мои иллюстрации"}
           </h3>
           {listLoading ? (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -415,7 +416,7 @@ function IllustrationsTab({ token, t }: { token: string; t: Record<string, strin
                     />
                   ) : (
                     <div style={{ height: 70, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)", fontSize: 12 }}>
-                      {il.status === "generating" ? "⏳" : "❌"}
+                      {il.status === "generating" ? "⏳" : ""}
                     </div>
                   )}
                   <div style={{ padding: "6px 8px" }}>
@@ -431,7 +432,7 @@ function IllustrationsTab({ token, t }: { token: string; t: Record<string, strin
                       )}
                       <button className="btn btn-ghost btn-sm" style={{ color: "var(--danger)", fontSize: 11, padding: "2px 6px" }}
                         onClick={() => handleDelete(il.id)}>
-                        🗑
+                        <Icon name="trash" size={16} /> 
                       </button>
                     </div>
                   </div>
@@ -539,7 +540,7 @@ function TasksTab({ token, t, teacher }: { token: string; t: Record<string, stri
       {/* Left: form */}
       <div style={{ flex: "0 0 50%" }}>
         <div className="card" style={{ marginBottom: 0 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>⚙️ Параметры задания</h3>
+          <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}><Icon name="settings" size={16} /> Параметры задания</h3>
           <div className="form-stack">
             <div className="field">
               <label className="field-label">{t.subject ?? "Предмет"}</label>
@@ -592,7 +593,7 @@ function TasksTab({ token, t, teacher }: { token: string; t: Record<string, stri
               </div>
             </div>
 
-            {error && <div className="alert alert-error">⚠ {error}</div>}
+            {error && <div className="alert alert-error"><Icon name="warning" size={16} /> {error}</div>}
 
             <button
               className="btn btn-primary"
@@ -600,7 +601,7 @@ function TasksTab({ token, t, teacher }: { token: string; t: Record<string, stri
               disabled={generating || !topic.trim()}
               onClick={handleGenerate}
             >
-              {generating ? <><span className="spinner" /> {t.mat_generating ?? "Генерирую..."}</> : `✦ ${t.generate ?? "Сгенерировать"}`}
+              {generating ? <><span className="spinner" /> {t.mat_generating ?? "Генерирую..."}</> : `${t.generate ?? "Сгенерировать"}`}
             </button>
           </div>
         </div>
@@ -610,19 +611,19 @@ function TasksTab({ token, t, teacher }: { token: string; t: Record<string, stri
       <div style={{ flex: "0 0 calc(50% - 20px)", minWidth: 0 }}>
         {sent && (
           <div className="alert" style={{ background: "var(--success-bg, #f0fff4)", border: "1px solid #86efac", color: "#166534", borderRadius: 8, padding: "12px 16px", marginBottom: 16 }}>
-            ✅ {t.mat_task_sent ?? "Задание отправлено! Ученики уже видят его."}
+            <Icon name="check-circle" size={16} /> {t.mat_task_sent ?? "Задание отправлено! Ученики уже видят его."}
           </div>
         )}
 
         {generatedContent && (
           <div className="card" style={{ marginBottom: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, margin: 0, flex: 1 }}>📄 Сгенерированное задание</h3>
+              <h3 style={{ fontSize: 15, fontWeight: 600, margin: 0, flex: 1 }}><Icon name="file" size={16} /> Сгенерированное задание</h3>
               <button
                 className="btn btn-outline btn-sm"
                 onClick={() => { setIsEditing(!isEditing); setEditContent(generatedContent); }}
               >
-                ✏️ {isEditing ? "Готово" : "Редактировать"}
+                <Icon name="pencil" size={16} /> {isEditing ? "Готово" : "Редактировать"}
               </button>
             </div>
 
@@ -641,16 +642,16 @@ function TasksTab({ token, t, teacher }: { token: string; t: Record<string, stri
 
             <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16 }}>
               <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
-                📤 {t.mat_assign_class ?? "Назначить классу"}
+                <Icon name="upload" size={16} /> {t.mat_assign_class ?? "Назначить классу"}
               </h4>
               <div className="form-stack">
                 {classroomId && (
                   <div style={{ fontSize: 13, padding: "8px 12px", background: "var(--surface)", borderRadius: 6, color: "var(--muted)" }}>
-                    🏫 {classrooms.find(c => c.id === classroomId)?.name ?? "—"}
+                    <Icon name="school" size={16} /> {classrooms.find(c => c.id === classroomId)?.name ?? "—"}
                   </div>
                 )}
                 {!classroomId && (
-                  <div style={{ fontSize: 13, color: "var(--danger)" }}>⚠ Выберите класс слева</div>
+                  <div style={{ fontSize: 13, color: "var(--danger)" }}><Icon name="warning" size={16} /> Выберите класс слева</div>
                 )}
                 <div className="field">
                   <label className="field-label">{t.mat_deadline ?? "Дедлайн"}</label>
@@ -662,7 +663,7 @@ function TasksTab({ token, t, teacher }: { token: string; t: Record<string, stri
                   disabled={sending || !classroomId}
                   onClick={handleSend}
                 >
-                  {sending ? <><span className="spinner" /> Отправляю...</> : `📤 ${t.mat_send_class ?? "Отправить классу"}`}
+                  {sending ? <><span className="spinner" /> Отправляю...</> : `${t.mat_send_class ?? "Отправить классу"}`}
                 </button>
               </div>
             </div>
@@ -700,7 +701,7 @@ export function MaterialsPanel({ token, language, teacher, initialTab }: {
 
   return (
     <div className="page">
-      <h1 className="page-title">🎨 {t.nav_materials ?? "Учебные материалы"}</h1>
+      <h1 className="page-title"><Icon name="palette" size={16} /> {t.nav_materials ?? "Учебные материалы"}</h1>
 
       <div className="sc-tabs" style={{ marginBottom: 0 }}>
         {TABS.map(tb => (

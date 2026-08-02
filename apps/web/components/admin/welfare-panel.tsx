@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Language, translations } from "../../lib/translations";
 import { FileManager } from "../ui/file-manager";
 import { ClassHoursSchedulePanel } from "./class-hours-schedule";
+import { Icon } from "../ui/icon";
 
 type WelfareTab = "tarbiye" | "law" | "circle" | "class-hours";
 
@@ -36,7 +37,7 @@ export function WelfarePanel({ token, language, userRole }: Props) {
 
   return (
     <div className="page">
-      <h1 className="page-title">🌱 {t.nav_education}</h1>
+      <h1 className="page-title"><Icon name="sprout" size={16} /> {t.nav_education}</h1>
 
       <div className="sc-tabs">
         {TABS.map(tb => (

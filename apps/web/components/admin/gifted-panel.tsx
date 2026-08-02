@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 import { FileManager } from "../ui/file-manager";
+import { Icon } from "../ui/icon";
 
 type MainTab = "olympiad" | "teachers" | "students" | "psychologist" | "workplan";
 type OlympiadSubTab = "olympiad" | "contest";
@@ -53,7 +54,7 @@ export function GiftedPanel({ token, language, userRole }: {
 
   return (
     <div className="page">
-      <h1 className="page-title">⭐ {t.nav_gifted}</h1>
+      <h1 className="page-title"><Icon name="star" size={16} /> {t.nav_gifted}</h1>
 
       <div className="sc-tabs">
         {TABS.map(tb => (
@@ -184,7 +185,7 @@ function GiftedTeachersTable({ token, canEdit, userRole, t, labels }: {
             <h3 style={{ marginBottom: 12 }}>{t.gifted_add_teacher ?? "Добавить учителя"}</h3>
             <input
               className="input"
-              placeholder="🔍 Поиск..."
+              placeholder="Поиск..."
               value={pickerSearch}
               onChange={e => setPickerSearch(e.target.value)}
               style={{ marginBottom: 12 }}
@@ -245,7 +246,7 @@ function GiftedTeachersTable({ token, canEdit, userRole, t, labels }: {
                       style={{ width: "100%" }}
                       onClick={() => setActiveModal({ teacherId: teacher.id, name: teacher.fullName, type: "achievements" })}
                     >
-                      🏆 {t.gifted_achievements_btn ?? "Достижения"}
+                      <Icon name="trophy" size={16} /> {t.gifted_achievements_btn ?? "Достижения"}
                     </button>
                   </td>
                   <td>
@@ -254,12 +255,12 @@ function GiftedTeachersTable({ token, canEdit, userRole, t, labels }: {
                       style={{ width: "100%" }}
                       onClick={() => setActiveModal({ teacherId: teacher.id, name: teacher.fullName, type: "workplan" })}
                     >
-                      📋 {t.gifted_workplan_btn ?? "План работы"}
+                      <Icon name="clipboard" size={16} /> {t.gifted_workplan_btn ?? "План работы"}
                     </button>
                   </td>
                   {canEdit && (
                     <td>
-                      <button className="btn btn-ghost btn-sm danger" onClick={() => removeTeacher(teacher.id)}>✕</button>
+                      <button className="btn btn-ghost btn-sm danger" onClick={() => removeTeacher(teacher.id)}><Icon name="close" size={15} /> </button>
                     </td>
                   )}
                 </tr>
@@ -281,12 +282,12 @@ function GiftedTeachersTable({ token, canEdit, userRole, t, labels }: {
               <div>
                 <h3 style={{ margin: 0 }}>
                   {activeModal.type === "achievements"
-                    ? `🏆 ${t.gifted_achievements_btn ?? "Достижения"}`
-                    : `📋 ${t.gifted_workplan_btn ?? "План работы"}`}
+                    ? `${t.gifted_achievements_btn ?? "Достижения"}`
+                    : `${t.gifted_workplan_btn ?? "План работы"}`}
                 </h3>
                 <p className="muted" style={{ margin: "2px 0 0", fontSize: 13 }}>{activeModal.name}</p>
               </div>
-              <button className="btn btn-ghost btn-sm" onClick={() => setActiveModal(null)}>✕</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setActiveModal(null)}><Icon name="close" size={15} /> </button>
             </div>
             <FileManager
               token={token}

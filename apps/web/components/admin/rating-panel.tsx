@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { api, TeacherRating, TeacherViolation } from "../../lib/api";
 import { translations, Language } from "../../lib/translations";
+import { Icon } from "../ui/icon";
 
 interface Props {
   token: string;
@@ -133,10 +134,10 @@ export function RatingAdminPanel({ token, language }: Props) {
   };
 
   const TABS: { key: Tab; label: string; icon: string }[] = [
-    { key: "leaderboard", label: t.rating_leaderboard ?? "Таблица лидеров", icon: "🏆" },
-    { key: "overview",    label: t.rating_overview    ?? "Обзор учителя",   icon: "👤" },
-    { key: "violations",  label: t.rating_violations  ?? "Нарушения",       icon: "⚠️" },
-    { key: "history",     label: t.rating_history     ?? "История",         icon: "📈" },
+    { key: "leaderboard", label: t.rating_leaderboard ?? "Таблица лидеров", icon: "" },
+    { key: "overview",    label: t.rating_overview    ?? "Обзор учителя",   icon: "" },
+    { key: "violations",  label: t.rating_violations  ?? "Нарушения",       icon: "" },
+    { key: "history",     label: t.rating_history     ?? "История",         icon: "" },
   ];
 
   const subjects = [...new Set(ratings.map(r => r.subject).filter(Boolean) as string[])].sort();
@@ -145,15 +146,15 @@ export function RatingAdminPanel({ token, language }: Props) {
     <div className="page">
       {/* Header */}
       <div className="page-header">
-        <h1 className="page-title">🏆 {t.nav_rating ?? "Рейтинг учителей"}</h1>
+        <h1 className="page-title"><Icon name="trophy" size={16} /> {t.nav_rating ?? "Рейтинг учителей"}</h1>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           {calcDone && (
             <span className="status-chip status-active" style={{ fontSize: 13 }}>
-              ✓ {t.rating_calculated ?? "Рейтинг рассчитан"}
+              <Icon name="check" size={15} /> {t.rating_calculated ?? "Рейтинг рассчитан"}
             </span>
           )}
           <button className="btn btn-primary btn-sm" onClick={handleCalculate} disabled={calculating}>
-            {calculating ? <><span className="spinner" /> {t.rating_calculating ?? "Идёт расчёт..."}</> : `⚡ ${t.rating_calculate ?? "Рассчитать рейтинг"}`}
+            {calculating ? <><span className="spinner" /> {t.rating_calculating ?? "Идёт расчёт..."}</> : `${t.rating_calculate ?? "Рассчитать рейтинг"}`}
           </button>
         </div>
       </div>
@@ -199,7 +200,7 @@ export function RatingAdminPanel({ token, language }: Props) {
           )}
 
           {filterSubject && (
-            <button className="btn btn-ghost btn-sm" onClick={() => setFilterSubject("")}>✕ Сбросить</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setFilterSubject("")}><Icon name="close" size={15} /> Сбросить</button>
           )}
         </div>
       </div>
@@ -222,7 +223,7 @@ export function RatingAdminPanel({ token, language }: Props) {
             <div className="page-loading">{t.loading ?? "Загрузка..."}</div>
           ) : ratings.length === 0 ? (
             <div style={{ padding: 48, textAlign: "center" }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>🏆</div>
+              <div style={{ fontSize: 48, marginBottom: 12 }}><Icon name="trophy" size={44} strokeWidth={1.3} /> </div>
               <p className="empty-state" style={{ fontSize: 15 }}>
                 {t.rating_no_data ?? "Рейтинг ещё не рассчитан"}
               </p>
@@ -253,7 +254,7 @@ export function RatingAdminPanel({ token, language }: Props) {
                   <tr key={r.id} style={{ cursor: "pointer" }} onClick={() => openTeacher(r)}>
                     <td>
                       <span style={{ fontWeight: 700, fontSize: 15 }}>
-                        {r.rank === 1 ? "🥇" : r.rank === 2 ? "🥈" : r.rank === 3 ? "🥉" : r.rank}
+                        {r.rank === 1 ? "" : r.rank === 2 ? "" : r.rank === 3 ? "" : r.rank}
                       </span>
                     </td>
                     <td>
@@ -288,7 +289,7 @@ export function RatingAdminPanel({ token, language }: Props) {
         !selected ? (
           <div className="card">
             <div style={{ textAlign: "center", padding: "32px 0" }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>👈</div>
+              <div style={{ fontSize: 40, marginBottom: 12 }}><Icon name="chevron-left" size={40} strokeWidth={1.3} /> </div>
               <p className="empty-state">Выберите учителя в таблице лидеров</p>
             </div>
           </div>
@@ -305,11 +306,11 @@ export function RatingAdminPanel({ token, language }: Props) {
               <div style={{ display: "flex", gap: 8 }}>
                 <button className="btn btn-outline btn-sm"
                   onClick={() => { setAdjValue(selected.manualAdjustment ?? 0); setAdjComment(selected.manualComment ?? ""); setShowAdjustModal(true); }}>
-                  ✏️ {t.rating_adjust ?? "Корректировать"}
+                  <Icon name="pencil" size={16} /> {t.rating_adjust ?? "Корректировать"}
                 </button>
                 <button className="btn btn-sm btn-danger"
                   onClick={() => setShowViolationModal(true)}>
-                  ⚠️ {t.rating_add_violation ?? "Нарушение"}
+                  <Icon name="warning" size={16} /> {t.rating_add_violation ?? "Нарушение"}
                 </button>
               </div>
             </div>
@@ -384,7 +385,7 @@ export function RatingAdminPanel({ token, language }: Props) {
         !selected ? (
           <div className="card">
             <div style={{ textAlign: "center", padding: "32px 0" }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>👈</div>
+              <div style={{ fontSize: 40, marginBottom: 12 }}><Icon name="chevron-left" size={40} strokeWidth={1.3} /> </div>
               <p className="empty-state">Выберите учителя в таблице лидеров</p>
             </div>
           </div>
@@ -392,7 +393,7 @@ export function RatingAdminPanel({ token, language }: Props) {
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div className="card-header">
               <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>
-                ⚠️ {selected.teacherName} — {t.rating_violations ?? "Нарушения"}
+                <Icon name="warning" size={16} /> {selected.teacherName} — {t.rating_violations ?? "Нарушения"}
               </h2>
               <button className="btn btn-sm btn-danger" onClick={() => setShowViolationModal(true)}>
                 + {t.rating_add_violation ?? "Добавить нарушение"}
@@ -402,7 +403,7 @@ export function RatingAdminPanel({ token, language }: Props) {
             <div className="card" style={{ gap: 0, padding: 0, overflow: "hidden" }}>
               {violations.length === 0 ? (
                 <div style={{ padding: 32, textAlign: "center" }}>
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>✅</div>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}><Icon name="check-circle" size={32} strokeWidth={1.3} /> </div>
                   <p className="empty-state">Нарушений нет</p>
                 </div>
               ) : (
@@ -430,7 +431,7 @@ export function RatingAdminPanel({ token, language }: Props) {
                           <td>
                             <button className="btn btn-ghost btn-sm"
                               style={{ color: "var(--warn)" }}
-                              onClick={() => handleDeleteViolation(v.id)}>✕</button>
+                              onClick={() => handleDeleteViolation(v.id)}><Icon name="close" size={15} /> </button>
                           </td>
                         </tr>
                       );
@@ -448,7 +449,7 @@ export function RatingAdminPanel({ token, language }: Props) {
         !selected ? (
           <div className="card">
             <div style={{ textAlign: "center", padding: "32px 0" }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>👈</div>
+              <div style={{ fontSize: 40, marginBottom: 12 }}><Icon name="chevron-left" size={40} strokeWidth={1.3} /> </div>
               <p className="empty-state">Выберите учителя в таблице лидеров</p>
             </div>
           </div>
@@ -456,7 +457,7 @@ export function RatingAdminPanel({ token, language }: Props) {
           <div className="card" style={{ gap: 0, padding: 0, overflow: "hidden" }}>
             <div style={{ padding: "20px 24px 12px" }}>
               <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>
-                📈 {selected.teacherName} — {t.rating_history ?? "История"}
+                <Icon name="chart-line" size={16} /> {selected.teacherName} — {t.rating_history ?? "История"}
               </h2>
             </div>
             {history.length === 0 ? (
@@ -506,8 +507,8 @@ export function RatingAdminPanel({ token, language }: Props) {
         <div className="modal-overlay" onClick={() => setShowAdjustModal(false)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h2 style={{ margin: 0, fontSize: 18 }}>✏️ {t.rating_adjust ?? "Корректировать балл"}</h2>
-              <button className="btn btn-ghost btn-sm" onClick={() => setShowAdjustModal(false)}>✕</button>
+              <h2 style={{ margin: 0, fontSize: 18 }}><Icon name="pencil" size={16} /> {t.rating_adjust ?? "Корректировать балл"}</h2>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowAdjustModal(false)}><Icon name="close" size={15} /> </button>
             </div>
             <div className="form-stack">
               <div className="field">
@@ -538,8 +539,8 @@ export function RatingAdminPanel({ token, language }: Props) {
         <div className="modal-overlay" onClick={() => setShowViolationModal(false)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h2 style={{ margin: 0, fontSize: 18 }}>⚠️ {t.rating_add_violation ?? "Добавить нарушение"}</h2>
-              <button className="btn btn-ghost btn-sm" onClick={() => setShowViolationModal(false)}>✕</button>
+              <h2 style={{ margin: 0, fontSize: 18 }}><Icon name="warning" size={16} /> {t.rating_add_violation ?? "Добавить нарушение"}</h2>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowViolationModal(false)}><Icon name="close" size={15} /> </button>
             </div>
             <div className="form-stack">
               <div className="field">
@@ -574,7 +575,7 @@ export function RatingAdminPanel({ token, language }: Props) {
                   {t.cancel ?? "Отмена"}
                 </button>
                 <button className="btn btn-sm btn-danger" onClick={handleAddViolation}>
-                  ⚠️ {t.rating_add_violation ?? "Добавить"}
+                  <Icon name="warning" size={16} /> {t.rating_add_violation ?? "Добавить"}
                 </button>
               </div>
             </div>

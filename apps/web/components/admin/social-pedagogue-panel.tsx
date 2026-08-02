@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 import { FileManager } from "../ui/file-manager";
+import { Icon } from "../ui/icon";
 
 interface Props { token: string; language: Language; userRole: string; }
 
@@ -27,7 +28,7 @@ export function SocialPedagoguePanel({ token, language, userRole }: Props) {
 
   return (
     <div className="page">
-      <h1 className="page-title">🤝 {t.nav_social_pedagogue}</h1>
+      <h1 className="page-title"><Icon name="handshake" size={16} /> {t.nav_social_pedagogue}</h1>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
         <button className={`btn btn-sm ${tab === "nutrition" ? "btn-primary" : "btn-ghost"}`} onClick={() => setTab("nutrition")}>{t.nav_nutrition}</button>

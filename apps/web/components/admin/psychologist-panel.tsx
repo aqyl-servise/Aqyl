@@ -1,6 +1,7 @@
 "use client";
 import { Language, translations } from "../../lib/translations";
 import { FileManager } from "../ui/file-manager";
+import { Icon } from "../ui/icon";
 
 interface Props {
   token: string;
@@ -24,7 +25,7 @@ export function PsychologistPanel({ token, language, userRole }: Props) {
 
   return (
     <div className="page">
-      <h1 className="page-title">🧠 {t.nav_psychologist}</h1>
+      <h1 className="page-title"><Icon name="brain" size={16} /> {t.nav_psychologist}</h1>
       <div className="card" style={{ marginTop: 0 }}>
         <FileManager
           token={token}

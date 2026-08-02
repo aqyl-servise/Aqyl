@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { api, FLTask, FLAssignment, FLSubmission } from "../../lib/api";
 import { translations } from "../../lib/translations";
+import { Icon } from "../ui/icon";
 
 type View = "list" | "detail" | "history";
 
@@ -17,7 +18,7 @@ function statusBadge(status: string, t: Record<string, string>) {
 }
 
 function dirLabel(dir?: string) {
-  const m: Record<string, string> = { reading: "📖 Чтение", math: "🔢 Математика", science: "🔬 Наука" };
+  const m: Record<string, string> = { reading: "Чтение", math: "Математика", science: "Наука" };
   return dir ? (m[dir] ?? dir) : "";
 }
 
@@ -95,7 +96,7 @@ export function FLStudentPanel({ token, language }: { token: string; language: s
 
   return (
     <div className="page">
-      <h1 className="page-title">📚 {t.fl_module ?? "Функциональная грамотность"}</h1>
+      <h1 className="page-title"><Icon name="books" size={16} /> {t.fl_module ?? "Функциональная грамотность"}</h1>
 
       {/* View tabs */}
       {view === "list" && (
@@ -137,10 +138,10 @@ export function FLStudentPanel({ token, language }: { token: string; language: s
                           <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{a.title}</div>
                           {a.description && <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 6 }}>{a.description}</div>}
                           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                            {a.dueDate && <span style={{ fontSize: 12, color: "var(--muted)" }}>📅 До: {new Date(a.dueDate).toLocaleDateString()}</span>}
+                            {a.dueDate && <span style={{ fontSize: 12, color: "var(--muted)" }}><Icon name="calendar" size={16} /> До: {new Date(a.dueDate).toLocaleDateString()}</span>}
                             {a.timeLimit && <span style={{ fontSize: 12, color: "var(--muted)" }}>⏱ {a.timeLimit} мин</span>}
                             {a.submission?.totalScore !== undefined && a.submission?.totalScore !== null && (
-                              <span style={{ fontSize: 12, color: "#10b981", fontWeight: 600 }}>✓ {a.submission.totalScore} {t.fl_score ?? "баллов"}</span>
+                              <span style={{ fontSize: 12, color: "#10b981", fontWeight: 600 }}><Icon name="check" size={15} /> {a.submission.totalScore} {t.fl_score ?? "баллов"}</span>
                             )}
                           </div>
                         </div>
@@ -171,14 +172,14 @@ export function FLStudentPanel({ token, language }: { token: string; language: s
                 <h2 style={{ fontSize: 18, marginBottom: 4 }}>{detail.title}</h2>
                 {detail.description && <p style={{ fontSize: 13, color: "var(--muted)" }}>{detail.description}</p>}
                 <div style={{ display: "flex", gap: 10, marginTop: 8, flexWrap: "wrap" }}>
-                  {detail.dueDate && <span style={{ fontSize: 12, color: "var(--muted)" }}>📅 Срок: {new Date(detail.dueDate).toLocaleDateString()}</span>}
+                  {detail.dueDate && <span style={{ fontSize: 12, color: "var(--muted)" }}><Icon name="calendar" size={16} /> Срок: {new Date(detail.dueDate).toLocaleDateString()}</span>}
                   {detail.timeLimit && <span style={{ fontSize: 12, color: "var(--muted)" }}>⏱ {detail.timeLimit} мин</span>}
                 </div>
               </div>
 
               {detail.submission?.status === "submitted" || detail.submission?.status === "graded" ? (
                 <div className="card" style={{ marginBottom: 12 }}>
-                  <p style={{ fontWeight: 600, color: "#10b981", marginBottom: 8 }}>✓ Работа отправлена</p>
+                  <p style={{ fontWeight: 600, color: "#10b981", marginBottom: 8 }}><Icon name="check" size={15} /> Работа отправлена</p>
                   {detail.submission.totalScore !== undefined && detail.submission.totalScore !== null && (
                     <p style={{ fontSize: 15 }}>Итоговый балл: <strong>{detail.submission.totalScore}</strong></p>
                   )}
@@ -187,7 +188,7 @@ export function FLStudentPanel({ token, language }: { token: string; language: s
                       <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Задание {i + 1}</div>
                       <div style={{ fontSize: 13, marginBottom: 6 }}>Ваш ответ: {a.answer || "—"}</div>
                       {a.score !== undefined && <div style={{ fontSize: 13, color: "#10b981" }}>Балл: {a.score}</div>}
-                      {a.teacherComment && <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4, fontStyle: "italic" }}>💬 {a.teacherComment}</div>}
+                      {a.teacherComment && <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4, fontStyle: "italic" }}><Icon name="message" size={16} /> {a.teacherComment}</div>}
                     </div>
                   ))}
                 </div>

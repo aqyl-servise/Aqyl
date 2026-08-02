@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { api, StudentRow } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 import { FileManager } from "../ui/file-manager";
+import { Icon } from "../ui/icon";
 
 type FinalStudent = StudentRow;
 type TeacherItem = { id: string; fullName: string; subject?: string };
@@ -113,7 +114,7 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
             ← {t.final_teacher_back}
           </button>
           <h1 className="page-title">
-            {teacherView.mode === "materials" ? "📁" : "📊"} {teacherView.teacher.fullName}
+            {teacherView.mode === "materials" ? "" : ""} {teacherView.teacher.fullName}
             <span style={{ marginLeft: 8, color: "var(--muted)", fontSize: 16, fontWeight: 400 }}>
               — {teacherView.mode === "materials" ? t.final_materials_btn : t.final_monitoring_btn}
             </span>
@@ -133,7 +134,7 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
 
   return (
     <div className="page">
-      <h1 className="page-title">📝 {t.nav_final_attestation}</h1>
+      <h1 className="page-title"><Icon name="pencil" size={16} /> {t.nav_final_attestation}</h1>
 
       <div className="sc-tabs">
         {([9, 11, "teachers"] as MainTab[]).map((key) => (
@@ -152,7 +153,7 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
           <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
             <input
               className="input" style={{ maxWidth: 240 }}
-              placeholder={`🔍 ${t.search}...`}
+              placeholder={`${t.search}...`}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -165,7 +166,7 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
                 onClick={() => exportCsv(search ? filtered : students, tab as number)}
                 disabled={loading || students.length === 0}
               >
-                📊 {t.final_export_excel}
+                <Icon name="chart" size={16} /> {t.final_export_excel}
               </button>
             </div>
           </div>
@@ -205,7 +206,7 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
         <div className="card" style={{ marginTop: 0 }}>
           <input
             className="input" style={{ maxWidth: 260, marginBottom: 16 }}
-            placeholder={`🔍 ${t.search}...`}
+            placeholder={`${t.search}...`}
             value={teacherSearch}
             onChange={(e) => setTeacherSearch(e.target.value)}
           />
@@ -233,13 +234,13 @@ export function FinalAttestationPanel({ token, language, userRole }: Props) {
                           className="btn btn-outline btn-sm"
                           onClick={() => setTeacherView({ teacher: tc, mode: "materials" })}
                         >
-                          📁 {t.final_materials_btn}
+                          <Icon name="folder" size={16} /> {t.final_materials_btn}
                         </button>
                         <button
                           className="btn btn-outline btn-sm"
                           onClick={() => setTeacherView({ teacher: tc, mode: "monitoring" })}
                         >
-                          📊 {t.final_monitoring_btn}
+                          <Icon name="chart" size={16} /> {t.final_monitoring_btn}
                         </button>
                       </div>
                     </td>

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { api, API_URL } from "../../lib/api";
+import { Icon } from "./icon";
 
 interface Folder {
   id: string;
@@ -60,12 +61,12 @@ export interface FileManagerProps {
 }
 
 function getFileIcon(mimetype: string): string {
-  if (mimetype.includes("pdf")) return "📄";
-  if (mimetype.includes("word") || mimetype.includes("msword")) return "📝";
-  if (mimetype.includes("excel") || mimetype.includes("spreadsheet") || mimetype.includes("csv")) return "📊";
-  if (mimetype.startsWith("image/")) return "🖼️";
-  if (mimetype.includes("presentation") || mimetype.includes("powerpoint")) return "📑";
-  return "📎";
+  if (mimetype.includes("pdf")) return "";
+  if (mimetype.includes("word") || mimetype.includes("msword")) return "";
+  if (mimetype.includes("excel") || mimetype.includes("spreadsheet") || mimetype.includes("csv")) return "";
+  if (mimetype.startsWith("image/")) return "";
+  if (mimetype.includes("presentation") || mimetype.includes("powerpoint")) return "";
+  return "";
 }
 
 function formatSize(bytes: number): string {
@@ -384,7 +385,7 @@ export function FileManager({ token, section, teacherRefId, canEdit, canUpload, 
           <>
             {visibleFolders.map(folder => (
               <div key={folder.id} className="fm-item fm-item-folder" onClick={() => openFolder(folder)}>
-                <span className="fm-item-icon">📁</span>
+                <span className="fm-item-icon"><Icon name="folder" size={16} /> </span>
                 <span className="fm-item-name">{folder.name}</span>
                 {canEdit && (
                   <div className="fm-item-actions" onClick={e => e.stopPropagation()}>
@@ -394,7 +395,7 @@ export function FileManager({ token, section, teacherRefId, canEdit, canUpload, 
                       title="Переименовать"
                       aria-label="Переименовать"
                     >
-                      ✏️
+                      <Icon name="pencil" size={16} /> 
                     </button>
                     <button
                       className="fm-item-del"
@@ -402,7 +403,7 @@ export function FileManager({ token, section, teacherRefId, canEdit, canUpload, 
                       title={L.delete}
                       aria-label={L.delete}
                     >
-                      ✕
+                      <Icon name="close" size={15} /> 
                     </button>
                   </div>
                 )}
@@ -413,7 +414,7 @@ export function FileManager({ token, section, teacherRefId, canEdit, canUpload, 
               const isPinned = pinnedIds.has(file.id);
               return (
                 <div key={file.id} className={`fm-item fm-item-file${isPinned ? " fm-item-pinned" : ""}`}>
-                  <span className="fm-item-icon">{isPinned ? "📌" : getFileIcon(file.mimetype)}</span>
+                  <span className="fm-item-icon">{isPinned ? "" : getFileIcon(file.mimetype)}</span>
                   <div className="fm-item-info">
                     <span className="fm-item-name">{file.originalName}</span>
                     <span className="fm-item-meta">
@@ -433,14 +434,14 @@ export function FileManager({ token, section, teacherRefId, canEdit, canUpload, 
                           onClick={() => startRename("file", file.id, file.originalName)}
                           title="Переименовать"
                         >
-                          ✏️
+                          <Icon name="pencil" size={16} /> 
                         </button>
                         <button
                           className={`btn btn-sm ${isPinned ? "btn-primary" : "btn-outline"}`}
                           onClick={() => togglePin(file.id)}
                           title={isPinned ? L.unpin : L.pin}
                         >
-                          📌
+                          <Icon name="pin" size={16} /> 
                         </button>
                         <button className="btn btn-danger btn-sm" onClick={() => handleDeleteFile(file.id)}>
                           {L.delete}

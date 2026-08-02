@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { api, GradeRow } from "../../lib/api";
+import { Icon } from "../ui/icon";
 
 export function StudentGradesPanel({ token, t }: { token: string; t: Record<string, string> }) {
   const [grades, setGrades] = useState<GradeRow[]>([]);
@@ -15,10 +16,10 @@ export function StudentGradesPanel({ token, t }: { token: string; t: Record<stri
   }, [token]);
 
   if (loading) return <p className="muted">{t.loading}</p>;
-  if (error) return <div className="alert alert-error"><span>⚠</span> {error}</div>;
+  if (error) return <div className="alert alert-error"><span><Icon name="warning" size={16} /> </span> {error}</div>;
   if (grades.length === 0) return (
     <div className="page">
-      <div className="page-header"><h1 className="page-title">🏆 {t.nav_student_grades}</h1></div>
+      <div className="page-header"><h1 className="page-title"><Icon name="trophy" size={16} /> {t.nav_student_grades}</h1></div>
       <p className="empty-state">{t.no_grades}</p>
     </div>
   );
@@ -43,7 +44,7 @@ export function StudentGradesPanel({ token, t }: { token: string; t: Record<stri
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">🏆 {t.nav_student_grades}</h1>
+        <h1 className="page-title"><Icon name="trophy" size={16} /> {t.nav_student_grades}</h1>
       </div>
 
       {subjectAverages.length > 0 && (
