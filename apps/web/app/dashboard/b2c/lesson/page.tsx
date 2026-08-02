@@ -6,6 +6,7 @@ import { getValidAccessToken } from "../../../../lib/auth";
 import { api, API_URL, type LpLesson, type LpToolsResponse, type LpStageInput, type LpHeader } from "../../../../lib/api";
 import { useLang, LT, VALUE_MONTHS, type Lang } from "../../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../../components/lang-switcher";
+import { Icon } from "../../../../components/ui/icon";
 
 // Бренд-токены применяются через класс .aqyl-b2c на корне (см. globals.css).
 const BRAND = "var(--lavender)";
@@ -222,10 +223,10 @@ export default function LessonGeneratorPage() {
             <h2 style={{ color: DARK }}>{t.chooseMode}</h2>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
               <button onClick={() => chooseMode("quick")} disabled={busy} style={{ ...card, cursor: "pointer", textAlign: "left", border: "1px solid var(--line)" }}>
-                <div style={{ fontSize: 34 }}>⚡</div><div style={{ fontWeight: 800, fontSize: 18, color: DARK }}>{t.quickMode}</div><div style={{ fontSize: 13, color: "var(--muted)" }}>{t.quickModeSub}</div>
+                <div style={{ marginBottom: 6, color: "var(--amber)" }}><Icon name="bolt" size={32} strokeWidth={1.4} /></div><div style={{ fontWeight: 800, fontSize: 18, color: DARK }}>{t.quickMode}</div><div style={{ fontSize: 13, color: "var(--muted)" }}>{t.quickModeSub}</div>
               </button>
               <button onClick={() => chooseMode("constructor")} disabled={busy} style={{ ...card, cursor: "pointer", textAlign: "left", border: "1px solid var(--line)" }}>
-                <div style={{ fontSize: 34 }}>🧩</div><div style={{ fontWeight: 800, fontSize: 18, color: DARK }}>{t.constructorMode}</div><div style={{ fontSize: 13, color: "var(--muted)" }}>{t.constructorModeSub}</div>
+                <div style={{ marginBottom: 6, color: "var(--lavender)" }}><Icon name="puzzle" size={32} strokeWidth={1.4} /></div><div style={{ fontWeight: 800, fontSize: 18, color: DARK }}>{t.constructorMode}</div><div style={{ fontSize: 13, color: "var(--muted)" }}>{t.constructorModeSub}</div>
               </button>
             </div>
           </div>

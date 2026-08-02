@@ -7,6 +7,7 @@ import { getValidAccessToken } from "../../../../lib/auth";
 import { generateDemoKmzh, topicPlaceholder, type DemoKmzh } from "../../../../lib/onboarding-demo";
 import { useLang, LT, SUBJECT_OPTIONS, REGION_OPTIONS, type Lang } from "../../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../../components/lang-switcher";
+import { Icon } from "../../../../components/ui/icon";
 
 type T = Record<string, string>;
 
@@ -240,9 +241,9 @@ export default function OnboardingPage() {
 // ── Step 1: Welcome ──────────────────────────────────────────────────────────
 function StepWelcome({ onNext, t }: { onNext: () => void; t: T }) {
   const cards = [
-    { icon: "📝", title: t.obC1t, text: t.obC1x },
-    { icon: "📊", title: t.obC2t, text: t.obC2x },
-    { icon: "🎯", title: t.obC3t, text: t.obC3x },
+    { icon: "pencil" as const, title: t.obC1t, text: t.obC1x },
+    { icon: "chart" as const, title: t.obC2t, text: t.obC2x },
+    { icon: "target" as const, title: t.obC3t, text: t.obC3x },
   ];
   return (
     <div style={{ textAlign: "center" }}>
@@ -253,7 +254,7 @@ function StepWelcome({ onNext, t }: { onNext: () => void; t: T }) {
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", marginBottom: 30 }}>
         {cards.map((c) => (
           <div key={c.title} style={{ flex: "1 1 180px", minWidth: 180, background: "var(--ink-2)", borderRadius: 14, padding: "22px 18px", boxShadow: "0 4px 18px rgba(13,14,26,0.07)", textAlign: "center" }}>
-            <div style={{ fontSize: 32, marginBottom: 10 }}>{c.icon}</div>
+            <div style={{ marginBottom: 10, color: "var(--lavender)" }}><Icon name={c.icon} size={30} strokeWidth={1.4} /></div>
             <div style={{ fontWeight: 700, color: DARK, marginBottom: 6 }}>{c.title}</div>
             <div style={{ fontSize: 13, color: "var(--muted)" }}>{c.text}</div>
           </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getValidAccessToken } from "../../../../lib/auth";
 import { TextAdapterPanel } from "../../../../components/teacher/text-adapter-panel";
+import { Icon } from "../../../../components/ui/icon";
 
 export default function B2CTextAdapterPage() {
   const router = useRouter();
@@ -39,7 +40,7 @@ export default function B2CTextAdapterPage() {
         >
           ← Назад
         </button>
-        <span style={{ fontWeight: 700, fontSize: 16 }}>📖 Адаптация текста</span>
+        <span style={{ fontWeight: 700, fontSize: 16, display: "inline-flex", alignItems: "center", gap: 8 }}><Icon name="book" size={18} /> Адаптация текста</span>
       </header>
       <main style={{ maxWidth: 1200, margin: "0 auto", padding: "20px 24px" }}>
         <TextAdapterPanel token={token} language="ru" />

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useLang, LT } from "../../../lib/lesson-translations";
+import { Icon } from "../../../components/ui/icon";
 
 /**
  * Layout воронки B2C: управляет темой (светлая по умолчанию, тёмная — опционально)
@@ -38,7 +39,7 @@ export default function B2CLayout({ children }: { children: React.ReactNode }) {
         aria-label={dark ? t.themeLight : t.themeDark}
         title={dark ? t.themeLight : t.themeDark}
       >
-        {mounted && dark ? "☀️" : "🌙"}
+        <Icon name={mounted && dark ? "sun" : "moon"} size={19} />
       </button>
     </div>
   );

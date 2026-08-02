@@ -6,6 +6,7 @@ import { api, type B2CProfile, type Subscription, type LpLesson } from "../../..
 import { getValidAccessToken, logout } from "../../../lib/auth";
 import { useLang, LT } from "../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../components/lang-switcher";
+import { Icon, type IconName } from "../../../components/ui/icon";
 
 function daysLeft(date: string | null): number {
   if (!date) return 0;
@@ -82,11 +83,11 @@ export default function B2CDashboardPage() {
   const firstName = (profile.fullName || "").trim().split(" ")[0] || "";
 
   const pipeline = [t.pipeTopic, t.pipePlan, t.pipeWarmup, t.pipeExplain, t.pipeTask, t.pipeQuiz, t.pipeReflect];
-  const tools = [
-    { key: "materials", icon: "📚", label: t.materials, href: "/dashboard/b2c/materials" },
-    { key: "fl", icon: "📊", label: t.fl, href: "/dashboard/b2c/literacy" },
-    { key: "subscribe", icon: "💳", label: t.subscription, href: "/dashboard/b2c/subscribe" },
-    { key: "help", icon: "❓", label: t.help, href: "/dashboard/b2c/help" },
+  const tools: { key: string; icon: IconName; label: string; href: string }[] = [
+    { key: "materials", icon: "books", label: t.materials, href: "/dashboard/b2c/materials" },
+    { key: "fl", icon: "chart", label: t.fl, href: "/dashboard/b2c/literacy" },
+    { key: "subscribe", icon: "card", label: t.subscription, href: "/dashboard/b2c/subscribe" },
+    { key: "help", icon: "help", label: t.help, href: "/dashboard/b2c/help" },
   ];
   const STT: Record<string, { label: string; color: string }> = {
     draft: { label: t.stt_draft, color: "var(--muted)" },
@@ -109,7 +110,7 @@ export default function B2CDashboardPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <LangSwitcher lang={lang} setLang={setLang} dark />
           <span style={{ fontSize: 12, padding: "5px 12px", borderRadius: 999, background: "rgba(139,127,232,.16)", color: "var(--lavender)", fontWeight: 700 }}>{isActive ? t.subActive : isTrial ? t.subTrial : t.subLimited}</span>
-          <button onClick={() => router.push("/dashboard/b2c/profile")} className="b2c-pill" style={ghost}>👤 {t.profile}</button>
+          <button onClick={() => router.push("/dashboard/b2c/profile")} className="b2c-pill" style={{ ...ghost, display: "inline-flex", alignItems: "center", gap: 7 }}><Icon name="user" size={16} /> {t.profile}</button>
           <button onClick={handleLogout} className="b2c-pill" style={ghost}>{t.logout}</button>
         </div>
       </header>
@@ -118,7 +119,7 @@ export default function B2CDashboardPage() {
         {toast && (
           <div style={{ ...banner, borderColor: toast.kind === "success" ? "var(--mint)" : "var(--danger)", marginBottom: 22 }}>
             <span>{toast.text}</span>
-            <button onClick={() => setToast(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "var(--muted)" }}>✕</button>
+            <button onClick={() => setToast(null)} aria-label={t.closeBtn} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", display: "inline-flex", padding: 2 }}><Icon name="x-circle" size={17} /></button>
           </div>
         )}
 
@@ -184,7 +185,7 @@ export default function B2CDashboardPage() {
               </div>
               {lessons.length === 0 ? (
                 <div style={{ ...card, textAlign: "center", padding: "36px 24px" }}>
-                  <div style={{ fontSize: 30, marginBottom: 10 }}>📝</div>
+                  <div style={{ marginBottom: 10, color: "var(--lavender)" }}><Icon name="pencil" size={30} strokeWidth={1.4} /></div>
                   <p style={{ color: "var(--muted)", margin: "0 0 18px", fontSize: 15 }}>{t.myLessonsEmpty}</p>
                   {/* Вторичная кнопка: единственный янтарь на экране — «Собрать урок» в герое. */}
                   <button onClick={buildLesson} style={btnSecondary}>{t.buildLesson} →</button>
@@ -218,7 +219,7 @@ export default function B2CDashboardPage() {
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 {tools.map((tool) => (
                   <button key={tool.key} onClick={() => router.push(tool.href)} className="b2c-tool" style={toolBtn}>
-                    <span style={{ fontSize: 16 }}>{tool.icon}</span> {tool.label}
+                    <Icon name={tool.icon} size={17} /> {tool.label}
                   </button>
                 ))}
               </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getValidAccessToken } from "../../../../lib/auth";
 import { VisualizerPanel } from "../../../../components/teacher/visualizer-panel";
+import { Icon } from "../../../../components/ui/icon";
 
 export default function B2CVisualizerPage() {
   const router = useRouter();
@@ -39,7 +40,7 @@ export default function B2CVisualizerPage() {
         >
           ← Назад
         </button>
-        <span style={{ fontWeight: 700, fontSize: 16 }}>🗺️ Визуализатор</span>
+        <span style={{ fontWeight: 700, fontSize: 16, display: "inline-flex", alignItems: "center", gap: 8 }}><Icon name="map" size={18} /> Визуализатор</span>
       </header>
       <main style={{ maxWidth: 1200, margin: "0 auto", padding: "20px 24px" }}>
         <VisualizerPanel token={token} language="ru" />

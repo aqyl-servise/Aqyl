@@ -6,6 +6,7 @@ import { getValidAccessToken, logout } from "../../../../lib/auth";
 import { api, type B2CProfile } from "../../../../lib/api";
 import { useLang, LT } from "../../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../../components/lang-switcher";
+import { Icon } from "../../../../components/ui/icon";
 
 // Бренд-токены применяются через класс .aqyl-b2c на корне (см. globals.css).
 const BRAND = "var(--amber)";
@@ -35,7 +36,7 @@ export default function ProfilePage() {
     <div className="aqyl-b2c" style={{ minHeight: "100vh" }}>
       <header style={{ background: "var(--ink-2)", color: "var(--white)", padding: "14px 24px", display: "flex", alignItems: "center", gap: 16, borderBottom: "1px solid var(--line)" }}>
         <button onClick={() => router.push("/dashboard/b2c")} style={{ background: "rgba(139,127,232,.12)", border: "1px solid var(--line)", color: "var(--white)", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>← {t.back}</button>
-        <span style={{ fontWeight: 700 }}>👤 {t.profile}</span>
+        <span style={{ fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 8 }}><Icon name="user" size={18} /> {t.profile}</span>
         <div style={{ marginLeft: "auto" }}><LangSwitcher lang={lang} setLang={setLang} dark /></div>
       </header>
       <main style={{ maxWidth: 560, margin: "0 auto", padding: "28px 24px" }}>

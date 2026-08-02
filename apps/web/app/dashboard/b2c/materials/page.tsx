@@ -6,6 +6,7 @@ import { getValidAccessToken } from "../../../../lib/auth";
 import { api, API_URL, type LpLesson } from "../../../../lib/api";
 import { useLang, LT } from "../../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../../components/lang-switcher";
+import { Icon } from "../../../../components/ui/icon";
 
 // Бренд-токены применяются через класс .aqyl-b2c на корне (см. globals.css).
 const BRAND = "var(--amber)";
@@ -48,7 +49,7 @@ export default function MaterialsPage() {
     <div className="aqyl-b2c" style={{ minHeight: "100vh" }}>
       <header style={{ background: "var(--ink-2)", color: "var(--white)", padding: "14px 24px", display: "flex", alignItems: "center", gap: 16, borderBottom: "1px solid var(--line)" }}>
         <button onClick={() => router.push("/dashboard/b2c")} style={{ background: "rgba(139,127,232,.12)", border: "1px solid var(--line)", color: "var(--white)", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>← {t.back}</button>
-        <span style={{ fontWeight: 700 }}>📚 {t.materials}</span>
+        <span style={{ fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 8 }}><Icon name="books" size={18} /> {t.materials}</span>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
           <LangSwitcher lang={lang} setLang={setLang} dark />
           <button onClick={() => router.push("/dashboard/b2c/lesson")} style={{ background: BRAND, color: "var(--on-amber)", border: "none", borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit" }}>+ {t.createLesson}</button>
@@ -60,7 +61,7 @@ export default function MaterialsPage() {
           <div style={{ color: "var(--muted)" }}>{t.loading}</div>
         ) : lessons.length === 0 ? (
           <div style={{ background: "var(--ink-2)", borderRadius: 14, padding: "40px 24px", textAlign: "center", border: "1px solid var(--line)" }}>
-            <div style={{ fontSize: 34, marginBottom: 8 }}>📭</div>
+            <div style={{ marginBottom: 8, color: "var(--lavender)" }}><Icon name="inbox" size={34} strokeWidth={1.4} /></div>
             <div style={{ color: "var(--white)", fontWeight: 700, marginBottom: 6 }}>{t.noLessons}</div>
             <button onClick={() => router.push("/dashboard/b2c/lesson")} style={{ background: BRAND, color: "var(--on-amber)", border: "none", borderRadius: 10, padding: "10px 20px", cursor: "pointer", fontWeight: 700, fontFamily: "inherit" }}>{t.createFirst}</button>
           </div>

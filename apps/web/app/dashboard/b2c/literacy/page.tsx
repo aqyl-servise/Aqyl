@@ -6,6 +6,7 @@ import { getValidAccessToken } from "../../../../lib/auth";
 import { api, API_URL, type LitSet, type LitCreateInput } from "../../../../lib/api";
 import { useLang, LT } from "../../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../../components/lang-switcher";
+import { Icon } from "../../../../components/ui/icon";
 
 // Бренд-токены применяются через класс .aqyl-b2c на корне (см. globals.css).
 const BRAND = "var(--lavender)";
@@ -134,7 +135,7 @@ export default function LiteracyPage() {
     <div className="aqyl-b2c" style={{ minHeight: "100vh" }}>
       <header style={{ background: "var(--ink-2)", color: "var(--white)", padding: "14px 24px", display: "flex", alignItems: "center", gap: 16, borderBottom: "1px solid var(--line)" }}>
         <button onClick={() => (step > 1 && step < 3 ? setStep(step - 1) : router.push("/dashboard/b2c"))} style={{ ...btnGhost, color: "var(--white)" }}>← {t.back}</button>
-        <span style={{ fontWeight: 700 }}>📊 {t.litTitle}</span>
+        <span style={{ fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 8 }}><Icon name="chart" size={18} /> {t.litTitle}</span>
         <div style={{ marginLeft: "auto" }}><LangSwitcher lang={lang} setLang={setLang} dark /></div>
       </header>
 
