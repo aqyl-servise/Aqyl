@@ -3,6 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, DataSource } from "typeorm";
 import { SchoolTokenPackage } from "./entities/school-token-package.entity";
 import { TokenTransaction } from "./entities/token-transaction.entity";
+import { costUsd } from "../../config/ai-pricing";
 
 const NULL_PACKAGE_ID = "00000000-0000-0000-0000-000000000000";
 
@@ -175,10 +176,13 @@ export class TokenService {
     });
   }
 
+  /**
+   * Стоимость вызова в долларах — единый прайс из config/ai-pricing.
+   * Раньше здесь была своя формула, где всё, кроме Sonnet, считалось по
+   * $0.25/$1.25 (тариф старого Haiku 3); используемый Haiku 4.5 стоит $1/$5,
+   * то есть расход на нём занижался вчетверо.
+   */
   calculateCost(usage: { input_tokens: number; output_tokens: number }, model: string): number {
-    if (model.includes("sonnet")) {
-      return (usage.input_tokens * 3 + usage.output_tokens * 15) / 1_000_000;
-    }
-    return (usage.input_tokens * 0.25 + usage.output_tokens * 1.25) / 1_000_000;
+    return costUsd(model, usage.input_tokens, usage.output_tokens);
   }
 }

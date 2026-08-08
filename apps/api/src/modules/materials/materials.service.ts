@@ -62,9 +62,9 @@ export class MaterialsService {
     }
   }
 
-  private recordUsage(teacherId: string, schoolId: string, role: string, actionType: string, tokensIn: number, tokensOut: number): void {
+  private recordUsage(teacherId: string, schoolId: string, role: string, actionType: string, tokensIn: number, tokensOut: number, model: string): void {
     if (!this.aiUsageService || !this.aiUsageService.isLimitedRole(role)) return;
-    this.aiUsageService.recordTokens(teacherId, schoolId, actionType, tokensIn, tokensOut).catch(() => {});
+    this.aiUsageService.recordTokens(teacherId, schoolId, actionType, tokensIn, tokensOut, model).catch(() => {});
   }
 
   async generatePresentation(
@@ -120,7 +120,7 @@ Return ONLY a JSON array of slides, no other text, no markdown code blocks:
         if (slide.speakerNotes) s.addNotes(slide.speakerNotes);
       }
 
-      this.recordUsage(teacherId, schoolId, role, 'presentation_generate', result.tokensIn, result.tokensOut);
+      this.recordUsage(teacherId, schoolId, role, 'presentation_generate', result.tokensIn, result.tokensOut, result.model);
 
       this.tokenService?.deductTokens({
         schoolId,
@@ -172,7 +172,7 @@ Use viewBox="0 0 800 600". Include proper colors and labels in Russian.`;
         maxTokens: 3000,
       });
 
-      this.recordUsage(teacherId, schoolId, role, 'illustration_generate', result.tokensIn, result.tokensOut);
+      this.recordUsage(teacherId, schoolId, role, 'illustration_generate', result.tokensIn, result.tokensOut, result.model);
 
       this.tokenService?.deductTokens({
         schoolId,

@@ -25,10 +25,10 @@ export class AiService {
     }
   }
 
-  private recordUsage(userCtx: UserCtx | undefined, actionType: string, tokensIn: number, tokensOut: number): void {
+  private recordUsage(userCtx: UserCtx | undefined, actionType: string, tokensIn: number, tokensOut: number, model: string): void {
     if (!this.aiUsageService || !userCtx?.userId || !userCtx?.schoolId || !userCtx?.role) return;
     if (!this.aiUsageService.isLimitedRole(userCtx.role)) return;
-    this.aiUsageService.recordTokens(userCtx.userId, userCtx.schoolId, actionType, tokensIn, tokensOut).catch(() => {});
+    this.aiUsageService.recordTokens(userCtx.userId, userCtx.schoolId, actionType, tokensIn, tokensOut, model).catch(() => {});
   }
 
   async generateLessonPlan(input: GenerateLessonPlanDto, userCtx?: UserCtx) {
@@ -58,7 +58,7 @@ Respond ONLY with valid JSON, no markdown, no extra text. Keys: title, subject, 
         ],
       });
 
-      this.recordUsage(userCtx, 'kmzh_generate', result.tokensIn, result.tokensOut);
+      this.recordUsage(userCtx, 'kmzh_generate', result.tokensIn, result.tokensOut, result.model);
 
       this.tokenService?.deductTokens({
         schoolId: userCtx?.schoolId,
@@ -104,7 +104,7 @@ Respond ONLY with valid JSON, no markdown, no extra text. Keys: title, topic, ty
         ],
       });
 
-      this.recordUsage(userCtx, 'task_generate', result.tokensIn, result.tokensOut);
+      this.recordUsage(userCtx, 'task_generate', result.tokensIn, result.tokensOut, result.model);
 
       this.tokenService?.deductTokens({
         schoolId: userCtx?.schoolId,

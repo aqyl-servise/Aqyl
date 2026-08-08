@@ -37,9 +37,9 @@ export class KmzhService {
     return check;
   }
 
-  private recordUsage(userCtx: UserContext, actionType: string, tokensIn: number, tokensOut: number) {
+  private recordUsage(userCtx: UserContext, actionType: string, tokensIn: number, tokensOut: number, model: string) {
     if (!this.aiUsageService?.isLimitedRole(userCtx.role)) return;
-    this.aiUsageService.recordTokens(userCtx.userId, userCtx.schoolId, actionType, tokensIn, tokensOut).catch(() => {});
+    this.aiUsageService.recordTokens(userCtx.userId, userCtx.schoolId, actionType, tokensIn, tokensOut, model).catch(() => {});
   }
 
   async generate(dto: KmzhGenerateDto, userCtx: UserContext) {
@@ -112,7 +112,7 @@ export class KmzhService {
       messages: [{ role: 'user', content: prompt }],
     });
 
-    this.recordUsage(userCtx, 'kmzh_objectives', result.tokensIn, result.tokensOut);
+    this.recordUsage(userCtx, 'kmzh_objectives', result.tokensIn, result.tokensOut, result.model);
 
     await this.tokenService.deductTokens({
       schoolId: userCtx.schoolId,
@@ -191,7 +191,7 @@ export class KmzhService {
       messages: [{ role: 'user', content: prompt }],
     });
 
-    this.recordUsage(userCtx, 'kmzh_generate', result.tokensIn, result.tokensOut);
+    this.recordUsage(userCtx, 'kmzh_generate', result.tokensIn, result.tokensOut, result.model);
 
     await this.tokenService.deductTokens({
       schoolId: userCtx.schoolId,

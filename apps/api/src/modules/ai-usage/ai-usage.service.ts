@@ -3,6 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { In, Repository } from "typeorm";
 import { AiUsageAlert, AiUsageDaily } from "./ai-usage.entity";
 import { Teacher } from "../teachers/entities/teacher.entity";
+import { costKzt } from "../../config/ai-pricing";
 
 export const CURRENT_DAILY_LIMIT = 20;
 const WARNING_THRESHOLD = 16; // 80% of 20
@@ -103,16 +104,40 @@ export class AiUsageService {
     actionType: string,
     tokensInput: number,
     tokensOutput: number,
+    model: string,
   ): Promise<void> {
     const today = this.today();
-    const costKzt = ((tokensInput * 0.25 + tokensOutput * 1.25) / 1_000_000) * 480;
+    const cost = costKzt(model, tokensInput, tokensOutput);
 
     const row = await this.dailyRepo.findOne({ where: { userId, date: today, actionType } });
-    if (!row) return;
-    row.tokensInput += tokensInput;
-    row.tokensOutput += tokensOutput;
-    row.costKzt += costKzt;
-    await this.dailyRepo.save(row);
+    if (row) {
+      row.tokensInput += tokensInput;
+      row.tokensOutput += tokensOutput;
+      row.costKzt += cost;
+      await this.dailyRepo.save(row);
+      return;
+    }
+
+    // Строки может не быть: лимитёр (checkAndIncrement) заводит её под своим
+    // типом действия, а сюда почти всегда приходит более точный — например,
+    // лимит считается по 'ai_generate', а запись идёт как 'kmzh_generate'.
+    // Раньше такой вызов просто терялся.
+    //
+    // count: 0 — намеренно. Вызов уже посчитан лимитёром в своей строке, а
+    // дневной лимит проверяется как SUM(count) по всем типам действий, так что
+    // единица здесь урезала бы норму пользователя вдвое.
+    await this.dailyRepo.save(
+      this.dailyRepo.create({
+        userId,
+        schoolId: schoolId ?? undefined,
+        actionType,
+        date: today,
+        count: 0,
+        tokensInput,
+        tokensOutput,
+        costKzt: cost,
+      }),
+    );
   }
 
   async getTodayUsage(userId: string): Promise<{ count: number; limit: number; remaining: number; percentage: number }> {

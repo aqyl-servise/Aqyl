@@ -25,9 +25,9 @@ export class AiChatService {
     return check;
   }
 
-  private async recordUsage(userCtx: UserContext | undefined, actionType: string, usage?: { input_tokens: number; output_tokens: number }) {
+  private async recordUsage(userCtx: UserContext | undefined, actionType: string, usage?: { input_tokens: number; output_tokens: number; model: string }) {
     if (!userCtx || !this.aiUsageService?.isLimitedRole(userCtx.role) || !usage) return;
-    this.aiUsageService.recordTokens(userCtx.userId, userCtx.schoolId, actionType, usage.input_tokens, usage.output_tokens).catch(() => {});
+    this.aiUsageService.recordTokens(userCtx.userId, userCtx.schoolId, actionType, usage.input_tokens, usage.output_tokens, usage.model).catch(() => {});
   }
 
   async chat(
@@ -59,7 +59,7 @@ export class AiChatService {
       ],
     });
 
-    await this.recordUsage(userCtx, "chat", { input_tokens: result.tokensIn, output_tokens: result.tokensOut });
+    await this.recordUsage(userCtx, "chat", { input_tokens: result.tokensIn, output_tokens: result.tokensOut, model: result.model });
     this.tokenService?.deductTokens({
       schoolId: userCtx?.schoolId,
       userId: userCtx?.userId,
@@ -92,7 +92,7 @@ export class AiChatService {
       }],
     });
 
-    await this.recordUsage(userCtx, "generate_assignment", { input_tokens: result.tokensIn, output_tokens: result.tokensOut });
+    await this.recordUsage(userCtx, "generate_assignment", { input_tokens: result.tokensIn, output_tokens: result.tokensOut, model: result.model });
     this.tokenService?.deductTokens({
       schoolId: userCtx?.schoolId,
       userId: userCtx?.userId,
@@ -139,7 +139,7 @@ export class AiChatService {
       messages: [{ role: "user", content: `Тема: «${params.topic}». Верни ТОЛЬКО JSON (без markdown): ${jsonSchema}` }],
     });
 
-    await this.recordUsage(userCtx, "fl_task", { input_tokens: result.tokensIn, output_tokens: result.tokensOut });
+    await this.recordUsage(userCtx, "fl_task", { input_tokens: result.tokensIn, output_tokens: result.tokensOut, model: result.model });
     this.tokenService?.deductTokens({
       schoolId: userCtx?.schoolId,
       userId: userCtx?.userId,
