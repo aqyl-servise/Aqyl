@@ -9,6 +9,7 @@ import { ValueLinkReference } from './entities/value-link-reference.entity';
 import { AiClientService } from '../../services/ai-client.service';
 import {
   distributeLessonPoints,
+  proposeWeights,
   adjustDescriptorSum,
   hasEnoughAssessed,
   StagePointsProposal,
@@ -16,7 +17,6 @@ import {
 import {
   LessonContext,
   objectivesPrompt,
-  pointsPrompt,
   stagePrompt,
   descriptorsPrompt,
 } from './prompts/lesson-prompts';
@@ -258,7 +258,7 @@ export class LessonPlansService {
     }
 
     // 1) Points distribution (Sonnet proposes, CODE enforces sum=10)
-    const proposal = await this.proposePoints(assessed);
+    const proposal = this.proposePoints(assessed);
     const dist = distributeLessonPoints(proposal, 10);
     const pointsById = new Map(dist.map((d) => [d.stageId, d.points]));
     for (const s of assessed) {
@@ -301,19 +301,18 @@ export class LessonPlansService {
     await this.lessonRepo.update(id, { status: 'ready', totalPoints: 10, homework: lesson.homework ?? null });
   }
 
-  private async proposePoints(assessed: LessonStage[]): Promise<StagePointsProposal[]> {
-    try {
-      const p = pointsPrompt(assessed.map((s) => ({ stageId: s.id, stageType: s.stageType, toolId: s.toolId })), 10);
-      const res = await this.ai.request({ action: 'lesson_points', systemPrompt: p.system, messages: [{ role: 'user', content: p.user }] });
-      const parsed = this.parseJson<{ points: { stageId: string; points: number }[] }>(res.content);
-      if (Array.isArray(parsed?.points) && parsed!.points.length === assessed.length) {
-        return assessed.map((s) => ({ stageId: s.id, points: parsed!.points.find((x) => x.stageId === s.id)?.points ?? 1 }));
-      }
-    } catch (e) {
-      this.logger.warn(`points proposal fell back to equal weights: ${(e as Error).message}`);
-    }
-    // fallback: equal weights (engine still enforces sum=10)
-    return assessed.map((s) => ({ stageId: s.id, points: 1 }));
+  /**
+   * Веса этапов считаются кодом, без обращения к модели.
+   *
+   * Прежде здесь был отдельный вызов Sonnet, который предлагал распределение
+   * баллов, — но его ответ всё равно пересчитывался движком, чтобы сумма была
+   * ровно 10. То есть мы платили за арифметику, результат которой сами же и
+   * исправляли. Правило «сложное/групповое — больше» детерминированное и
+   * живёт в points-engine; на выходе разницы нет, один платный вызов на
+   * генерацию ушёл.
+   */
+  private proposePoints(assessed: LessonStage[]): StagePointsProposal[] {
+    return proposeWeights(assessed.map((s) => ({ id: s.id, stageType: s.stageType })));
   }
 
   // ── Stage regenerate / swap tool ────────────────────────────────

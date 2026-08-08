@@ -29,24 +29,15 @@ export function objectivesPrompt(ctx: LessonContext): { system: string; user: st
       `Предмет: ${ctx.subject ?? '—'}\nКласс: ${ctx.grade ?? '—'}\nТема: ${ctx.lessonTitle ?? '—'}\n` +
       `Языковая цель: ${ctx.languageFocus ?? '—'}\n` +
       `Цели обучения (коды): ${ctx.learningObjectives.join(', ') || '—'}\n\n` +
-      `Верни JSON: {"objectives": ["...", "..."]}`,
+      `Верни JSON: {"objectives": ["...", "..."]}. ` +
+      // Цель урока — одна строка таблицы, не абзац.
+      `Каждая цель — до 15 слов. Без markdown и пояснений вне JSON.`,
   };
 }
 
-// ── Points distribution across assessed stages (Sonnet) ──────────
-export function pointsPrompt(
-  assessed: { stageId: string; stageType: string; toolId?: string }[],
-  total: number,
-): { system: string; user: string } {
-  return {
-    system: SYSTEM_BASE,
-    user:
-      `Распредели РОВНО ${total} баллов между оцениваемыми заданиями урока по весу сложности ` +
-      `(групповое/сложное — больше, индивидуальное/простое — меньше). У каждого минимум 1 балл.\n` +
-      `Задания: ${JSON.stringify(assessed)}\n\n` +
-      `Верни JSON: {"points": [{"stageId": "...", "points": N}]}. Сумма points = ${total}.`,
-  };
-}
+// Распределение баллов больше не запрашивается у модели: веса этапов считает
+// points-engine (proposeWeights). Прежний вызов возвращал предложение, которое
+// движок всё равно пересчитывал до суммы 10 — платный вызов за арифметику.
 
 // ── Single stage content (Sonnet) ────────────────────────────────
 export function stagePrompt(
@@ -63,7 +54,13 @@ export function stagePrompt(
       `цели урока: ${ctx.lessonObjectives.join('; ')}.\n\n` +
       `Верни JSON: {"stageName": "...", "teacherActions": "...", "studentActions": "...", ` +
       `"method": "...", "assessmentCriteria": "...", "resources": "..."}. ` +
-      `teacherActions и studentActions — конкретные действия. Разогрев и рефлексия — формативно, без баллов.`,
+      `teacherActions и studentActions — конкретные действия. Разогрев и рефлексия — формативно, без баллов.\n` +
+      // Ограничения длины: это ячейки таблицы КСП, их читают глазами на одном
+      // листе. Развёрнутые абзацы там не нужны, а выходные токены — основная
+      // статья расхода (примерно 90% стоимости генерации).
+      `ОБЪЁМ: stageName — до 4 слов. teacherActions и studentActions — до 30 слов каждое, ` +
+      `одним предложением, без вводных и пояснений. method, assessmentCriteria, resources — до 12 слов. ` +
+      `Не повторяй тему и класс в тексте — они уже в шапке. Без markdown и пояснений вне JSON.`,
   };
 }
 
@@ -79,6 +76,8 @@ export function descriptorsPrompt(
       `Сгенерируй 2-3 ДЕСКРИПТОРА для оцениваемого задания (этап ${stage.stageType}), ` +
       `сумма баллов дескрипторов = ${points}. Каждый дескриптор — измеримый критерий выполнения.\n` +
       `Задание учителя: ${stage.teacherActions ?? '—'}\nПредмет: ${ctx.subject}, класс: ${ctx.grade}.\n\n` +
-      `Верни JSON: {"descriptors": [{"text": "...", "points": N}]}. Сумма points = ${points}.`,
+      `Верни JSON: {"descriptors": [{"text": "...", "points": N}]}. Сумма points = ${points}. ` +
+      // Дескриптор — короткий проверяемый критерий, а не описание задания.
+      `Каждый дескриптор — до 15 слов, начинается с глагола. Без markdown и пояснений вне JSON.`,
   };
 }

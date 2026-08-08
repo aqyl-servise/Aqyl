@@ -13,7 +13,40 @@ export const MIN_ASSESSED = 2;
 
 export interface StagePointsProposal {
   stageId: string;
-  points: number; // proposed by Sonnet (weight)
+  points: number; // вес этапа
+}
+
+/**
+ * Веса этапов по педагогической нагрузке: «групповое/сложное — больше,
+ * индивидуальное/простое — меньше».
+ *
+ * Раньше эти веса запрашивались у модели отдельным вызовом, но результат всё
+ * равно пересчитывался кодом (reconcileToTotal), чтобы сумма была ровно 10.
+ * То есть платили за арифметику, ответ которой сами и исправляли. Правило
+ * детерминированное и не требует модели: на стандартных пяти этапах веса
+ * дают ровно 10, на любом другом наборе сумму приводит reconcileToTotal.
+ */
+const STAGE_WEIGHTS: Record<string, number> = {
+  warmup: 1,      // разминка — короткая, оценивается слабо
+  explanation: 2, // объяснение — проверка понимания
+  task: 4,        // задание — основная самостоятельная работа
+  quiz: 2,        // квиз — контроль усвоения
+  reflection: 1,  // рефлексия — самооценка
+};
+
+/** Вес этапа по его типу. Неизвестный тип получает средний вес. */
+export function stageWeight(stageType: string): number {
+  return STAGE_WEIGHTS[stageType] ?? 2;
+}
+
+/**
+ * Веса для набора оцениваемых этапов — замена вызова модели.
+ * Сумму до `total` доводит distributeLessonPoints/reconcileToTotal.
+ */
+export function proposeWeights(
+  assessed: { id: string; stageType: string }[],
+): StagePointsProposal[] {
+  return assessed.map((s) => ({ stageId: s.id, points: stageWeight(s.stageType) }));
 }
 
 /** Are there enough assessed stages to distribute points over? */

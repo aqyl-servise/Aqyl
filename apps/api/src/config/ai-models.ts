@@ -18,7 +18,6 @@ export const ACTION_MODEL_MAP: Record<string, keyof typeof AI_MODELS> = {
   text_adapter_generate: 'SONNET',
   text_adapter_translate: 'SONNET',
   lesson_objectives: 'HAIKU',
-  lesson_points: 'SONNET',
   lesson_stage: 'SONNET',
   lesson_descriptors: 'SONNET',
   literacy_stimulus: 'SONNET',
@@ -41,14 +40,17 @@ export const MAX_TOKENS_MAP: Record<string, number> = {
   visualizer_generate: 2000,
   text_adapter_generate: 2000,
   text_adapter_translate: 2000,
+  // Лимиты выставлены с запасом к ограничениям объёма в самих промптах
+  // («teacherActions — до 30 слов» и т.п.). Это потолок, а не плата: платим за
+  // фактический выход. Потолок нужен, чтобы одна аномальная генерация не
+  // съела бюджет и не обрезалась посреди JSON.
   lesson_objectives: 400,
-  lesson_points: 500,
-  lesson_stage: 1200,
-  lesson_descriptors: 500,
-  literacy_stimulus: 1500,
+  lesson_stage: 700, // было 1200 — с ограничением объёма столько не нужно
+  lesson_descriptors: 350, // было 500
+  literacy_stimulus: 900, // было 1500 — стимул ограничен 250 словами
   literacy_analyze: 400,
-  literacy_questions: 3000,
-  literacy_regen_question: 800,
+  literacy_questions: 2200, // было 3000
+  literacy_regen_question: 500, // было 800
 };
 
 export function getModelForAction(action: string): string {

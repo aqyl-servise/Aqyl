@@ -49,7 +49,9 @@ export function stimulusPrompt(p: StimulusParams): { system: string; user: strin
       `Создай СТИМУЛЬНЫЙ МАТЕРИАЛ для задания по функциональной грамотности (${p.literacyType}) — ${typeHint}.\n` +
       `Предмет: ${p.subject ?? '—'}. Класс: ${p.grade ?? '—'} (адаптируй сложность и объём). ${langLine(p.language)}\n` +
       `Тема/контекст: ${p.sourceTopic ?? '—'}. Пожелания: ${p.sourceNotes ?? '—'}.\n\n` +
-      `Верни JSON: { "stimulusText": "...", ${dataHint} }`,
+      `Верни JSON: { "stimulusText": "...", ${dataHint} }. ` +
+      // Стимул печатается на листе ученика — сверх меры длинный текст его ломает.
+      `ОБЪЁМ: стимул 150-250 слов, не больше. Без markdown и пояснений вне JSON.`,
   };
 }
 
@@ -75,7 +77,11 @@ export function questionsPrompt(p: QuestionsParams): { system: string; user: str
       `Для вопросов с вариантами укажи "options" (массив). Вопросы — на применение, а не на воспроизведение.\n\n` +
       `Стимул:\n"""${p.stimulusText.slice(0, 8000)}"""\n` +
       (p.stimulusData ? `Данные: ${JSON.stringify(p.stimulusData).slice(0, 2000)}\n` : '') +
-      `\nВерни JSON: { "questions": [ { "questionText": "...", "questionType": "single|multiple|truefalse|short|open|matching", "pisaLevel": N, "points": N, "options": [...]|null, "correctAnswer": ..., "answerCriteria": "..."|null } ] }`,
+      `\nВерни JSON: { "questions": [ { "questionText": "...", "questionType": "single|multiple|truefalse|short|open|matching", "pisaLevel": N, "points": N, "options": [...]|null, "correctAnswer": ..., "answerCriteria": "..."|null } ] }. ` +
+      // Самый дорогой вызов в продукте: до 3000 выходных токенов. Вопрос на
+      // листе ученика — одна-две строки, а не абзац.
+      `ОБЪЁМ: questionText — до 35 слов, вариант ответа — до 10 слов, answerCriteria — до 20 слов. ` +
+      `Не пересказывай стимул в вопросе. Без markdown и пояснений вне JSON.`,
   };
 }
 
