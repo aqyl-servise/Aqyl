@@ -7,6 +7,14 @@ const PUBLIC_PATHS = [
   '/register',
   '/forgot-password',
   '/reset-password',
+  // Демонстрация продукта без регистрации — требование правила App Store 5.1.1.
+  '/demo',
+  // Документы должны открываться по постоянным адресам без входа: их
+  // проверяют магазины приложений и платёжный оператор.
+  '/privacy',
+  '/terms',
+  '/consent',
+  '/delete-account',
   '/api/auth/set-cookie',
   '/api/auth/clear-cookie',
   '/api/auth',        // все /api/auth/* публичные (login, register, b2c/*)
