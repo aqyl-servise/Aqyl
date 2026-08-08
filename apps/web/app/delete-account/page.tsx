@@ -3,6 +3,7 @@ import { PublicHeader } from "../../components/public-header";
 import { PublicFooter } from "../../components/public-footer";
 import { COMPANY } from "../../lib/company";
 import { ACCOUNT_RESTORE_DAYS, PAYMENT_DOCS_YEARS } from "../../lib/product";
+import { DeleteAccountForm } from "./delete-account-form";
 
 export const metadata: Metadata = {
   title: "Удаление аккаунта | Aqyl",
@@ -54,16 +55,13 @@ export default function DeleteAccountPage() {
             </p>
           </div>
 
-          <div className="pub-card">
-            <h3 style={{ marginBottom: 10 }}>Как удалить</h3>
-            <p style={{ lineHeight: 1.75, marginBottom: 12 }}>
-              В приложении и веб-версии: «Профиль» → «Управление аккаунтом» → «Удалить аккаунт».
-            </p>
-            <p style={{ fontSize: "0.875rem", color: "var(--pub-text-3)" }}>
-              Форма удаления с этой страницы (без входа в аккаунт) готовится. Вопросы:{" "}
-              <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>
-            </p>
-          </div>
+          <DeleteAccountForm />
+
+          <p style={{ marginTop: 18, fontSize: "0.875rem", color: "var(--pub-text-3)" }}>
+            Если вы вошли в приложение, удалить аккаунт можно и оттуда: «Профиль» → «Управление
+            аккаунтом» → «Удалить аккаунт». Вопросы по обработке данных:{" "}
+            <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>
+          </p>
         </div>
       </section>
 

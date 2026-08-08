@@ -15,6 +15,7 @@ import { AuthService } from "./auth.service";
 import { B2cAuthService } from "./b2c-auth.service";
 import { JwtStrategy } from "./strategies/jwt.strategy";
 import { TrialGuardModule } from "../trial-guard/trial-guard.module";
+import { AccountDeletionService } from "./account-deletion.service";
 
 @Module({
   imports: [
@@ -36,7 +37,8 @@ import { TrialGuardModule } from "../trial-guard/trial-guard.module";
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, B2cAuthService, JwtStrategy],
+  providers: [
+    AccountDeletionService,AuthService, B2cAuthService, JwtStrategy],
   exports: [JwtModule, PassportModule, AuthService],
 })
 export class AuthModule {}

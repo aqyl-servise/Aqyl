@@ -8,6 +8,7 @@ import { MailService } from "../mail/mail.service";
 import { AuthService } from "./auth.service";
 import { RegisterB2CDto } from "./dto/register-b2c.dto";
 import { TrialGuardService } from "../trial-guard/trial-guard.service";
+import { AccountDeletionService } from "./account-deletion.service";
 
 const CODE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 const TRIAL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
@@ -20,6 +21,7 @@ export class B2cAuthService {
     private readonly mailService: MailService,
     private readonly authService: AuthService,
     private readonly trialGuard: TrialGuardService,
+    private readonly accountDeletion: AccountDeletionService,
   ) {}
 
   async sendVerificationCode(rawEmail: string): Promise<{ success: true }> {
@@ -92,6 +94,17 @@ export class B2cAuthService {
 
     const matches = await bcrypt.compare(password, teacher.passwordHash);
     if (!matches) throw new UnauthorizedException("Invalid credentials");
+
+    // Аккаунт помечен на удаление, но срок восстановления ещё не истёк —
+    // вход с прежними данными возвращает его целиком. Пробный период при
+    // этом заново не выдаётся (trialEndsAt не трогаем).
+    const restored = await this.accountDeletion.restoreIfPending(teacher);
+    if (restored) {
+      teacher.status = "active";
+      teacher.deletionRequestedAt = null;
+      teacher.purgeAfter = null;
+    }
+
     if (teacher.status === "inactive") throw new UnauthorizedException("INACTIVE");
 
     const tokens = await this.authService.generateTokens(teacher.id, "teacher", "teacher");

@@ -427,6 +427,15 @@ export const api = {
   updateB2CProfile: (token: string, data: UpdateB2CProfileInput) =>
     request<B2CProfile>("/auth/b2c/profile", { method: "PATCH", body: JSON.stringify(data) }, token),
 
+  // Удаление аккаунта. Точка 1 — из профиля, подтверждение паролем.
+  deleteAccount: (token: string, password: string) =>
+    request<{ purgeAfter: string }>("/auth/b2c/delete-account", { method: "POST", body: JSON.stringify({ password }) }, token),
+  // Точка 2 — публичная страница: без входа и без пароля, подтверждение кодом.
+  deleteAccountRequestCode: (email: string) =>
+    request<{ success: true }>("/auth/b2c/delete-account/request-code", { method: "POST", body: JSON.stringify({ email }) }),
+  deleteAccountConfirm: (email: string, code: string) =>
+    request<{ purgeAfter: string }>("/auth/b2c/delete-account/confirm", { method: "POST", body: JSON.stringify({ email, code }) }),
+
   // Billing (Kaspi Pay)
   createPaymentSession: (token: string, months: number) =>
     request<CreateSessionResponse>("/billing/create-session", { method: "POST", body: JSON.stringify({ months }) }, token),

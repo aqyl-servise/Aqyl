@@ -10,6 +10,8 @@ import { RefreshTokenDto } from "./dto/refresh.dto";
 import { RegisterB2CDto } from "./dto/register-b2c.dto";
 import { SendCodeDto, VerifyCodeDto, LoginB2CDto } from "./dto/b2c-auth.dto";
 import { UpdateB2CProfileDto } from "./dto/update-b2c-profile.dto";
+import { DeleteAccountByPasswordDto, DeleteAccountRequestCodeDto, DeleteAccountConfirmDto } from "./dto/delete-account.dto";
+import { AccountDeletionService } from "./account-deletion.service";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { TeachersService } from "../teachers/teachers.service";
@@ -23,6 +25,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly b2cAuthService: B2cAuthService,
+    private readonly accountDeletion: AccountDeletionService,
     private readonly teachersService: TeachersService,
   ) {}
 
@@ -114,6 +117,29 @@ export class AuthController {
   @Patch("b2c/profile")
   updateB2CProfile(@Req() req: { user: AuthUser }, @Body() dto: UpdateB2CProfileDto) {
     return this.b2cAuthService.updateProfile(req.user.id, dto);
+  }
+
+  // ── Удаление аккаунта (три точки входа) ───────────────────────────────────
+  // Точка 1: из профиля, подтверждение паролем.
+  @UseGuards(JwtAuthGuard)
+  @Post("b2c/delete-account")
+  deleteAccount(@Req() req: { user: AuthUser }, @Body() dto: DeleteAccountByPasswordDto) {
+    return this.accountDeletion.deleteByPassword(req.user.id, dto.password);
+  }
+
+  // Точка 2: публичная страница — без входа и без пароля, подтверждение кодом.
+  // Ответ на запрос кода одинаков независимо от существования аккаунта, иначе
+  // форма превращается в проверку, зарегистрирована ли почта.
+  @Post("b2c/delete-account/request-code")
+  @Throttle({ short: { limit: 3, ttl: 60_000 } })
+  requestDeletionCode(@Body() dto: DeleteAccountRequestCodeDto) {
+    return this.accountDeletion.requestCode(dto.email);
+  }
+
+  @Post("b2c/delete-account/confirm")
+  @Throttle({ short: { limit: 5, ttl: 60_000 } })
+  confirmDeletion(@Body() dto: DeleteAccountConfirmDto) {
+    return this.accountDeletion.confirmByCode(dto.email, dto.code);
   }
 
   @UseGuards(JwtAuthGuard)

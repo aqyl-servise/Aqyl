@@ -7,16 +7,25 @@ import { api, type B2CProfile } from "../../../../lib/api";
 import { useLang, LT } from "../../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../../components/lang-switcher";
 import { Icon } from "../../../../components/ui/icon";
+import { DeleteAccountConfirmText } from "../../../../components/delete-account-confirm";
 
 // Бренд-токены применяются через класс .aqyl-b2c на корне (см. globals.css).
 const BRAND = "var(--amber)";
 const DARK = "var(--white)";
+
+/** Экраны раздела «Управление аккаунтом»: обычный → подтверждение → готово. */
+type DelStep = "idle" | "confirm" | "done";
 
 export default function ProfilePage() {
   const router = useRouter();
   const [lang, setLang] = useLang();
   const t = LT[lang];
   const [profile, setProfile] = useState<B2CProfile | null>(null);
+  const [delStep, setDelStep] = useState<DelStep>("idle");
+  const [password, setPassword] = useState("");
+  const [delError, setDelError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [purgeAfter, setPurgeAfter] = useState<string>("");
 
   useEffect(() => {
     (async () => {
@@ -25,6 +34,26 @@ export default function ProfilePage() {
       try { setProfile(await api.getB2CMe(tk)); } catch { router.replace("/login"); }
     })();
   }, [router]);
+
+  async function confirmDelete() {
+    setDelError(null);
+    setBusy(true);
+    try {
+      const tk = await getValidAccessToken();
+      if (!tk) { router.replace("/login"); return; }
+      const res = await api.deleteAccount(tk, password);
+      setPurgeAfter(new Date(res.purgeAfter).toLocaleDateString("ru-RU", { day: "2-digit", month: "long", year: "numeric" }));
+      setDelStep("done");
+      // Сессия больше не действует — чистим токены, но не уводим со страницы,
+      // чтобы человек дочитал условия восстановления.
+      await logout();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      setDelError(msg.includes("INVALID_PASSWORD") || msg.includes("401") ? t.delWrongPass : t.delFailed);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const row = (l: string, v: string) => (
     <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--line)", fontSize: 15 }}>
@@ -50,6 +79,81 @@ export default function ProfilePage() {
               <button onClick={async () => { await logout(); router.replace("/login"); }} style={{ background: "transparent", border: "1.5px solid var(--lavender)", color: "var(--white)", borderRadius: 10, padding: "10px 18px", cursor: "pointer", fontWeight: 700, fontFamily: "inherit" }}>{t.logout}</button>
             </div>
           </div>
+        )}
+
+        {/* ── Управление аккаунтом ──────────────────────────────────────────
+            Путь ровно три уровня: Профиль → Управление аккаунтом → Удалить
+            аккаунт. Пункт назван дословно «Удалить аккаунт»: слова
+            «заморозить», «приостановить», «деактивировать» запрещены.
+            Дополнительное подтверждение ровно одно — пароль. Поле «причина
+            удаления» не запрашивается, к поддержке не отправляем. */}
+        {profile && (
+          <section style={{ background: "var(--ink-2)", borderRadius: 14, padding: 24, border: "1px solid var(--line)", marginTop: 18 }}>
+            <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 18, margin: "0 0 14px", color: "var(--white)" }}>
+              {t.accountMgmt}
+            </h2>
+
+            {delStep === "idle" && (
+              <button
+                onClick={() => { setDelStep("confirm"); setDelError(null); setPassword(""); }}
+                style={{ background: "transparent", border: "1.5px solid var(--danger)", color: "var(--danger)", borderRadius: 10, padding: "10px 18px", cursor: "pointer", fontWeight: 700, fontFamily: "inherit" }}
+              >
+                {t.deleteAccount}
+              </button>
+            )}
+
+            {delStep === "confirm" && (
+              <div>
+                <DeleteAccountConfirmText tone="dark" />
+
+                <label style={{ display: "block", marginTop: 18, fontSize: 13, fontWeight: 700, color: "var(--white)", marginBottom: 6 }}>
+                  {t.delPassLabel}
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  style={{ width: "100%", padding: "11px 13px", borderRadius: 10, border: "1.5px solid var(--line)", background: "var(--ink)", color: "var(--white)", fontSize: 15, fontFamily: "inherit", boxSizing: "border-box" }}
+                />
+
+                {delError && (
+                  <div style={{ marginTop: 12, color: "var(--danger)", fontSize: 14 }}>{delError}</div>
+                )}
+
+                <div style={{ display: "flex", gap: 12, marginTop: 18, flexWrap: "wrap" }}>
+                  <button
+                    onClick={() => { setDelStep("idle"); setPassword(""); setDelError(null); }}
+                    style={{ background: "transparent", border: "1.5px solid var(--lavender)", color: "var(--white)", borderRadius: 10, padding: "10px 18px", cursor: "pointer", fontWeight: 700, fontFamily: "inherit" }}
+                  >
+                    {t.cancel}
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    disabled={!password || busy}
+                    style={{ background: "var(--danger)", border: "none", color: "#fff", borderRadius: 10, padding: "10px 18px", cursor: !password || busy ? "not-allowed" : "pointer", fontWeight: 700, fontFamily: "inherit", opacity: !password || busy ? 0.6 : 1 }}
+                  >
+                    {t.deleteAccount}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {delStep === "done" && (
+              <div>
+                <div style={{ fontWeight: 700, color: "var(--white)", marginBottom: 8 }}>{t.delDoneTitle}</div>
+                <p style={{ color: "var(--muted)", fontSize: 15, lineHeight: 1.7, margin: "0 0 18px" }}>
+                  {t.delDoneHint.replace("{d}", purgeAfter)}
+                </p>
+                <button
+                  onClick={() => router.replace("/login")}
+                  style={{ background: BRAND, border: "none", color: "var(--on-amber)", borderRadius: 10, padding: "10px 18px", cursor: "pointer", fontWeight: 700, fontFamily: "inherit" }}
+                >
+                  {t.logout}
+                </button>
+              </div>
+            )}
+          </section>
         )}
       </main>
     </div>

@@ -54,6 +54,17 @@ export class Teacher {
   @Column({ type: "timestamp", nullable: true })
   trialEndsAt?: Date | null; // 14 days from B2C registration
 
+  // ── Удаление аккаунта ──────────────────────────────────────────────────────
+  // Мягкое удаление: доступ закрывается сразу, но данные ещё можно вернуть
+  // входом с прежними почтой и паролем. По истечении срока запись и все
+  // материалы уничтожаются без возможности восстановления (см. purgeDue).
+  @Column({ type: "timestamp", nullable: true })
+  deletionRequestedAt?: Date | null;
+
+  /** Дата окончательного уничтожения данных: deletionRequestedAt + 14 дней. */
+  @Column({ type: "timestamp", nullable: true })
+  purgeAfter?: Date | null;
+
   // ── B2C onboarding ─────────────────────────────────────────────────────────
   @Column({ default: false })
   onboardingCompleted!: boolean;
