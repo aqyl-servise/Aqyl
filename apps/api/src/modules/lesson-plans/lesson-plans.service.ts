@@ -115,12 +115,19 @@ export class LessonPlansService {
     const cell = (children: import('docx').Paragraph[], widthDxa?: number) =>
       new TableCell({ borders, ...(widthDxa ? { width: { size: widthDxa, type: WidthType.DXA } } : {}), children });
 
+    // Ширины таблиц — в твипах, а не в процентах: docx 9.6.1 сериализует
+    // WidthType.PERCENTAGE как w:w="100%", тогда как схема OOXML требует здесь
+    // целое число, и Word отказывается открывать такой файл. TEXT_W — ширина
+    // полосы набора: страница Letter (12240) минус поля по умолчанию (1440×2).
+    const TEXT_W = 9360;
+
     // Header rows (label | value)
     const hRow = (label: string, value: string) =>
-      new TableRow({ children: [cell([p(label, true)], 3200), cell([p(value)], 6800)] });
+      new TableRow({ children: [cell([p(label, true)], 3000), cell([p(value)], 6360)] });
 
     const headerTable = new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
+      width: { size: TEXT_W, type: WidthType.DXA },
+      columnWidths: [3000, 6360],
       rows: [
         hRow('Short term plan', lesson.unit ? `Unit: ${lesson.unit}` : ''),
         hRow('Lesson №', lesson.lessonNumber ?? ''),
@@ -160,7 +167,12 @@ export class LessonPlansService {
         ],
       });
     });
-    const planTable = new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [planHeader, ...planRows] });
+    const PLAN_COLS = [1500, 2100, 2400, 2000, 1360]; // = TEXT_W
+    const planTable = new Table({
+      width: { size: TEXT_W, type: WidthType.DXA },
+      columnWidths: PLAN_COLS,
+      rows: [planHeader, ...planRows],
+    });
 
     const doc = new Document({
       sections: [{

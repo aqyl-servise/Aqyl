@@ -181,7 +181,17 @@ export class LiteracyService {
         if (tbl.title) children.push(p(tbl.title, { bold: true }));
         const head = new TableRow({ children: (tbl.columns ?? []).map((c) => new TableCell({ borders, children: [p(c, { bold: true })] })) });
         const rows = (tbl.rows ?? []).map((r) => new TableRow({ children: r.map((c) => new TableCell({ borders, children: [p(String(c))] })) }));
-        children.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [head, ...rows] }));
+        // Ширины в твипах, а не в процентах: docx 9.6.1 выдаёт для PERCENTAGE
+        // значение w:w="100%", которое схема OOXML не допускает, и Word
+        // считает файл повреждённым. TEXT_W — полоса набора Letter без полей.
+        const TEXT_W = 9360;
+        const colCount = Math.max(1, (tbl.columns ?? []).length);
+        const colW = Math.floor(TEXT_W / colCount);
+        children.push(new Table({
+          width: { size: colW * colCount, type: WidthType.DXA },
+          columnWidths: Array(colCount).fill(colW),
+          rows: [head, ...rows],
+        }));
       }
     }
 
