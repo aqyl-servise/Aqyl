@@ -3,25 +3,25 @@ import { PublicHeader, LogoIcon } from "../components/public-header";
 
 const STATS = [
   { num: "3 часа", sub: "в неделю экономии" },
-  { num: "30 сек", sub: "генерация КМЖ" },
+  { num: "30 сек", sub: "генерация КСП" },
   { num: "100%", sub: "МОН РК" },
 ];
 
 const PAINS = [
-  { dot: "pub-dot-purple", title: "КМЖ вручную", text: "1–2 часа на план урока. Ежедневно." },
-  { dot: "pub-dot-purple", title: "Отчёты и БЖБ", text: "Таблицы вместо подготовки к урокам." },
+  { dot: "pub-dot-purple", title: "КСП вручную", text: "1–2 часа на план урока. Ежедневно." },
+  { dot: "pub-dot-purple", title: "Отчёты и СОР", text: "Таблицы вместо подготовки к урокам." },
   { dot: "pub-dot-purple", title: "Изменения МОН РК", text: "Стандарты меняются — всё переделывать." },
 ];
 
 const SOLUTIONS = [
-  { accent: "pub-card-accent-purple", title: "КМЖ", text: "Краткосрочный план урока по теме, классу и стандарту" },
-  { accent: "pub-card-accent-green", title: "КТЖ", text: "Долгосрочное планирование на учебный год" },
-  { accent: "pub-card-accent-amber", title: "БЖБ/ТЖБ", text: "Суммативные оценки с критериями автоматически" },
+  { accent: "pub-card-accent-purple", title: "КСП", text: "Краткосрочный план урока по теме, классу и стандарту" },
+  { accent: "pub-card-accent-green", title: "ДСП", text: "Долгосрочный план на учебный год" },
+  { accent: "pub-card-accent-amber", title: "СОР/СОЧ", text: "Суммативные оценки с критериями автоматически" },
   { accent: "pub-card-accent-purple", title: "Аналитика", text: "Рейтинги, отчёты, статистика класса и школы" },
 ];
 
 const ROLES = [
-  { dot: "pub-dot-purple", title: "Учитель", text: "КМЖ, материалы, оценки" },
+  { dot: "pub-dot-purple", title: "Учитель", text: "КСП, материалы, оценки" },
   { dot: "pub-dot-green", title: "Директор", text: "Аналитика, контроль, отчёты" },
   { dot: "pub-dot-amber", title: "Завуч", text: "Расписание, открытые уроки" },
   { dot: "pub-dot-purple", title: "Психолог", text: "Анкеты, наблюдения, протоколы" },
@@ -29,8 +29,8 @@ const ROLES = [
   { dot: "pub-dot-amber", title: "Ученик", text: "Портфолио, задания, оценки" },
 ];
 
-const PLAN_SCHOOL = ["КМЖ и КТЖ", "БЖБ / ТЖБ", "Аналитика школы", "Все роли", "Поддержка"];
-const PLAN_PERSONAL = ["Генерация КМЖ", "Материалы к урокам", "Личный профиль"];
+const PLAN_SCHOOL = ["КСП и ДСП", "СОР / СОЧ", "Аналитика школы", "Все роли", "Поддержка"];
+const PLAN_PERSONAL = ["Генерация КСП", "Материалы к урокам", "Личный профиль"];
 
 const listItem: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, fontSize: "0.9375rem", color: "var(--pub-text-2)" };
 
@@ -50,7 +50,7 @@ export default function LandingPage() {
             Больше времени <span style={{ color: "var(--pub-green)" }}>на учеников.</span>
           </h1>
           <p style={{ maxWidth: 600, margin: "0 auto 32px", fontSize: "1.0625rem" }}>
-            Aqyl автоматизирует КМЖ, КТЖ, БЖБ/ТЖБ и аналитику по стандартам МОН РК. Для учителей, директоров и всей школы.
+            Aqyl автоматизирует КСП, ДСП, СОР/СОЧ и аналитику по стандартам МОН РК. Для учителей, директоров и всей школы.
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 56 }}>
             <Link href="/register" className="pub-btn pub-btn-primary pub-btn-lg">Начать бесплатно →</Link>
