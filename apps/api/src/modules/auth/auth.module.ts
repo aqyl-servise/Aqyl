@@ -14,10 +14,12 @@ import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { B2cAuthService } from "./b2c-auth.service";
 import { JwtStrategy } from "./strategies/jwt.strategy";
+import { TrialGuardModule } from "../trial-guard/trial-guard.module";
 
 @Module({
   imports: [
     TeachersModule,
+    TrialGuardModule,
     PassportModule,
     MailModule,
     TypeOrmModule.forFeature([PasswordReset, School, Teacher, RefreshToken, EmailVerification]),

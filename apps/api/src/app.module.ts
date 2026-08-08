@@ -112,8 +112,10 @@ import { Descriptor } from "./modules/lesson-plans/entities/descriptor.entity";
 import { ToolCatalog } from "./modules/lesson-plans/entities/tool-catalog.entity";
 import { ValueLinkReference } from "./modules/lesson-plans/entities/value-link-reference.entity";
 import { LiteracyModule } from "./modules/literacy/literacy.module";
+import { TrialGuardModule } from "./modules/trial-guard/trial-guard.module";
 import { LiteracySet } from "./modules/literacy/entities/literacy-set.entity";
 import { LiteracyQuestion } from "./modules/literacy/entities/literacy-question.entity";
+import { TrialFingerprint } from "./modules/trial-guard/entities/trial-fingerprint.entity";
 
 @Module({
   imports: [
@@ -167,6 +169,7 @@ import { LiteracyQuestion } from "./modules/literacy/entities/literacy-question.
           ValueLinkReference,
           LiteracySet,
           LiteracyQuestion,
+          TrialFingerprint,
         ],
       }),
     }),
@@ -224,6 +227,7 @@ import { LiteracyQuestion } from "./modules/literacy/entities/literacy-question.
     TextAdapterModule,
     LessonPlansModule,
     LiteracyModule,
+    TrialGuardModule,
   ],
   providers: [
     SeedService,

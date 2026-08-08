@@ -7,6 +7,7 @@ import { EmailVerification } from "./entities/email-verification.entity";
 import { MailService } from "../mail/mail.service";
 import { AuthService } from "./auth.service";
 import { RegisterB2CDto } from "./dto/register-b2c.dto";
+import { TrialGuardService } from "../trial-guard/trial-guard.service";
 
 const CODE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 const TRIAL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
@@ -18,6 +19,7 @@ export class B2cAuthService {
     @InjectRepository(EmailVerification) private readonly verificationRepo: Repository<EmailVerification>,
     private readonly mailService: MailService,
     private readonly authService: AuthService,
+    private readonly trialGuard: TrialGuardService,
   ) {}
 
   async sendVerificationCode(rawEmail: string): Promise<{ success: true }> {
@@ -56,6 +58,12 @@ export class B2cAuthService {
     const record = await this.latestVerification(email);
     if (!record || !record.isUsed) throw new BadRequestException("EMAIL_NOT_VERIFIED");
 
+    // Пробный период выдаётся, только если по этой почте его ещё не выдавали.
+    // Отпечаток переживает удаление аккаунта — см. TrialGuardService.
+    // Телефон при B2C-регистрации не собирается; когда появится подтверждение
+    // номера по SMS, его отпечаток добавится вторым аргументом.
+    const grantTrial = await this.trialGuard.shouldGrantTrial(email);
+
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const teacher = await this.teacherRepo.save(
       this.teacherRepo.create({
@@ -68,8 +76,8 @@ export class B2cAuthService {
         subject: dto.subject?.trim() || undefined,
         isEmailVerified: true,
         registrationSource: "b2c",
-        subscriptionStatus: "trial",
-        trialEndsAt: new Date(Date.now() + TRIAL_MS),
+        subscriptionStatus: grantTrial ? "trial" : "expired",
+        trialEndsAt: grantTrial ? new Date(Date.now() + TRIAL_MS) : null,
       }),
     );
 
