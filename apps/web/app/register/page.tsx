@@ -7,6 +7,7 @@ import { api } from "../../lib/api";
 import { setTokens } from "../../lib/auth";
 import { ThemeToggle } from "../../components/theme-toggle";
 import { LogoIcon } from "../../components/public-header";
+import { TRIAL_LABEL } from "../../lib/product";
 
 const RESEND_SECONDS = 600; // 10 minutes
 
@@ -128,7 +129,7 @@ export default function RegisterPage() {
           <div>
             <div className="pub-divider" style={{ background: "rgba(255,255,255,0.15)", marginBottom: 32 }} />
             <h2 style={{ color: "rgba(244,240,255,0.95)" }}>Начните бесплатно</h2>
-            <p style={{ color: "rgba(244,240,255,0.95)", marginTop: 4 }}>14 дней без ограничений.</p>
+            <p style={{ color: "rgba(244,240,255,0.95)", marginTop: 4 }}>{TRIAL_LABEL}, без ограничений.</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 28 }}>
               {FEATURES.map((f) => (
                 <div key={f} className="pub-auth-feature">

@@ -7,7 +7,7 @@ import { Payment } from "./entities/payment.entity";
 import { Subscription } from "./entities/subscription.entity";
 import { KaspiService } from "./kaspi.service";
 
-const PRICE_PER_MONTH = 4000; // тенге
+const PRICE_PER_MONTH = 2990; // тенге
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Скидки за длительные периоды (совпадают с тарифами на /dashboard/b2c/subscribe).

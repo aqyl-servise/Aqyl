@@ -1,10 +1,13 @@
 import Link from "next/link";
-import { PublicHeader, LogoIcon } from "../components/public-header";
+import { PublicHeader } from "../components/public-header";
+import { PublicFooter } from "../components/public-footer";
+import { TRIAL_LABEL, PRICE_PER_MONTH, formatTenge } from "../lib/product";
 
 const STATS = [
   { num: "3 часа", sub: "в неделю экономии" },
   { num: "30 сек", sub: "генерация КСП" },
-  { num: "100%", sub: "МОН РК" },
+  // Не «100% МОН РК» — это читается как заявление об аккредитации, которой нет.
+  { num: "№130", sub: "формат по требованиям МОН РК" },
 ];
 
 const PAINS = [
@@ -15,22 +18,14 @@ const PAINS = [
 
 const SOLUTIONS = [
   { accent: "pub-card-accent-purple", title: "КСП", text: "Краткосрочный план урока по теме, классу и стандарту" },
-  { accent: "pub-card-accent-green", title: "ДСП", text: "Долгосрочный план на учебный год" },
-  { accent: "pub-card-accent-amber", title: "СОР/СОЧ", text: "Суммативные оценки с критериями автоматически" },
-  { accent: "pub-card-accent-purple", title: "Аналитика", text: "Рейтинги, отчёты, статистика класса и школы" },
+  { accent: "pub-card-accent-green", title: "Функциональная грамотность", text: "Задания по уровням PISA со стимульным материалом" },
+  { accent: "pub-card-accent-amber", title: "Материалы к уроку", text: "Схемы, адаптация текста, рабочие листы" },
+  { accent: "pub-card-accent-purple", title: "Экспорт в Word", text: "Готовый документ по формату №130" },
 ];
 
-const ROLES = [
-  { dot: "pub-dot-purple", title: "Учитель", text: "КСП, материалы, оценки" },
-  { dot: "pub-dot-green", title: "Директор", text: "Аналитика, контроль, отчёты" },
-  { dot: "pub-dot-amber", title: "Завуч", text: "Расписание, открытые уроки" },
-  { dot: "pub-dot-purple", title: "Психолог", text: "Анкеты, наблюдения, протоколы" },
-  { dot: "pub-dot-green", title: "Соц. педагог", text: "Питание, особые учащиеся" },
-  { dot: "pub-dot-amber", title: "Ученик", text: "Портфолио, задания, оценки" },
-];
-
-const PLAN_SCHOOL = ["КСП и ДСП", "СОР / СОЧ", "Аналитика школы", "Все роли", "Поддержка"];
-const PLAN_PERSONAL = ["Генерация КСП", "Материалы к урокам", "Личный профиль"];
+// Школьный контур (роли ученика, психолога, соцпедагога и школьный тариф)
+// вынесен с витрины на этап B2G — с отдельным договором и согласиями.
+const PLAN_PERSONAL = ["Генерация КСП", "Функциональная грамотность", "Материалы к урокам", "Экспорт в Word"];
 
 const listItem: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, fontSize: "0.9375rem", color: "var(--pub-text-2)" };
 
@@ -50,11 +45,12 @@ export default function LandingPage() {
             Больше времени <span style={{ color: "var(--pub-green)" }}>на учеников.</span>
           </h1>
           <p style={{ maxWidth: 600, margin: "0 auto 32px", fontSize: "1.0625rem" }}>
-            Aqyl автоматизирует КСП, ДСП, СОР/СОЧ и аналитику по стандартам МОН РК. Для учителей, директоров и всей школы.
+            Введите тему — Aqyl развернёт краткосрочный план урока по требованиям МОН РК: этапы, задания, критерии оценивания и готовый документ в Word.
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 56 }}>
             <Link href="/register" className="pub-btn pub-btn-primary pub-btn-lg">Начать бесплатно →</Link>
-            <Link href="/login" className="pub-btn pub-btn-outline pub-btn-lg">Смотреть демо</Link>
+            {/* Демо открывается без регистрации — требование правила App Store 5.1.1. */}
+            <Link href="/demo" className="pub-btn pub-btn-outline pub-btn-lg">Смотреть демо</Link>
           </div>
 
           <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", maxWidth: 700, margin: "0 auto", border: "1px solid var(--pub-border)", borderRadius: "var(--pub-radius-md)", background: "var(--pub-bg-surface)" }}>
@@ -100,52 +96,18 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ДЛЯ КОГО */}
-      <section className="pub-section pub-section-subtle">
-        <div className="pub-container">
-          <h2 style={{ marginBottom: 32 }}>Для всей школы</h2>
-          <div className="pub-grid pub-grid-3">
-            {ROLES.map((r) => (
-              <div key={r.title} className="pub-card">
-                <h3 style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                  <span className={`pub-dot ${r.dot}`} /> {r.title}
-                </h3>
-                <p>{r.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ТАРИФЫ */}
+      {/* ТАРИФ */}
       <section className="pub-section">
         <div className="pub-container">
-          <h2 style={{ marginBottom: 32 }}>Прозрачные цены</h2>
-          <div className="pub-grid pub-grid-2" style={{ maxWidth: 820, margin: "0 auto" }}>
-            {/* Школьная лицензия */}
-            <div className="pub-card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <h3>Для школы</h3>
-              <div>
-                <span style={{ fontSize: "1.75rem", fontWeight: 700 }}>от 9 500 ₸</span>
-                <span style={{ color: "var(--pub-text-3)", fontSize: "0.875rem" }}> / учитель / год</span>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {PLAN_SCHOOL.map((f) => (
-                  <div key={f} style={listItem}><span className="pub-dot pub-dot-green" /> {f}</div>
-                ))}
-              </div>
-              <Link href="/register" className="pub-btn pub-btn-outline pub-btn-full" style={{ marginTop: "auto" }}>Оставить заявку</Link>
-            </div>
-
-            {/* Личная подписка */}
+          <h2 style={{ marginBottom: 32 }}>Прозрачная цена</h2>
+          <div style={{ maxWidth: 420, margin: "0 auto" }}>
             <div className="pub-card" style={{ display: "flex", flexDirection: "column", gap: 16, border: "1px solid var(--pub-purple)", boxShadow: "var(--pub-shadow-lg)" }}>
-              <span className="pub-badge pub-badge-purple" style={{ alignSelf: "flex-start" }}>Популярное</span>
               <h3>Для учителя</h3>
               <div>
-                <span style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--pub-purple)" }}>4 000 ₸</span>
+                <span style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--pub-purple)" }}>{formatTenge(PRICE_PER_MONTH)}</span>
                 <span style={{ color: "var(--pub-text-3)" }}> / месяц</span>
               </div>
-              <span className="pub-badge pub-badge-green" style={{ alignSelf: "flex-start" }}>14 дней бесплатно</span>
+              <span className="pub-badge pub-badge-green" style={{ alignSelf: "flex-start" }}>{TRIAL_LABEL}</span>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {PLAN_PERSONAL.map((f) => (
                   <div key={f} style={listItem}><span className="pub-dot pub-dot-green" /> {f}</div>
@@ -161,28 +123,14 @@ export default function LandingPage() {
       <section style={{ background: "var(--pub-dark)", padding: "64px 0" }}>
         <div className="pub-container" style={{ textAlign: "center" }}>
           <h2 style={{ color: "#fff", marginBottom: 12 }}>Начните экономить время уже сегодня</h2>
-          <p style={{ color: "rgba(244,240,255,0.7)", marginBottom: 28 }}>14 дней бесплатно. Без привязки карты.</p>
+          <p style={{ color: "rgba(244,240,255,0.7)", marginBottom: 28 }}>{TRIAL_LABEL}. Без привязки карты.</p>
           <Link href="/register" className="pub-btn pub-btn-lg" style={{ background: "#fff", color: "var(--pub-dark)", borderColor: "#fff" }}>
             Зарегистрироваться →
           </Link>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer id="contacts" style={{ background: "var(--pub-bg)", borderTop: "1px solid var(--pub-border)", padding: "24px 0" }}>
-        <div className="pub-container" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-            <LogoIcon size={22} />
-            <span style={{ fontWeight: 600, letterSpacing: "0.08em" }}>aqyl</span>
-            <span style={{ fontSize: "0.8125rem", color: "var(--pub-text-3)" }}>© 2025 SarbonLab</span>
-          </div>
-          <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginLeft: "auto", fontSize: "0.8125rem", color: "var(--pub-text-3)" }}>
-            <a href="#">Политика конфиденциальности</a>
-            <a href="#">Условия</a>
-            <a href="https://instagram.com/aqyl_platform" target="_blank" rel="noopener noreferrer">Instagram @aqyl_platform</a>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }
