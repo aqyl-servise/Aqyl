@@ -141,9 +141,19 @@ export class AccountDeletionService {
   /**
    * Окончательное уничтожение просроченных аккаунтов. Запускать по расписанию.
    *
-   * Порядок важен: сначала записываем необратимый отпечаток (иначе после
-   * удаления строки взять его будет неоткуда), затем удаляем саму запись —
-   * связанные материалы уходят каскадом по внешним ключам.
+   * Порядок важен: сначала записываем необратимый отпечаток (после удаления
+   * строки почту взять будет неоткуда), затем чистим материалы и саму запись.
+   *
+   * Материалы B2C приходится удалять явно: таблицы `lessons` и `literacy_sets`
+   * ссылаются на учителя обычной колонкой `userId` БЕЗ внешнего ключа, поэтому
+   * каскад их не заденет — без этого шага после удаления аккаунта остались бы
+   * осиротевшие планы уроков и задания, а обещание «материалы уничтожаются»
+   * оказалось бы ложным. Вложенные записи (`lesson_stages`, `lesson_descriptors`,
+   * `literacy_questions`) уходят каскадом от своих родителей.
+   *
+   * Отдельный случай — `lesson_analysis`: у неё внешний ключ с NO ACTION, то
+   * есть СУБД заблокирует удаление учителя, у которого есть анализы уроков.
+   * Поэтому чистим и её.
    */
   async purgeDue(): Promise<number> {
     const due = await this.teacherRepo.find({
@@ -151,11 +161,28 @@ export class AccountDeletionService {
     });
     if (!due.length) return 0;
 
+    let purged = 0;
     for (const teacher of due) {
-      await this.trialGuard.remember(teacher.email, teacher.phone ?? null);
-      await this.teacherRepo.delete(teacher.id);
-      this.logger.log(`Account ${teacher.id} purged permanently`);
+      try {
+        await this.trialGuard.remember(teacher.email, teacher.phone ?? null);
+
+        // Всё в одной транзакции: либо аккаунт исчезает целиком вместе с
+        // материалами, либо не меняется ничего и мы повторим на следующий день.
+        await this.teacherRepo.manager.transaction(async (tx) => {
+          // analyzerId — учитель, проводивший анализ открытого урока.
+          await tx.query('DELETE FROM lesson_analysis WHERE "analyzerId" = $1', [teacher.id]);
+          await tx.query('DELETE FROM literacy_sets WHERE "userId" = $1', [teacher.id]);
+          await tx.query('DELETE FROM lessons WHERE "userId" = $1', [teacher.id]);
+          await tx.query('DELETE FROM teacher WHERE id = $1', [teacher.id]);
+        });
+
+        purged += 1;
+        this.logger.log(`Account ${teacher.id} purged permanently with its materials`);
+      } catch (err) {
+        // Один проблемный аккаунт не должен останавливать очистку остальных.
+        this.logger.error(`Не удалось удалить аккаунт ${teacher.id}: ${(err as Error).message}`);
+      }
     }
-    return due.length;
+    return purged;
   }
 }

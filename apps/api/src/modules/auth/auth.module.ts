@@ -39,6 +39,6 @@ import { AccountDeletionService } from "./account-deletion.service";
   controllers: [AuthController],
   providers: [
     AccountDeletionService,AuthService, B2cAuthService, JwtStrategy],
-  exports: [JwtModule, PassportModule, AuthService],
+  exports: [JwtModule, PassportModule, AuthService, AccountDeletionService],
 })
 export class AuthModule {}

@@ -28,6 +28,9 @@ import { Teacher } from "./modules/teachers/entities/teacher.entity";
 import { TeachersModule } from "./modules/teachers/teachers.module";
 import { UsersModule } from "./modules/users/users.module";
 import { ScheduleModule } from "./modules/schedule/schedule.module";
+// Планировщик заданий. Алиас — чтобы не путать со ScheduleModule школьного расписания выше.
+import { ScheduleModule as CronModule } from "@nestjs/schedule";
+import { RetentionModule } from "./modules/retention/retention.module";
 import { AssignmentsModule } from "./modules/assignments/assignments.module";
 import { LessonsModule } from "./modules/lessons/lessons.module";
 import { ProtocolsModule } from "./modules/protocols/protocols.module";
@@ -192,6 +195,8 @@ import { TrialFingerprint } from "./modules/trial-guard/entities/trial-fingerpri
     ExportsModule,
     UsersModule,
     ScheduleModule,
+    CronModule.forRoot(),
+    RetentionModule,
     AssignmentsModule,
     LessonsModule,
     ProtocolsModule,
