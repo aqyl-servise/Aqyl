@@ -158,6 +158,12 @@ export default function B2CDashboardPage() {
                 />
                 <button onClick={buildLesson} className="b2c-main-btn" style={{ ...btnPrimary, flex: "none" }}>{t.buildLesson} →</button>
               </div>
+              {/* Постоянная подсказка: содержимое запроса уходит поставщику модели
+                  за пределы РК. Без идентификаторов это не передача персональных
+                  данных — поэтому просим не вписывать имена учеников. */}
+              <p style={{ color: "var(--muted)", fontSize: 13, margin: "10px auto 0", maxWidth: 820, textAlign: "left" }}>
+                {t.noStudentNames}
+              </p>
             </section>
 
             {/* ── Фирменный конвейер ── */}

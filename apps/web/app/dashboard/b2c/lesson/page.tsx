@@ -190,7 +190,12 @@ export default function LessonGeneratorPage() {
                 <Field l={t.fPresent}><input type="number" style={inp} value={form.presentCount} onChange={(e) => set("presentCount", e.target.value)} /></Field>
                 <Field l={t.fAbsent}><input type="number" style={inp} value={form.absentCount} onChange={(e) => set("absentCount", e.target.value)} /></Field>
               </Grid>
-              <div style={{ marginTop: 12 }}><Field l={t.fTitle}><input style={inp} value={form.lessonTitle} onChange={(e) => set("lessonTitle", e.target.value)} /></Field></div>
+              <div style={{ marginTop: 12 }}>
+                <Field l={t.fTitle}><input style={inp} value={form.lessonTitle} onChange={(e) => set("lessonTitle", e.target.value)} /></Field>
+                {/* Содержимое темы уходит поставщику модели за пределы РК —
+                    без идентификаторов это не передача персональных данных. */}
+                <p style={{ color: "var(--muted)", fontSize: 12, margin: "5px 0 0" }}>{t.noStudentNames}</p>
+              </div>
               <div style={{ marginTop: 12 }}><Field l={t.fLangFocus}><input style={inp} value={form.languageFocus} onChange={(e) => set("languageFocus", e.target.value)} /></Field></div>
               <div style={{ marginTop: 12 }}><Field l={t.fLearnObj}><textarea style={{ ...inp, minHeight: 70, fontFamily: "inherit" }} value={form.learningObjectives} onChange={(e) => set("learningObjectives", e.target.value)} placeholder="7.6.7.1&#10;7.5.4.1" /></Field></div>
               <Grid>

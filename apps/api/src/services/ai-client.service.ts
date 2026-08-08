@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import Anthropic from '@anthropic-ai/sdk';
 import { getModelForAction, getMaxTokensForAction } from '../config/ai-models';
 
@@ -18,6 +18,7 @@ export interface AiResponse {
 
 @Injectable()
 export class AiClientService {
+  private readonly logger = new Logger(AiClientService.name);
   private readonly client?: Anthropic;
 
   constructor() {
@@ -38,6 +39,23 @@ export class AiClientService {
 
     const model = getModelForAction(params.action);
     const maxTokens = params.maxTokens ?? getMaxTokensForAction(params.action);
+
+    // Режим аудита исходящих запросов (пункт «Приёмка» требования 1.5:
+    // записать десять реальных запросов и просмотреть их глазами — в них не
+    // должно быть имён, почты, телефонов, идентификаторов учётной записи и
+    // наименования школы).
+    //
+    // ВЫКЛЮЧЕН ПО УМОЛЧАНИЮ и должен оставаться выключенным в обычной работе:
+    // сам по себе журнал с полным текстом запросов — это хранение содержимого,
+    // которого мы стараемся избегать. Включать точечно на время проверки:
+    //     AI_AUDIT_PROMPTS=true
+    if (process.env.AI_AUDIT_PROMPTS === 'true') {
+      this.logger.warn(
+        `[AI-AUDIT] action=${params.action} model=${model}\n` +
+          `--- system ---\n${params.systemPrompt}\n` +
+          `--- messages ---\n${JSON.stringify(params.messages, null, 2)}`,
+      );
+    }
 
     const response = await this.client.messages.create({
       model,

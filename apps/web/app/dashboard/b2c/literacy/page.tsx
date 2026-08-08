@@ -165,6 +165,8 @@ export default function LiteracyPage() {
               {source === "generated" && (
                 <div style={{ marginTop: 12 }}>
                   <span style={label}>{t.litTopic} *</span><input style={inp} value={topic} onChange={(e) => setTopic(e.target.value)} placeholder={t.litTopicHint} />
+                  {/* Тема уходит поставщику модели за пределы РК. */}
+                  <p style={{ color: "var(--muted)", fontSize: 12, margin: "5px 0 0" }}>{t.noStudentNames}</p>
                   <div style={{ marginTop: 8 }}><span style={label}>{t.litNotes}</span><input style={inp} value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
                 </div>
               )}
@@ -199,6 +201,8 @@ export default function LiteracyPage() {
             {source === "own" ? (
               <div style={card}>
                 <span style={label}>{t.litPasteText}</span>
+                {/* Свой материал целиком уходит в модель — предупреждаем до ввода. */}
+                <p style={{ color: "var(--muted)", fontSize: 12, margin: "0 0 6px" }}>{t.noStudentNames}</p>
                 <textarea style={{ ...inp, minHeight: 220, fontFamily: "inherit" }} value={ownText} onChange={(e) => setOwnText(e.target.value)} />
                 <div style={{ marginTop: 10 }}>
                   <label style={{ ...btnGhost, display: "inline-block" }}>
