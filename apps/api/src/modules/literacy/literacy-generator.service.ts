@@ -6,6 +6,9 @@ import {
 } from './prompts/literacy-prompts';
 import { validateQuestions, validateOne, NormalizedQuestion, ValidationResult } from './engine/literacy-validator';
 
+/** Кто инициировал генерацию — для учёта расхода токенов. */
+export interface AiOwner { userId: string; schoolId?: string | null }
+
 /**
  * Reusable functional-literacy generator (ТЗ раздел 10). Pure AI logic, no HTTP
  * and no persistence — so the lesson generator can call it later without rework.
@@ -16,18 +19,20 @@ export class LiteracyGeneratorService {
 
   constructor(private readonly ai: AiClientService) {}
 
-  async generateStimulus(p: StimulusParams): Promise<{ stimulusText: string; stimulusData: Record<string, unknown> | null }> {
+  /** Владелец набора — чтобы расход токенов попал в отчёт именно ему. */
+
+  async generateStimulus(p: StimulusParams, owner?: AiOwner): Promise<{ stimulusText: string; stimulusData: Record<string, unknown> | null }> {
     const prompt = stimulusPrompt(p);
-    const res = await this.ai.request({ action: 'literacy_stimulus', systemPrompt: prompt.system, messages: [{ role: 'user', content: prompt.user }] });
+    const res = await this.ai.request({ action: 'literacy_stimulus', systemPrompt: prompt.system, messages: [{ role: 'user', content: prompt.user }], userId: owner?.userId, schoolId: owner?.schoolId ?? null });
     const parsed = this.parseJson<{ stimulusText?: string; stimulusData?: Record<string, unknown> | null }>(res.content);
     if (!parsed?.stimulusText) throw new Error('ИИ не вернул стимульный материал');
     return { stimulusText: parsed.stimulusText, stimulusData: parsed.stimulusData ?? null };
   }
 
-  async analyzeMaterial(text: string, language: string): Promise<{ topic?: string; difficulty?: string; suitable?: boolean; note?: string } | null> {
+  async analyzeMaterial(text: string, language: string, owner?: AiOwner): Promise<{ topic?: string; difficulty?: string; suitable?: boolean; note?: string } | null> {
     try {
       const prompt = analyzePrompt(text, language);
-      const res = await this.ai.request({ action: 'literacy_analyze', systemPrompt: prompt.system, messages: [{ role: 'user', content: prompt.user }] });
+      const res = await this.ai.request({ action: 'literacy_analyze', systemPrompt: prompt.system, messages: [{ role: 'user', content: prompt.user }], userId: owner?.userId, schoolId: owner?.schoolId ?? null });
       return this.parseJson(res.content);
     } catch (e) {
       this.logger.warn(`analyzeMaterial failed: ${(e as Error).message}`);
@@ -36,9 +41,9 @@ export class LiteracyGeneratorService {
   }
 
   /** Generate + code-validate the question set. Throws with a reason if invalid. */
-  async generateQuestions(p: QuestionsParams): Promise<ValidationResult> {
+  async generateQuestions(p: QuestionsParams, owner?: AiOwner): Promise<ValidationResult> {
     const prompt = questionsPrompt(p);
-    const res = await this.ai.request({ action: 'literacy_questions', systemPrompt: prompt.system, messages: [{ role: 'user', content: prompt.user }] });
+    const res = await this.ai.request({ action: 'literacy_questions', systemPrompt: prompt.system, messages: [{ role: 'user', content: prompt.user }], userId: owner?.userId, schoolId: owner?.schoolId ?? null });
     const parsed = this.parseJson<{ questions?: unknown[] }>(res.content);
     const raw = Array.isArray(parsed?.questions) ? parsed!.questions : [];
     const result = validateQuestions(raw as never, p.questionCount);
@@ -46,9 +51,9 @@ export class LiteracyGeneratorService {
     return result;
   }
 
-  async regenerateQuestion(p: QuestionsParams): Promise<NormalizedQuestion> {
+  async regenerateQuestion(p: QuestionsParams, owner?: AiOwner): Promise<NormalizedQuestion> {
     const prompt = regenQuestionPrompt(p);
-    const res = await this.ai.request({ action: 'literacy_regen_question', systemPrompt: prompt.system, messages: [{ role: 'user', content: prompt.user }] });
+    const res = await this.ai.request({ action: 'literacy_regen_question', systemPrompt: prompt.system, messages: [{ role: 'user', content: prompt.user }], userId: owner?.userId, schoolId: owner?.schoolId ?? null });
     const parsed = this.parseJson<NormalizedQuestion>(res.content);
     const one = validateOne(parsed as never);
     if (!one) throw new Error('ИИ вернул некорректный вопрос');

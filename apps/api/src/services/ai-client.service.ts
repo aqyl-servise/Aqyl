@@ -1,12 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
 import Anthropic from '@anthropic-ai/sdk';
 import { getModelForAction, getMaxTokensForAction } from '../config/ai-models';
+import { AiUsageRecorder } from './ai-usage-recorder.service';
 
 export interface AiRequestParams {
   action: string;
   systemPrompt: string;
   messages: Array<{ role: 'user' | 'assistant'; content: string }>;
   maxTokens?: number;
+  /**
+   * Кто инициировал вызов — нужен для учёта расхода. Без него вызов
+   * выполнится, но в отчёт не попадёт, поэтому в пользовательских сценариях
+   * его надо передавать всегда.
+   */
+  userId?: string | null;
+  schoolId?: string | null;
 }
 
 export interface AiResponse {
@@ -21,7 +29,7 @@ export class AiClientService {
   private readonly logger = new Logger(AiClientService.name);
   private readonly client?: Anthropic;
 
-  constructor() {
+  constructor(private readonly usage: AiUsageRecorder) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (apiKey) {
       this.client = new Anthropic({ apiKey });
@@ -69,11 +77,20 @@ export class AiClientService {
       .map(b => (b as { type: 'text'; text: string }).text)
       .join('');
 
-    return {
-      content,
+    const tokensIn = response.usage.input_tokens;
+    const tokensOut = response.usage.output_tokens;
+
+    // Учёт не в await: ответ уже получен и оплачен, ждать записи в отчёт
+    // незачем, а её сбой не должен задерживать генерацию.
+    void this.usage.record({
+      userId: params.userId,
+      schoolId: params.schoolId,
+      actionType: params.action,
       model,
-      tokensIn: response.usage.input_tokens,
-      tokensOut: response.usage.output_tokens,
-    };
+      tokensIn,
+      tokensOut,
+    });
+
+    return { content, model, tokensIn, tokensOut };
   }
 }

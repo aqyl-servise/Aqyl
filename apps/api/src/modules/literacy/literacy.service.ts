@@ -71,13 +71,13 @@ export class LiteracyService {
       if (text.length < 200) throw new HttpException('Текст слишком короткий (мин. ~200 символов)', HttpStatus.UNPROCESSABLE_ENTITY);
       if (text.length > 15000) throw new HttpException('Текст слишком длинный (макс. ~15 000 символов)', HttpStatus.UNPROCESSABLE_ENTITY);
       // Dual-call: Haiku analyses the pasted material (best-effort, informs the teacher).
-      await this.generator.analyzeMaterial(text, set.language);
+      await this.generator.analyzeMaterial(text, set.language, { userId: ctx.userId, schoolId: ctx.schoolId });
       await this.setRepo.update({ id, userId: ctx.userId }, { sourceMode: 'own', stimulusText: text, stimulusData: null });
     } else {
       const { stimulusText, stimulusData } = await this.generator.generateStimulus({
         literacyType: set.literacyType, subject: set.subject, grade: set.grade,
         language: set.language, sourceTopic: set.sourceTopic, sourceNotes: set.sourceNotes,
-      });
+      }, { userId: ctx.userId, schoolId: ctx.schoolId });
       await this.setRepo.update({ id, userId: ctx.userId }, { sourceMode: 'generated', stimulusText, stimulusData } as never);
     }
     return this.getOne(id, ctx);
@@ -104,7 +104,7 @@ export class LiteracyService {
       pisaLevels: set.pisaLevels?.length ? set.pisaLevels : [2, 3, 4],
       questionTypes: set.questionTypes?.length ? set.questionTypes : ['single', 'short', 'open'],
       language: set.language,
-    });
+    }, { userId: set.userId, schoolId: set.schoolId ?? null });
     // result.ok is guaranteed true (generator throws otherwise) — CODE owns the invariant.
     await this.qRepo.delete({ setId: id });
     await this.qRepo.save(result.questions.map((q, i) => this.qRepo.create({
@@ -125,7 +125,7 @@ export class LiteracyService {
       pisaLevels: set.pisaLevels?.length ? set.pisaLevels : [q.pisaLevel],
       questionTypes: set.questionTypes?.length ? set.questionTypes : [q.questionType],
       language: set.language,
-    });
+    }, { userId: ctx.userId, schoolId: ctx.schoolId });
     await this.qRepo.update(qid, {
       questionText: fresh.questionText, questionType: fresh.questionType, pisaLevel: fresh.pisaLevel,
       points: fresh.points, options: fresh.options, correctAnswer: fresh.correctAnswer, answerCriteria: fresh.answerCriteria,

@@ -183,7 +183,7 @@ export class LessonPlansService {
       throw new HttpException('Сначала заполните цели обучения', HttpStatus.BAD_REQUEST);
     }
     const p = objectivesPrompt(this.ctxOf(lesson));
-    const res = await this.ai.request({ action: 'lesson_objectives', systemPrompt: p.system, messages: [{ role: 'user', content: p.user }] });
+    const res = await this.ai.request({ action: 'lesson_objectives', systemPrompt: p.system, messages: [{ role: 'user', content: p.user }], userId: ctx.userId, schoolId: ctx.schoolId });
     const parsed = this.parseJson<{ objectives: string[] }>(res.content);
     const objectives = Array.isArray(parsed?.objectives) ? parsed!.objectives.filter((x) => typeof x === 'string') : [];
     if (!objectives.length) throw new HttpException('ИИ вернул неразборчивый ответ', HttpStatus.UNPROCESSABLE_ENTITY);
@@ -271,7 +271,7 @@ export class LessonPlansService {
     for (const s of stages) {
       const desc = s.toolId ? toolMap.get(s.toolId)?.description ?? '' : '';
       const p = stagePrompt({ stageType: s.stageType, toolId: s.toolId, timeMinutes: s.timeMinutes }, desc, ctx);
-      const res = await this.safeRequest('lesson_stage', p.system, p.user);
+      const res = await this.safeRequest('lesson_stage', p.system, p.user, lesson);
       const c = this.parseJson<any>(res) ?? {};
       s.stageName = c.stageName ?? s.stageName ?? s.stageType;
       s.teacherActions = c.teacherActions ?? '';
@@ -286,7 +286,7 @@ export class LessonPlansService {
     for (const s of assessed) {
       const pts = s.points ?? 1;
       const p = descriptorsPrompt({ stageType: s.stageType, toolId: s.toolId, teacherActions: s.teacherActions }, pts, ctx);
-      const res = await this.safeRequest('lesson_descriptors', p.system, p.user);
+      const res = await this.safeRequest('lesson_descriptors', p.system, p.user, lesson);
       const parsed = this.parseJson<{ descriptors: { text: string; points: number }[] }>(res);
       let items = Array.isArray(parsed?.descriptors) && parsed!.descriptors.length
         ? parsed!.descriptors
@@ -324,7 +324,7 @@ export class LessonPlansService {
     const ctxL = this.ctxOf(lesson!);
     const tool = s.toolId ? await this.toolRepo.findOne({ where: { toolId: s.toolId } }) : null;
     const p = stagePrompt({ stageType: s.stageType, toolId: s.toolId, timeMinutes: s.timeMinutes }, tool?.description ?? '', ctxL);
-    const res = await this.safeRequest('lesson_stage', p.system, p.user);
+    const res = await this.safeRequest('lesson_stage', p.system, p.user, lesson!);
     const c = this.parseJson<any>(res) ?? {};
     Object.assign(s, {
       stageName: c.stageName ?? s.stageName,
@@ -377,8 +377,20 @@ export class LessonPlansService {
     return out;
   }
 
-  private async safeRequest(action: string, system: string, user: string): Promise<string> {
-    const res = await this.ai.request({ action, systemPrompt: system, messages: [{ role: 'user', content: user }] });
+  /** Владелец урока нужен, чтобы расход токенов попал в отчёт именно ему. */
+  private async safeRequest(
+    action: string,
+    system: string,
+    user: string,
+    owner?: { userId: string; schoolId?: string | null },
+  ): Promise<string> {
+    const res = await this.ai.request({
+      action,
+      systemPrompt: system,
+      messages: [{ role: 'user', content: user }],
+      userId: owner?.userId,
+      schoolId: owner?.schoolId ?? null,
+    });
     return res.content;
   }
 
