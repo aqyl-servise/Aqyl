@@ -97,8 +97,21 @@ export class AuthController {
   }
 
   @Post("b2c/register")
-  registerB2C(@Body() dto: RegisterB2CDto) {
-    return this.b2cAuthService.registerB2C(dto);
+  registerB2C(
+    @Body() dto: RegisterB2CDto,
+    @Req() req: { ip?: string; headers: Record<string, string | string[] | undefined> },
+  ) {
+    // Адрес отправителя и клиент нужны журналу согласий: закон требует, чтобы
+    // факт согласия можно было доказать, а не только хранить флаг.
+    // За обратным прокси реальный адрес приходит в X-Forwarded-For.
+    const forwarded = req.headers["x-forwarded-for"];
+    const ipAddress =
+      (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(",")[0]?.trim() || req.ip || null;
+    const ua = req.headers["user-agent"];
+    return this.b2cAuthService.registerB2C(dto, {
+      ipAddress,
+      userAgent: (Array.isArray(ua) ? ua[0] : ua) ?? null,
+    });
   }
 
   @Post("b2c/login")

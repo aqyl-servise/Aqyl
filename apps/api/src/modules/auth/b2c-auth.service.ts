@@ -9,6 +9,7 @@ import { AuthService } from "./auth.service";
 import { RegisterB2CDto } from "./dto/register-b2c.dto";
 import { TrialGuardService } from "../trial-guard/trial-guard.service";
 import { AccountDeletionService } from "./account-deletion.service";
+import { ConsentService } from "../consent/consent.service";
 
 const CODE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 const TRIAL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
@@ -22,6 +23,7 @@ export class B2cAuthService {
     private readonly authService: AuthService,
     private readonly trialGuard: TrialGuardService,
     private readonly accountDeletion: AccountDeletionService,
+    private readonly consentService: ConsentService,
   ) {}
 
   async sendVerificationCode(rawEmail: string): Promise<{ success: true }> {
@@ -50,7 +52,7 @@ export class B2cAuthService {
     return { verified: true };
   }
 
-  async registerB2C(dto: RegisterB2CDto) {
+  async registerB2C(dto: RegisterB2CDto, ctx: { ipAddress?: string | null; userAgent?: string | null } = {}) {
     const email = dto.email.toLowerCase().trim();
 
     const existing = await this.teacherRepo.findOne({ where: { email } });
@@ -82,6 +84,11 @@ export class B2cAuthService {
         trialEndsAt: grantTrial ? new Date(Date.now() + TRIAL_MS) : null,
       }),
     );
+
+    // Два раздельных согласия фиксируются двумя записями: кто, на что, по
+    // какой редакции текста, когда, откуда и каким способом. Сбой записи не
+    // роняет регистрацию — пользователь уже создан.
+    await this.consentService.recordRegistration(teacher.id, ctx);
 
     const tokens = await this.authService.generateTokens(teacher.id, "teacher", "teacher");
     return { ...tokens, user: this.serialize(teacher) };

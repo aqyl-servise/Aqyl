@@ -113,8 +113,10 @@ import { Lesson } from "./modules/lesson-plans/entities/lesson.entity";
 import { LessonStage } from "./modules/lesson-plans/entities/lesson-stage.entity";
 import { Descriptor } from "./modules/lesson-plans/entities/descriptor.entity";
 import { ToolCatalog } from "./modules/lesson-plans/entities/tool-catalog.entity";
+import { ConsentModule } from "./modules/consent/consent.module";
 import { ValueLinkReference } from "./modules/lesson-plans/entities/value-link-reference.entity";
 import { LiteracyModule } from "./modules/literacy/literacy.module";
+import { ConsentRecord } from "./modules/consent/entities/consent-record.entity";
 import { TrialGuardModule } from "./modules/trial-guard/trial-guard.module";
 import { LiteracySet } from "./modules/literacy/entities/literacy-set.entity";
 import { LiteracyQuestion } from "./modules/literacy/entities/literacy-question.entity";
@@ -173,6 +175,7 @@ import { TrialFingerprint } from "./modules/trial-guard/entities/trial-fingerpri
           LiteracySet,
           LiteracyQuestion,
           TrialFingerprint,
+          ConsentRecord,
         ],
       }),
     }),
@@ -233,6 +236,7 @@ import { TrialFingerprint } from "./modules/trial-guard/entities/trial-fingerpri
     LessonPlansModule,
     LiteracyModule,
     TrialGuardModule,
+    ConsentModule,
   ],
   providers: [
     SeedService,

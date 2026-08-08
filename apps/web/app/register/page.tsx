@@ -12,12 +12,28 @@ import { TRIAL_LABEL } from "../../lib/product";
 const RESEND_SECONDS = 600; // 10 minutes
 
 const FEATURES = [
-  "Генерация КМЖ за 30 секунд",
-  "Все стандарты МОН РК",
+  "Генерация КСП за 30 секунд",
+  "Формат по требованиям МОН РК",
   "Отмена в любой момент",
 ];
 
 const STEPS = ["Email", "Код", "Профиль"];
+
+// Строка согласия: отметка и текст выровнены по верхнему краю, текст переносится.
+const consentRow: React.CSSProperties = {
+  display: "flex",
+  gap: 10,
+  alignItems: "flex-start",
+  marginTop: 14,
+  fontSize: "0.8125rem",
+  lineHeight: 1.6,
+  color: "var(--pub-text-2)",
+  cursor: "pointer",
+};
+const consentLink: React.CSSProperties = {
+  color: "var(--pub-purple)",
+  textDecoration: "underline",
+};
 
 function extractError(err: unknown, fallback: string): string {
   const msg = err instanceof Error ? err.message : "";
@@ -40,7 +56,10 @@ export default function RegisterPage() {
   const [confirm, setConfirm] = useState("");
   const [subject, setSubject] = useState("");
   const [region, setRegion] = useState("");
-  const [agreed, setAgreed] = useState(false);
+  // Два раздельных согласия. Ни одно не проставлено заранее — предварительно
+  // отмеченные галки прямо запрещены, как и одна общая отметка на всё.
+  const [consentPersonalData, setConsentPersonalData] = useState(false);
+  const [consentCrossBorder, setConsentCrossBorder] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
@@ -98,7 +117,10 @@ export default function RegisterPage() {
     if (!firstName.trim() || !lastName.trim()) { setError("Укажите имя и фамилию"); return; }
     if (password.length < 8) { setError("Пароль должен быть не менее 8 символов"); return; }
     if (password !== confirm) { setError("Пароли не совпадают"); return; }
-    if (!agreed) { setError("Необходимо согласиться с условиями использования"); return; }
+    if (!consentPersonalData || !consentCrossBorder) {
+      setError("Отметьте оба согласия — без них регистрация невозможна");
+      return;
+    }
     setBusy(true); setError(null);
     try {
       const res = await api.registerB2C({
@@ -108,6 +130,8 @@ export default function RegisterPage() {
         lastName: lastName.trim(),
         subject: subject.trim() || undefined,
         region: region.trim() || undefined,
+        consentPersonalData,
+        consentCrossBorder,
       });
       await setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken });
       router.replace("/dashboard/b2c");
@@ -241,11 +265,55 @@ export default function RegisterPage() {
                   <label className="pub-label">Область (необязательно)</label>
                   <input className="pub-input" value={region} onChange={(e) => setRegion(e.target.value)} />
                 </div>
-                <label style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 16, fontSize: "0.8125rem", color: "var(--pub-text-2)" }}>
-                  <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} style={{ marginTop: 2 }} />
-                  <span>Я согласен с условиями использования</span>
+                {/* Два раздельных согласия. Закон РК требует, чтобы согласие
+                    было самостоятельным действием, а не строкой в общих
+                    условиях. Нельзя: одну общую отметку, формулировку
+                    «продолжая, вы соглашаетесь», заранее проставленные галки.
+                    Все три документа — ссылки, открываются в новом окне. */}
+                <label style={consentRow}>
+                  <input
+                    type="checkbox"
+                    checked={consentPersonalData}
+                    onChange={(e) => setConsentPersonalData(e.target.checked)}
+                    style={{ marginTop: 3, flex: "none" }}
+                  />
+                  <span>
+                    Я даю согласие на сбор и обработку персональных данных и принимаю{" "}
+                    <a href="/privacy" target="_blank" rel="noopener noreferrer" style={consentLink}>
+                      Политику конфиденциальности
+                    </a>{" "}
+                    и{" "}
+                    <a href="/terms" target="_blank" rel="noopener noreferrer" style={consentLink}>
+                      Пользовательское соглашение
+                    </a>
+                    .
+                  </span>
                 </label>
-                <button className="pub-btn pub-btn-primary pub-btn-full pub-btn-lg" style={{ marginTop: 18 }} disabled={busy} onClick={handleRegister}>
+
+                <label style={consentRow}>
+                  <input
+                    type="checkbox"
+                    checked={consentCrossBorder}
+                    onChange={(e) => setConsentCrossBorder(e.target.checked)}
+                    style={{ marginTop: 3, flex: "none" }}
+                  />
+                  <span>
+                    Я даю{" "}
+                    <a href="/consent" target="_blank" rel="noopener noreferrer" style={consentLink}>
+                      согласие
+                    </a>{" "}
+                    на трансграничную передачу содержания моих запросов для создания учебных
+                    материалов.
+                  </span>
+                </label>
+
+                <button
+                  className="pub-btn pub-btn-primary pub-btn-full pub-btn-lg"
+                  style={{ marginTop: 18 }}
+                  // Кнопка недоступна, пока не отмечены оба согласия.
+                  disabled={busy || !consentPersonalData || !consentCrossBorder}
+                  onClick={handleRegister}
+                >
                   {busy ? "Создание…" : "Создать аккаунт"}
                 </button>
               </>

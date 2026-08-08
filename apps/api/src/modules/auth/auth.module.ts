@@ -16,11 +16,13 @@ import { B2cAuthService } from "./b2c-auth.service";
 import { JwtStrategy } from "./strategies/jwt.strategy";
 import { TrialGuardModule } from "../trial-guard/trial-guard.module";
 import { AccountDeletionService } from "./account-deletion.service";
+import { ConsentModule } from "../consent/consent.module";
 
 @Module({
   imports: [
     TeachersModule,
     TrialGuardModule,
+    ConsentModule,
     PassportModule,
     MailModule,
     TypeOrmModule.forFeature([PasswordReset, School, Teacher, RefreshToken, EmailVerification]),

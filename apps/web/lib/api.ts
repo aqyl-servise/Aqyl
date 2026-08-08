@@ -62,6 +62,10 @@ export type B2CAuthResponse = { accessToken: string; refreshToken: string; user:
 export type RegisterB2CInput = {
   email: string; password: string; firstName: string; lastName: string;
   subject?: string; region?: string;
+  // Два раздельных согласия. Сервер требует явного true у каждого: блокировки
+  // кнопки на фронте недостаточно, её обходят прямым запросом к API.
+  consentPersonalData: boolean;
+  consentCrossBorder: boolean;
 };
 export type B2CProfile = AuthUser & {
   registrationSource: string;
