@@ -11,7 +11,11 @@ import { OpenLesson } from "../schools/entities/open-lesson.entity";
 import { Protocol } from "../schools/entities/protocol.entity";
 import { School } from "../schools/entities/school.entity";
 import { SecurityAuditLog } from "../schools/entities/security-audit-log.entity";
+import { Subscription } from "../billing/entities/subscription.entity";
 import { SmsService } from "../notifications/sms.service";
+
+/** Цена, проставляемая при ручной выдаче. Совпадает с PRICE_PER_MONTH в billing.service. */
+const ADMIN_GRANT_PRICE = 2990;
 
 @Injectable()
 export class AdminService {
@@ -25,6 +29,7 @@ export class AdminService {
     @InjectRepository(Protocol) private readonly protocolRepo: Repository<Protocol>,
     @InjectRepository(School) private readonly schoolRepo: Repository<School>,
     @InjectRepository(SecurityAuditLog) private readonly auditRepo: Repository<SecurityAuditLog>,
+    @InjectRepository(Subscription) private readonly subscriptionRepo: Repository<Subscription>,
     private readonly smsService: SmsService,
   ) {}
 
@@ -260,6 +265,105 @@ export class AdminService {
     const passwordHash = await bcrypt.hash(newPassword, 10);
     await this.teacherRepo.update(id, { passwordHash });
     return { ok: true };
+  }
+
+  /**
+   * Перевод учителя между воронками B2C и B2G.
+   *
+   * Школа обязательна при переводе в B2G: jwt.strategy отказывает в доступе
+   * любому не-администратору с воронкой не-b2c и без schoolId, поэтому перевод
+   * без школы заблокировал бы человеку вход на следующем же запросе.
+   *
+   * Пробный период при переводе в B2C намеренно НЕ выдаётся — иначе смена
+   * воронки через админку стала бы обходом защиты от повторного триала.
+   */
+  async changeFunnel(id: string, requesterId: string, target: "b2c" | "b2g", schoolId?: string | null) {
+    if (target !== "b2c" && target !== "b2g") throw new BadRequestException("Воронка может быть только b2c или b2g");
+    if (id === requesterId) throw new ForbiddenException("Нельзя менять воронку собственной учётной записи");
+
+    const user = await this.teacherRepo.findOne({ where: { id } });
+    if (!user) throw new NotFoundException("Пользователь не найден");
+    if (user.role === "admin") throw new ForbiddenException("У администратора нет воронки");
+    if (user.registrationSource === target) throw new BadRequestException("Пользователь уже в этой воронке");
+
+    if (target === "b2g") {
+      if (!schoolId) throw new BadRequestException("Для перевода в B2G нужно выбрать школу");
+      const school = await this.schoolRepo.findOne({ where: { id: schoolId } });
+      if (!school) throw new NotFoundException("Школа не найдена");
+      await this.teacherRepo.update(id, { registrationSource: "b2g", schoolId });
+    } else {
+      // В B2C учитель не принадлежит школе — связь снимаем.
+      await this.teacherRepo.update(id, { registrationSource: "b2c", schoolId: null as unknown as string });
+    }
+
+    await this.auditRepo.save(this.auditRepo.create({
+      eventType: "funnel_changed",
+      details: `${user.email}: ${user.registrationSource} → ${target}${target === "b2g" ? ` (школа ${schoolId})` : ""}`,
+      actorId: requesterId,
+    } as never));
+
+    return { ok: true, registrationSource: target, schoolId: target === "b2g" ? schoolId : null };
+  }
+
+  /**
+   * Ручная выдача подписки администратором — для оплат мимо Kaspi
+   * (наличные, счёт, промо). Продлевает от текущей даты окончания, если
+   * подписка ещё действует, иначе от сегодняшнего дня.
+   */
+  async grantSubscription(id: string, requesterId: string, months: number) {
+    if (!Number.isInteger(months) || months < 1 || months > 24) {
+      throw new BadRequestException("Срок должен быть целым числом от 1 до 24 месяцев");
+    }
+    const user = await this.teacherRepo.findOne({ where: { id } });
+    if (!user) throw new NotFoundException("Пользователь не найден");
+    if (user.registrationSource !== "b2c") {
+      throw new BadRequestException("Подписка действует только в воронке B2C — доступ B2G даёт школа");
+    }
+
+    const now = new Date();
+    let sub = await this.subscriptionRepo.findOne({ where: { teacherId: id } });
+    const base = sub?.currentPeriodEnd && sub.currentPeriodEnd > now ? new Date(sub.currentPeriodEnd) : now;
+    const end = new Date(base);
+    end.setMonth(end.getMonth() + months);
+
+    if (!sub) {
+      sub = this.subscriptionRepo.create({ teacherId: id, currentPeriodStart: now });
+    } else if (!sub.currentPeriodStart) {
+      sub.currentPeriodStart = now;
+    }
+    sub.status = "active";
+    sub.currentPeriodEnd = end;
+    sub.pricePerMonth = ADMIN_GRANT_PRICE;
+    sub.cancelAtPeriodEnd = false;
+    await this.subscriptionRepo.save(sub);
+
+    await this.auditRepo.save(this.auditRepo.create({
+      eventType: "subscription_granted",
+      details: `${user.email}: +${months} мес., действует до ${end.toISOString().slice(0, 10)}`,
+      actorId: requesterId,
+    } as never));
+
+    return { ok: true, status: "active", currentPeriodEnd: end };
+  }
+
+  /** Отзыв выданного вручную доступа. Историю не трогаем — только закрываем период. */
+  async revokeSubscription(id: string, requesterId: string) {
+    const user = await this.teacherRepo.findOne({ where: { id } });
+    if (!user) throw new NotFoundException("Пользователь не найден");
+    const sub = await this.subscriptionRepo.findOne({ where: { teacherId: id } });
+    if (!sub) throw new NotFoundException("У пользователя нет подписки");
+
+    sub.status = "expired";
+    sub.currentPeriodEnd = new Date();
+    await this.subscriptionRepo.save(sub);
+
+    await this.auditRepo.save(this.auditRepo.create({
+      eventType: "subscription_revoked",
+      details: `${user.email}: доступ отозван`,
+      actorId: requesterId,
+    } as never));
+
+    return { ok: true, status: "expired" };
   }
 
   async getSecurityAuditLog(limit: number, eventType?: string) {

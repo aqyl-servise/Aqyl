@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Query, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -69,6 +69,28 @@ export class AdminController {
   @Roles("admin")
   changeUserPassword(@Param("id") id: string, @Body() body: { newPassword: string }, @Req() req: ReqUser) {
     return this.service.changeUserPassword(id, req.user.id, body?.newPassword ?? "");
+  }
+
+  @Patch("users/:id/funnel")
+  @Roles("admin")
+  changeFunnel(
+    @Param("id") id: string,
+    @Body() body: { target: "b2c" | "b2g"; schoolId?: string | null },
+    @Req() req: ReqUser,
+  ) {
+    return this.service.changeFunnel(id, req.user.id, body?.target, body?.schoolId ?? null);
+  }
+
+  @Post("users/:id/subscription")
+  @Roles("admin")
+  grantSubscription(@Param("id") id: string, @Body() body: { months: number }, @Req() req: ReqUser) {
+    return this.service.grantSubscription(id, req.user.id, Number(body?.months));
+  }
+
+  @Delete("users/:id/subscription")
+  @Roles("admin")
+  revokeSubscription(@Param("id") id: string, @Req() req: ReqUser) {
+    return this.service.revokeSubscription(id, req.user.id);
   }
 
   @Get("security-audit")

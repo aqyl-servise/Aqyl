@@ -52,6 +52,8 @@ export type AuthUser = {
   isClassTeacher?: boolean;
   managedClassroomId?: string | null;
   managedClassroomName?: string | null;
+  /** 'b2c' | 'b2g'. Приходит из списка пользователей в админке; в других ответах может отсутствовать. */
+  registrationSource?: string;
 };
 
 export type LoginResponse = { accessToken: string; refreshToken?: string; user: AuthUser };
@@ -573,6 +575,15 @@ export const api = {
     request<{ ok: boolean }>(`/admin/users/${id}`, { method: "DELETE", body: JSON.stringify({ confirm: true }) }, token),
   changeUserPassword: (token: string, id: string, newPassword: string) =>
     request<{ ok: boolean }>(`/admin/users/${id}/password`, { method: "PATCH", body: JSON.stringify({ newPassword }) }, token),
+  /** Перевод между воронками. schoolId обязателен для b2g — иначе учитель потеряет доступ. */
+  changeUserFunnel: (token: string, id: string, target: "b2c" | "b2g", schoolId?: string | null) =>
+    request<{ ok: boolean; registrationSource: string; schoolId: string | null }>(
+      `/admin/users/${id}/funnel`, { method: "PATCH", body: JSON.stringify({ target, schoolId }) }, token),
+  grantSubscription: (token: string, id: string, months: number) =>
+    request<{ ok: boolean; currentPeriodEnd: string }>(
+      `/admin/users/${id}/subscription`, { method: "POST", body: JSON.stringify({ months }) }, token),
+  revokeSubscription: (token: string, id: string) =>
+    request<{ ok: boolean }>(`/admin/users/${id}/subscription`, { method: "DELETE" }, token),
 
   // Students
   getStudents: (token: string, classroomId?: string) =>

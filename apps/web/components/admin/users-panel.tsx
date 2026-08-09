@@ -49,6 +49,7 @@ export function UsersPanel({ token, language, t, currentUserId }: {
   const [editing, setEditing] = useState<AuthUser | null>(null);
   const [confirmModal, setConfirmModal] = useState<ConfirmModal | null>(null);
   const [passwordTarget, setPasswordTarget] = useState<AuthUser | null>(null);
+  const [accessTarget, setAccessTarget] = useState<AuthUser | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [busy, setBusy] = useState(false);
@@ -233,6 +234,16 @@ export function UsersPanel({ token, language, t, currentUserId }: {
         />
       )}
 
+      {accessTarget && (
+        <AccessModal
+          user={accessTarget}
+          schools={schools}
+          token={token}
+          onClose={() => setAccessTarget(null)}
+          onDone={(msg) => { setAccessTarget(null); reload(); showToast(msg); }}
+        />
+      )}
+
       {confirmModal && (
         <div className="modal-overlay" onClick={() => setConfirmModal(null)}>
           <div className="modal-card" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
@@ -326,7 +337,17 @@ export function UsersPanel({ token, language, t, currentUserId }: {
                           onClick={() => setPasswordTarget(u)}
                           title={t.users_change_password}
                         >
-                          <Icon name="key" size={16} /> 
+                          <Icon name="key" size={16} />
+                        </button>
+                      )}
+                      {!isSelf(u) && u.role !== "admin" && (
+                        <button
+                          className="btn btn-sm"
+                          style={{ background: "#eef2ff", color: "#3730a3", border: "1px solid #c7d2fe" }}
+                          onClick={() => setAccessTarget(u)}
+                          title="Воронка и подписка"
+                        >
+                          <Icon name="lock" size={16} />
                         </button>
                       )}
                       {!isSelf(u) && (
@@ -521,6 +542,115 @@ function PasswordModal({ user, token, t, onClose, onSuccess }: {
             <button type="button" className="btn btn-ghost" onClick={onClose}>{t.cancel}</button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Воронка и подписка. Две операции в одном окне, потому что они связаны:
+ * перевод в B2C включает проверку подписки, и без неё учитель теряет доступ
+ * к генерации — админ должен видеть оба рычага сразу.
+ */
+function AccessModal({ user, schools, token, onClose, onDone }: {
+  user: AuthUser;
+  schools: SchoolOption[];
+  token: string;
+  onClose: () => void;
+  onDone: (message: string) => void;
+}) {
+  const isB2c = user.registrationSource === "b2c";
+  const [schoolId, setSchoolId] = useState<string>(schools[0]?.id ?? "");
+  const [months, setMonths] = useState(1);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const run = async (fn: () => Promise<unknown>, ok: string) => {
+    setBusy(true); setError(null);
+    try { await fn(); onDone(ok); }
+    catch (e) { setError(e instanceof Error ? e.message : "Не удалось выполнить"); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
+        <h3 style={{ marginBottom: 4 }}><Icon name="lock" size={16} /> Доступ</h3>
+        <p style={{ color: "var(--muted-fg)", fontSize: 13, marginBottom: 16 }}>
+          {user.fullName} — сейчас {isB2c ? "воронка B2C (личная подписка)" : "воронка B2G (через школу)"}
+        </p>
+
+        {error && <div className="alert alert-error" style={{ marginBottom: 12 }}>{error}</div>}
+
+        <div style={{ border: "1px solid var(--border)", borderRadius: 10, padding: 14, marginBottom: 14 }}>
+          <strong style={{ fontSize: 14 }}>Сменить воронку</strong>
+          {isB2c ? (
+            <>
+              <p style={{ fontSize: 13, color: "var(--muted-fg)", margin: "6px 0 10px" }}>
+                Переводя в B2G, обязательно выберите школу — без неё учитель не сможет войти.
+              </p>
+              <select className="input" value={schoolId} onChange={(e) => setSchoolId(e.target.value)}>
+                {schools.length === 0 && <option value="">Школ нет</option>}
+                {schools.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+              <button
+                className="btn btn-primary btn-sm"
+                style={{ marginTop: 10 }}
+                disabled={busy || !schoolId}
+                onClick={() => run(() => api.changeUserFunnel(token, user.id, "b2g", schoolId), "Переведён в B2G")}
+              >
+                Перевести в B2G
+              </button>
+            </>
+          ) : (
+            <>
+              <p style={{ fontSize: 13, color: "var(--muted-fg)", margin: "6px 0 10px" }}>
+                В B2C доступ даёт личная подписка. Пробный период при переводе не выдаётся — при
+                необходимости выдайте подписку ниже, иначе генерация будет закрыта.
+              </p>
+              <button
+                className="btn btn-primary btn-sm"
+                disabled={busy}
+                onClick={() => run(() => api.changeUserFunnel(token, user.id, "b2c", null), "Переведён в B2C")}
+              >
+                Перевести в B2C
+              </button>
+            </>
+          )}
+        </div>
+
+        <div style={{ border: "1px solid var(--border)", borderRadius: 10, padding: 14, opacity: isB2c ? 1 : 0.5 }}>
+          <strong style={{ fontSize: 14 }}>Подписка вручную</strong>
+          <p style={{ fontSize: 13, color: "var(--muted-fg)", margin: "6px 0 10px" }}>
+            {isB2c
+              ? "Для оплат мимо Kaspi. Если подписка ещё действует, срок продлевается от её окончания."
+              : "Недоступно: в B2G доступ даёт школа, а не подписка."}
+          </p>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <input
+              className="input" type="number" min={1} max={24} value={months}
+              onChange={(e) => setMonths(Math.max(1, Math.min(24, Number(e.target.value) || 1)))}
+              style={{ width: 90 }} disabled={!isB2c || busy}
+            />
+            <span style={{ fontSize: 13 }}>мес.</span>
+            <button
+              className="btn btn-primary btn-sm" disabled={!isB2c || busy}
+              onClick={() => run(() => api.grantSubscription(token, user.id, months), `Подписка выдана на ${months} мес.`)}
+            >
+              Выдать
+            </button>
+            <button
+              className="btn btn-ghost btn-sm" disabled={!isB2c || busy}
+              onClick={() => run(() => api.revokeSubscription(token, user.id), "Доступ отозван")}
+            >
+              Отозвать
+            </button>
+          </div>
+        </div>
+
+        <div className="modal-actions" style={{ marginTop: 16 }}>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>Закрыть</button>
+        </div>
       </div>
     </div>
   );
