@@ -121,12 +121,17 @@ Vercel деплоит при каждом push в `main`.
 ## Локальная разработка
 
 ```bash
-# 1. Запусти PostgreSQL
-docker-compose up -d
+# 1. Запусти PostgreSQL для разработки
+# Имя контейнера намеренно отличается от боевого (aqyl-postgres),
+# а порт привязан к 127.0.0.1 — наружу база не выставляется.
+docker run -d --name aqyl-postgres-dev \
+  -e POSTGRES_DB=aqyl -e POSTGRES_USER=aqyl -e POSTGRES_PASSWORD=aqyl_dev \
+  -p 127.0.0.1:5432:5432 postgres:16-alpine
 
 # 2. Настрой окружение
 cp apps/api/.env.example apps/api/.env
-# Заполни apps/api/.env (DATABASE_URL=postgres://aqyl:aqyl123@localhost:5432/aqyl и т.д.)
+# Заполни apps/api/.env (DATABASE_URL=postgres://aqyl:aqyl_dev@localhost:5432/aqyl и т.д.)
+# Пароль выше — только для локальной машины. Боевые значения живут на сервере.
 
 cp apps/web/.env.production.example apps/web/.env.local
 # Оставь NEXT_PUBLIC_API_URL=http://localhost:4000
