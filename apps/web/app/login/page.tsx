@@ -56,7 +56,7 @@ export default function LoginPage() {
 
           <div>
             <div className="pub-divider" style={{ background: "rgba(255,255,255,0.15)", marginBottom: 32 }} />
-            <h2 style={{ color: "rgba(244,240,255,0.95)" }}>Создайте КМЖ за 30 секунд.</h2>
+            <h2 style={{ color: "rgba(244,240,255,0.95)" }}>Создайте КСП за 30 секунд.</h2>
             <p style={{ color: "rgba(244,240,255,0.95)", marginTop: 4 }}>Сэкономьте 3 часа в неделю.</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 28 }}>
               {FEATURES.map((f) => (

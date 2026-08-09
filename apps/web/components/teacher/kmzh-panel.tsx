@@ -317,7 +317,7 @@ export function KmzhPanel({
   return (
     <div className="page" style={{ padding: "16px 12px" }}>
       <h1 className="page-title" style={{ marginBottom: 16 }}>
-        <Icon name="clipboard" size={16} /> {t.nav_kmzh ?? "КМЖ Генератор"}
+        <Icon name="clipboard" size={16} /> {t.nav_kmzh ?? "Генератор КСП"}
       </h1>
 
       <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>

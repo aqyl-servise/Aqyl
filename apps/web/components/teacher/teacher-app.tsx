@@ -57,7 +57,7 @@ export function TeacherApp({ token, user, language, setLanguage, onLogout }: {
     { key: "fl", label: t.nav_fl ?? "Функц. грамотность", icon: "books" },
     { key: "my-rating", label: t.nav_my_rating ?? "Мой рейтинг", icon: "trophy" },
     { key: "sor-soch", label: t.nav_sor_soch ?? "СОР/СОЧ", icon: "file" },
-    { key: "kmzh-generator", label: t.nav_kmzh ?? "КМЖ Генератор", icon: "clipboard" },
+    { key: "kmzh-generator", label: t.nav_kmzh ?? "Генератор КСП", icon: "clipboard" },
     { key: "visualizer", label: t.nav_visualizer ?? "Визуализатор", icon: "map" },
     { key: "text-adapter", label: t.nav_text_adapter ?? "Адаптация текста", icon: "book" },
     ...(isClassTeacher ? [{ key: "malimet", label: t.nav_malimet ?? "Мәлімет", icon: "file" } as NavItem] : []),
