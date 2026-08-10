@@ -7,6 +7,7 @@ import { getValidAccessToken, logout } from "../../../lib/auth";
 import { useLang, LT } from "../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../components/lang-switcher";
 import { Icon, type IconName } from "../../../components/ui/icon";
+import { useIsIosApp } from "../../../lib/platform";
 
 function daysLeft(date: string | null): number {
   if (!date) return 0;
@@ -28,6 +29,7 @@ function AqylMark({ size = 40 }: { size?: number }) {
 
 export default function B2CDashboardPage() {
   const router = useRouter();
+  const iosApp = useIsIosApp();
   const [lang, setLang] = useLang();
   const t = LT[lang];
   const [profile, setProfile] = useState<B2CProfile | null>(null);
@@ -83,10 +85,13 @@ export default function B2CDashboardPage() {
   const firstName = (profile.fullName || "").trim().split(" ")[0] || "";
 
   const pipeline = [t.pipeTopic, t.pipePlan, t.pipeWarmup, t.pipeExplain, t.pipeTask, t.pipeQuiz, t.pipeReflect];
+  // Пункт подписки скрыт в iOS-обёртке: см. lib/platform.ts.
   const tools: { key: string; icon: IconName; label: string; href: string }[] = [
     { key: "materials", icon: "books", label: t.materials, href: "/dashboard/b2c/materials" },
     { key: "fl", icon: "chart", label: t.fl, href: "/dashboard/b2c/literacy" },
-    { key: "subscribe", icon: "card", label: t.subscription, href: "/dashboard/b2c/subscribe" },
+    ...(iosApp === false
+      ? [{ key: "subscribe", icon: "card" as IconName, label: t.subscription, href: "/dashboard/b2c/subscribe" }]
+      : []),
     { key: "help", icon: "help", label: t.help, href: "/dashboard/b2c/help" },
   ];
   const STT: Record<string, { label: string; color: string }> = {
@@ -130,7 +135,7 @@ export default function B2CDashboardPage() {
               {t.trialLeft.replace("{n}", String(trialLeft))}
             </span>
             {/* Вторичное действие — не янтарь: единственный янтарь на экране закреплён за «Собрать урок». */}
-            <button onClick={() => router.push("/dashboard/b2c/subscribe")} style={btnSecondary}>{t.getSub}</button>
+            {iosApp === false && <button onClick={() => router.push("/dashboard/b2c/subscribe")} style={btnSecondary}>{t.getSub}</button>}
           </div>
         )}
 
@@ -138,7 +143,7 @@ export default function B2CDashboardPage() {
           <section style={{ ...card, textAlign: "center", padding: "48px 24px" }}>
             <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 26, margin: "0 0 8px" }}>{status === "trial" ? t.trialEnded : t.subExpired}</h2>
             <p style={{ color: "var(--muted)", fontSize: 15, margin: "0 0 22px" }}>{t.subExpiredHint}</p>
-            <button onClick={() => router.push("/dashboard/b2c/subscribe")} style={btnPrimary}>{t.extendSub}</button>
+            {iosApp === false && <button onClick={() => router.push("/dashboard/b2c/subscribe")} style={btnPrimary}>{t.extendSub}</button>}
           </section>
         ) : (
           <>

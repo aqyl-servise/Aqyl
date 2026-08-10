@@ -6,6 +6,7 @@ import { api } from "../../../../lib/api";
 import { getValidAccessToken } from "../../../../lib/auth";
 import { useLang, LT } from "../../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../../components/lang-switcher";
+import { useIsIosApp } from "../../../../lib/platform";
 
 // Бренд-токены применяются через класс .aqyl-b2c на корне (см. globals.css).
 const BRAND = "var(--lavender)";
@@ -39,6 +40,7 @@ export default function SubscribePage() {
   const [selected, setSelected] = useState<number>(3);
   const [loadingMonths, setLoadingMonths] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const iosApp = useIsIosApp();
 
   async function handlePay(months: number) {
     setError(null);
@@ -52,6 +54,27 @@ export default function SubscribePage() {
       setError(t.subPayError);
       setLoadingMonths(null);
     }
+  }
+
+  // В iOS-обёртке страница не показывает ни тарифов, ни кнопок, ни ссылки на
+  // оплату — только состояние подписки. См. lib/platform.ts.
+  if (iosApp === true) {
+    return (
+      <div className="aqyl-b2c" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
+        <div style={{ maxWidth: 420, textAlign: "center" }}>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 22, marginBottom: 10 }}>Подписка неактивна</h1>
+          <p style={{ color: "var(--muted)", lineHeight: 1.6 }}>
+            Управление подпиской доступно в веб-версии Aqyl.
+          </p>
+          <button
+            onClick={() => router.push("/dashboard/b2c")}
+            style={{ marginTop: 18, background: "transparent", border: "1px solid var(--line)", color: "var(--white)", borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontFamily: "inherit" }}
+          >
+            Назад
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

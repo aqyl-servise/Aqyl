@@ -8,6 +8,7 @@ import { useLang, LT } from "../../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../../components/lang-switcher";
 import { Icon } from "../../../../components/ui/icon";
 import { DeleteAccountConfirmText } from "../../../../components/delete-account-confirm";
+import { useIsIosApp } from "../../../../lib/platform";
 
 // Бренд-токены применяются через класс .aqyl-b2c на корне (см. globals.css).
 const BRAND = "var(--amber)";
@@ -18,6 +19,7 @@ type DelStep = "idle" | "confirm" | "done";
 
 export default function ProfilePage() {
   const router = useRouter();
+  const iosApp = useIsIosApp();
   const [lang, setLang] = useLang();
   const t = LT[lang];
   const [profile, setProfile] = useState<B2CProfile | null>(null);
@@ -75,7 +77,7 @@ export default function ProfilePage() {
             {row(t.pEmail, profile.email)}
             {row(t.pSubject, profile.subject ?? "")}
             <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
-              <button onClick={() => router.push("/dashboard/b2c/subscribe")} style={{ background: BRAND, color: "var(--on-amber)", border: "none", borderRadius: 10, padding: "10px 18px", cursor: "pointer", fontWeight: 700, fontFamily: "inherit" }}>{t.subscription}</button>
+              {iosApp === false && <button onClick={() => router.push("/dashboard/b2c/subscribe")} style={{ background: BRAND, color: "var(--on-amber)", border: "none", borderRadius: 10, padding: "10px 18px", cursor: "pointer", fontWeight: 700, fontFamily: "inherit" }}>{t.subscription}</button>}
               <button onClick={async () => { await logout(); router.replace("/login"); }} style={{ background: "transparent", border: "1.5px solid var(--lavender)", color: "var(--white)", borderRadius: 10, padding: "10px 18px", cursor: "pointer", fontWeight: 700, fontFamily: "inherit" }}>{t.logout}</button>
             </div>
           </div>
