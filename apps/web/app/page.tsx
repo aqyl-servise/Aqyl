@@ -4,21 +4,22 @@ import { PublicFooter } from "../components/public-footer";
 import { TRIAL_LABEL, PRICE_PER_MONTH, formatTenge } from "../lib/product";
 
 const STATS = [
-  { num: "3 часа", sub: "в неделю экономии" },
+  { num: "до 3 часов", sub: "в неделю экономии" },
   { num: "30 сек", sub: "генерация КСП" },
-  // Не «100% МОН РК» — это читается как заявление об аккредитации, которой нет.
-  { num: "№130", sub: "формат по требованиям МОН РК" },
+  // Не «100% одобрено ведомством» — это читается как заявление об аккредитации, которой нет.
+  // МОН РК разделено 11.06.2022; школьное образование ведёт Министерство просвещения.
+  { num: "№130", sub: "форма по приказу № 130" },
 ];
 
 const PAINS = [
   { dot: "pub-dot-purple", title: "КСП вручную", text: "1–2 часа на план урока. Ежедневно." },
   { dot: "pub-dot-purple", title: "Отчёты и СОР", text: "Таблицы вместо подготовки к урокам." },
-  { dot: "pub-dot-purple", title: "Изменения МОН РК", text: "Стандарты меняются — всё переделывать." },
+  { dot: "pub-dot-purple", title: "Изменения требований Министерства просвещения", text: "Стандарты меняются — всё переделывать." },
 ];
 
 const SOLUTIONS = [
   { accent: "pub-card-accent-purple", title: "КСП", text: "Краткосрочный план урока по теме, классу и стандарту" },
-  { accent: "pub-card-accent-green", title: "Функциональная грамотность", text: "Задания по уровням PISA со стимульным материалом" },
+  { accent: "pub-card-accent-green", title: "Функциональная грамотность", text: "Задания в формате PISA со стимульным материалом" },
   { accent: "pub-card-accent-amber", title: "Материалы к уроку", text: "Схемы, адаптация текста, рабочие листы" },
   { accent: "pub-card-accent-purple", title: "Экспорт в Word", text: "Готовый документ по формату №130" },
 ];
@@ -45,7 +46,7 @@ export default function LandingPage() {
             Больше времени <span style={{ color: "var(--pub-green)" }}>на учеников.</span>
           </h1>
           <p style={{ maxWidth: 600, margin: "0 auto 32px", fontSize: "1.0625rem" }}>
-            Введите тему — Aqyl развернёт краткосрочный план урока по требованиям МОН РК: этапы, задания, критерии оценивания и готовый документ в Word.
+            Введите тему — Aqyl развернёт краткосрочный план урока по требованиям Министерства просвещения РК: этапы, задания, критерии оценивания и готовый документ в Word.
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 56 }}>
             <Link href="/register" className="pub-btn pub-btn-primary pub-btn-lg">Начать бесплатно →</Link>
@@ -67,7 +68,7 @@ export default function LandingPage() {
       {/* ПРОБЛЕМА */}
       <section className="pub-section pub-section-subtle">
         <div className="pub-container">
-          <h2 style={{ marginBottom: 8 }}>Учитель тратит 40% времени на документы</h2>
+          <h2 style={{ marginBottom: 8 }}>Бумажная работа отнимает у учителя часы каждую неделю</h2>
           <p style={{ marginBottom: 32 }}>Каждый план урока — часы работы. Каждый день.</p>
           <div className="pub-grid pub-grid-3">
             {PAINS.map((p) => (

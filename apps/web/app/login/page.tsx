@@ -9,7 +9,7 @@ import { ThemeToggle } from "../../components/theme-toggle";
 import { LogoIcon } from "../../components/public-header";
 
 const FEATURES = [
-  "Планы уроков по стандарту МОН РК",
+  "Планы уроков по стандарту Министерства просвещения РК",
   "Автоматические оценки и отчёты",
   "Для школы или индивидуально",
 ];
@@ -57,7 +57,7 @@ export default function LoginPage() {
           <div>
             <div className="pub-divider" style={{ background: "rgba(255,255,255,0.15)", marginBottom: 32 }} />
             <h2 style={{ color: "rgba(244,240,255,0.95)" }}>Создайте КСП за 30 секунд.</h2>
-            <p style={{ color: "rgba(244,240,255,0.95)", marginTop: 4 }}>Сэкономьте 3 часа в неделю.</p>
+            <p style={{ color: "rgba(244,240,255,0.95)", marginTop: 4 }}>Экономьте до 3 часов в неделю.</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 28 }}>
               {FEATURES.map((f) => (
                 <div key={f} className="pub-auth-feature">

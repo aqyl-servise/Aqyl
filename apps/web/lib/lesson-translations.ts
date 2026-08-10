@@ -87,7 +87,7 @@ const ru: Dict = {
   // onboarding
   obSkip: "Пропустить →", obStep: "Шаг {n} из {m}",
   obTitle1: "Добро пожаловать в Aqyl", obSub1: "Мы поможем вам экономить до 3 часов в неделю на документации",
-  obC1t: "КСП за 30 секунд", obC1x: "Создавайте планы уроков по стандартам МОН РК",
+  obC1t: "КСП за 30 секунд", obC1x: "Создавайте планы уроков по стандартам Министерства просвещения РК",
   obC2t: "Оценки и отчёты", obC2x: "Автоматические СОР/СОЧ и аналитика",
   obC3t: "Готовые материалы", obC3x: "Презентации и иллюстрации к урокам",
   obStart: "Начать настройку →",
@@ -188,7 +188,7 @@ const kz: Dict = {
   // onboarding
   obSkip: "Өткізіп жіберу →", obStep: "{m}-тен {n}-қадам",
   obTitle1: "Aqyl-ға қош келдіңіз", obSub1: "Құжаттамаға кететін аптасына 3 сағатқа дейін үнемдеуге көмектесеміз",
-  obC1t: "ҚМЖ 30 секундта", obC1x: "ҚР БҒМ стандарттары бойынша сабақ жоспарларын жасаңыз",
+  obC1t: "ҚМЖ 30 секундта", obC1x: "ҚР Ағарту министрлігінің стандарттары бойынша сабақ жоспарларын жасаңыз",
   obC2t: "Бағалар мен есептер", obC2x: "Автоматты БЖБ/ТЖБ және аналитика",
   obC3t: "Дайын материалдар", obC3x: "Сабаққа презентациялар мен суреттер",
   obStart: "Баптауды бастау →",
@@ -289,7 +289,7 @@ const en: Dict = {
   // onboarding
   obSkip: "Skip →", obStep: "Step {n} of {m}",
   obTitle1: "Welcome to Aqyl", obSub1: "We'll help you save up to 3 hours a week on paperwork",
-  obC1t: "A lesson plan in 30 seconds", obC1x: "Create lesson plans to the MES RK standards",
+  obC1t: "A lesson plan in 30 seconds", obC1x: "Create lesson plans to the Ministry of Education (Enlightenment) of Kazakhstan standards",
   obC2t: "Grades and reports", obC2x: "Automatic formative/summative assessment and analytics",
   obC3t: "Ready-made materials", obC3x: "Presentations and illustrations for your lessons",
   obStart: "Start setup →",
