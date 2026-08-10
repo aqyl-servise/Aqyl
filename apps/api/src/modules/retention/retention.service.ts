@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { AccountDeletionService } from '../auth/account-deletion.service';
 import { TrialGuardService } from '../trial-guard/trial-guard.service';
+import { BillingService } from '../billing/billing.service';
 
 /**
  * Регламентная очистка данных с истёкшим сроком хранения.
@@ -25,6 +26,7 @@ export class RetentionService {
   constructor(
     private readonly accountDeletion: AccountDeletionService,
     private readonly trialGuard: TrialGuardService,
+    private readonly billing: BillingService,
   ) {}
 
   /** Ежедневно в 03:00 — время наименьшей нагрузки. */
@@ -59,5 +61,21 @@ export class RetentionService {
       this.logger.log(`Очистка: аккаунтов удалено ${accounts}, отпечатков удалено ${fingerprints}`);
     }
     return { accounts, fingerprints };
+  }
+
+  /**
+   * Ежедневно в 09:00 — напоминания об окончании подписки за 3 дня.
+   *
+   * Утро, а не ночь: письмо должно попасть в ящик в рабочее время, иначе
+   * теряется среди ночной почты. Отделено от ночной очистки намеренно.
+   */
+  @Cron('0 9 * * *')
+  async sendExpiryReminders(): Promise<void> {
+    try {
+      const { sent } = await this.billing.sendExpiryReminders(3);
+      if (sent > 0) this.logger.log(`Напоминаний об окончании подписки отправлено: ${sent}`);
+    } catch (err) {
+      this.logger.error(`Не удалось разослать напоминания: ${(err as Error).message}`);
+    }
   }
 }

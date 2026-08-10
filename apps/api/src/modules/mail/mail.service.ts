@@ -232,4 +232,71 @@ export class MailService {
       this.logger.error(`Failed to send account deletion email to ${maskedEmail}`, err);
     }
   }
+
+  /**
+   * Квитанция после успешной оплаты. Требование раздела 3.2: период, сумма,
+   * документ об оплате. Номер заказа и есть тот идентификатор, по которому
+   * учитель и мы находим платёж в кабинете Kaspi при разборе обращения.
+   */
+  async sendPaymentReceipt(params: {
+    email: string; amount: number; months: number; orderId: string; periodEnd: Date;
+  }): Promise<void> {
+    const { email, amount, months, orderId, periodEnd } = params;
+    const until = periodEnd.toLocaleDateString("ru-RU");
+    const sum = amount.toLocaleString("ru-RU");
+    const html = `<div style="font-family: Arial, sans-serif; max-width: 520px; color: #1e293b;">
+  <h2 style="margin:0 0 16px;">Оплата получена</h2>
+  <p>Спасибо, платёж прошёл. Подписка Aqyl активна.</p>
+  <table style="border-collapse:collapse;margin:16px 0;font-size:15px">
+    <tr><td style="padding:6px 16px 6px 0;color:#475569">Сумма</td><td style="padding:6px 0"><b>${sum} ₸</b></td></tr>
+    <tr><td style="padding:6px 16px 6px 0;color:#475569">Период</td><td style="padding:6px 0">${months} мес.</td></tr>
+    <tr><td style="padding:6px 16px 6px 0;color:#475569">Действует до</td><td style="padding:6px 0"><b>${until}</b></td></tr>
+    <tr><td style="padding:6px 16px 6px 0;color:#475569">Номер заказа</td><td style="padding:6px 0">${orderId}</td></tr>
+  </table>
+  <p style="color:#475569;font-size:14px">Продление не автоматическое: деньги повторно не спишутся.
+  Мы напомним об окончании подписки за 3 дня.</p>
+  <p style="color:#666;font-size:13px">Письмо служит подтверждением оплаты. Сохраните его.</p>
+</div>`;
+    const masked = email.replace(/(.{2}).+(@.+)/, "$1***$2");
+    try {
+      await this.transporter.sendMail({
+        from: this.from, to: email, subject: `Aqyl — оплата ${sum} ₸ получена`, html,
+        text: `Оплата получена. Сумма: ${sum} тенге. Период: ${months} мес. Действует до ${until}. Номер заказа: ${orderId}. Продление не автоматическое — повторно деньги не спишутся.`,
+      });
+      this.logger.log(`Payment receipt sent to ${masked} (order ${orderId})`);
+    } catch (err) {
+      this.logger.error(`Failed to send payment receipt to ${masked}`, err);
+    }
+  }
+
+  /**
+   * Напоминание за 3 дня до окончания подписки.
+   *
+   * В сервисах с автосписанием такое письмо предупреждает о списании. У нас
+   * списания не будет, поэтому смысл обратный: без действия учителя доступ
+   * закроется. Формулировка это прямо проговаривает.
+   */
+  async sendSubscriptionExpiring(email: string, endsAt: Date, daysLeft: number): Promise<void> {
+    const until = endsAt.toLocaleDateString("ru-RU");
+    const site = process.env.FRONTEND_URL ?? "https://aqyl-service.kz";
+    const html = `<div style="font-family: Arial, sans-serif; max-width: 520px; color: #1e293b;">
+  <h2 style="margin:0 0 16px;">Подписка заканчивается ${until}</h2>
+  <p>Осталось ${daysLeft} дн. После этой даты генерация планов уроков и заданий станет недоступна,
+  а созданные материалы останутся у вас и никуда не денутся.</p>
+  <p><b>Деньги автоматически не спишутся.</b> Чтобы продолжить, продлите подписку вручную.</p>
+  <p style="margin:20px 0"><a href="${site}/dashboard/b2c/subscribe"
+     style="background:#2563eb;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;display:inline-block">Продлить подписку</a></p>
+  <p style="color:#666;font-size:13px">Если продлевать не планируете — ничего делать не нужно.</p>
+</div>`;
+    const masked = email.replace(/(.{2}).+(@.+)/, "$1***$2");
+    try {
+      await this.transporter.sendMail({
+        from: this.from, to: email, subject: `Aqyl — подписка заканчивается ${until}`, html,
+        text: `Подписка Aqyl заканчивается ${until} (осталось ${daysLeft} дн.). Деньги автоматически не спишутся — продлите вручную: ${site}/dashboard/b2c/subscribe`,
+      });
+      this.logger.log(`Expiry reminder sent to ${masked} (${daysLeft}d left)`);
+    } catch (err) {
+      this.logger.error(`Failed to send expiry reminder to ${masked}`, err);
+    }
+  }
 }

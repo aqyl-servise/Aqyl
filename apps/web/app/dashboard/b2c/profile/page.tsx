@@ -76,6 +76,10 @@ export default function ProfilePage() {
             {row(t.pName, profile.fullName)}
             {row(t.pEmail, profile.email)}
             {row(t.pSubject, profile.subject ?? "")}
+            {row("Подписка", subLabel(profile))}
+            <p style={{ color: "var(--muted)", fontSize: 13, lineHeight: 1.6, marginTop: 10 }}>
+              Продление ручное: автоматических списаний нет. Напомним за 3 дня до окончания.
+            </p>
             <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
               {iosApp === false && <button onClick={() => router.push("/dashboard/b2c/subscribe")} style={{ background: BRAND, color: "var(--on-amber)", border: "none", borderRadius: 10, padding: "10px 18px", cursor: "pointer", fontWeight: 700, fontFamily: "inherit" }}>{t.subscription}</button>}
               <button onClick={async () => { await logout(); router.replace("/login"); }} style={{ background: "transparent", border: "1.5px solid var(--lavender)", color: "var(--white)", borderRadius: 10, padding: "10px 18px", cursor: "pointer", fontWeight: 700, fontFamily: "inherit" }}>{t.logout}</button>
@@ -160,4 +164,12 @@ export default function ProfilePage() {
       </main>
     </div>
   );
+}
+
+/** Состояние подписки строкой. Дата важнее статуса: по ней принимают решение. */
+function subLabel(p: { subscriptionStatus?: string; trialEndsAt?: string | null }): string {
+  const d = p.trialEndsAt ? new Date(p.trialEndsAt).toLocaleDateString("ru-RU") : null;
+  if (p.subscriptionStatus === "active") return d ? `активна до ${d}` : "активна";
+  if (p.subscriptionStatus === "trial") return d ? `пробный период до ${d}` : "пробный период";
+  return "неактивна";
 }

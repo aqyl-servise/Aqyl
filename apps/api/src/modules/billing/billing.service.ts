@@ -6,6 +6,7 @@ import { Teacher } from "../teachers/entities/teacher.entity";
 import { Payment } from "./entities/payment.entity";
 import { Subscription } from "./entities/subscription.entity";
 import { KaspiService } from "./kaspi.service";
+import { MailService } from "../mail/mail.service";
 
 const PRICE_PER_MONTH = 2990; // тенге
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -31,6 +32,7 @@ export class BillingService {
     private readonly teacherRepo: Repository<Teacher>,
     private readonly kaspiService: KaspiService,
     private readonly config: ConfigService,
+    private readonly mail: MailService,
   ) {}
 
   /** Итоговая сумма в тенге с учётом скидки за период. */
@@ -160,6 +162,19 @@ export class BillingService {
 
     await this.teacherRepo.update(teacherId, { subscriptionStatus: "active" });
 
+    // Квитанция — обязательство раздела 3.2. Не в await: подписка уже активна,
+    // и сбой почты не должен превращать успешную оплату в ошибку.
+    const teacher = await this.teacherRepo.findOne({ where: { id: teacherId } });
+    if (teacher?.email && payment && saved.currentPeriodEnd) {
+      void this.mail.sendPaymentReceipt({
+        email: teacher.email,
+        amount: payment.amount,
+        months,
+        orderId: payment.orderId ?? payment.id,
+        periodEnd: saved.currentPeriodEnd,
+      });
+    }
+
     return saved;
   }
 
@@ -181,6 +196,35 @@ export class BillingService {
     }
 
     return subscription;
+  }
+
+  /**
+   * Напоминания об окончании подписки за 3 дня. Вызывается по расписанию.
+   *
+   * Окно ровно в одни сутки, а не «осталось меньше трёх дней»: иначе письмо
+   * уходило бы каждый день до самого окончания. Задание запускается раз в
+   * сутки, поэтому каждая подписка попадает в окно единожды.
+   */
+  async sendExpiryReminders(daysBefore = 3): Promise<{ sent: number }> {
+    const now = new Date();
+    const from = new Date(now.getTime() + daysBefore * DAY_MS);
+    const to = new Date(from.getTime() + DAY_MS);
+
+    const due = await this.subRepo
+      .createQueryBuilder("s")
+      .where("s.status = :st", { st: "active" })
+      .andWhere("s.currentPeriodEnd >= :from AND s.currentPeriodEnd < :to", { from, to })
+      .getMany();
+
+    let sent = 0;
+    for (const sub of due) {
+      const teacher = await this.teacherRepo.findOne({ where: { id: sub.teacherId } });
+      if (!teacher?.email || !sub.currentPeriodEnd) continue;
+      await this.mail.sendSubscriptionExpiring(teacher.email, sub.currentPeriodEnd, daysBefore);
+      sent += 1;
+    }
+    if (sent > 0) this.logger.log(`Expiry reminders sent: ${sent}`);
+    return { sent };
   }
 
   getPaymentHistory(teacherId: string) {

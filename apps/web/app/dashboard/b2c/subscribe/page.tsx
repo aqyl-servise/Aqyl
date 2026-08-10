@@ -102,6 +102,13 @@ export default function SubscribePage() {
         )}
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20 }}>
+        {/* Обязательство раздела 2.4, но по факту нашей механики: автосписания
+            нет, Kaspi у нас разовый платёж. Обещать продление было бы неправдой. */}
+        <p style={{ color: "var(--muted)", fontSize: 14, lineHeight: 1.6, margin: "0 0 18px" }}>
+          Оплата разовая: деньги списываются один раз за выбранный период.
+          Автоматического продления нет — повторно ничего не спишется.
+          Мы напомним письмом за 3 дня до окончания.
+        </p>
           {PLANS.map((plan) => {
             const active = selected === plan.months;
             const monthly = Math.round(plan.total / plan.months);

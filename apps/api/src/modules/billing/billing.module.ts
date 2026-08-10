@@ -8,9 +8,10 @@ import { BillingService } from "./billing.service";
 import { KaspiService } from "./kaspi.service";
 import { SubscriptionService } from "./subscription.service";
 import { SubscriptionGuard } from "../../common/guards/subscription.guard";
+import { MailModule } from "../mail/mail.module";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Subscription, Payment, Teacher])],
+  imports: [TypeOrmModule.forFeature([Subscription, Payment, Teacher]), MailModule],
   controllers: [BillingController],
   providers: [
     BillingService,
@@ -20,6 +21,8 @@ import { SubscriptionGuard } from "../../common/guards/subscription.guard";
   ],
   // Экспортируем SubscriptionService и SubscriptionGuard, чтобы AI-модули
   // (generators, kmzh, materials) могли применять @UseGuards(SubscriptionGuard).
-  exports: [SubscriptionService, SubscriptionGuard],
+  // BillingService — для RetentionModule: он рассылает напоминания об
+  // окончании подписки по расписанию.
+  exports: [SubscriptionService, SubscriptionGuard, BillingService],
 })
 export class BillingModule {}
