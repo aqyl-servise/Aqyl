@@ -68,13 +68,20 @@ export default function MaterialsPage() {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {lessons.map((l) => (
-              <div key={l.id} style={{ background: "var(--ink-2)", borderRadius: 12, padding: "16px 18px", border: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 14 }}>
+              <div
+                key={l.id}
+                onClick={() => router.push(`/dashboard/b2c/lesson?id=${l.id}`)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/dashboard/b2c/lesson?id=${l.id}`); } }}
+                style={{ background: "var(--ink-2)", borderRadius: 12, padding: "16px 18px", border: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 14, cursor: "pointer" }}
+              >
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700, color: "var(--white)" }}>{l.lessonTitle || t.noTopic}</div>
                   <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2 }}>{l.subject || "—"} · {l.grade ? `${l.grade} ${t.gradeWord}` : "—"} · {l.date || new Date(l.updatedAt).toLocaleDateString()}</div>
                 </div>
                 <span style={{ fontSize: 12, fontWeight: 700, color: STATUS_COLOR[l.status] ?? "var(--muted)" }}>{statusText(l.status)}</span>
-                {l.status === "ready" && <button onClick={() => download(l)} style={{ background: "rgba(139,127,232,.12)", border: "1px solid var(--line)", color: "var(--lavender)", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>{t.download}</button>}
+                {l.status === "ready" && <button onClick={(e) => { e.stopPropagation(); download(l); }} style={{ background: "rgba(139,127,232,.12)", border: "1px solid var(--line)", color: "var(--lavender)", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>{t.download}</button>}
               </div>
             ))}
           </div>

@@ -18,6 +18,7 @@ export const ACTION_MODEL_MAP: Record<string, keyof typeof AI_MODELS> = {
   text_adapter_generate: 'SONNET',
   text_adapter_translate: 'SONNET',
   lesson_objectives: 'HAIKU',
+  lesson_value_link: 'HAIKU',
   lesson_stage: 'SONNET',
   lesson_descriptors: 'SONNET',
   literacy_stimulus: 'SONNET',
@@ -45,6 +46,7 @@ export const MAX_TOKENS_MAP: Record<string, number> = {
   // фактический выход. Потолок нужен, чтобы одна аномальная генерация не
   // съела бюджет и не обрезалась посреди JSON.
   lesson_objectives: 400,
+  lesson_value_link: 250, // 1–2 предложения, до 45 слов
   lesson_stage: 700, // было 1200 — с ограничением объёма столько не нужно
   lesson_descriptors: 350, // было 500
   literacy_stimulus: 900, // было 1500 — стимул ограничен 250 словами

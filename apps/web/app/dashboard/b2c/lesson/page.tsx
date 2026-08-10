@@ -62,8 +62,42 @@ export default function LessonGeneratorPage() {
     })();
     // Тема, переданная с дашборда (/dashboard/b2c/lesson?topic=…), сразу подставляется в «Тему урока».
     setForm((f) => ({ ...f, language: lang }));
-    const topic = new URLSearchParams(window.location.search).get("topic");
+    const qs = new URLSearchParams(window.location.search);
+    const topic = qs.get("topic");
     if (topic) setForm((f) => ({ ...f, lessonTitle: topic }));
+
+    // Открытие существующего урока из «Моих материалов». Возвращаем учителя в
+    // ту точку, где работа прервалась: готовый — на просмотр, ошибку — на
+    // повтор, черновик — на заполненную шапку, чтобы можно было продолжить.
+    const openId = qs.get("id");
+    if (openId) {
+      (async () => {
+        const tk = await getValidAccessToken();
+        if (!tk) return;
+        try {
+          const l = await api.lpGet(tk, openId);
+          setLessonId(l.id);
+          setLesson(l);
+          setForm((f) => ({
+            ...f,
+            unit: l.unit ?? "", teacherName: l.teacherName ?? "", date: l.date ?? "",
+            lessonNumber: l.lessonNumber ?? "", grade: l.grade ? String(l.grade) : "",
+            presentCount: l.presentCount != null ? String(l.presentCount) : "",
+            absentCount: l.absentCount != null ? String(l.absentCount) : "",
+            subject: l.subject ?? "", lessonTitle: l.lessonTitle ?? "",
+            languageFocus: l.languageFocus ?? "",
+            learningObjectives: (l.learningObjectives ?? []).join("\n"),
+            valueMonth: l.valueMonth ?? "",
+            durationMinutes: String(l.durationMinutes ?? 45),
+            language: l.language ?? "kz",
+          }));
+          if (l.lessonObjectives?.length) setObjectives(l.lessonObjectives);
+          setStep(l.status === "ready" || l.status === "error" ? 4 : 1);
+        } catch {
+          setError(t.errLoad ?? "Не удалось открыть урок");
+        }
+      })();
+    }
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [router, lang]);
 
