@@ -102,6 +102,20 @@ export class LessonPlansService {
     return lesson;
   }
 
+  /**
+   * Подписи внутри документа. Раньше были захардкожены по-английски и попадали
+   * в казахский и русский план как вкрапление чужого языка — это часть того же
+   * дефекта, что и смешение языков в сгенерированном тексте.
+   */
+  private labels(language?: string) {
+    const L: Record<string, Record<string, string>> = {
+      kz: { method: 'Әдіс', descriptor: 'Дескриптор', total: 'Барлығы', points: 'ұпай', min: 'мин' },
+      ru: { method: 'Метод', descriptor: 'Дескриптор', total: 'Всего', points: 'баллов', min: 'мин' },
+      en: { method: 'Method', descriptor: 'Descriptor', total: 'Total', points: 'points', min: 'min' },
+    };
+    return L[language ?? 'kz'] ?? L.kz;
+  }
+
   // ── Export №130 (.docx) ─────────────────────────────────────────
   async exportDocx(id: string, ctx: UserCtx): Promise<Buffer> {
     const lesson = await this.getOne(id, ctx);
@@ -109,6 +123,7 @@ export class LessonPlansService {
     const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, HeadingLevel } =
       require('docx') as typeof import('docx');
 
+    const lbl = this.labels(lesson.language);
     const border = { style: BorderStyle.SINGLE, size: 4, color: '000000' };
     const borders = { top: border, bottom: border, left: border, right: border };
     const p = (text: string, bold = false) => new Paragraph({ children: [new TextRun({ text: text ?? '', bold, size: 20 })] });
@@ -151,15 +166,15 @@ export class LessonPlansService {
     const planRows = (lesson.stages ?? []).map((s) => {
       const studentChildren: import('docx').Paragraph[] = [p(s.studentActions ?? '')];
       if (s.descriptors?.length) {
-        studentChildren.push(p('Descriptor:', true));
+        studentChildren.push(p(`${lbl.descriptor}:`, true));
         s.descriptors.forEach((d, i) => studentChildren.push(p(`${i + 1}. ${d.text}`)));
-        studentChildren.push(p(`Total: ${s.points ?? 0} points`, true));
+        studentChildren.push(p(`${lbl.total}: ${s.points ?? 0} ${lbl.points}`, true));
       }
       const critChildren: import('docx').Paragraph[] = [p(s.assessmentCriteria ?? '')];
-      if (s.method) critChildren.push(p(`Method: ${s.method}`));
+      if (s.method) critChildren.push(p(`${lbl.method}: ${s.method}`));
       return new TableRow({
         children: [
-          cell([p(`${s.stageName || s.stageType}`, true), p(`(${s.timeMinutes} min)`)]),
+          cell([p(`${s.stageName || s.stageType}`, true), p(`(${s.timeMinutes} ${lbl.min})`)]),
           cell([p(s.teacherActions ?? '')]),
           cell(studentChildren),
           cell(critChildren),
@@ -376,6 +391,7 @@ export class LessonPlansService {
       languageFocus: lesson.languageFocus,
       learningObjectives: lesson.learningObjectives ?? [],
       lessonObjectives: lesson.lessonObjectives ?? [],
+      language: lesson.language ?? 'kz',
     };
   }
 
@@ -383,6 +399,7 @@ export class LessonPlansService {
     const keys: (keyof Lesson)[] = [
       'unit', 'teacherName', 'date', 'lessonNumber', 'grade', 'presentCount', 'absentCount',
       'subject', 'lessonTitle', 'languageFocus', 'learningObjectives', 'valueMonth', 'valueLink', 'durationMinutes',
+      'language',
     ];
     const out: Partial<Lesson> = {};
     for (const k of keys) if (h[k] !== undefined) (out as any)[k] = h[k];

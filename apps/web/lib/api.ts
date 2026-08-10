@@ -351,13 +351,15 @@ export interface LpLesson {
   unit?: string; teacherName?: string; date?: string; lessonNumber?: string; grade?: number;
   presentCount?: number; absentCount?: number; subject?: string; lessonTitle?: string; languageFocus?: string;
   learningObjectives: string[]; lessonObjectives: string[]; valueMonth?: string; valueLink?: string; durationMinutes: number;
+  /** Язык урока: kz | ru | en. Определяет язык всего сгенерированного содержания. */
+  language: string;
   homework?: string | null; mode: string; status: "draft" | "generating" | "ready" | "error"; generationError?: string | null;
   totalPoints: number; stages?: LpStage[]; createdAt: string; updatedAt: string;
 }
 export interface LpToolsResponse { stages: string[]; tools: Record<string, LpTool[]> }
 export type LpHeader = Partial<Pick<LpLesson,
   "unit" | "teacherName" | "date" | "lessonNumber" | "grade" | "presentCount" | "absentCount" |
-  "subject" | "lessonTitle" | "languageFocus" | "learningObjectives" | "valueMonth" | "durationMinutes">>;
+  "subject" | "lessonTitle" | "languageFocus" | "learningObjectives" | "valueMonth" | "durationMinutes" | "language">>;
 export interface LpStageInput { stageType: string; toolId?: string; timeMinutes: number }
 
 // ── Functional literacy (PISA) ────────────────────────────────────

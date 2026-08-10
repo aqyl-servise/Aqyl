@@ -1,10 +1,12 @@
 import {
-  IsArray, IsInt, IsOptional, IsString, Max, MaxLength, Min,
+  IsArray, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min,
 } from 'class-validator';
 
 // Lesson header (Экран 1). All fields optional — a draft can be created empty
 // and filled progressively; validation guards types/lengths against injection.
 export class LessonHeaderDto {
+  /** Язык урока — от него зависит язык всего сгенерированного содержания. */
+  @IsOptional() @IsIn(['kz', 'ru', 'en']) language?: string;
   @IsOptional() @IsString() @MaxLength(200) unit?: string;
   @IsOptional() @IsString() @MaxLength(150) teacherName?: string;
   @IsOptional() @IsString() @MaxLength(30) date?: string;

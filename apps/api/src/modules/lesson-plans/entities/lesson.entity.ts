@@ -77,6 +77,15 @@ export class Lesson {
   @Column({ type: 'text', nullable: true })
   homework?: string | null;
 
+  /**
+   * Язык урока. Раньше не хранился вовсе, и генератор угадывал язык по
+   * названию предмета — отсюда бралось смешение трёх языков в одном документе.
+   * Значение по умолчанию 'kz': основной язык обучения в школах Казахстана,
+   * и оно же корректно для ранее созданных уроков.
+   */
+  @Column({ type: 'varchar', length: 2, default: 'kz' })
+  language!: string;
+
   @Column({ type: 'enum', enum: ['quick', 'constructor'], default: 'quick' })
   mode!: LessonMode;
 

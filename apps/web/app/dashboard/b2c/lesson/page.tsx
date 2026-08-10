@@ -23,11 +23,12 @@ type T = Record<string, string>;
 interface HeaderForm {
   unit: string; teacherName: string; date: string; lessonNumber: string; grade: string;
   presentCount: string; absentCount: string; subject: string; lessonTitle: string; languageFocus: string;
-  learningObjectives: string; valueMonth: string; durationMinutes: string;
+  learningObjectives: string; valueMonth: string; durationMinutes: string; language: string;
 }
 const EMPTY: HeaderForm = {
   unit: "", teacherName: "", date: "", lessonNumber: "", grade: "", presentCount: "", absentCount: "",
   subject: "", lessonTitle: "", languageFocus: "", learningObjectives: "", valueMonth: "", durationMinutes: "45",
+  language: "kz",
 };
 
 export default function LessonGeneratorPage() {
@@ -52,12 +53,19 @@ export default function LessonGeneratorPage() {
       const tk = await getValidAccessToken();
       if (!tk) { router.replace("/login"); return; }
       setToken(tk);
+      // Имя учителя подставляется из профиля и остаётся редактируемым:
+      // КСП можно составлять и для коллеги. Пустое поле не перетираем.
+      try {
+        const me = await api.getB2CMe(tk);
+        if (me?.fullName) setForm((f) => (f.teacherName ? f : { ...f, teacherName: me.fullName }));
+      } catch { /* профиль не критичен для формы */ }
     })();
     // Тема, переданная с дашборда (/dashboard/b2c/lesson?topic=…), сразу подставляется в «Тему урока».
+    setForm((f) => ({ ...f, language: lang }));
     const topic = new URLSearchParams(window.location.search).get("topic");
     if (topic) setForm((f) => ({ ...f, lessonTitle: topic }));
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [router]);
+  }, [router, lang]);
 
   function set<K extends keyof HeaderForm>(k: K, v: string) { setForm((f) => ({ ...f, [k]: v })); }
 
@@ -70,6 +78,7 @@ export default function LessonGeneratorPage() {
       absentCount: form.absentCount ? Number(form.absentCount) : undefined,
       subject: form.subject || undefined, lessonTitle: form.lessonTitle || undefined,
       languageFocus: form.languageFocus || undefined, learningObjectives: codes,
+      language: form.language,
       valueMonth: form.valueMonth || undefined, durationMinutes: form.durationMinutes ? Number(form.durationMinutes) : 45,
     };
   }
@@ -196,7 +205,23 @@ export default function LessonGeneratorPage() {
                     без идентификаторов это не передача персональных данных. */}
                 <p style={{ color: "var(--muted)", fontSize: 12, margin: "5px 0 0" }}>{t.noStudentNames}</p>
               </div>
-              <div style={{ marginTop: 12 }}><Field l={t.fLangFocus}><input style={inp} value={form.languageFocus} onChange={(e) => set("languageFocus", e.target.value)} /></Field></div>
+              {/* Язык урока определяет язык ВСЕГО сгенерированного содержания.
+                  Отдельно от языка интерфейса: учитель может вести урок на
+                  казахском, работая в русском интерфейсе. */}
+              <div style={{ marginTop: 12 }}>
+                <Field l={t.fLessonLang}>
+                  <select style={inp} value={form.language} onChange={(e) => set("language", e.target.value)}>
+                    <option value="kz">Қазақша</option>
+                    <option value="ru">Русский</option>
+                    <option value="en">English</option>
+                  </select>
+                </Field>
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <Field l={t.fLangFocus}>
+                  <input style={inp} value={form.languageFocus} onChange={(e) => set("languageFocus", e.target.value)} placeholder={t.fLangFocusHint} />
+                </Field>
+              </div>
               <div style={{ marginTop: 12 }}><Field l={t.fLearnObj}><textarea style={{ ...inp, minHeight: 70, fontFamily: "inherit" }} value={form.learningObjectives} onChange={(e) => set("learningObjectives", e.target.value)} placeholder="7.6.7.1&#10;7.5.4.1" /></Field></div>
               <Grid>
                 <Field l={t.fValues}>
