@@ -13,6 +13,16 @@
  *   consent — написано
  *   terms   — не начато, требуется для подключения Kaspi
  */
+/** Предыдущая редакция документа. Хранится ради обязательства показать историю. */
+export interface LegalRevision {
+  /** Дата редакции, напр. «08.08.2026». */
+  date: string;
+  /** Что изменилось — коротко, человеческим языком. */
+  summary: string;
+  /** Адрес сохранённого текста, если он выложен отдельным файлом. */
+  href?: string;
+}
+
 export interface LegalDoc {
   slug: string;
   title: string;
@@ -20,6 +30,13 @@ export interface LegalDoc {
   updatedAt: string;
   /** Полный текст документа. Пустой — страница покажет «готовится». */
   body: string;
+  /**
+   * Предыдущие редакции, новейшая первой. Пустой массив — документ действует
+   * в первой редакции, и страница архива так и напишет. Пустая страница по
+   * адресу, на который ссылается опубликованный документ, — это битая ссылка,
+   * а она отдельная причина отказа при проверке.
+   */
+  revisions: LegalRevision[];
 }
 
 export const LEGAL_DOCS: Record<"privacy" | "terms" | "consent", LegalDoc> = {
@@ -28,17 +45,20 @@ export const LEGAL_DOCS: Record<"privacy" | "terms" | "consent", LegalDoc> = {
     title: "Политика конфиденциальности",
     updatedAt: "",
     body: "",
+    revisions: [],
   },
   terms: {
     slug: "terms",
     title: "Пользовательское соглашение",
     updatedAt: "",
     body: "",
+    revisions: [],
   },
   consent: {
     slug: "consent",
     title: "Согласие на обработку персональных данных",
     updatedAt: "",
     body: "",
+    revisions: [],
   },
 };

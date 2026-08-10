@@ -7,7 +7,7 @@ import type { LegalDoc } from "../lib/legal-docs";
  * Общий шаблон страницы публичного документа. Доступен без входа в аккаунт —
  * магазины и платёжный оператор проверяют документ по постоянному адресу.
  */
-export function LegalPage({ doc }: { doc: LegalDoc }) {
+export function LegalPage({ doc, children }: { doc: LegalDoc; children?: React.ReactNode }) {
   const paragraphs = doc.body.trim() ? doc.body.trim().split(/\n\s*\n/) : [];
 
   return (
@@ -46,6 +46,7 @@ export function LegalPage({ doc }: { doc: LegalDoc }) {
               </p>
             </div>
           )}
+          {children}
         </div>
       </section>
 
