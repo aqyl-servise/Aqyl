@@ -10,6 +10,7 @@ import { AiClientService } from '../../services/ai-client.service';
 import {
   distributeLessonPoints,
   proposeWeights,
+  stripObjectivePrefix,
   adjustDescriptorSum,
   hasEnoughAssessed,
   StagePointsProposal,
@@ -17,6 +18,7 @@ import {
 import {
   LessonContext,
   objectivesPrompt,
+  valueLinkPrompt,
   stagePrompt,
   descriptorsPrompt,
 } from './prompts/lesson-prompts';
@@ -212,10 +214,48 @@ export class LessonPlansService {
     const p = objectivesPrompt(this.ctxOf(lesson));
     const res = await this.ai.request({ action: 'lesson_objectives', systemPrompt: p.system, messages: [{ role: 'user', content: p.user }], userId: ctx.userId, schoolId: ctx.schoolId });
     const parsed = this.parseJson<{ objectives: string[] }>(res.content);
-    const objectives = Array.isArray(parsed?.objectives) ? parsed!.objectives.filter((x) => typeof x === 'string') : [];
+    const objectives = (Array.isArray(parsed?.objectives) ? parsed!.objectives.filter((x) => typeof x === 'string') : [])
+      .map((o) => stripObjectivePrefix(o))
+      .filter((o) => o.length > 0);
     if (!objectives.length) throw new HttpException('ИИ вернул неразборчивый ответ', HttpStatus.UNPROCESSABLE_ENTITY);
     await this.lessonRepo.update({ id, userId: ctx.userId }, { lessonObjectives: objectives });
+    // Ценность раскрываем здесь: цели урока уже есть, а без них раскрытие
+    // выходит общими словами, применимыми к любому уроку.
+    await this.expandValueLink({ ...lesson, lessonObjectives: objectives } as Lesson, ctx);
     return objectives;
+  }
+
+  /**
+   * Превращает название ценности в 1–2 предложения о её реализации на уроке.
+   *
+   * Раньше в документ уходило одно слово, причём всегда по-русски — даже в
+   * казахском плане. Для проверяющего это равнозначно отсутствию: непонятно,
+   * как ценность связана с уроком.
+   *
+   * Сбой не должен ронять генерацию: при неудаче оставляем название на языке
+   * урока — это хуже раскрытия, но лучше пустой графы.
+   */
+  private async expandValueLink(lesson: Lesson, ctx: UserCtx): Promise<void> {
+    if (!lesson.valueMonth) return;
+    const ref = await this.getValueForMonth(lesson.valueMonth);
+    if (!ref) return;
+
+    const lang = lesson.language ?? 'kz';
+    const name = lang === 'kz' ? ref.valueKz : lang === 'en' ? ref.valueEn : ref.valueRu;
+    let text = name;
+    try {
+      const p = valueLinkPrompt(name, this.ctxOf(lesson));
+      const res = await this.ai.request({
+        action: 'lesson_value_link', systemPrompt: p.system,
+        messages: [{ role: 'user', content: p.user }],
+        userId: ctx.userId, schoolId: ctx.schoolId,
+      });
+      const parsed = this.parseJson<{ valueLink: string }>(res.content);
+      if (parsed?.valueLink && typeof parsed.valueLink === 'string') text = parsed.valueLink.trim();
+    } catch (err) {
+      this.logger.warn(`Не удалось раскрыть ценность урока ${lesson.id}: ${(err as Error).message}`);
+    }
+    await this.lessonRepo.update({ id: lesson.id }, { valueLink: text });
   }
 
   // ── Stages (constructor) ────────────────────────────────────────
