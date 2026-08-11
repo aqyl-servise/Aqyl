@@ -344,7 +344,7 @@ export interface LpDescriptor { id: string; order: number; text: string; points:
 export interface LpStage {
   id: string; order: number; stageType: string; stageName?: string; timeMinutes: number; toolId?: string;
   teacherActions?: string; studentActions?: string; assessmentCriteria?: string; method?: string; resources?: string;
-  isAssessed: boolean; points?: number | null; descriptors?: LpDescriptor[];
+  isAssessed: boolean; linkedToValue?: boolean; points?: number | null; descriptors?: LpDescriptor[];
 }
 export interface LpLesson {
   id: string; userId: string; schoolId?: string | null;
@@ -360,7 +360,19 @@ export interface LpToolsResponse { stages: string[]; tools: Record<string, LpToo
 export type LpHeader = Partial<Pick<LpLesson,
   "unit" | "teacherName" | "date" | "lessonNumber" | "grade" | "presentCount" | "absentCount" |
   "subject" | "lessonTitle" | "languageFocus" | "learningObjectives" | "valueMonth" | "durationMinutes" | "language">>;
-export interface LpStageInput { stageType: string; toolId?: string; timeMinutes: number }
+export interface LpStageInput { stageType: string; toolId?: string; timeMinutes: number; isAssessed?: boolean; linkedToValue?: boolean }
+
+// Раздаточные материалы (срез 2)
+export type LpHandoutType = "warmup" | "explanation" | "individual" | "pair" | "group" | "text" | "quiz" | "reflection";
+export interface LpHandout {
+  id: string; stageId: string; order: number; handoutType: LpHandoutType; linkedToValue: boolean;
+  studentContent?: Record<string, unknown> | null;
+  teacherContent?: Record<string, unknown> | null;
+  levels?: Record<string, unknown> | null;
+}
+export interface LpHandoutPackage { status: "generating" | "ready" | "error"; generationCost: number; generationError?: string | null }
+export interface LpHandoutsResponse { package: LpHandoutPackage | null; handouts: LpHandout[] }
+export interface LpCost { total: number; byOperation: Record<string, number> }
 
 // ── Functional literacy (PISA) ────────────────────────────────────
 export interface LitQuestion {
@@ -473,6 +485,12 @@ export const api = {
     request<LpStage>(`/lesson-plans/${id}/stages/${sid}/regenerate`, { method: "POST" }, token),
   lpSwapTool: (token: string, id: string, sid: string, toolId: string) =>
     request<LpStage>(`/lesson-plans/${id}/stages/${sid}/swap-tool`, { method: "PATCH", body: JSON.stringify({ toolId }) }, token),
+  lpGenerateHandouts: (token: string, id: string) =>
+    request<{ status: string }>(`/lesson-plans/${id}/handouts/generate`, { method: "POST" }, token),
+  lpGetHandouts: (token: string, id: string) =>
+    request<LpHandoutsResponse>(`/lesson-plans/${id}/handouts`, undefined, token),
+  lpGetCost: (token: string, id: string) =>
+    request<LpCost>(`/lesson-plans/${id}/cost`, undefined, token),
 
   // Functional literacy (PISA)
   litCreate: (token: string, input: LitCreateInput) =>

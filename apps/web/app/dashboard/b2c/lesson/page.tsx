@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getValidAccessToken } from "../../../../lib/auth";
-import { api, API_URL, type LpLesson, type LpToolsResponse, type LpStageInput, type LpHeader } from "../../../../lib/api";
+import { api, API_URL, type LpLesson, type LpToolsResponse, type LpStageInput, type LpHeader, type LpHandout, type LpHandoutPackage, type LpCost } from "../../../../lib/api";
 import { useLang, LT, VALUE_MONTHS, type Lang } from "../../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../../components/lang-switcher";
 import { Icon } from "../../../../components/ui/icon";
@@ -17,6 +17,8 @@ const label: React.CSSProperties = { fontSize: 13, fontWeight: 700, color: "var(
 const card: React.CSSProperties = { background: "var(--ink-2)", borderRadius: 14, padding: "22px 20px", border: "1px solid var(--line)", marginBottom: 16 };
 const btnPrimary: React.CSSProperties = { background: "var(--amber)", color: "var(--on-amber)", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" };
 const btnGhost: React.CSSProperties = { background: "rgba(139,127,232,.12)", border: "1px solid var(--line)", color: "var(--lavender)", borderRadius: 10, padding: "10px 18px", fontSize: 14, cursor: "pointer", fontFamily: "inherit" };
+const radioRow: React.CSSProperties = { display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "var(--white)", cursor: "pointer" };
+const recBadge: React.CSSProperties = { fontSize: 11, color: "var(--lavender)", fontWeight: 700 };
 
 type T = Record<string, string>;
 
@@ -31,6 +33,17 @@ const EMPTY: HeaderForm = {
   language: "kz",
 };
 
+// Состояние конструктора (срез 2). Этап «Задание» — массив заданий (мультивыбор),
+// у каждого свои флаги оцениваемости и привязки к ценности. Квиз — необязательный.
+interface ConsTask { toolId: string; time: number; isAssessed: boolean; linkedToValue: boolean }
+interface ConsState {
+  warmup: { toolId: string; time: number; linkedToValue: boolean };
+  explanation: { toolId: string; time: number; linkedToValue: boolean };
+  tasks: ConsTask[];
+  quiz: { enabled: boolean; toolId: string; time: number; isAssessed: boolean };
+  reflection: { toolId: string; time: number };
+}
+
 export default function LessonGeneratorPage() {
   const router = useRouter();
   const [lang, setLang] = useLang();
@@ -42,7 +55,7 @@ export default function LessonGeneratorPage() {
   const [objectives, setObjectives] = useState<string[]>([]);
   const [genObjLoading, setGenObjLoading] = useState(false);
   const [tools, setTools] = useState<LpToolsResponse | null>(null);
-  const [stageSel, setStageSel] = useState<Record<string, { toolId: string; time: number }>>({});
+  const [cons, setCons] = useState<ConsState | null>(null);
   const [lesson, setLesson] = useState<LpLesson | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -158,25 +171,32 @@ export default function LessonGeneratorPage() {
 
   async function chooseMode(mode: "quick" | "constructor") {
     if (mode === "constructor") {
-      if (tools) {
-        const sel: Record<string, { toolId: string; time: number }> = {};
-        const timeByType: Record<string, number> = { warmup: 7, explanation: 10, task: 8, quiz: 5, reflection: 5 };
-        for (const st of tools.stages) {
-          const list = tools.tools[st] ?? [];
-          const def = list.find((x) => x.isDefault) ?? list[0];
-          if (def) sel[st] = { toolId: def.toolId, time: timeByType[st] ?? 5 };
-        }
-        setStageSel(sel);
-      }
+      if (tools) setCons(initCons(tools));
       setStep(3);
     } else { await runGenerate("quick"); }
   }
 
+  // Точечные обновления заданий в конструкторе.
+  function updTask(i: number, patch: Partial<ConsTask>) {
+    setCons((c) => (c ? { ...c, tasks: c.tasks.map((tk, j) => (j === i ? { ...tk, ...patch } : tk)) } : c));
+  }
+  function addTaskRow() {
+    setCons((c) => {
+      if (!c || !tools) return c;
+      const used = c.tasks.map((t) => t.toolId);
+      return { ...c, tasks: [...c.tasks, { toolId: firstToolId(tools, "task", used), time: 8, isAssessed: true, linkedToValue: false }] };
+    });
+  }
+  function removeTaskRow(i: number) {
+    setCons((c) => (c ? { ...c, tasks: c.tasks.filter((_, j) => j !== i) } : c));
+  }
+
   async function saveStagesAndGenerate() {
-    if (!token || !lessonId || !tools) return;
-    const stages: LpStageInput[] = tools.stages.filter((st) => stageSel[st]).map((st) => ({ stageType: st, toolId: stageSel[st].toolId, timeMinutes: stageSel[st].time }));
+    if (!token || !lessonId || !cons) return;
+    const aCount = assessedCount(cons);
+    if (aCount < 2) { setError(t.needTwoAssessed.replace("{n}", String(aCount))); return; }
     setBusy(true);
-    try { await api.lpSetStages(token, lessonId, stages); await runGenerate("constructor"); }
+    try { await api.lpSetStages(token, lessonId, flattenCons(cons)); await runGenerate("constructor"); }
     catch (e) { setError(msg(e)); setBusy(false); }
   }
 
@@ -315,29 +335,125 @@ export default function LessonGeneratorPage() {
           </div>
         )}
 
-        {step === 3 && tools && (
+        {step === 3 && tools && cons && (() => {
+          const aCount = assessedCount(cons);
+          const hasValue = !!form.valueMonth; // привязка к ценности осмысленна только если месяц выбран в шапке
+          const opts = (st: string) => (tools.tools[st] ?? []);
+          return (
           <div>
             <h2 style={{ color: DARK }}>{t.constructorTitle}</h2>
-            {tools.stages.map((st) => (
+
+            {/* Разогрев / Объяснение — один инструмент + привязка к ценности */}
+            {(["warmup", "explanation"] as const).map((st) => (
               <div key={st} style={card}>
-                <strong style={{ color: DARK }}>{t[`st_${st}`] ?? st}</strong>
+                <strong style={{ color: DARK }}>{t[`st_${st}`]}</strong>
                 <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-                  {(tools.tools[st] ?? []).map((tl) => (
-                    <label key={tl.toolId} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: DARK, cursor: "pointer" }}>
-                      <input type="radio" name={st} checked={stageSel[st]?.toolId === tl.toolId} onChange={() => setStageSel((s) => ({ ...s, [st]: { toolId: tl.toolId, time: s[st]?.time ?? 5 } }))} />
-                      {toolName(tl, lang)}{tl.isDefault && <span style={{ fontSize: 11, color: BRAND, fontWeight: 700 }}>· {t.recommend}</span>}
+                  {opts(st).map((tl) => (
+                    <label key={tl.toolId} style={radioRow}>
+                      <input type="radio" name={st} checked={cons[st].toolId === tl.toolId}
+                        onChange={() => setCons((c) => (c ? { ...c, [st]: { ...c[st], toolId: tl.toolId } } : c))} />
+                      {toolName(tl, lang)}{tl.isDefault && <span style={recBadge}>· {t.recommend}</span>}
                     </label>
                   ))}
                 </div>
-                <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                   <span style={{ fontSize: 13, color: "var(--muted)" }}>{t.timeMin}</span>
-                  <input type="number" style={{ ...inp, width: 90 }} value={stageSel[st]?.time ?? 5} onChange={(e) => setStageSel((s) => ({ ...s, [st]: { toolId: s[st]?.toolId ?? "", time: Number(e.target.value) } }))} />
+                  <input type="number" style={{ ...inp, width: 90 }} value={cons[st].time}
+                    onChange={(e) => setCons((c) => (c ? { ...c, [st]: { ...c[st], time: Number(e.target.value) } } : c))} />
+                  <ValueToggle checked={cons[st].linkedToValue} disabled={!hasValue} label={t.optLinkValue}
+                    onChange={(v) => setCons((c) => (c ? { ...c, [st]: { ...c[st], linkedToValue: v } } : c))} />
                 </div>
               </div>
             ))}
-            <div style={{ textAlign: "right" }}><button onClick={saveStagesAndGenerate} disabled={busy} style={btnPrimary}>{busy ? t.starting : t.generateLesson}</button></div>
+
+            {/* Задание — мультивыбор */}
+            <div style={card}>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+                <strong style={{ color: DARK }}>{t.st_task}</strong>
+                <span style={{ fontSize: 12, color: aCount >= 2 ? "var(--muted)" : "var(--danger)" }}>{aCount} {t.assessedBadge}</span>
+              </div>
+              <p style={{ fontSize: 12, color: "var(--muted)", margin: "4px 0 10px" }}>{t.tasksHint}</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {cons.tasks.map((tk, i) => (
+                  <div key={i} style={{ border: "1px solid var(--line)", borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                      <select style={{ ...inp, flex: 1, minWidth: 180 }} value={tk.toolId} onChange={(e) => updTask(i, { toolId: e.target.value })}>
+                        {opts("task").map((tl) => <option key={tl.toolId} value={tl.toolId}>{toolName(tl, lang)}</option>)}
+                      </select>
+                      <input type="number" style={{ ...inp, width: 80 }} value={tk.time} onChange={(e) => updTask(i, { time: Number(e.target.value) })} title={t.timeMin} />
+                      {cons.tasks.length > 1 && (
+                        <button type="button" onClick={() => removeTaskRow(i)} style={{ ...btnGhost, padding: "8px 12px", color: "var(--danger)" }}>{t.removeItem}</button>
+                      )}
+                    </div>
+                    <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                      <label style={radioRow}>
+                        <input type="checkbox" checked={tk.isAssessed} onChange={(e) => updTask(i, { isAssessed: e.target.checked })} />
+                        {tk.isAssessed ? t.optAssessed : t.optTraining}
+                      </label>
+                      <ValueToggle checked={tk.linkedToValue} disabled={!hasValue} label={t.optLinkValue} onChange={(v) => updTask(i, { linkedToValue: v })} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button type="button" onClick={addTaskRow} style={{ ...btnGhost, marginTop: 10 }}>{t.addTask}</button>
+            </div>
+
+            {/* Квиз — необязательный */}
+            <div style={card}>
+              <label style={{ ...radioRow, fontWeight: 700 }}>
+                <input type="checkbox" checked={cons.quiz.enabled} onChange={(e) => setCons((c) => (c ? { ...c, quiz: { ...c.quiz, enabled: e.target.checked } } : c))} />
+                {t.addQuizOpt} <span style={{ fontWeight: 400, fontSize: 12, color: "var(--muted)" }}>· {t.quizOffHint}</span>
+              </label>
+              {cons.quiz.enabled && (
+                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+                  {opts("quiz").map((tl) => (
+                    <label key={tl.toolId} style={radioRow}>
+                      <input type="radio" name="quiz-tool" checked={cons.quiz.toolId === tl.toolId}
+                        onChange={() => setCons((c) => (c ? { ...c, quiz: { ...c.quiz, toolId: tl.toolId } } : c))} />
+                      {toolName(tl, lang)}{tl.isDefault && <span style={recBadge}>· {t.recommend}</span>}
+                    </label>
+                  ))}
+                  <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 13, color: "var(--muted)" }}>{t.timeMin}</span>
+                    <input type="number" style={{ ...inp, width: 90 }} value={cons.quiz.time}
+                      onChange={(e) => setCons((c) => (c ? { ...c, quiz: { ...c.quiz, time: Number(e.target.value) } } : c))} />
+                    <label style={radioRow}>
+                      <input type="checkbox" checked={cons.quiz.isAssessed} onChange={(e) => setCons((c) => (c ? { ...c, quiz: { ...c.quiz, isAssessed: e.target.checked } } : c))} />
+                      {cons.quiz.isAssessed ? t.optAssessed : t.optTraining}
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Рефлексия — один инструмент */}
+            <div style={card}>
+              <strong style={{ color: DARK }}>{t.st_reflection}</strong>
+              <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+                {opts("reflection").map((tl) => (
+                  <label key={tl.toolId} style={radioRow}>
+                    <input type="radio" name="reflection" checked={cons.reflection.toolId === tl.toolId}
+                      onChange={() => setCons((c) => (c ? { ...c, reflection: { ...c.reflection, toolId: tl.toolId } } : c))} />
+                    {toolName(tl, lang)}{tl.isDefault && <span style={recBadge}>· {t.recommend}</span>}
+                  </label>
+                ))}
+              </div>
+              <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 13, color: "var(--muted)" }}>{t.timeMin}</span>
+                <input type="number" style={{ ...inp, width: 90 }} value={cons.reflection.time}
+                  onChange={(e) => setCons((c) => (c ? { ...c, reflection: { ...c.reflection, time: Number(e.target.value) } } : c))} />
+              </div>
+            </div>
+
+            {aCount < 2 && <p style={{ color: "var(--danger)", fontSize: 13 }}>{t.needTwoAssessed.replace("{n}", String(aCount))}</p>}
+            <div style={{ textAlign: "right" }}>
+              <button onClick={saveStagesAndGenerate} disabled={busy || aCount < 2} style={{ ...btnPrimary, opacity: busy || aCount < 2 ? 0.5 : 1 }}>
+                {busy ? t.starting : t.generateLesson}
+              </button>
+            </div>
           </div>
-        )}
+          );
+        })()}
 
         {step === 4 && (
           <Center>
@@ -349,7 +465,12 @@ export default function LessonGeneratorPage() {
           </Center>
         )}
 
-        {step === 5 && lesson && <LessonView lesson={lesson} onRegen={regenStage} regenId={regenId} onExport={() => token && downloadExport(lesson, token)} t={t} lang={lang} />}
+        {step === 5 && lesson && (
+          <>
+            <LessonView lesson={lesson} onRegen={regenStage} regenId={regenId} onExport={() => token && downloadExport(lesson, token)} t={t} lang={lang} />
+            {lesson.status === "ready" && <HandoutsPanel token={token} lessonId={lesson.id} t={t} />}
+          </>
+        )}
       </main>
     </div>
   );
@@ -427,6 +548,197 @@ function LessonView({ lesson, onRegen, regenId, onExport, t, lang }: { lesson: L
 
 function toolName(tl: { nameRu: string; nameKz: string; nameEn: string }, lang: Lang): string {
   return lang === "kz" ? tl.nameKz : lang === "en" ? tl.nameEn : tl.nameRu;
+}
+
+// ── Раздаточные материалы (срез 2): кнопка генерации + просмотр пакета ──
+function HandoutsPanel({ token, lessonId, t }: { token: string; lessonId: string; t: T }) {
+  const [pkg, setPkg] = useState<LpHandoutPackage | null>(null);
+  const [handouts, setHandouts] = useState<LpHandout[]>([]);
+  const [cost, setCost] = useState<LpCost | null>(null);
+  const [mode, setMode] = useState<"student" | "teacher">("student");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const load = useCallback(async (): Promise<string | undefined> => {
+    try {
+      const r = await api.lpGetHandouts(token, lessonId);
+      setPkg(r.package);
+      setHandouts(r.handouts);
+      if (r.package?.status === "ready") {
+        try { setCost(await api.lpGetCost(token, lessonId)); } catch { /* стоимость не критична */ }
+      }
+      return r.package?.status;
+    } catch { return undefined; }
+  }, [token, lessonId]);
+
+  useEffect(() => {
+    void load();
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [load]);
+
+  function startPoll() {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      const st = await load();
+      if (st === "ready" || st === "error") {
+        if (pollRef.current) clearInterval(pollRef.current);
+        setBusy(false);
+      }
+    }, 3000);
+  }
+
+  async function generate() {
+    setError(null); setBusy(true);
+    try {
+      await api.lpGenerateHandouts(token, lessonId);
+      setPkg({ status: "generating", generationCost: 0 });
+      startPoll();
+    } catch (e) { setError(t.matError + " " + msg(e)); setBusy(false); }
+  }
+
+  async function download(url: string, filename: string) {
+    try {
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) { setError(t.matError); return; }
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (e) { setError(t.matError + " " + msg(e)); }
+  }
+
+  const status = pkg?.status;
+  const generating = busy || status === "generating";
+  const ready = status === "ready" && handouts.length > 0;
+  const base = `${API_URL}/lesson-plans/${lessonId}/handouts`;
+
+  const toggleBtn = (m: "student" | "teacher", label: string) => (
+    <button onClick={() => setMode(m)} style={{
+      ...btnGhost, padding: "6px 14px",
+      background: mode === m ? "var(--amber)" : "rgba(139,127,232,.12)",
+      color: mode === m ? "var(--on-amber)" : "var(--lavender)",
+      fontWeight: mode === m ? 700 : 400,
+    }}>{label}</button>
+  );
+
+  return (
+    <div style={{ ...card, marginTop: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+        <strong style={{ color: DARK, fontSize: 16 }}>{t.materialsTitle}</strong>
+        {ready && (
+          <div style={{ display: "flex", gap: 6 }}>
+            {toggleBtn("student", t.versionStudent)}
+            {toggleBtn("teacher", t.versionTeacher)}
+          </div>
+        )}
+      </div>
+
+      {error && <div style={{ color: "var(--danger)", fontSize: 13, marginTop: 8 }}>{error}</div>}
+
+      {generating && (
+        <div style={{ textAlign: "center", padding: "24px 0" }}>
+          <div style={{ fontSize: 32 }}>⏳</div>
+          <div style={{ fontWeight: 700, color: DARK }}>{t.matGenerating}</div>
+          <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 4 }}>{t.matGenSub}</div>
+        </div>
+      )}
+
+      {!generating && !ready && (
+        <div style={{ marginTop: 12 }}>
+          <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 0 }}>{status === "error" ? t.matError : t.matEmpty}</p>
+          <button onClick={generate} style={btnPrimary}>{t.genMaterials}</button>
+        </div>
+      )}
+
+      {ready && (
+        <div style={{ marginTop: 14 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
+            <button onClick={() => download(`${base}/export?mode=${mode}`, `handouts-${mode}.docx`)} style={btnPrimary}>
+              ↓ {t.downloadPackage} · {mode === "student" ? t.versionStudent : t.versionTeacher}
+            </button>
+            {cost && (
+              <span style={{ fontSize: 12, color: "var(--muted)" }}>
+                {t.matCost}: {Math.round(cost.total)} {t.tenge}
+                {typeof cost.byOperation.plan === "number" && ` (${t.costPlan} ${Math.round(cost.byOperation.plan)} · ${t.costHandouts} ${Math.round(cost.byOperation.handouts ?? 0)})`}
+              </span>
+            )}
+            <button onClick={generate} style={{ ...btnGhost, padding: "8px 14px" }}>↻ {t.regenMaterials}</button>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {handouts.map((h) => {
+              const title = (h.studentContent as { title?: string } | null)?.title ?? "";
+              return (
+                <div key={h.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", border: "1px solid var(--line)", borderRadius: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontWeight: 700, color: DARK, fontSize: 13 }}>{t.appendix ?? "Прил."} {h.order}</span>
+                  <span style={{ color: DARK, fontSize: 13, flex: 1, minWidth: 120 }}>{title}</span>
+                  <span style={{ fontSize: 11, color: "var(--lavender)" }}>{t[`ht_${h.handoutType}`] ?? h.handoutType}</span>
+                  {h.linkedToValue && <span style={{ fontSize: 11, color: "var(--amber)", fontWeight: 700 }}>◆ {t.linkedBadge}</span>}
+                  <button onClick={() => download(`${base}/${h.id}/export?mode=${mode}`, `handout-${h.order}-${mode}.docx`)} style={{ ...btnGhost, padding: "4px 10px", fontSize: 12 }}>↓ {t.downloadSheet}</button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Конструктор: инициализация, сборка в API-формат, подсчёт оцениваемых ──
+function firstToolId(tools: LpToolsResponse, st: string, skip?: string | string[]): string {
+  const list = tools.tools[st] ?? [];
+  const skipped = new Set(Array.isArray(skip) ? skip : skip ? [skip] : []);
+  const free = list.filter((x) => !skipped.has(x.toolId));
+  const pool = free.length ? free : list;
+  return (pool.find((x) => x.isDefault) ?? pool[0])?.toolId ?? "";
+}
+
+function initCons(tools: LpToolsResponse): ConsState {
+  const t1 = firstToolId(tools, "task");
+  const t2 = firstToolId(tools, "task", t1) || t1;
+  return {
+    warmup: { toolId: firstToolId(tools, "warmup"), time: 7, linkedToValue: false },
+    explanation: { toolId: firstToolId(tools, "explanation"), time: 10, linkedToValue: false },
+    // По умолчанию два оцениваемых задания — минимум для деления 10 баллов.
+    tasks: [
+      { toolId: t1, time: 8, isAssessed: true, linkedToValue: false },
+      { toolId: t2, time: 8, isAssessed: true, linkedToValue: false },
+    ],
+    quiz: { enabled: false, toolId: firstToolId(tools, "quiz"), time: 5, isAssessed: true },
+    reflection: { toolId: firstToolId(tools, "reflection"), time: 5 },
+  };
+}
+
+function assessedCount(c: ConsState): number {
+  return c.tasks.filter((t) => t.isAssessed).length + (c.quiz.enabled && c.quiz.isAssessed ? 1 : 0);
+}
+
+function flattenCons(c: ConsState): LpStageInput[] {
+  const out: LpStageInput[] = [
+    { stageType: "warmup", toolId: c.warmup.toolId, timeMinutes: c.warmup.time, isAssessed: false, linkedToValue: c.warmup.linkedToValue },
+    { stageType: "explanation", toolId: c.explanation.toolId, timeMinutes: c.explanation.time, isAssessed: false, linkedToValue: c.explanation.linkedToValue },
+  ];
+  for (const tk of c.tasks) {
+    out.push({ stageType: "task", toolId: tk.toolId, timeMinutes: tk.time, isAssessed: tk.isAssessed, linkedToValue: tk.linkedToValue });
+  }
+  if (c.quiz.enabled) {
+    out.push({ stageType: "quiz", toolId: c.quiz.toolId, timeMinutes: c.quiz.time, isAssessed: c.quiz.isAssessed, linkedToValue: false });
+  }
+  out.push({ stageType: "reflection", toolId: c.reflection.toolId, timeMinutes: c.reflection.time, isAssessed: false, linkedToValue: false });
+  return out;
+}
+
+// Чекбокс «привязать к ценности». Заблокирован, если в шапке не выбран месяц:
+// без ценности привязывать не к чему.
+function ValueToggle({ checked, disabled, label, onChange }: { checked: boolean; disabled?: boolean; label: string; onChange: (v: boolean) => void }) {
+  return (
+    <label style={{ ...radioRow, opacity: disabled ? 0.45 : 1, cursor: disabled ? "not-allowed" : "pointer" }}>
+      <input type="checkbox" checked={checked && !disabled} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
+      {label}
+    </label>
+  );
 }
 
 async function downloadExport(lesson: LpLesson, token: string) {

@@ -6,13 +6,15 @@ import { LessonStage, StageType } from './entities/lesson-stage.entity';
 import { Descriptor } from './entities/descriptor.entity';
 import { ToolCatalog } from './entities/tool-catalog.entity';
 import { ValueLinkReference } from './entities/value-link-reference.entity';
-import { AiClientService } from '../../services/ai-client.service';
+import { AiClientService, AiResponse } from '../../services/ai-client.service';
+import { CostLoggerService } from './handouts/cost-logger.service';
 import {
   distributeLessonPoints,
   proposeWeights,
   stripObjectivePrefix,
   adjustDescriptorSum,
   hasEnoughAssessed,
+  MIN_ASSESSED,
   StagePointsProposal,
 } from './engine/points-engine';
 import { findImperativeObjectives } from './engine/objective-mood';
@@ -24,6 +26,9 @@ import {
   descriptorsPrompt,
 } from './prompts/lesson-prompts';
 import { docLabels } from './export/doc-labels';
+import { planChildren } from './export/docx-kit';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { Document, Packer } = require('docx') as typeof import('docx');
 
 export interface UserCtx {
   userId: string;
@@ -35,6 +40,8 @@ export interface StageInput {
   stageType: StageType;
   toolId?: string;
   timeMinutes: number;
+  isAssessed?: boolean;
+  linkedToValue?: boolean;
 }
 
 const STAGE_ORDER: StageType[] = ['warmup', 'explanation', 'task', 'quiz', 'reflection'];
@@ -51,6 +58,7 @@ export class LessonPlansService {
     @InjectRepository(ToolCatalog) private readonly toolRepo: Repository<ToolCatalog>,
     @InjectRepository(ValueLinkReference) private readonly valueRepo: Repository<ValueLinkReference>,
     private readonly ai: AiClientService,
+    private readonly cost: CostLoggerService,
   ) {}
 
   // ── Reference data ──────────────────────────────────────────────
@@ -118,91 +126,10 @@ export class LessonPlansService {
   // ── Export №130 (.docx) ─────────────────────────────────────────
   async exportDocx(id: string, ctx: UserCtx): Promise<Buffer> {
     const lesson = await this.getOne(id, ctx);
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, HeadingLevel } =
-      require('docx') as typeof import('docx');
-
-    // Подписи документа — на языке урока, а не на английском (ТЗ 1.1, дефект 5).
+    // Подписи документа — на языке урока (ТЗ 1.1, дефект 5). Вёрстка плана —
+    // в общем модуле docx-kit, чтобы пакет материалов (срез 2) её переиспользовал.
     const lbl = docLabels(lesson.language);
-    const border = { style: BorderStyle.SINGLE, size: 4, color: '000000' };
-    const borders = { top: border, bottom: border, left: border, right: border };
-    const p = (text: string, bold = false) => new Paragraph({ children: [new TextRun({ text: text ?? '', bold, size: 20 })] });
-    const cell = (children: import('docx').Paragraph[], widthDxa?: number) =>
-      new TableCell({ borders, ...(widthDxa ? { width: { size: widthDxa, type: WidthType.DXA } } : {}), children });
-
-    // Ширины таблиц — в твипах, а не в процентах: docx 9.6.1 сериализует
-    // WidthType.PERCENTAGE как w:w="100%", тогда как схема OOXML требует здесь
-    // целое число, и Word отказывается открывать такой файл. TEXT_W — ширина
-    // полосы набора: страница Letter (12240) минус поля по умолчанию (1440×2).
-    const TEXT_W = 9360;
-
-    // Header rows (label | value)
-    const hRow = (label: string, value: string) =>
-      new TableRow({ children: [cell([p(label, true)], 3000), cell([p(value)], 6360)] });
-
-    const headerTable = new Table({
-      width: { size: TEXT_W, type: WidthType.DXA },
-      columnWidths: [3000, 6360],
-      rows: [
-        hRow(lbl.shortTermPlan, lesson.unit ? `${lbl.unit}: ${lesson.unit}` : ''),
-        hRow(lbl.lessonNo, lesson.lessonNumber ?? ''),
-        hRow(lbl.teacherName, lesson.teacherName ?? ''),
-        hRow(lbl.date, lesson.date ?? ''),
-        hRow(lbl.grade, String(lesson.grade ?? '')),
-        hRow(lbl.presentAbsent, `${lesson.presentCount ?? ''} / ${lesson.absentCount ?? ''}`),
-        hRow(lbl.lessonTitle, lesson.lessonTitle ?? ''),
-        hRow(lbl.languageFocus, lesson.languageFocus ?? ''),
-        hRow(lbl.learningObjectives, (lesson.learningObjectives ?? []).join('\n')),
-        hRow(lbl.lessonObjectives, (lesson.lessonObjectives ?? []).join('\n')),
-        hRow(lbl.valueLinks, lesson.valueLink ?? ''),
-      ],
-    });
-
-    // Plan table (5 columns)
-    const th = (t: string) => cell([p(t, true)]);
-    const planHeader = new TableRow({
-      children: [
-        th(lbl.stagesTime), th(lbl.teacherActions), th(lbl.studentActions),
-        th(lbl.assessmentCriteria), th(lbl.resources),
-      ],
-    });
-    const planRows = (lesson.stages ?? []).map((s) => {
-      const studentChildren: import('docx').Paragraph[] = [p(s.studentActions ?? '')];
-      if (s.descriptors?.length) {
-        studentChildren.push(p(`${lbl.descriptor}:`, true));
-        s.descriptors.forEach((d, i) => studentChildren.push(p(`${i + 1}. ${d.text}`)));
-        studentChildren.push(p(`${lbl.total}: ${s.points ?? 0} ${lbl.points}`, true));
-      }
-      const critChildren: import('docx').Paragraph[] = [p(s.assessmentCriteria ?? '')];
-      if (s.method) critChildren.push(p(`${lbl.method}: ${s.method}`));
-      return new TableRow({
-        children: [
-          cell([p(`${s.stageName || s.stageType}`, true), p(`(${s.timeMinutes} ${lbl.min})`)]),
-          cell([p(s.teacherActions ?? '')]),
-          cell(studentChildren),
-          cell(critChildren),
-          cell([p(s.resources ?? '')]),
-        ],
-      });
-    });
-    const PLAN_COLS = [1500, 2100, 2400, 2000, 1360]; // = TEXT_W
-    const planTable = new Table({
-      width: { size: TEXT_W, type: WidthType.DXA },
-      columnWidths: PLAN_COLS,
-      rows: [planHeader, ...planRows],
-    });
-
-    const doc = new Document({
-      sections: [{
-        children: [
-          new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: lbl.docTitle, bold: true })] }),
-          headerTable,
-          new Paragraph({ children: [new TextRun({ text: '' })] }),
-          new Paragraph({ children: [new TextRun({ text: lbl.plan, bold: true, size: 22 })] }),
-          planTable,
-        ],
-      }],
-    });
+    const doc = new Document({ sections: [{ children: planChildren(lesson, lbl) }] });
     return Packer.toBuffer(doc);
   }
 
@@ -247,6 +174,7 @@ export class LessonPlansService {
       messages: [{ role: 'user', content: p.user }],
       userId: ctx.userId, schoolId: ctx.schoolId,
     });
+    await this.cost.log(lesson.id, 'plan', res);
     const parsed = this.parseJson<{ objectives: string[] }>(res.content);
     return (Array.isArray(parsed?.objectives) ? parsed!.objectives.filter((x) => typeof x === 'string') : [])
       .map((o) => stripObjectivePrefix(o))
@@ -281,6 +209,7 @@ export class LessonPlansService {
         messages: [{ role: 'user', content: p.user }],
         userId: lesson.userId, schoolId: lesson.schoolId,
       });
+      await this.cost.log(lesson.id, 'plan', res);
       const parsed = this.parseJson<{ valueLink: string }>(res.content);
       if (parsed?.valueLink && typeof parsed.valueLink === 'string') text = parsed.valueLink.trim();
     } catch (err) {
@@ -300,7 +229,10 @@ export class LessonPlansService {
         stageType: s.stageType,
         toolId: s.toolId,
         timeMinutes: s.timeMinutes ?? 0,
-        isAssessed: ASSESSED_TYPES.includes(s.stageType),
+        // Оцениваемость выбирает учитель (срез 2). Флаг может не прийти от
+        // старого фронта — тогда падаем на прежнее правило «task/quiz → да».
+        isAssessed: s.isAssessed ?? ASSESSED_TYPES.includes(s.stageType),
+        linkedToValue: s.linkedToValue ?? false,
       }),
     );
     await this.stageRepo.save(rows);
@@ -308,24 +240,38 @@ export class LessonPlansService {
     return this.getOne(id, ctx);
   }
 
-  /** Default stages for quick mode (all isDefault tools; 3 task defaults). */
+  /**
+   * Этапы быстрого режима: платформа выбирает всё сама.
+   *
+   * Квиз по умолчанию выключен (срез 2), поэтому два оцениваемых даёт этап
+   * «Задание» — два задания вместо одного. Так и сумма 10 есть чему делиться
+   * (нужно ≥2 оцениваемых), и правило «квиз необязателен» соблюдено.
+   */
   async buildDefaultStages(id: string): Promise<void> {
-    const defaults = await this.toolRepo.find({ where: { isDefault: true }, order: { stageType: 'ASC', sortOrder: 'ASC' } });
-    const ordered = defaults.sort(
-      (a, b) => STAGE_ORDER.indexOf(a.stageType) - STAGE_ORDER.indexOf(b.stageType) || a.sortOrder - b.sortOrder,
-    );
-    const timeByType: Record<string, number> = { warmup: 7, explanation: 10, task: 8, quiz: 5, reflection: 5 };
+    const tools = await this.toolRepo.find({ order: { stageType: 'ASC', sortOrder: 'ASC' } });
+    const byType = (t: StageType) => tools.filter((x) => x.stageType === t);
+    const pick = (t: StageType) => byType(t).find((x) => x.isDefault) ?? byType(t)[0];
+
     await this.stageRepo.delete({ lessonId: id });
-    const rows = ordered.map((t, i) =>
-      this.stageRepo.create({
-        lessonId: id,
-        order: i,
-        stageType: t.stageType,
-        toolId: t.toolId,
-        timeMinutes: timeByType[t.stageType] ?? 5,
-        isAssessed: ASSESSED_TYPES.includes(t.stageType),
-      }),
-    );
+    const rows: LessonStage[] = [];
+    let order = 0;
+    const add = (stageType: StageType, toolId: string | undefined, timeMinutes: number, isAssessed: boolean) => {
+      rows.push(this.stageRepo.create({
+        lessonId: id, order: order++, stageType, toolId, timeMinutes, isAssessed, linkedToValue: false,
+      }));
+    };
+
+    const warm = pick('warmup'); if (warm) add('warmup', warm.toolId, 7, false);
+    const expl = pick('explanation'); if (expl) add('explanation', expl.toolId, 10, false);
+    // Два задания: если в каталоге больше одного инструмента — берём разные,
+    // иначе тот же дважды. Оба оцениваемые, чтобы делить 10 баллов было на что.
+    const taskTools = byType('task');
+    const t1 = taskTools[0];
+    const t2 = taskTools[1] ?? taskTools[0];
+    if (t1) add('task', t1.toolId, 9, true);
+    if (t2) add('task', t2.toolId, 9, true);
+    const refl = pick('reflection'); if (refl) add('reflection', refl.toolId, 5, false);
+
     await this.stageRepo.save(rows);
   }
 
@@ -335,6 +281,16 @@ export class LessonPlansService {
     if (mode === 'quick') await this.buildDefaultStages(id);
     const stageCount = await this.stageRepo.count({ where: { lessonId: id } });
     if (!stageCount) throw new HttpException('Не выбраны этапы урока', HttpStatus.BAD_REQUEST);
+    // Оцениваемых должно быть минимум два — иначе делить 10 баллов не на что.
+    // Проверяем синхронно, до старта фоновой генерации: учитель получает
+    // понятную ошибку сразу, а не статус error через 30 секунд.
+    const assessedCount = await this.stageRepo.count({ where: { lessonId: id, isAssessed: true } });
+    if (assessedCount < MIN_ASSESSED) {
+      throw new HttpException(
+        `Нужно минимум ${MIN_ASSESSED} оцениваемых задания (сейчас ${assessedCount})`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
     await this.lessonRepo.update({ id, userId: ctx.userId }, { status: 'generating', mode, generationError: null });
     // fire-and-forget; frontend polls GET /lessons/:id
     void this.runGeneration(id).catch(async (err) => {
@@ -350,9 +306,11 @@ export class LessonPlansService {
     const stages = await this.stageRepo.find({ where: { lessonId: id }, order: { order: 'ASC' } });
     const ctx = this.ctxOf(lesson);
 
-    const assessed = stages.filter((s) => ASSESSED_TYPES.includes(s.stageType));
+    // Оцениваемые выбирает учитель (срез 2), а не тип этапа: тренировочное
+    // задание типа task в сумму баллов не входит.
+    const assessed = stages.filter((s) => s.isAssessed);
     if (!hasEnoughAssessed(assessed.length)) {
-      throw new Error('Нужно минимум 2 оцениваемых задания (task/quiz)');
+      throw new Error(`Нужно минимум ${MIN_ASSESSED} оцениваемых задания`);
     }
 
     // 1) Points distribution (Sonnet proposes, CODE enforces sum=10)
@@ -370,7 +328,8 @@ export class LessonPlansService {
       const desc = s.toolId ? toolMap.get(s.toolId)?.description ?? '' : '';
       const p = stagePrompt({ stageType: s.stageType, toolId: s.toolId, timeMinutes: s.timeMinutes }, desc, ctx);
       const res = await this.safeRequest('lesson_stage', p.system, p.user, lesson);
-      const c = this.parseJson<any>(res) ?? {};
+      await this.cost.log(id, 'plan', res);
+      const c = this.parseJson<any>(res.content) ?? {};
       s.stageName = c.stageName ?? s.stageName ?? s.stageType;
       s.teacherActions = c.teacherActions ?? '';
       s.studentActions = c.studentActions ?? '';
@@ -400,7 +359,8 @@ export class LessonPlansService {
     const pts = s.points ?? 1;
     const p = descriptorsPrompt({ stageType: s.stageType, toolId: s.toolId, teacherActions: s.teacherActions }, pts, ctx);
     const res = await this.safeRequest('lesson_descriptors', p.system, p.user, lesson);
-    const parsed = this.parseJson<{ descriptors: { text: string; points: number }[] }>(res);
+    await this.cost.log(lesson.id, 'plan', res);
+    const parsed = this.parseJson<{ descriptors: { text: string; points: number }[] }>(res.content);
     const items = Array.isArray(parsed?.descriptors) && parsed!.descriptors.length
       ? parsed!.descriptors
       : this.fallbackDescriptors(lesson.language);
@@ -460,7 +420,8 @@ export class LessonPlansService {
     const tool = s.toolId ? await this.toolRepo.findOne({ where: { toolId: s.toolId } }) : null;
     const p = stagePrompt({ stageType: s.stageType, toolId: s.toolId, timeMinutes: s.timeMinutes }, tool?.description ?? '', ctxL);
     const res = await this.safeRequest('lesson_stage', p.system, p.user, lesson);
-    const c = this.parseJson<any>(res) ?? {};
+    await this.cost.log(lesson.id, 'plan', res);
+    const c = this.parseJson<any>(res.content) ?? {};
     Object.assign(s, {
       stageName: c.stageName ?? s.stageName,
       teacherActions: c.teacherActions ?? s.teacherActions,
@@ -520,21 +481,24 @@ export class LessonPlansService {
     return out;
   }
 
-  /** Владелец урока нужен, чтобы расход токенов попал в отчёт именно ему. */
+  /**
+   * Владелец урока нужен, чтобы расход токенов попал в отчёт именно ему.
+   * Возвращает полный ответ (с токенами и моделью), чтобы вызывающий мог
+   * записать стоимость в разрезе урока (срез 2).
+   */
   private async safeRequest(
     action: string,
     system: string,
     user: string,
     owner?: { userId: string; schoolId?: string | null },
-  ): Promise<string> {
-    const res = await this.ai.request({
+  ): Promise<AiResponse> {
+    return this.ai.request({
       action,
       systemPrompt: system,
       messages: [{ role: 'user', content: user }],
       userId: owner?.userId,
       schoolId: owner?.schoolId ?? null,
     });
-    return res.content;
   }
 
   private parseJson<T>(text: string): T | null {

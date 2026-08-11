@@ -21,6 +21,7 @@ export const ACTION_MODEL_MAP: Record<string, keyof typeof AI_MODELS> = {
   lesson_value_link: 'HAIKU',
   lesson_stage: 'SONNET',
   lesson_descriptors: 'SONNET',
+  lesson_handout: 'SONNET',
   literacy_stimulus: 'SONNET',
   literacy_analyze: 'HAIKU',
   literacy_questions: 'SONNET',
@@ -49,6 +50,9 @@ export const MAX_TOKENS_MAP: Record<string, number> = {
   lesson_value_link: 250, // 1–2 предложения, до 45 слов
   lesson_stage: 700, // было 1200 — с ограничением объёма столько не нужно
   lesson_descriptors: 350, // было 500
+  // Раздаточный лист — развёрнутый материал. Индивидуальное задание с тремя
+  // уровнями A/B/C самое объёмное, отсюда потолок выше остальных.
+  lesson_handout: 2600,
   literacy_stimulus: 900, // было 1500 — стимул ограничен 250 словами
   literacy_analyze: 400,
   literacy_questions: 2200, // было 3000
