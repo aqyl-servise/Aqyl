@@ -15,6 +15,7 @@ import {
   hasEnoughAssessed,
   StagePointsProposal,
 } from './engine/points-engine';
+import { findImperativeObjectives } from './engine/objective-mood';
 import {
   LessonContext,
   objectivesPrompt,
@@ -22,6 +23,7 @@ import {
   stagePrompt,
   descriptorsPrompt,
 } from './prompts/lesson-prompts';
+import { docLabels } from './export/doc-labels';
 
 export interface UserCtx {
   userId: string;
@@ -75,15 +77,24 @@ export class LessonPlansService {
   }
 
   async updateHeader(id: string, ctx: UserCtx, patch: Partial<Lesson>): Promise<Lesson> {
-    await this.own(id, ctx);
-    // resolve value text if a month was set
+    const lesson = await this.own(id, ctx);
     const data = this.pickHeader(patch);
-    if (patch.valueMonth) {
-      const v = await this.getValueForMonth(patch.valueMonth);
-      if (v) data.valueLink = v.valueRu;
+    // Ценность в шапке — только НАЗВАНИЕ и только при реальной смене месяца.
+    // Раньше здесь безусловно проставлялось `v.valueRu`, и раскрытый текст,
+    // полученный от ИИ, затирался одним русским словом при каждом сохранении
+    // шапки — а фронт сохраняет её и на «Далее», уже после раскрытия. Отсюда
+    // и бралось одно слово в готовом документе.
+    if (patch.valueMonth !== undefined && patch.valueMonth !== lesson.valueMonth) {
+      const v = patch.valueMonth ? await this.getValueForMonth(patch.valueMonth) : null;
+      data.valueLink = v ? this.valueName(v, patch.language ?? lesson.language) : null;
     }
     await this.lessonRepo.update({ id, userId: ctx.userId }, data);
     return this.getOne(id, ctx);
+  }
+
+  /** Название ценности на языке урока. */
+  private valueName(ref: ValueLinkReference, language?: string): string {
+    return language === 'ru' ? ref.valueRu : language === 'en' ? ref.valueEn : ref.valueKz;
   }
 
   async list(ctx: UserCtx) {
@@ -104,20 +115,6 @@ export class LessonPlansService {
     return lesson;
   }
 
-  /**
-   * Подписи внутри документа. Раньше были захардкожены по-английски и попадали
-   * в казахский и русский план как вкрапление чужого языка — это часть того же
-   * дефекта, что и смешение языков в сгенерированном тексте.
-   */
-  private labels(language?: string) {
-    const L: Record<string, Record<string, string>> = {
-      kz: { method: 'Әдіс', descriptor: 'Дескриптор', total: 'Барлығы', points: 'ұпай', min: 'мин' },
-      ru: { method: 'Метод', descriptor: 'Дескриптор', total: 'Всего', points: 'баллов', min: 'мин' },
-      en: { method: 'Method', descriptor: 'Descriptor', total: 'Total', points: 'points', min: 'min' },
-    };
-    return L[language ?? 'kz'] ?? L.kz;
-  }
-
   // ── Export №130 (.docx) ─────────────────────────────────────────
   async exportDocx(id: string, ctx: UserCtx): Promise<Buffer> {
     const lesson = await this.getOne(id, ctx);
@@ -125,7 +122,8 @@ export class LessonPlansService {
     const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, HeadingLevel } =
       require('docx') as typeof import('docx');
 
-    const lbl = this.labels(lesson.language);
+    // Подписи документа — на языке урока, а не на английском (ТЗ 1.1, дефект 5).
+    const lbl = docLabels(lesson.language);
     const border = { style: BorderStyle.SINGLE, size: 4, color: '000000' };
     const borders = { top: border, bottom: border, left: border, right: border };
     const p = (text: string, bold = false) => new Paragraph({ children: [new TextRun({ text: text ?? '', bold, size: 20 })] });
@@ -146,24 +144,27 @@ export class LessonPlansService {
       width: { size: TEXT_W, type: WidthType.DXA },
       columnWidths: [3000, 6360],
       rows: [
-        hRow('Short term plan', lesson.unit ? `Unit: ${lesson.unit}` : ''),
-        hRow('Lesson №', lesson.lessonNumber ?? ''),
-        hRow('Teacher name', lesson.teacherName ?? ''),
-        hRow('Date', lesson.date ?? ''),
-        hRow('Grade', String(lesson.grade ?? '')),
-        hRow('Number present / absent', `${lesson.presentCount ?? ''} / ${lesson.absentCount ?? ''}`),
-        hRow('Lesson title', lesson.lessonTitle ?? ''),
-        hRow('Language focus', lesson.languageFocus ?? ''),
-        hRow('Learning objectives', (lesson.learningObjectives ?? []).join('\n')),
-        hRow('Lesson objectives', (lesson.lessonObjectives ?? []).join('\n')),
-        hRow('Value links', lesson.valueLink ?? ''),
+        hRow(lbl.shortTermPlan, lesson.unit ? `${lbl.unit}: ${lesson.unit}` : ''),
+        hRow(lbl.lessonNo, lesson.lessonNumber ?? ''),
+        hRow(lbl.teacherName, lesson.teacherName ?? ''),
+        hRow(lbl.date, lesson.date ?? ''),
+        hRow(lbl.grade, String(lesson.grade ?? '')),
+        hRow(lbl.presentAbsent, `${lesson.presentCount ?? ''} / ${lesson.absentCount ?? ''}`),
+        hRow(lbl.lessonTitle, lesson.lessonTitle ?? ''),
+        hRow(lbl.languageFocus, lesson.languageFocus ?? ''),
+        hRow(lbl.learningObjectives, (lesson.learningObjectives ?? []).join('\n')),
+        hRow(lbl.lessonObjectives, (lesson.lessonObjectives ?? []).join('\n')),
+        hRow(lbl.valueLinks, lesson.valueLink ?? ''),
       ],
     });
 
     // Plan table (5 columns)
     const th = (t: string) => cell([p(t, true)]);
     const planHeader = new TableRow({
-      children: [th('Stages / Time'), th("Teachers' actions"), th("Students' actions"), th('Assessment criteria'), th('Resources')],
+      children: [
+        th(lbl.stagesTime), th(lbl.teacherActions), th(lbl.studentActions),
+        th(lbl.assessmentCriteria), th(lbl.resources),
+      ],
     });
     const planRows = (lesson.stages ?? []).map((s) => {
       const studentChildren: import('docx').Paragraph[] = [p(s.studentActions ?? '')];
@@ -194,10 +195,10 @@ export class LessonPlansService {
     const doc = new Document({
       sections: [{
         children: [
-          new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: 'Краткосрочный план урока (КСП)', bold: true })] }),
+          new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: lbl.docTitle, bold: true })] }),
           headerTable,
           new Paragraph({ children: [new TextRun({ text: '' })] }),
-          new Paragraph({ children: [new TextRun({ text: 'Plan', bold: true, size: 22 })] }),
+          new Paragraph({ children: [new TextRun({ text: lbl.plan, bold: true, size: 22 })] }),
           planTable,
         ],
       }],
@@ -211,18 +212,45 @@ export class LessonPlansService {
     if (!lesson.learningObjectives?.length) {
       throw new HttpException('Сначала заполните цели обучения', HttpStatus.BAD_REQUEST);
     }
-    const p = objectivesPrompt(this.ctxOf(lesson));
-    const res = await this.ai.request({ action: 'lesson_objectives', systemPrompt: p.system, messages: [{ role: 'user', content: p.user }], userId: ctx.userId, schoolId: ctx.schoolId });
+    let objectives = await this.askObjectives(lesson, ctx);
+    if (!objectives.length) throw new HttpException('ИИ вернул неразборчивый ответ', HttpStatus.UNPROCESSABLE_ENTITY);
+
+    // Наклонение проверяем кодом: цель урока должна описывать действие ученика
+    // («анықтайды»), а не командовать им («анықта»). Одна повторная попытка —
+    // с показом модели её собственных ошибочных формулировок. Если и она не
+    // помогла, оставляем лучший из двух вариантов: цели без наклонения хуже,
+    // чем цели с ним, но лучше, чем упавшая генерация.
+    const bad = findImperativeObjectives(objectives, lesson.language);
+    if (bad.length) {
+      this.logger.warn(`Урок ${id}: цели в повелительном наклонении (${bad.length}), повтор генерации`);
+      try {
+        const retry = await this.askObjectives(lesson, ctx, bad);
+        const stillBad = findImperativeObjectives(retry, lesson.language);
+        if (retry.length && stillBad.length < bad.length) objectives = retry;
+        if (stillBad.length && retry.length) {
+          this.logger.warn(`Урок ${id}: после повтора осталось ${stillBad.length} целей в повелительном наклонении`);
+        }
+      } catch (err) {
+        this.logger.warn(`Урок ${id}: повтор генерации целей не удался: ${(err as Error).message}`);
+      }
+    }
+
+    await this.lessonRepo.update({ id, userId: ctx.userId }, { lessonObjectives: objectives });
+    return objectives;
+  }
+
+  /** Один вызов модели за целями урока + чистка префиксов. */
+  private async askObjectives(lesson: Lesson, ctx: UserCtx, imperativeSamples: string[] = []): Promise<string[]> {
+    const p = objectivesPrompt(this.ctxOf(lesson), imperativeSamples);
+    const res = await this.ai.request({
+      action: 'lesson_objectives', systemPrompt: p.system,
+      messages: [{ role: 'user', content: p.user }],
+      userId: ctx.userId, schoolId: ctx.schoolId,
+    });
     const parsed = this.parseJson<{ objectives: string[] }>(res.content);
-    const objectives = (Array.isArray(parsed?.objectives) ? parsed!.objectives.filter((x) => typeof x === 'string') : [])
+    return (Array.isArray(parsed?.objectives) ? parsed!.objectives.filter((x) => typeof x === 'string') : [])
       .map((o) => stripObjectivePrefix(o))
       .filter((o) => o.length > 0);
-    if (!objectives.length) throw new HttpException('ИИ вернул неразборчивый ответ', HttpStatus.UNPROCESSABLE_ENTITY);
-    await this.lessonRepo.update({ id, userId: ctx.userId }, { lessonObjectives: objectives });
-    // Ценность раскрываем здесь: цели урока уже есть, а без них раскрытие
-    // выходит общими словами, применимыми к любому уроку.
-    await this.expandValueLink({ ...lesson, lessonObjectives: objectives } as Lesson, ctx);
-    return objectives;
   }
 
   /**
@@ -234,21 +262,24 @@ export class LessonPlansService {
    *
    * Сбой не должен ронять генерацию: при неудаче оставляем название на языке
    * урока — это хуже раскрытия, но лучше пустой графы.
+   *
+   * Вызывается на этапе генерации урока, а не при генерации целей: раскрытие
+   * должно попасть в документ независимо от того, нажимал ли учитель
+   * «Сгенерировать цели урока» — этот шаг необязателен.
    */
-  private async expandValueLink(lesson: Lesson, ctx: UserCtx): Promise<void> {
+  private async expandValueLink(lesson: Lesson): Promise<void> {
     if (!lesson.valueMonth) return;
     const ref = await this.getValueForMonth(lesson.valueMonth);
     if (!ref) return;
 
-    const lang = lesson.language ?? 'kz';
-    const name = lang === 'kz' ? ref.valueKz : lang === 'en' ? ref.valueEn : ref.valueRu;
+    const name = this.valueName(ref, lesson.language);
     let text = name;
     try {
       const p = valueLinkPrompt(name, this.ctxOf(lesson));
       const res = await this.ai.request({
         action: 'lesson_value_link', systemPrompt: p.system,
         messages: [{ role: 'user', content: p.user }],
-        userId: ctx.userId, schoolId: ctx.schoolId,
+        userId: lesson.userId, schoolId: lesson.schoolId,
       });
       const parsed = this.parseJson<{ valueLink: string }>(res.content);
       if (parsed?.valueLink && typeof parsed.valueLink === 'string') text = parsed.valueLink.trim();
@@ -351,21 +382,50 @@ export class LessonPlansService {
 
     // 3) Descriptors for assessed stages (Sonnet), CODE enforces sum = stage.points
     for (const s of assessed) {
-      const pts = s.points ?? 1;
-      const p = descriptorsPrompt({ stageType: s.stageType, toolId: s.toolId, teacherActions: s.teacherActions }, pts, ctx);
-      const res = await this.safeRequest('lesson_descriptors', p.system, p.user, lesson);
-      const parsed = this.parseJson<{ descriptors: { text: string; points: number }[] }>(res);
-      let items = Array.isArray(parsed?.descriptors) && parsed!.descriptors.length
-        ? parsed!.descriptors
-        : [{ text: 'Выполняет задание корректно', points: 1 }, { text: 'Использует изученный материал', points: 1 }];
-      const adjusted = adjustDescriptorSum(items.map((d) => d.points), pts);
-      await this.descRepo.delete({ stageId: s.id });
-      await this.descRepo.save(
-        items.map((d, i) => this.descRepo.create({ stageId: s.id, order: i, text: d.text || 'Дескриптор', points: adjusted[i] })),
-      );
+      await this.generateDescriptors(s, lesson, ctx);
     }
 
+    // 4) Раскрытие ценности программы «Адал азамат» под тему урока.
+    await this.expandValueLink(lesson);
+
     await this.lessonRepo.update(id, { status: 'ready', totalPoints: 10, homework: lesson.homework ?? null });
+  }
+
+  /**
+   * Дескрипторы одного оцениваемого этапа. Сумма приводится кодом ровно к
+   * `stage.points`, сами баллы этапа не меняются — инвариант «10 за урок»
+   * держится на уровне распределения между этапами, а не здесь.
+   */
+  private async generateDescriptors(s: LessonStage, lesson: Lesson, ctx: LessonContext): Promise<void> {
+    const pts = s.points ?? 1;
+    const p = descriptorsPrompt({ stageType: s.stageType, toolId: s.toolId, teacherActions: s.teacherActions }, pts, ctx);
+    const res = await this.safeRequest('lesson_descriptors', p.system, p.user, lesson);
+    const parsed = this.parseJson<{ descriptors: { text: string; points: number }[] }>(res);
+    const items = Array.isArray(parsed?.descriptors) && parsed!.descriptors.length
+      ? parsed!.descriptors
+      : this.fallbackDescriptors(lesson.language);
+    const adjusted = adjustDescriptorSum(items.map((d) => d.points), pts);
+    await this.descRepo.delete({ stageId: s.id });
+    await this.descRepo.save(
+      items.map((d, i) =>
+        this.descRepo.create({
+          stageId: s.id, order: i,
+          text: d.text || this.fallbackDescriptors(lesson.language)[0].text,
+          points: adjusted[i],
+        }),
+      ),
+    );
+  }
+
+  /** Заглушка на случай неразборчивого ответа модели — на языке урока. */
+  private fallbackDescriptors(language?: string): { text: string; points: number }[] {
+    const byLang: Record<string, string[]> = {
+      kz: ['Тапсырманы дұрыс орындайды', 'Өтілген материалды қолданады'],
+      ru: ['Выполняет задание корректно', 'Использует изученный материал'],
+      en: ['Completes the task correctly', 'Applies the studied material'],
+    };
+    const texts = byLang[language ?? ''] ?? byLang.kz;
+    return texts.map((text) => ({ text, points: 1 }));
   }
 
   /**
@@ -383,15 +443,23 @@ export class LessonPlansService {
   }
 
   // ── Stage regenerate / swap tool ────────────────────────────────
+  /**
+   * Перегенерация одного этапа.
+   *
+   * Баллы этапа (`points`) намеренно не трогаются: они распределены по уроку
+   * так, что сумма равна 10, и пересчёт одного этапа сломал бы инвариант.
+   * А вот дескрипторы описывают КОНКРЕТНОЕ задание — после смены содержания
+   * старые перестают ему соответствовать, поэтому для оцениваемых этапов они
+   * генерируются заново под ту же сумму баллов.
+   */
   async regenerateStage(id: string, sid: string, ctx: UserCtx): Promise<LessonStage> {
-    await this.own(id, ctx);
+    const lesson = await this.own(id, ctx);
     const s = await this.stageRepo.findOne({ where: { id: sid, lessonId: id } });
     if (!s) throw new HttpException('Этап не найден', HttpStatus.NOT_FOUND);
-    const lesson = await this.lessonRepo.findOne({ where: { id } });
-    const ctxL = this.ctxOf(lesson!);
+    const ctxL = this.ctxOf(lesson);
     const tool = s.toolId ? await this.toolRepo.findOne({ where: { toolId: s.toolId } }) : null;
     const p = stagePrompt({ stageType: s.stageType, toolId: s.toolId, timeMinutes: s.timeMinutes }, tool?.description ?? '', ctxL);
-    const res = await this.safeRequest('lesson_stage', p.system, p.user, lesson!);
+    const res = await this.safeRequest('lesson_stage', p.system, p.user, lesson);
     const c = this.parseJson<any>(res) ?? {};
     Object.assign(s, {
       stageName: c.stageName ?? s.stageName,
@@ -401,7 +469,13 @@ export class LessonPlansService {
       assessmentCriteria: c.assessmentCriteria ?? s.assessmentCriteria,
       resources: c.resources ?? s.resources,
     });
-    return this.stageRepo.save(s);
+    const saved = await this.stageRepo.save(s);
+
+    if (saved.isAssessed) {
+      await this.generateDescriptors(saved, lesson, ctxL);
+      saved.descriptors = await this.descRepo.find({ where: { stageId: saved.id }, order: { order: 'ASC' } });
+    }
+    return saved;
   }
 
   async swapTool(id: string, sid: string, ctx: UserCtx, toolId: string): Promise<LessonStage> {

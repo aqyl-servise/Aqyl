@@ -48,7 +48,9 @@ const ru: Dict = {
   vValue: "Ценность", vTotalPoints: "Итого баллов",
   thStage: "Этап / Время", thTeacher: "Действия учителя", thStudent: "Действия обучающегося",
   thCriteria: "Критерии оценивания", thResources: "Ресурсы", descriptors: "Дескрипторы",
-  regen: "↻ Перегенерировать", min: "мин",
+  regen: "↻ Перегенерировать", regenBusy: "↻ Генерация…", min: "мин",
+  regenFailed: "Не удалось перегенерировать этап. Попробуйте ещё раз. ",
+  totalW: "Всего", methodW: "Метод",
   downloadPlan: "Скачать план урока", createPresentation: "Создать презентацию (скоро)",
   genError: "Ошибка генерации.", genErrorHint: "Попробуйте ещё раз.",
   st_warmup: "Разогрев", st_explanation: "Объяснение", st_task: "Задание", st_quiz: "Квиз", st_reflection: "Рефлексия",
@@ -154,7 +156,9 @@ const kz: Dict = {
   vValue: "Құндылық", vTotalPoints: "Барлық ұпай",
   thStage: "Кезең / Уақыт", thTeacher: "Мұғалім әрекеті", thStudent: "Оқушы әрекеті",
   thCriteria: "Бағалау критерийлері", thResources: "Ресурстар", descriptors: "Дескрипторлар",
-  regen: "↻ Қайта құру", min: "мин",
+  regen: "↻ Қайта құру", regenBusy: "↻ Құрылуда…", min: "мин",
+  regenFailed: "Кезеңді қайта құру мүмкін болмады. Қайталап көріңіз. ",
+  totalW: "Барлығы", methodW: "Әдіс",
   downloadPlan: "Сабақ жоспарын жүктеу", createPresentation: "Презентация құру (жақында)",
   genError: "Құру қатесі.", genErrorHint: "Қайталап көріңіз.",
   st_warmup: "Қыздыру", st_explanation: "Түсіндіру", st_task: "Тапсырма", st_quiz: "Квиз", st_reflection: "Рефлексия",
@@ -256,7 +260,9 @@ const en: Dict = {
   vValue: "Value", vTotalPoints: "Total points",
   thStage: "Stage / Time", thTeacher: "Teacher's actions", thStudent: "Student's actions",
   thCriteria: "Assessment criteria", thResources: "Resources", descriptors: "Descriptors",
-  regen: "↻ Regenerate", min: "min",
+  regen: "↻ Regenerate", regenBusy: "↻ Generating…", min: "min",
+  regenFailed: "Could not regenerate the stage. Please try again. ",
+  totalW: "Total", methodW: "Method",
   downloadPlan: "Download lesson plan", createPresentation: "Create presentation (soon)",
   genError: "Generation error.", genErrorHint: "Please try again.",
   st_warmup: "Warm-up", st_explanation: "Explanation", st_task: "Task", st_quiz: "Quiz", st_reflection: "Reflection",
@@ -320,17 +326,24 @@ const en: Dict = {
 
 export const LT: Record<Lang, Dict> = { ru, kz, en };
 
-// Месяц → ценность в трёх языках (для селектора ценностей).
+/**
+ * Месяц → ценность программы «Адал азамат / Біртұтас тәрбие» в трёх языках.
+ *
+ * Ценности парные и повторяются по месяцам — это официальный перечень
+ * программы, а не произвольный список из одного слова, который стоял здесь
+ * раньше. Зеркалит ADAL_AZAMAT_VALUES на бэкенде: селектор должен показывать
+ * ровно то, что попадёт в документ. Летних месяцев нет — каникулы.
+ */
 export const VALUE_MONTHS: { month: string; label: Record<Lang, string>; value: Record<Lang, string> }[] = [
-  { month: "09", label: { ru: "Сентябрь", kz: "Қыркүйек", en: "September" }, value: { ru: "Патриотизм", kz: "Отансүйгіштік", en: "Patriotism" } },
-  { month: "10", label: { ru: "Октябрь", kz: "Қазан", en: "October" }, value: { ru: "Доброта", kz: "Ізгілік", en: "Kindness" } },
-  { month: "11", label: { ru: "Ноябрь", kz: "Қараша", en: "November" }, value: { ru: "Трудолюбие", kz: "Еңбексүйгіштік", en: "Diligence" } },
-  { month: "12", label: { ru: "Декабрь", kz: "Желтоқсан", en: "December" }, value: { ru: "Семья", kz: "Отбасы", en: "Family" } },
-  { month: "01", label: { ru: "Январь", kz: "Қаңтар", en: "January" }, value: { ru: "Здоровье", kz: "Денсаулық", en: "Health" } },
-  { month: "02", label: { ru: "Февраль", kz: "Ақпан", en: "February" }, value: { ru: "Дружба", kz: "Достық", en: "Friendship" } },
-  { month: "03", label: { ru: "Март", kz: "Наурыз", en: "March" }, value: { ru: "Творчество", kz: "Шығармашылық", en: "Creativity" } },
-  { month: "04", label: { ru: "Апрель", kz: "Сәуір", en: "April" }, value: { ru: "Природа", kz: "Табиғат", en: "Nature" } },
-  { month: "05", label: { ru: "Май", kz: "Мамыр", en: "May" }, value: { ru: "Знание", kz: "Білім", en: "Knowledge" } },
+  { month: "09", label: { ru: "Сентябрь", kz: "Қыркүйек", en: "September" }, value: { ru: "Трудолюбие и профессиональное мастерство", kz: "Еңбекқорлық және кәсіби біліктілік", en: "Diligence and professional mastery" } },
+  { month: "10", label: { ru: "Октябрь", kz: "Қазан", en: "October" }, value: { ru: "Независимость и патриотизм", kz: "Тәуелсіздік және отаншылдық", en: "Independence and patriotism" } },
+  { month: "11", label: { ru: "Ноябрь", kz: "Қараша", en: "November" }, value: { ru: "Справедливость и ответственность", kz: "Әділдік және жауапкершілік", en: "Justice and responsibility" } },
+  { month: "12", label: { ru: "Декабрь", kz: "Желтоқсан", en: "December" }, value: { ru: "Единство и согласие", kz: "Бірлік және ынтымақ", en: "Unity and concord" } },
+  { month: "01", label: { ru: "Январь", kz: "Қаңтар", en: "January" }, value: { ru: "Закон и порядок", kz: "Заң және тәртіп", en: "Law and order" } },
+  { month: "02", label: { ru: "Февраль", kz: "Ақпан", en: "February" }, value: { ru: "Созидание и новаторство", kz: "Жасампаздық және жаңашылдық", en: "Creativity and innovation" } },
+  { month: "03", label: { ru: "Март", kz: "Наурыз", en: "March" }, value: { ru: "Независимость и патриотизм", kz: "Тәуелсіздік және отаншылдық", en: "Independence and patriotism" } },
+  { month: "04", label: { ru: "Апрель", kz: "Сәуір", en: "April" }, value: { ru: "Трудолюбие и профессиональное мастерство", kz: "Еңбекқорлық және кәсіби біліктілік", en: "Diligence and professional mastery" } },
+  { month: "05", label: { ru: "Май", kz: "Мамыр", en: "May" }, value: { ru: "Единство и согласие", kz: "Бірлік және ынтымақ", en: "Unity and concord" } },
 ];
 
 /**
