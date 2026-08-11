@@ -344,7 +344,7 @@ export interface LpDescriptor { id: string; order: number; text: string; points:
 export interface LpStage {
   id: string; order: number; stageType: string; stageName?: string; timeMinutes: number; toolId?: string;
   teacherActions?: string; studentActions?: string; assessmentCriteria?: string; method?: string; resources?: string;
-  isAssessed: boolean; points?: number | null; descriptors?: LpDescriptor[];
+  isAssessed: boolean; linkedToValue?: boolean; points?: number | null; descriptors?: LpDescriptor[];
 }
 export interface LpLesson {
   id: string; userId: string; schoolId?: string | null;
@@ -360,7 +360,7 @@ export interface LpToolsResponse { stages: string[]; tools: Record<string, LpToo
 export type LpHeader = Partial<Pick<LpLesson,
   "unit" | "teacherName" | "date" | "lessonNumber" | "grade" | "presentCount" | "absentCount" |
   "subject" | "lessonTitle" | "languageFocus" | "learningObjectives" | "valueMonth" | "durationMinutes" | "language">>;
-export interface LpStageInput { stageType: string; toolId?: string; timeMinutes: number }
+export interface LpStageInput { stageType: string; toolId?: string; timeMinutes: number; isAssessed?: boolean; linkedToValue?: boolean }
 
 // ── Functional literacy (PISA) ────────────────────────────────────
 export interface LitQuestion {

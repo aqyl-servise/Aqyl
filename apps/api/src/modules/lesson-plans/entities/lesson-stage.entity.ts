@@ -57,11 +57,18 @@ export class LessonStage {
   resources?: string | null;
 
   // ── Assessment ─────────────────────────────────────────────────
+  // Оцениваемость теперь выбирает учитель (срез 2), а не выводится из типа
+  // этапа. Тренировочное задание — isAssessed=false: без баллов и дескрипторов.
   @Column({ type: 'boolean', default: false })
   isAssessed!: boolean;
 
   @Column({ type: 'int', nullable: true })
   points?: number | null;
+
+  // Привязка задания к ценности месяца (срез 2). Если true — содержание
+  // генерируется так, чтобы работать на ценность из шапки урока.
+  @Column({ type: 'boolean', default: false })
+  linkedToValue!: boolean;
 
   @OneToMany(() => Descriptor, (d) => d.stage, { cascade: true })
   descriptors!: Descriptor[];

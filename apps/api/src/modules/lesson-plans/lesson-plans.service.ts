@@ -13,6 +13,7 @@ import {
   stripObjectivePrefix,
   adjustDescriptorSum,
   hasEnoughAssessed,
+  MIN_ASSESSED,
   StagePointsProposal,
 } from './engine/points-engine';
 import { findImperativeObjectives } from './engine/objective-mood';
@@ -35,6 +36,8 @@ export interface StageInput {
   stageType: StageType;
   toolId?: string;
   timeMinutes: number;
+  isAssessed?: boolean;
+  linkedToValue?: boolean;
 }
 
 const STAGE_ORDER: StageType[] = ['warmup', 'explanation', 'task', 'quiz', 'reflection'];
@@ -300,7 +303,10 @@ export class LessonPlansService {
         stageType: s.stageType,
         toolId: s.toolId,
         timeMinutes: s.timeMinutes ?? 0,
-        isAssessed: ASSESSED_TYPES.includes(s.stageType),
+        // Оцениваемость выбирает учитель (срез 2). Флаг может не прийти от
+        // старого фронта — тогда падаем на прежнее правило «task/quiz → да».
+        isAssessed: s.isAssessed ?? ASSESSED_TYPES.includes(s.stageType),
+        linkedToValue: s.linkedToValue ?? false,
       }),
     );
     await this.stageRepo.save(rows);
@@ -308,24 +314,38 @@ export class LessonPlansService {
     return this.getOne(id, ctx);
   }
 
-  /** Default stages for quick mode (all isDefault tools; 3 task defaults). */
+  /**
+   * Этапы быстрого режима: платформа выбирает всё сама.
+   *
+   * Квиз по умолчанию выключен (срез 2), поэтому два оцениваемых даёт этап
+   * «Задание» — два задания вместо одного. Так и сумма 10 есть чему делиться
+   * (нужно ≥2 оцениваемых), и правило «квиз необязателен» соблюдено.
+   */
   async buildDefaultStages(id: string): Promise<void> {
-    const defaults = await this.toolRepo.find({ where: { isDefault: true }, order: { stageType: 'ASC', sortOrder: 'ASC' } });
-    const ordered = defaults.sort(
-      (a, b) => STAGE_ORDER.indexOf(a.stageType) - STAGE_ORDER.indexOf(b.stageType) || a.sortOrder - b.sortOrder,
-    );
-    const timeByType: Record<string, number> = { warmup: 7, explanation: 10, task: 8, quiz: 5, reflection: 5 };
+    const tools = await this.toolRepo.find({ order: { stageType: 'ASC', sortOrder: 'ASC' } });
+    const byType = (t: StageType) => tools.filter((x) => x.stageType === t);
+    const pick = (t: StageType) => byType(t).find((x) => x.isDefault) ?? byType(t)[0];
+
     await this.stageRepo.delete({ lessonId: id });
-    const rows = ordered.map((t, i) =>
-      this.stageRepo.create({
-        lessonId: id,
-        order: i,
-        stageType: t.stageType,
-        toolId: t.toolId,
-        timeMinutes: timeByType[t.stageType] ?? 5,
-        isAssessed: ASSESSED_TYPES.includes(t.stageType),
-      }),
-    );
+    const rows: LessonStage[] = [];
+    let order = 0;
+    const add = (stageType: StageType, toolId: string | undefined, timeMinutes: number, isAssessed: boolean) => {
+      rows.push(this.stageRepo.create({
+        lessonId: id, order: order++, stageType, toolId, timeMinutes, isAssessed, linkedToValue: false,
+      }));
+    };
+
+    const warm = pick('warmup'); if (warm) add('warmup', warm.toolId, 7, false);
+    const expl = pick('explanation'); if (expl) add('explanation', expl.toolId, 10, false);
+    // Два задания: если в каталоге больше одного инструмента — берём разные,
+    // иначе тот же дважды. Оба оцениваемые, чтобы делить 10 баллов было на что.
+    const taskTools = byType('task');
+    const t1 = taskTools[0];
+    const t2 = taskTools[1] ?? taskTools[0];
+    if (t1) add('task', t1.toolId, 9, true);
+    if (t2) add('task', t2.toolId, 9, true);
+    const refl = pick('reflection'); if (refl) add('reflection', refl.toolId, 5, false);
+
     await this.stageRepo.save(rows);
   }
 
@@ -335,6 +355,16 @@ export class LessonPlansService {
     if (mode === 'quick') await this.buildDefaultStages(id);
     const stageCount = await this.stageRepo.count({ where: { lessonId: id } });
     if (!stageCount) throw new HttpException('Не выбраны этапы урока', HttpStatus.BAD_REQUEST);
+    // Оцениваемых должно быть минимум два — иначе делить 10 баллов не на что.
+    // Проверяем синхронно, до старта фоновой генерации: учитель получает
+    // понятную ошибку сразу, а не статус error через 30 секунд.
+    const assessedCount = await this.stageRepo.count({ where: { lessonId: id, isAssessed: true } });
+    if (assessedCount < MIN_ASSESSED) {
+      throw new HttpException(
+        `Нужно минимум ${MIN_ASSESSED} оцениваемых задания (сейчас ${assessedCount})`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
     await this.lessonRepo.update({ id, userId: ctx.userId }, { status: 'generating', mode, generationError: null });
     // fire-and-forget; frontend polls GET /lessons/:id
     void this.runGeneration(id).catch(async (err) => {
@@ -350,9 +380,11 @@ export class LessonPlansService {
     const stages = await this.stageRepo.find({ where: { lessonId: id }, order: { order: 'ASC' } });
     const ctx = this.ctxOf(lesson);
 
-    const assessed = stages.filter((s) => ASSESSED_TYPES.includes(s.stageType));
+    // Оцениваемые выбирает учитель (срез 2), а не тип этапа: тренировочное
+    // задание типа task в сумму баллов не входит.
+    const assessed = stages.filter((s) => s.isAssessed);
     if (!hasEnoughAssessed(assessed.length)) {
-      throw new Error('Нужно минимум 2 оцениваемых задания (task/quiz)');
+      throw new Error(`Нужно минимум ${MIN_ASSESSED} оцениваемых задания`);
     }
 
     // 1) Points distribution (Sonnet proposes, CODE enforces sum=10)
