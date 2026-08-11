@@ -46,6 +46,9 @@ export default function LessonGeneratorPage() {
   const [lesson, setLesson] = useState<LpLesson | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // id этапа, который сейчас перегенерируется: индикатор на самом этапе и
+  // защита от параллельных запросов по одному уроку.
+  const [regenId, setRegenId] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -92,7 +95,10 @@ export default function LessonGeneratorPage() {
             language: l.language ?? "kz",
           }));
           if (l.lessonObjectives?.length) setObjectives(l.lessonObjectives);
-          setStep(l.status === "ready" || l.status === "error" ? 4 : 1);
+          // Шаг 5 — просмотр плана; шаг 4 — экран ожидания генерации. Готовый
+          // урок открывался на шаге 4 и висел на «Генерируем урок…» навсегда:
+          // опрос статуса там не запускается, потому что генерация уже прошла.
+          setStep(l.status === "ready" || l.status === "error" ? 5 : 1);
         } catch {
           setError(t.errLoad ?? "Не удалось открыть урок");
         }
@@ -199,10 +205,23 @@ export default function LessonGeneratorPage() {
     }, 2000);
   }
 
+  /**
+   * Перегенерация одного этапа. Занимает столько же, сколько генерация этапа
+   * при сборке урока, поэтому без индикатора клик выглядел как «ничего не
+   * произошло», а ошибка молча уходила в общий баннер наверху страницы.
+   */
   async function regenStage(sid: string) {
-    if (!token || !lessonId) return;
-    try { await api.lpRegenerateStage(token, lessonId, sid); setLesson(await api.lpGet(token, lessonId)); }
-    catch (e) { setError(msg(e)); }
+    if (!token || !lessonId || regenId) return;
+    setError(null);
+    setRegenId(sid);
+    try {
+      await api.lpRegenerateStage(token, lessonId, sid);
+      setLesson(await api.lpGet(token, lessonId));
+    } catch (e) {
+      setError(t.regenFailed + msg(e));
+    } finally {
+      setRegenId(null);
+    }
   }
 
   if (!token) return <Center>{t.loading}</Center>;
@@ -330,13 +349,13 @@ export default function LessonGeneratorPage() {
           </Center>
         )}
 
-        {step === 5 && lesson && <LessonView lesson={lesson} onRegen={regenStage} onExport={() => token && downloadExport(lesson, token)} t={t} lang={lang} />}
+        {step === 5 && lesson && <LessonView lesson={lesson} onRegen={regenStage} regenId={regenId} onExport={() => token && downloadExport(lesson, token)} t={t} lang={lang} />}
       </main>
     </div>
   );
 }
 
-function LessonView({ lesson, onRegen, onExport, t, lang }: { lesson: LpLesson; onRegen: (sid: string) => void; onExport: () => void; t: T; lang: Lang }) {
+function LessonView({ lesson, onRegen, regenId, onExport, t, lang }: { lesson: LpLesson; onRegen: (sid: string) => void; regenId: string | null; onExport: () => void; t: T; lang: Lang }) {
   const th: React.CSSProperties = { textAlign: "left", padding: "8px 10px", background: "var(--ink)", fontSize: 12, color: "var(--muted)", border: "1px solid var(--line)" };
   const td: React.CSSProperties = { padding: "8px 10px", fontSize: 13, color: DARK, border: "1px solid var(--line)", verticalAlign: "top" };
   if (lesson.status === "error") {
@@ -359,11 +378,24 @@ function LessonView({ lesson, onRegen, onExport, t, lang }: { lesson: LpLesson; 
         <table style={{ borderCollapse: "collapse", width: "100%", background: "var(--ink-2)" }}>
           <thead><tr><th style={th}>{t.thStage}</th><th style={th}>{t.thTeacher}</th><th style={th}>{t.thStudent}</th><th style={th}>{t.thCriteria}</th><th style={th}>{t.thResources}</th></tr></thead>
           <tbody>
-            {(lesson.stages ?? []).map((s) => (
-              <tr key={s.id}>
+            {(lesson.stages ?? []).map((s) => {
+              const regenerating = regenId === s.id;
+              return (
+              <tr key={s.id} style={regenerating ? { opacity: 0.55 } : undefined}>
                 <td style={td}>
                   <b>{s.stageName || t[`st_${s.stageType}`] || s.stageType}</b><br />({s.timeMinutes} {t.min})
-                  <br /><button onClick={() => onRegen(s.id)} style={{ ...btnGhost, padding: "3px 8px", fontSize: 11, marginTop: 6 }}>{t.regen}</button>
+                  <br />
+                  <button
+                    onClick={() => onRegen(s.id)}
+                    disabled={regenId !== null}
+                    style={{
+                      ...btnGhost, padding: "3px 8px", fontSize: 11, marginTop: 6,
+                      opacity: regenId !== null ? 0.5 : 1,
+                      cursor: regenId !== null ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    {regenerating ? t.regenBusy : t.regen}
+                  </button>
                 </td>
                 <td style={td}>{s.teacherActions}</td>
                 <td style={td}>
@@ -372,14 +404,15 @@ function LessonView({ lesson, onRegen, onExport, t, lang }: { lesson: LpLesson; 
                     <div style={{ marginTop: 6, fontSize: 12 }}>
                       <b>{t.descriptors}:</b>
                       <ol style={{ margin: "2px 0", paddingLeft: 16 }}>{s.descriptors.map((d) => <li key={d.id}>{d.text}</li>)}</ol>
-                      <b>Total: {s.points} points</b>
+                      <b>{t.totalW}: {s.points} {t.pointsShort}</b>
                     </div>
                   )}
                 </td>
-                <td style={td}>{s.assessmentCriteria}{s.method ? <div style={{ marginTop: 4 }}><b>Method:</b> {s.method}</div> : null}</td>
+                <td style={td}>{s.assessmentCriteria}{s.method ? <div style={{ marginTop: 4 }}><b>{t.methodW}:</b> {s.method}</div> : null}</td>
                 <td style={td}>{s.resources}</td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
