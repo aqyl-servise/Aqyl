@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getValidAccessToken } from "../../../../lib/auth";
-import { api, API_URL, type LpLesson, type LpToolsResponse, type LpStageInput, type LpHeader } from "../../../../lib/api";
+import { api, API_URL, type LpLesson, type LpToolsResponse, type LpStageInput, type LpHeader, type LpHandout, type LpHandoutPackage, type LpCost } from "../../../../lib/api";
 import { useLang, LT, VALUE_MONTHS, type Lang } from "../../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../../components/lang-switcher";
 import { Icon } from "../../../../components/ui/icon";
@@ -465,7 +465,12 @@ export default function LessonGeneratorPage() {
           </Center>
         )}
 
-        {step === 5 && lesson && <LessonView lesson={lesson} onRegen={regenStage} regenId={regenId} onExport={() => token && downloadExport(lesson, token)} t={t} lang={lang} />}
+        {step === 5 && lesson && (
+          <>
+            <LessonView lesson={lesson} onRegen={regenStage} regenId={regenId} onExport={() => token && downloadExport(lesson, token)} t={t} lang={lang} />
+            {lesson.status === "ready" && <HandoutsPanel token={token} lessonId={lesson.id} t={t} />}
+          </>
+        )}
       </main>
     </div>
   );
@@ -543,6 +548,142 @@ function LessonView({ lesson, onRegen, regenId, onExport, t, lang }: { lesson: L
 
 function toolName(tl: { nameRu: string; nameKz: string; nameEn: string }, lang: Lang): string {
   return lang === "kz" ? tl.nameKz : lang === "en" ? tl.nameEn : tl.nameRu;
+}
+
+// ── Раздаточные материалы (срез 2): кнопка генерации + просмотр пакета ──
+function HandoutsPanel({ token, lessonId, t }: { token: string; lessonId: string; t: T }) {
+  const [pkg, setPkg] = useState<LpHandoutPackage | null>(null);
+  const [handouts, setHandouts] = useState<LpHandout[]>([]);
+  const [cost, setCost] = useState<LpCost | null>(null);
+  const [mode, setMode] = useState<"student" | "teacher">("student");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const load = useCallback(async (): Promise<string | undefined> => {
+    try {
+      const r = await api.lpGetHandouts(token, lessonId);
+      setPkg(r.package);
+      setHandouts(r.handouts);
+      if (r.package?.status === "ready") {
+        try { setCost(await api.lpGetCost(token, lessonId)); } catch { /* стоимость не критична */ }
+      }
+      return r.package?.status;
+    } catch { return undefined; }
+  }, [token, lessonId]);
+
+  useEffect(() => {
+    void load();
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [load]);
+
+  function startPoll() {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      const st = await load();
+      if (st === "ready" || st === "error") {
+        if (pollRef.current) clearInterval(pollRef.current);
+        setBusy(false);
+      }
+    }, 3000);
+  }
+
+  async function generate() {
+    setError(null); setBusy(true);
+    try {
+      await api.lpGenerateHandouts(token, lessonId);
+      setPkg({ status: "generating", generationCost: 0 });
+      startPoll();
+    } catch (e) { setError(t.matError + " " + msg(e)); setBusy(false); }
+  }
+
+  async function download(url: string, filename: string) {
+    try {
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) { setError(t.matError); return; }
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (e) { setError(t.matError + " " + msg(e)); }
+  }
+
+  const status = pkg?.status;
+  const generating = busy || status === "generating";
+  const ready = status === "ready" && handouts.length > 0;
+  const base = `${API_URL}/lesson-plans/${lessonId}/handouts`;
+
+  const toggleBtn = (m: "student" | "teacher", label: string) => (
+    <button onClick={() => setMode(m)} style={{
+      ...btnGhost, padding: "6px 14px",
+      background: mode === m ? "var(--amber)" : "rgba(139,127,232,.12)",
+      color: mode === m ? "var(--on-amber)" : "var(--lavender)",
+      fontWeight: mode === m ? 700 : 400,
+    }}>{label}</button>
+  );
+
+  return (
+    <div style={{ ...card, marginTop: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+        <strong style={{ color: DARK, fontSize: 16 }}>{t.materialsTitle}</strong>
+        {ready && (
+          <div style={{ display: "flex", gap: 6 }}>
+            {toggleBtn("student", t.versionStudent)}
+            {toggleBtn("teacher", t.versionTeacher)}
+          </div>
+        )}
+      </div>
+
+      {error && <div style={{ color: "var(--danger)", fontSize: 13, marginTop: 8 }}>{error}</div>}
+
+      {generating && (
+        <div style={{ textAlign: "center", padding: "24px 0" }}>
+          <div style={{ fontSize: 32 }}>⏳</div>
+          <div style={{ fontWeight: 700, color: DARK }}>{t.matGenerating}</div>
+          <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 4 }}>{t.matGenSub}</div>
+        </div>
+      )}
+
+      {!generating && !ready && (
+        <div style={{ marginTop: 12 }}>
+          <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 0 }}>{status === "error" ? t.matError : t.matEmpty}</p>
+          <button onClick={generate} style={btnPrimary}>{t.genMaterials}</button>
+        </div>
+      )}
+
+      {ready && (
+        <div style={{ marginTop: 14 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
+            <button onClick={() => download(`${base}/export?mode=${mode}`, `handouts-${mode}.docx`)} style={btnPrimary}>
+              ↓ {t.downloadPackage} · {mode === "student" ? t.versionStudent : t.versionTeacher}
+            </button>
+            {cost && (
+              <span style={{ fontSize: 12, color: "var(--muted)" }}>
+                {t.matCost}: {Math.round(cost.total)} {t.tenge}
+                {typeof cost.byOperation.plan === "number" && ` (${t.costPlan} ${Math.round(cost.byOperation.plan)} · ${t.costHandouts} ${Math.round(cost.byOperation.handouts ?? 0)})`}
+              </span>
+            )}
+            <button onClick={generate} style={{ ...btnGhost, padding: "8px 14px" }}>↻ {t.regenMaterials}</button>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {handouts.map((h) => {
+              const title = (h.studentContent as { title?: string } | null)?.title ?? "";
+              return (
+                <div key={h.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", border: "1px solid var(--line)", borderRadius: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontWeight: 700, color: DARK, fontSize: 13 }}>{t.appendix ?? "Прил."} {h.order}</span>
+                  <span style={{ color: DARK, fontSize: 13, flex: 1, minWidth: 120 }}>{title}</span>
+                  <span style={{ fontSize: 11, color: "var(--lavender)" }}>{t[`ht_${h.handoutType}`] ?? h.handoutType}</span>
+                  {h.linkedToValue && <span style={{ fontSize: 11, color: "var(--amber)", fontWeight: 700 }}>◆ {t.linkedBadge}</span>}
+                  <button onClick={() => download(`${base}/${h.id}/export?mode=${mode}`, `handout-${h.order}-${mode}.docx`)} style={{ ...btnGhost, padding: "4px 10px", fontSize: 12 }}>↓ {t.downloadSheet}</button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ── Конструктор: инициализация, сборка в API-формат, подсчёт оцениваемых ──

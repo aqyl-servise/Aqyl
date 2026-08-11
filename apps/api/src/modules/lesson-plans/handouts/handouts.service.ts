@@ -12,6 +12,12 @@ import { AiClientService } from '../../../services/ai-client.service';
 import { CostLoggerService } from './cost-logger.service';
 import { handoutTypeFor, isLeveled } from './handout-content';
 import { buildHandoutPrompt } from './handout-prompts';
+import { docLabels } from '../export/doc-labels';
+import { planChildren, handoutChildren, pageBreak } from '../export/docx-kit';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { Document, Packer } = require('docx') as typeof import('docx');
+
+export type ExportMode = 'student' | 'teacher';
 
 export interface HandoutCtx {
   userId: string;
@@ -67,6 +73,50 @@ export class HandoutsService {
   async getCost(lessonId: string, ctx: HandoutCtx) {
     await this.own(lessonId, ctx);
     return this.cost.summary(lessonId);
+  }
+
+  // ── Export (.docx) ──────────────────────────────────────────────
+  /**
+   * Пакет одним документом: план + Приложения 1..N. Версия выбирается mode:
+   * student — без ключей, teacher — с ключами/критериями/баллами.
+   */
+  async exportPackage(lessonId: string, ctx: HandoutCtx, mode: ExportMode): Promise<Buffer> {
+    const lesson = await this.loadLessonWithStages(lessonId, ctx);
+    const handouts = await this.handoutRepo.find({ where: { lessonId }, order: { order: 'ASC' } });
+    if (!handouts.length) {
+      throw new HttpException('Материалы ещё не сгенерированы', HttpStatus.BAD_REQUEST);
+    }
+    const lbl = docLabels(lesson.language);
+    const appendixByStageId = new Map(handouts.map((h) => [h.stageId, h.order]));
+
+    const children: any[] = [...planChildren(lesson, lbl, appendixByStageId)];
+    for (const h of handouts) {
+      children.push(pageBreak());
+      children.push(...handoutChildren(h, lbl, mode));
+    }
+    const doc = new Document({ sections: [{ children }] });
+    return Packer.toBuffer(doc);
+  }
+
+  /** Отдельный лист (одно приложение) той же версии. */
+  async exportSingle(lessonId: string, handoutId: string, ctx: HandoutCtx, mode: ExportMode): Promise<Buffer> {
+    const lesson = await this.own(lessonId, ctx);
+    const handout = await this.handoutRepo.findOne({ where: { id: handoutId, lessonId } });
+    if (!handout) throw new HttpException('Приложение не найдено', HttpStatus.NOT_FOUND);
+    const lbl = docLabels(lesson.language);
+    const doc = new Document({ sections: [{ children: handoutChildren(handout, lbl, mode) }] });
+    return Packer.toBuffer(doc);
+  }
+
+  /** Урок со всеми этапами и их дескрипторами — для рендера плана в пакете. */
+  private async loadLessonWithStages(lessonId: string, ctx: HandoutCtx): Promise<Lesson> {
+    const lesson = await this.own(lessonId, ctx);
+    const stages = await this.stageRepo.find({ where: { lessonId }, order: { order: 'ASC' } });
+    for (const s of stages) {
+      s.descriptors = await this.descRepo.find({ where: { stageId: s.id }, order: { order: 'ASC' } });
+    }
+    lesson.stages = stages;
+    return lesson;
   }
 
   // ── Generation pipeline ─────────────────────────────────────────

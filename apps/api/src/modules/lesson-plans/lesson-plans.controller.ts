@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Get, Param, Patch, Post, Req, Res, UseGuards,
+  Body, Controller, Get, Param, Post, Patch, Query, Req, Res, UseGuards,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -9,7 +9,7 @@ import { SubscriptionGuard } from '../../common/guards/subscription.guard';
 import { SkipSchoolIsolation } from '../../common/decorators/skip-school-isolation.decorator';
 import { ALL_TEACHER_ROLES, ADMIN_ROLES } from '../../common/roles.constants';
 import { LessonPlansService } from './lesson-plans.service';
-import { HandoutsService } from './handouts/handouts.service';
+import { HandoutsService, ExportMode } from './handouts/handouts.service';
 import { LessonHeaderDto } from './dto/lesson-header.dto';
 import { SetStagesDto, GenerateLessonDto, SwapToolDto } from './dto/lesson-actions.dto';
 
@@ -112,6 +112,33 @@ export class LessonPlansController {
   @Get(':id/cost')
   getCost(@Param('id') id: string, @Req() req: AuthRequest) {
     return this.handouts.getCost(id, this.ctx(req));
+  }
+
+  // Пакет материалов: план + приложения. mode=student (без ключей) | teacher.
+  @Get(':id/handouts/export')
+  async exportHandouts(@Param('id') id: string, @Query('mode') mode: string, @Req() req: AuthRequest, @Res() res: Response) {
+    const m: ExportMode = mode === 'teacher' ? 'teacher' : 'student';
+    const buf = await this.handouts.exportPackage(id, this.ctx(req), m);
+    this.sendDocx(res, `handouts-${id}-${m}.docx`, buf);
+  }
+
+  // Отдельный лист (одно приложение).
+  @Get(':id/handouts/:hid/export')
+  async exportHandout(
+    @Param('id') id: string, @Param('hid') hid: string,
+    @Query('mode') mode: string, @Req() req: AuthRequest, @Res() res: Response,
+  ) {
+    const m: ExportMode = mode === 'teacher' ? 'teacher' : 'student';
+    const buf = await this.handouts.exportSingle(id, hid, this.ctx(req), m);
+    this.sendDocx(res, `handout-${hid}-${m}.docx`, buf);
+  }
+
+  private sendDocx(res: Response, filename: string, buf: Buffer) {
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    });
+    res.send(buf);
   }
 
   // ── export (№130) → .docx ───────────────────────────────────────

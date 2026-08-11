@@ -36,6 +36,15 @@ export interface DocLabels {
   total: string;
   points: string;
   min: string;
+  // приложения / раздаточные материалы (срез 2)
+  appendix: string;       // «Приложение»
+  seeAppendix: string;    // «см. Приложение» (в графе «Ресурсы»)
+  answersLabel: string;   // «Ключи / ответы»
+  studentVersion: string; // «Версия для ученика»
+  teacherVersion: string; // «Версия для учителя»
+  levelA: string;         // «Уровень A (базовый)»
+  levelB: string;         // «Уровень B (средний)»
+  levelC: string;         // «Уровень C (продвинутый)»
 }
 
 const kz: DocLabels = {
@@ -63,6 +72,14 @@ const kz: DocLabels = {
   total: 'Барлығы',
   points: 'ұпай',
   min: 'мин',
+  appendix: 'Қосымша',
+  seeAppendix: 'қараңыз: Қосымша',
+  answersLabel: 'Кілттер / жауаптар',
+  studentVersion: 'Оқушыға арналған нұсқа',
+  teacherVersion: 'Мұғалімге арналған нұсқа',
+  levelA: 'A деңгейі (бастапқы)',
+  levelB: 'B деңгейі (орта)',
+  levelC: 'C деңгейі (жоғары)',
 };
 
 const ru: DocLabels = {
@@ -90,6 +107,14 @@ const ru: DocLabels = {
   total: 'Всего',
   points: 'баллов',
   min: 'мин',
+  appendix: 'Приложение',
+  seeAppendix: 'см. Приложение',
+  answersLabel: 'Ключи / ответы',
+  studentVersion: 'Версия для ученика',
+  teacherVersion: 'Версия для учителя',
+  levelA: 'Уровень A (базовый)',
+  levelB: 'Уровень B (средний)',
+  levelC: 'Уровень C (продвинутый)',
 };
 
 const en: DocLabels = {
@@ -117,6 +142,14 @@ const en: DocLabels = {
   total: 'Total',
   points: 'points',
   min: 'min',
+  appendix: 'Appendix',
+  seeAppendix: 'see Appendix',
+  answersLabel: 'Answer key',
+  studentVersion: 'Student version',
+  teacherVersion: 'Teacher version',
+  levelA: 'Level A (basic)',
+  levelB: 'Level B (intermediate)',
+  levelC: 'Level C (advanced)',
 };
 
 const BY_LANG: Record<string, DocLabels> = { kz, ru, en };

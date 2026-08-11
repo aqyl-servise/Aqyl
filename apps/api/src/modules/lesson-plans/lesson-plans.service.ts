@@ -26,6 +26,9 @@ import {
   descriptorsPrompt,
 } from './prompts/lesson-prompts';
 import { docLabels } from './export/doc-labels';
+import { planChildren } from './export/docx-kit';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { Document, Packer } = require('docx') as typeof import('docx');
 
 export interface UserCtx {
   userId: string;
@@ -123,91 +126,10 @@ export class LessonPlansService {
   // ── Export №130 (.docx) ─────────────────────────────────────────
   async exportDocx(id: string, ctx: UserCtx): Promise<Buffer> {
     const lesson = await this.getOne(id, ctx);
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, HeadingLevel } =
-      require('docx') as typeof import('docx');
-
-    // Подписи документа — на языке урока, а не на английском (ТЗ 1.1, дефект 5).
+    // Подписи документа — на языке урока (ТЗ 1.1, дефект 5). Вёрстка плана —
+    // в общем модуле docx-kit, чтобы пакет материалов (срез 2) её переиспользовал.
     const lbl = docLabels(lesson.language);
-    const border = { style: BorderStyle.SINGLE, size: 4, color: '000000' };
-    const borders = { top: border, bottom: border, left: border, right: border };
-    const p = (text: string, bold = false) => new Paragraph({ children: [new TextRun({ text: text ?? '', bold, size: 20 })] });
-    const cell = (children: import('docx').Paragraph[], widthDxa?: number) =>
-      new TableCell({ borders, ...(widthDxa ? { width: { size: widthDxa, type: WidthType.DXA } } : {}), children });
-
-    // Ширины таблиц — в твипах, а не в процентах: docx 9.6.1 сериализует
-    // WidthType.PERCENTAGE как w:w="100%", тогда как схема OOXML требует здесь
-    // целое число, и Word отказывается открывать такой файл. TEXT_W — ширина
-    // полосы набора: страница Letter (12240) минус поля по умолчанию (1440×2).
-    const TEXT_W = 9360;
-
-    // Header rows (label | value)
-    const hRow = (label: string, value: string) =>
-      new TableRow({ children: [cell([p(label, true)], 3000), cell([p(value)], 6360)] });
-
-    const headerTable = new Table({
-      width: { size: TEXT_W, type: WidthType.DXA },
-      columnWidths: [3000, 6360],
-      rows: [
-        hRow(lbl.shortTermPlan, lesson.unit ? `${lbl.unit}: ${lesson.unit}` : ''),
-        hRow(lbl.lessonNo, lesson.lessonNumber ?? ''),
-        hRow(lbl.teacherName, lesson.teacherName ?? ''),
-        hRow(lbl.date, lesson.date ?? ''),
-        hRow(lbl.grade, String(lesson.grade ?? '')),
-        hRow(lbl.presentAbsent, `${lesson.presentCount ?? ''} / ${lesson.absentCount ?? ''}`),
-        hRow(lbl.lessonTitle, lesson.lessonTitle ?? ''),
-        hRow(lbl.languageFocus, lesson.languageFocus ?? ''),
-        hRow(lbl.learningObjectives, (lesson.learningObjectives ?? []).join('\n')),
-        hRow(lbl.lessonObjectives, (lesson.lessonObjectives ?? []).join('\n')),
-        hRow(lbl.valueLinks, lesson.valueLink ?? ''),
-      ],
-    });
-
-    // Plan table (5 columns)
-    const th = (t: string) => cell([p(t, true)]);
-    const planHeader = new TableRow({
-      children: [
-        th(lbl.stagesTime), th(lbl.teacherActions), th(lbl.studentActions),
-        th(lbl.assessmentCriteria), th(lbl.resources),
-      ],
-    });
-    const planRows = (lesson.stages ?? []).map((s) => {
-      const studentChildren: import('docx').Paragraph[] = [p(s.studentActions ?? '')];
-      if (s.descriptors?.length) {
-        studentChildren.push(p(`${lbl.descriptor}:`, true));
-        s.descriptors.forEach((d, i) => studentChildren.push(p(`${i + 1}. ${d.text}`)));
-        studentChildren.push(p(`${lbl.total}: ${s.points ?? 0} ${lbl.points}`, true));
-      }
-      const critChildren: import('docx').Paragraph[] = [p(s.assessmentCriteria ?? '')];
-      if (s.method) critChildren.push(p(`${lbl.method}: ${s.method}`));
-      return new TableRow({
-        children: [
-          cell([p(`${s.stageName || s.stageType}`, true), p(`(${s.timeMinutes} ${lbl.min})`)]),
-          cell([p(s.teacherActions ?? '')]),
-          cell(studentChildren),
-          cell(critChildren),
-          cell([p(s.resources ?? '')]),
-        ],
-      });
-    });
-    const PLAN_COLS = [1500, 2100, 2400, 2000, 1360]; // = TEXT_W
-    const planTable = new Table({
-      width: { size: TEXT_W, type: WidthType.DXA },
-      columnWidths: PLAN_COLS,
-      rows: [planHeader, ...planRows],
-    });
-
-    const doc = new Document({
-      sections: [{
-        children: [
-          new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: lbl.docTitle, bold: true })] }),
-          headerTable,
-          new Paragraph({ children: [new TextRun({ text: '' })] }),
-          new Paragraph({ children: [new TextRun({ text: lbl.plan, bold: true, size: 22 })] }),
-          planTable,
-        ],
-      }],
-    });
+    const doc = new Document({ sections: [{ children: planChildren(lesson, lbl) }] });
     return Packer.toBuffer(doc);
   }
 
