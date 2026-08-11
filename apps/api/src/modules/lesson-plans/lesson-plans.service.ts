@@ -6,7 +6,8 @@ import { LessonStage, StageType } from './entities/lesson-stage.entity';
 import { Descriptor } from './entities/descriptor.entity';
 import { ToolCatalog } from './entities/tool-catalog.entity';
 import { ValueLinkReference } from './entities/value-link-reference.entity';
-import { AiClientService } from '../../services/ai-client.service';
+import { AiClientService, AiResponse } from '../../services/ai-client.service';
+import { CostLoggerService } from './handouts/cost-logger.service';
 import {
   distributeLessonPoints,
   proposeWeights,
@@ -54,6 +55,7 @@ export class LessonPlansService {
     @InjectRepository(ToolCatalog) private readonly toolRepo: Repository<ToolCatalog>,
     @InjectRepository(ValueLinkReference) private readonly valueRepo: Repository<ValueLinkReference>,
     private readonly ai: AiClientService,
+    private readonly cost: CostLoggerService,
   ) {}
 
   // ── Reference data ──────────────────────────────────────────────
@@ -250,6 +252,7 @@ export class LessonPlansService {
       messages: [{ role: 'user', content: p.user }],
       userId: ctx.userId, schoolId: ctx.schoolId,
     });
+    await this.cost.log(lesson.id, 'plan', res);
     const parsed = this.parseJson<{ objectives: string[] }>(res.content);
     return (Array.isArray(parsed?.objectives) ? parsed!.objectives.filter((x) => typeof x === 'string') : [])
       .map((o) => stripObjectivePrefix(o))
@@ -284,6 +287,7 @@ export class LessonPlansService {
         messages: [{ role: 'user', content: p.user }],
         userId: lesson.userId, schoolId: lesson.schoolId,
       });
+      await this.cost.log(lesson.id, 'plan', res);
       const parsed = this.parseJson<{ valueLink: string }>(res.content);
       if (parsed?.valueLink && typeof parsed.valueLink === 'string') text = parsed.valueLink.trim();
     } catch (err) {
@@ -402,7 +406,8 @@ export class LessonPlansService {
       const desc = s.toolId ? toolMap.get(s.toolId)?.description ?? '' : '';
       const p = stagePrompt({ stageType: s.stageType, toolId: s.toolId, timeMinutes: s.timeMinutes }, desc, ctx);
       const res = await this.safeRequest('lesson_stage', p.system, p.user, lesson);
-      const c = this.parseJson<any>(res) ?? {};
+      await this.cost.log(id, 'plan', res);
+      const c = this.parseJson<any>(res.content) ?? {};
       s.stageName = c.stageName ?? s.stageName ?? s.stageType;
       s.teacherActions = c.teacherActions ?? '';
       s.studentActions = c.studentActions ?? '';
@@ -432,7 +437,8 @@ export class LessonPlansService {
     const pts = s.points ?? 1;
     const p = descriptorsPrompt({ stageType: s.stageType, toolId: s.toolId, teacherActions: s.teacherActions }, pts, ctx);
     const res = await this.safeRequest('lesson_descriptors', p.system, p.user, lesson);
-    const parsed = this.parseJson<{ descriptors: { text: string; points: number }[] }>(res);
+    await this.cost.log(lesson.id, 'plan', res);
+    const parsed = this.parseJson<{ descriptors: { text: string; points: number }[] }>(res.content);
     const items = Array.isArray(parsed?.descriptors) && parsed!.descriptors.length
       ? parsed!.descriptors
       : this.fallbackDescriptors(lesson.language);
@@ -492,7 +498,8 @@ export class LessonPlansService {
     const tool = s.toolId ? await this.toolRepo.findOne({ where: { toolId: s.toolId } }) : null;
     const p = stagePrompt({ stageType: s.stageType, toolId: s.toolId, timeMinutes: s.timeMinutes }, tool?.description ?? '', ctxL);
     const res = await this.safeRequest('lesson_stage', p.system, p.user, lesson);
-    const c = this.parseJson<any>(res) ?? {};
+    await this.cost.log(lesson.id, 'plan', res);
+    const c = this.parseJson<any>(res.content) ?? {};
     Object.assign(s, {
       stageName: c.stageName ?? s.stageName,
       teacherActions: c.teacherActions ?? s.teacherActions,
@@ -552,21 +559,24 @@ export class LessonPlansService {
     return out;
   }
 
-  /** Владелец урока нужен, чтобы расход токенов попал в отчёт именно ему. */
+  /**
+   * Владелец урока нужен, чтобы расход токенов попал в отчёт именно ему.
+   * Возвращает полный ответ (с токенами и моделью), чтобы вызывающий мог
+   * записать стоимость в разрезе урока (срез 2).
+   */
   private async safeRequest(
     action: string,
     system: string,
     user: string,
     owner?: { userId: string; schoolId?: string | null },
-  ): Promise<string> {
-    const res = await this.ai.request({
+  ): Promise<AiResponse> {
+    return this.ai.request({
       action,
       systemPrompt: system,
       messages: [{ role: 'user', content: user }],
       userId: owner?.userId,
       schoolId: owner?.schoolId ?? null,
     });
-    return res.content;
   }
 
   private parseJson<T>(text: string): T | null {

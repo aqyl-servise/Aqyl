@@ -9,6 +9,7 @@ import { SubscriptionGuard } from '../../common/guards/subscription.guard';
 import { SkipSchoolIsolation } from '../../common/decorators/skip-school-isolation.decorator';
 import { ALL_TEACHER_ROLES, ADMIN_ROLES } from '../../common/roles.constants';
 import { LessonPlansService } from './lesson-plans.service';
+import { HandoutsService } from './handouts/handouts.service';
 import { LessonHeaderDto } from './dto/lesson-header.dto';
 import { SetStagesDto, GenerateLessonDto, SwapToolDto } from './dto/lesson-actions.dto';
 
@@ -21,7 +22,10 @@ type AuthRequest = { user: { id: string; sub?: string; schoolId: string | null; 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(...ALL_TEACHER_ROLES, ...ADMIN_ROLES)
 export class LessonPlansController {
-  constructor(private readonly service: LessonPlansService) {}
+  constructor(
+    private readonly service: LessonPlansService,
+    private readonly handouts: HandoutsService,
+  ) {}
 
   private ctx(req: AuthRequest) {
     return { userId: req.user.id ?? req.user.sub!, schoolId: req.user.schoolId ?? null, role: req.user.role };
@@ -91,6 +95,23 @@ export class LessonPlansController {
   @Patch(':id/stages/:sid/swap-tool')
   swapTool(@Param('id') id: string, @Param('sid') sid: string, @Body() body: SwapToolDto, @Req() req: AuthRequest) {
     return this.service.swapTool(id, sid, this.ctx(req), body.toolId);
+  }
+
+  // ── Handouts (Срез 2): готовые раздаточные материалы ────────────
+  @Post(':id/handouts/generate')
+  @UseGuards(SubscriptionGuard)
+  generateHandouts(@Param('id') id: string, @Req() req: AuthRequest) {
+    return this.handouts.generateHandouts(id, this.ctx(req));
+  }
+
+  @Get(':id/handouts')
+  getHandouts(@Param('id') id: string, @Req() req: AuthRequest) {
+    return this.handouts.getPackage(id, this.ctx(req));
+  }
+
+  @Get(':id/cost')
+  getCost(@Param('id') id: string, @Req() req: AuthRequest) {
+    return this.handouts.getCost(id, this.ctx(req));
   }
 
   // ── export (№130) → .docx ───────────────────────────────────────
