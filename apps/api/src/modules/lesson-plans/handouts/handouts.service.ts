@@ -10,8 +10,8 @@ import { Handout, HandoutType } from '../entities/handout.entity';
 import { HandoutPackage } from '../entities/handout-package.entity';
 import { AiClientService } from '../../../services/ai-client.service';
 import { CostLoggerService } from './cost-logger.service';
-import { handoutTypeFor, isLeveled } from './handout-content';
-import { buildHandoutPrompt } from './handout-prompts';
+import { handoutTypeFor, isLeveled, handoutAction, parsedHandoutHasContent } from './handout-content';
+import { buildHandoutPrompt, HANDOUT_TOOL } from './handout-prompts';
 import { docLabels } from '../export/doc-labels';
 import { planChildren, handoutChildren, pageBreak } from '../export/docx-kit';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -75,6 +75,29 @@ export class HandoutsService {
     return this.cost.summary(lessonId);
   }
 
+  /** Перегенерация одного листа (кнопка «Повторить» в UI, ТЗ 1.2). */
+  async regenerateHandout(lessonId: string, handoutId: string, ctx: HandoutCtx): Promise<Handout> {
+    const lesson = await this.own(lessonId, ctx);
+    const existing = await this.handoutRepo.findOne({ where: { id: handoutId, lessonId } });
+    if (!existing) throw new HttpException('Приложение не найдено', HttpStatus.NOT_FOUND);
+    const stage = await this.stageRepo.findOne({ where: { id: existing.stageId, lessonId } });
+    if (!stage) throw new HttpException('Этап не найден', HttpStatus.NOT_FOUND);
+
+    const tool = stage.toolId ? await this.toolRepo.findOne({ where: { toolId: stage.toolId } }) : null;
+    const valueName = await this.resolveValueName(lesson);
+    const { handout } = await this.generateOneHandout(lesson, stage, existing.order, valueName, tool?.description ?? '');
+    handout.id = existing.id; // тот же ряд — save становится UPDATE
+    const saved = await this.handoutRepo.save(handout);
+
+    // Пересчитываем статус пакета: не осталось ли ошибочных листов.
+    const failed = await this.handoutRepo.count({ where: { lessonId, error: true } });
+    await this.pkgRepo.update({ lessonId }, {
+      status: failed ? 'error' : 'ready',
+      generationError: failed ? `Не сгенерировано листов: ${failed}` : null,
+    });
+    return saved;
+  }
+
   // ── Export (.docx) ──────────────────────────────────────────────
   /**
    * Пакет одним документом: план + Приложения 1..N. Версия выбирается mode:
@@ -126,49 +149,85 @@ export class HandoutsService {
     const toolMap = new Map((await this.toolRepo.find()).map((t) => [t.toolId, t]));
     const valueName = await this.resolveValueName(lesson);
 
-    const ctx = {
-      subject: lesson.subject,
-      grade: lesson.grade,
-      lessonTitle: lesson.lessonTitle,
-      language: lesson.language ?? 'kz',
-      lessonObjectives: lesson.lessonObjectives ?? [],
-    };
-
     // Пересобираем пакет с нуля: старые листы удаляем.
     await this.handoutRepo.delete({ lessonId });
 
     let total = 0;
+    let failed = 0;
     // Каждый этап (включая разогрев и рефлексию) → одно приложение.
     for (const [i, s] of stages.entries()) {
-      const type = handoutTypeFor(s.stageType, s.toolId);
       const desc = s.toolId ? toolMap.get(s.toolId)?.description ?? '' : '';
-      const p = buildHandoutPrompt({
-        handoutType: type,
-        toolDescription: desc,
-        isAssessed: s.isAssessed,
-        points: s.points,
-        valueName: s.linkedToValue ? valueName : null,
-        ctx,
-      });
-      const res = await this.ai.request({
-        action: 'lesson_handout', systemPrompt: p.system,
-        messages: [{ role: 'user', content: p.user }],
-        userId: lesson.userId, schoolId: lesson.schoolId,
-      });
-      total += await this.cost.log(lessonId, 'handouts', res);
-
-      const parsed = this.parseJson<Record<string, any>>(res.content) ?? {};
-      // Дескрипторы и баллы берём готовые из плана — не просим модель заново.
-      const descriptors = s.isAssessed
-        ? (await this.descRepo.find({ where: { stageId: s.id }, order: { order: 'ASC' } }))
-            .map((d) => ({ text: d.text, points: d.points }))
-        : undefined;
-
-      const handout = this.buildHandout(lessonId, s, i + 1, type, parsed, descriptors);
+      const { handout, cost } = await this.generateOneHandout(lesson, s, i + 1, valueName, desc);
+      total += cost;
+      if (handout.error) failed++;
       await this.handoutRepo.save(handout);
     }
 
-    await this.pkgRepo.update({ lessonId }, { status: 'ready', generationCost: total });
+    // Пакет не «ready», пока есть пустые листы (ТЗ 1.2): статус error, но сами
+    // листы сохранены — учитель дожмёт проблемные кнопкой «Повторить».
+    await this.pkgRepo.update({ lessonId }, {
+      status: failed ? 'error' : 'ready',
+      generationCost: total,
+      generationError: failed ? `Не сгенерировано листов: ${failed}` : null,
+    });
+  }
+
+  /**
+   * Один раздаточный лист: вызов модели + проверка непустоты + повтор.
+   *
+   * Пустой или обрезанный по max_tokens ответ (казахский A/B/C упирался в
+   * потолок — дефект 1) отсеивается и генерируется заново с увеличенным
+   * лимитом. Если и повтор пуст — лист помечается ошибкой, а не молча пустой.
+   */
+  private async generateOneHandout(
+    lesson: Lesson, stage: LessonStage, order: number, valueName: string | null, toolDescription: string,
+  ): Promise<{ handout: Handout; cost: number }> {
+    const type = handoutTypeFor(stage.stageType, stage.toolId);
+    const action = handoutAction(type);
+    const ctx = {
+      subject: lesson.subject, grade: lesson.grade, lessonTitle: lesson.lessonTitle,
+      language: lesson.language ?? 'kz', lessonObjectives: lesson.lessonObjectives ?? [],
+    };
+    const descriptors = stage.isAssessed
+      ? (await this.descRepo.find({ where: { stageId: stage.id }, order: { order: 'ASC' } }))
+          .map((d) => ({ text: d.text, points: d.points }))
+      : undefined;
+
+    let cost = 0;
+    let parsed: Record<string, any> | null = null;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const p = buildHandoutPrompt({
+        handoutType: type, toolDescription, isAssessed: stage.isAssessed,
+        points: stage.points, valueName: stage.linkedToValue ? valueName : null, ctx,
+      });
+      // На повторе поднимаем потолок — вдруг предыдущий обрезался.
+      const maxTokens = attempt === 1 ? undefined : action === 'lesson_handout' ? 6500 : 3400;
+      // Структурированный вывод: API отдаёт валидный JSON по схеме, парсить
+      // текст (и ловить обрывы) не нужно — это и была причина пустых листов.
+      const res = await this.ai.requestTool<Record<string, any>>({
+        action, systemPrompt: p.system, messages: [{ role: 'user', content: p.user }],
+        userId: lesson.userId, schoolId: lesson.schoolId, maxTokens,
+      }, HANDOUT_TOOL);
+      cost += await this.cost.log(lesson.id, 'handouts', {
+        content: '', model: res.model, tokensIn: res.tokensIn, tokensOut: res.tokensOut,
+      });
+      if (res.data && parsedHandoutHasContent(res.data, type)) { parsed = res.data; break; }
+      this.logger.warn(`Лист «${type}» урока ${lesson.id}: пустой ответ, попытка ${attempt}/2`);
+    }
+
+    const handout = parsed
+      ? this.buildHandout(lesson.id, stage, order, type, parsed, descriptors)
+      : this.buildErrorHandout(lesson.id, stage, order, type);
+    return { handout, cost };
+  }
+
+  /** Пустой лист-заглушка с пометкой ошибки — для UI «Повторить этот лист». */
+  private buildErrorHandout(lessonId: string, stage: LessonStage, order: number, type: HandoutType): Handout {
+    return this.handoutRepo.create({
+      lessonId, stageId: stage.id, order, handoutType: type,
+      linkedToValue: stage.linkedToValue, error: true,
+      studentContent: { title: stage.stageName ?? '' }, teacherContent: { title: stage.stageName ?? '' }, levels: null,
+    });
   }
 
   /**
@@ -186,7 +245,7 @@ export class HandoutsService {
   ): Handout {
     const title = typeof parsed.title === 'string' ? parsed.title : '';
     const h = this.handoutRepo.create({
-      lessonId, stageId: stage.id, order, handoutType: type, linkedToValue: stage.linkedToValue,
+      lessonId, stageId: stage.id, order, handoutType: type, linkedToValue: stage.linkedToValue, error: false,
     });
     const scoring = stage.isAssessed ? { descriptors, points: stage.points } : {};
 

@@ -17,6 +17,19 @@ function langRule(language?: string): string {
   );
 }
 
+// Ограничения объёма по типу листа (ТЗ 1.2, оптимизация трат). Платим за
+// выходные токены — короткий, но полный лист дешевле и не упирается в потолок.
+const LENGTH_CAP: Record<HandoutType, string> = {
+  warmup: 'Объём: до 120 слов всего.',
+  explanation: 'Объём: до 200 слов всего.',
+  individual: 'Объём: каждый уровень A/B/C — до 120 слов.',
+  pair: 'Объём: до 200 слов всего.',
+  group: 'Объём: до 220 слов всего.',
+  text: 'Объём: текст 150–200 слов + 3–5 вопросов.',
+  quiz: 'Объём: 5–8 вопросов, кратко.',
+  reflection: 'Объём: до 120 слов всего.',
+};
+
 // Что генерировать по типу материала.
 const TYPE_GUIDE: Record<HandoutType, string> = {
   warmup: 'Карточка разогрева: 3–5 коротких вопросов или мини-задание на актуализацию перед темой.',
@@ -46,6 +59,62 @@ export interface HandoutPromptOpts {
   ctx: HandoutPromptCtx;
 }
 
+// Схема структурированного вывода (tool use). API гарантирует валидный JSON по
+// ней — поэтому текстовый JSON модели, который рвался и давал пустые листы,
+// больше не парсим. Схема нарочно допускающая: модель заполняет нужные под тип
+// поля (student/teacherExtra для обычных листов, levels — для A/B/C).
+const blockSchema = {
+  type: 'object',
+  properties: {
+    instructions: { type: 'string' },
+    sections: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          heading: { type: 'string' },
+          body: { type: 'string' },
+          items: { type: 'array', items: { type: 'string' } },
+        },
+      },
+    },
+    questions: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: { q: { type: 'string' }, options: { type: 'array', items: { type: 'string' } } },
+      },
+    },
+    answerLines: { type: 'number' },
+  },
+};
+const teacherExtraSchema = {
+  type: 'object',
+  properties: { answers: { type: 'string' }, criteria: { type: 'string' }, notes: { type: 'string' } },
+};
+const levelSchema = {
+  type: 'object',
+  properties: { ...blockSchema.properties, teacherExtra: teacherExtraSchema },
+};
+
+export const HANDOUT_TOOL = {
+  name: 'emit_handout',
+  description: 'Вернуть готовый раздаточный лист урока структурированными полями.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      title: { type: 'string' },
+      student: blockSchema,
+      teacherExtra: teacherExtraSchema,
+      levels: {
+        type: 'object',
+        properties: { A: levelSchema, B: levelSchema, C: levelSchema },
+      },
+    },
+    required: ['title'],
+  },
+};
+
 export function buildHandoutPrompt(opts: HandoutPromptOpts): { system: string; user: string } {
   const { handoutType, toolDescription, isAssessed, points, valueName, ctx } = opts;
 
@@ -61,19 +130,15 @@ export function buildHandoutPrompt(opts: HandoutPromptOpts): { system: string; u
       `и критерии оценивания (criteria) на языке материала.`
     : 'Это ТРЕНИРОВОЧНОЕ задание без баллов. teacherExtra оставь пустым объектом {}.';
 
-  const shape = isLeveled(handoutType)
-    ? `Верни JSON:\n` +
-      `{"title":"...","levels":{` +
-      `"A":{"instructions":"...","sections":[{"heading":"...","body":"...","items":["..."]}],"teacherExtra":{"answers":"...","criteria":"..."}},` +
-      `"B":{...},"C":{...}}}\n` +
-      `Каждый уровень — самостоятельное задание по теме, A проще C.`
+  // Какие поля инструмента заполнять (структуру задаёт схема HANDOUT_TOOL).
+  const fields = isLeveled(handoutType)
+    ? `Заполни levels.A, levels.B, levels.C — три самостоятельных задания по теме (A проще C), ` +
+      `в каждом instructions и sections` + (isAssessed ? `, а ключи/критерии в его teacherExtra.` : `.`)
     : handoutType === 'quiz'
-    ? `Верни JSON:\n` +
-      `{"title":"...","student":{"instructions":"...","questions":[{"q":"...","options":["A) ...","B) ...","C) ..."]}]},` +
-      `"teacherExtra":{"answers":"...","criteria":"..."}}`
-    : `Верни JSON:\n` +
-      `{"title":"...","student":{"instructions":"...","sections":[{"heading":"...","body":"...","items":["..."]}]},` +
-      `"teacherExtra":{"answers":"...","criteria":"..."}}`;
+    ? `Заполни student.questions (каждый: q + options)` +
+      (isAssessed ? ` и teacherExtra (answers — правильные варианты, criteria).` : `.`)
+    : `Заполни student (instructions + sections)` +
+      (isAssessed ? ` и teacherExtra (answers, criteria).` : `.`);
 
   return {
     system: SYSTEM,
@@ -86,7 +151,7 @@ export function buildHandoutPrompt(opts: HandoutPromptOpts): { system: string; u
       `${teacherRule}\n` +
       `${langRule(ctx.language)}\n` +
       `Материал должен быть готов к печати: конкретные формулировки, без «вставьте сюда» и плейсхолдеров.\n` +
-      `${shape}\n` +
-      `Без markdown и пояснений вне JSON.`,
+      `${LENGTH_CAP[handoutType]} Пиши компактно, по делу.\n` +
+      `Верни результат вызовом инструмента emit_handout. ${fields}`,
   };
 }
