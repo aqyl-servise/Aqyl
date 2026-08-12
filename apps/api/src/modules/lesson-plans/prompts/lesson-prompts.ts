@@ -98,6 +98,8 @@ export function objectivesPrompt(
       `Предмет: ${ctx.subject ?? '—'}\nКласс: ${ctx.grade ?? '—'}\nТема: ${ctx.lessonTitle ?? '—'}\n` +
       `Языковая цель: ${ctx.languageFocus ?? '—'}\n` +
       `Цели обучения (коды): ${ctx.learningObjectives.join(', ') || '—'}\n\n` +
+      // Дефект 4 (ТЗ 1.2): модель роняла букву («ттекпен» вместо «оттекпен»).
+      `Соблюдай орфографию языка урока: проверь каждое слово, не пропускай и не задваивай буквы.\n` +
       `Верни JSON: {"objectives": ["...", "..."]}. ` +
       // Цель урока — одна строка таблицы, не абзац.
       `Каждая цель — до 15 слов. Без markdown и пояснений вне JSON.`,
@@ -113,7 +115,22 @@ export function stagePrompt(
   stage: { stageType: string; toolId?: string; timeMinutes: number },
   toolDescription: string,
   ctx: LessonContext,
+  // Привязка этапа к ценности месяца (ТЗ 1.2, дефект 3). Если задано — ценность
+  // вплетается в содержание ЭТОГО этапа, синхронно с раздаточным листом.
+  opts?: { linkedToValue?: boolean; valueName?: string | null },
 ): { system: string; user: string } {
+  // Описание инструмента в каталоге служебное и на русском. Модель копировала
+  // его в method даже в казахском уроке («Пошаговое объяснение») — дефект 2.
+  const methodRule =
+    'ПОЛЕ method — назови метод СТРОГО на языке урока. Описание инструмента выше — ' +
+    'служебная подсказка, возможно на другом языке; НЕ копируй её дословно, сформулируй сам.';
+
+  const valueRule =
+    opts?.linkedToValue && opts.valueName
+      ? `ЦЕННОСТЬ: этот этап привязан к ценности «${opts.valueName}». Покажи в действиях ` +
+        `учителя/ученика, как активность этапа работает на эту ценность — на языке урока, органично.\n`
+      : '';
+
   return {
     system: SYSTEM_BASE,
     user:
@@ -121,10 +138,12 @@ export function stagePrompt(
       `Этап: ${stage.stageType}, инструмент: ${stage.toolId ?? '—'} (${toolDescription}), время: ${stage.timeMinutes} мин.\n` +
       `Контекст урока — предмет: ${ctx.subject}, класс: ${ctx.grade}, тема: ${ctx.lessonTitle}, ` +
       `цели урока: ${ctx.lessonObjectives.join('; ')}.\n\n` +
+      valueRule +
       `Верни JSON: {"stageName": "...", "teacherActions": "...", "studentActions": "...", ` +
       `"method": "...", "assessmentCriteria": "...", "resources": "..."}. ` +
       `teacherActions и studentActions — конкретные действия. Разогрев и рефлексия — формативно, без баллов.\n` +
       `${langRule(ctx.language)}\n` +
+      `${methodRule}\n` +
       // Ограничения длины: это ячейки таблицы КСП, их читают глазами на одном
       // листе. Развёрнутые абзацы там не нужны, а выходные токены — основная
       // статья расхода (примерно 90% стоимости генерации).
