@@ -366,6 +366,7 @@ export interface LpStageInput { stageType: string; toolId?: string; timeMinutes:
 export type LpHandoutType = "warmup" | "explanation" | "individual" | "pair" | "group" | "text" | "quiz" | "reflection";
 export interface LpHandout {
   id: string; stageId: string; order: number; handoutType: LpHandoutType; linkedToValue: boolean;
+  error?: boolean;
   studentContent?: Record<string, unknown> | null;
   teacherContent?: Record<string, unknown> | null;
   levels?: Record<string, unknown> | null;
@@ -491,6 +492,8 @@ export const api = {
     request<LpHandoutsResponse>(`/lesson-plans/${id}/handouts`, undefined, token),
   lpGetCost: (token: string, id: string) =>
     request<LpCost>(`/lesson-plans/${id}/cost`, undefined, token),
+  lpRegenerateHandout: (token: string, id: string, hid: string) =>
+    request<LpHandout>(`/lesson-plans/${id}/handouts/${hid}/regenerate`, { method: "POST" }, token),
 
   // Functional literacy (PISA)
   litCreate: (token: string, input: LitCreateInput) =>

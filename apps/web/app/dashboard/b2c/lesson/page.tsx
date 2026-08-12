@@ -557,6 +557,7 @@ function HandoutsPanel({ token, lessonId, t }: { token: string; lessonId: string
   const [cost, setCost] = useState<LpCost | null>(null);
   const [mode, setMode] = useState<"student" | "teacher">("student");
   const [busy, setBusy] = useState(false);
+  const [retryId, setRetryId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -565,7 +566,8 @@ function HandoutsPanel({ token, lessonId, t }: { token: string; lessonId: string
       const r = await api.lpGetHandouts(token, lessonId);
       setPkg(r.package);
       setHandouts(r.handouts);
-      if (r.package?.status === "ready") {
+      // Стоимость показываем и для частично-готового пакета (status=error).
+      if (r.package?.status === "ready" || r.package?.status === "error") {
         try { setCost(await api.lpGetCost(token, lessonId)); } catch { /* стоимость не критична */ }
       }
       return r.package?.status;
@@ -608,9 +610,20 @@ function HandoutsPanel({ token, lessonId, t }: { token: string; lessonId: string
     } catch (e) { setError(t.matError + " " + msg(e)); }
   }
 
+  // Повтор одного листа (ТЗ 1.2): не молча пусто, а кнопка на конкретном листе.
+  async function regenSheet(hid: string) {
+    if (retryId) return;
+    setError(null); setRetryId(hid);
+    try { await api.lpRegenerateHandout(token, lessonId, hid); await load(); }
+    catch (e) { setError(t.retrySheet + ": " + msg(e)); }
+    finally { setRetryId(null); }
+  }
+
   const status = pkg?.status;
   const generating = busy || status === "generating";
-  const ready = status === "ready" && handouts.length > 0;
+  // Показываем пакет и при частичном сбое (status=error): хорошие листы видны,
+  // проблемные — с кнопкой «Повторить».
+  const hasContent = handouts.length > 0 && (status === "ready" || status === "error");
   const base = `${API_URL}/lesson-plans/${lessonId}/handouts`;
 
   const toggleBtn = (m: "student" | "teacher", label: string) => (
@@ -626,7 +639,7 @@ function HandoutsPanel({ token, lessonId, t }: { token: string; lessonId: string
     <div style={{ ...card, marginTop: 20 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
         <strong style={{ color: DARK, fontSize: 16 }}>{t.materialsTitle}</strong>
-        {ready && (
+        {hasContent && (
           <div style={{ display: "flex", gap: 6 }}>
             {toggleBtn("student", t.versionStudent)}
             {toggleBtn("teacher", t.versionTeacher)}
@@ -644,15 +657,18 @@ function HandoutsPanel({ token, lessonId, t }: { token: string; lessonId: string
         </div>
       )}
 
-      {!generating && !ready && (
+      {!generating && !hasContent && (
         <div style={{ marginTop: 12 }}>
           <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 0 }}>{status === "error" ? t.matError : t.matEmpty}</p>
           <button onClick={generate} style={btnPrimary}>{t.genMaterials}</button>
         </div>
       )}
 
-      {ready && (
+      {hasContent && (
         <div style={{ marginTop: 14 }}>
+          {status === "error" && (
+            <div style={{ color: "var(--danger)", fontSize: 13, marginBottom: 10 }}>⚠ {t.matPartial}</div>
+          )}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
             <button onClick={() => download(`${base}/export?mode=${mode}`, `handouts-${mode}.docx`)} style={btnPrimary}>
               ↓ {t.downloadPackage} · {mode === "student" ? t.versionStudent : t.versionTeacher}
@@ -669,13 +685,23 @@ function HandoutsPanel({ token, lessonId, t }: { token: string; lessonId: string
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {handouts.map((h) => {
               const title = (h.studentContent as { title?: string } | null)?.title ?? "";
+              const retrying = retryId === h.id;
               return (
-                <div key={h.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", border: "1px solid var(--line)", borderRadius: 8, flexWrap: "wrap" }}>
+                <div key={h.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", border: `1px solid ${h.error ? "var(--danger)" : "var(--line)"}`, borderRadius: 8, flexWrap: "wrap" }}>
                   <span style={{ fontWeight: 700, color: DARK, fontSize: 13 }}>{t.appendix ?? "Прил."} {h.order}</span>
                   <span style={{ color: DARK, fontSize: 13, flex: 1, minWidth: 120 }}>{title}</span>
                   <span style={{ fontSize: 11, color: "var(--lavender)" }}>{t[`ht_${h.handoutType}`] ?? h.handoutType}</span>
                   {h.linkedToValue && <span style={{ fontSize: 11, color: "var(--amber)", fontWeight: 700 }}>◆ {t.linkedBadge}</span>}
-                  <button onClick={() => download(`${base}/${h.id}/export?mode=${mode}`, `handout-${h.order}-${mode}.docx`)} style={{ ...btnGhost, padding: "4px 10px", fontSize: 12 }}>↓ {t.downloadSheet}</button>
+                  {h.error ? (
+                    <>
+                      <span style={{ fontSize: 11, color: "var(--danger)", fontWeight: 700 }}>⚠ {t.sheetError}</span>
+                      <button onClick={() => regenSheet(h.id)} disabled={retryId !== null} style={{ ...btnGhost, padding: "4px 10px", fontSize: 12, color: "var(--danger)", opacity: retryId !== null ? 0.5 : 1 }}>
+                        ↻ {retrying ? t.retrying : t.retrySheet}
+                      </button>
+                    </>
+                  ) : (
+                    <button onClick={() => download(`${base}/${h.id}/export?mode=${mode}`, `handout-${h.order}-${mode}.docx`)} style={{ ...btnGhost, padding: "4px 10px", fontSize: 12 }}>↓ {t.downloadSheet}</button>
+                  )}
                 </div>
               );
             })}
