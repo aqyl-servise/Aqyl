@@ -45,4 +45,9 @@ export class Handout {
 
   @Column({ type: 'boolean', default: false })
   linkedToValue!: boolean;
+
+  // Лист не удалось сгенерировать непустым даже после повторов (ТЗ 1.2,
+  // дефект 1). Такой лист виден в UI с кнопкой «Повторить», а не молча пуст.
+  @Column({ type: 'boolean', default: false })
+  error!: boolean;
 }

@@ -324,9 +324,19 @@ export class LessonPlansService {
 
     // 2) Per-stage content (Sonnet)
     const toolMap = new Map((await this.toolRepo.find()).map((t) => [t.toolId, t]));
+    // Ценность месяца — для этапов с галочкой «привязать к ценности» (ТЗ 1.2,
+    // дефект 3): тот же флаг, что у раздаток, теперь влияет и на план.
+    let stageValueName: string | null = null;
+    if (lesson.valueMonth) {
+      const ref = await this.getValueForMonth(lesson.valueMonth);
+      if (ref) stageValueName = this.valueName(ref, lesson.language);
+    }
     for (const s of stages) {
       const desc = s.toolId ? toolMap.get(s.toolId)?.description ?? '' : '';
-      const p = stagePrompt({ stageType: s.stageType, toolId: s.toolId, timeMinutes: s.timeMinutes }, desc, ctx);
+      const p = stagePrompt(
+        { stageType: s.stageType, toolId: s.toolId, timeMinutes: s.timeMinutes }, desc, ctx,
+        { linkedToValue: s.linkedToValue, valueName: stageValueName },
+      );
       const res = await this.safeRequest('lesson_stage', p.system, p.user, lesson);
       await this.cost.log(id, 'plan', res);
       const c = this.parseJson<any>(res.content) ?? {};
@@ -418,7 +428,15 @@ export class LessonPlansService {
     if (!s) throw new HttpException('Этап не найден', HttpStatus.NOT_FOUND);
     const ctxL = this.ctxOf(lesson);
     const tool = s.toolId ? await this.toolRepo.findOne({ where: { toolId: s.toolId } }) : null;
-    const p = stagePrompt({ stageType: s.stageType, toolId: s.toolId, timeMinutes: s.timeMinutes }, tool?.description ?? '', ctxL);
+    let regenValueName: string | null = null;
+    if (s.linkedToValue && lesson.valueMonth) {
+      const ref = await this.getValueForMonth(lesson.valueMonth);
+      if (ref) regenValueName = this.valueName(ref, lesson.language);
+    }
+    const p = stagePrompt(
+      { stageType: s.stageType, toolId: s.toolId, timeMinutes: s.timeMinutes }, tool?.description ?? '', ctxL,
+      { linkedToValue: s.linkedToValue, valueName: regenValueName },
+    );
     const res = await this.safeRequest('lesson_stage', p.system, p.user, lesson);
     await this.cost.log(lesson.id, 'plan', res);
     const c = this.parseJson<any>(res.content) ?? {};

@@ -114,6 +114,13 @@ export class LessonPlansController {
     return this.handouts.getCost(id, this.ctx(req));
   }
 
+  // Перегенерация одного листа (кнопка «Повторить», ТЗ 1.2).
+  @Post(':id/handouts/:hid/regenerate')
+  @UseGuards(SubscriptionGuard)
+  regenerateHandout(@Param('id') id: string, @Param('hid') hid: string, @Req() req: AuthRequest) {
+    return this.handouts.regenerateHandout(id, hid, this.ctx(req));
+  }
+
   // Пакет материалов: план + приложения. mode=student (без ключей) | teacher.
   @Get(':id/handouts/export')
   async exportHandouts(@Param('id') id: string, @Query('mode') mode: string, @Req() req: AuthRequest, @Res() res: Response) {

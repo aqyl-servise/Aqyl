@@ -93,4 +93,46 @@ export class AiClientService {
 
     return { content, model, tokensIn, tokensOut };
   }
+
+  /**
+   * Структурированный вывод через tool use. API гарантирует, что `input`
+   * инструмента — валидный JSON по схеме, поэтому парсить текст (и ловить
+   * недоставленные скобки/обрывы) не нужно. Используем для раздаточных
+   * материалов, где текстовый JSON модели рвался и давал пустые листы.
+   */
+  async requestTool<T = Record<string, unknown>>(
+    params: AiRequestParams,
+    tool: { name: string; description: string; input_schema: Record<string, unknown> },
+  ): Promise<{ data: T | null } & Omit<AiResponse, 'content'>> {
+    if (!this.client) {
+      throw new Error('Anthropic API key is not configured');
+    }
+    const model = getModelForAction(params.action);
+    const maxTokens = params.maxTokens ?? getMaxTokensForAction(params.action);
+
+    const response = await this.client.messages.create({
+      model,
+      max_tokens: maxTokens,
+      system: params.systemPrompt,
+      messages: params.messages,
+      tools: [{ name: tool.name, description: tool.description, input_schema: tool.input_schema as never }],
+      tool_choice: { type: 'tool', name: tool.name },
+    });
+
+    const block = response.content.find((b) => b.type === 'tool_use');
+    const data = block ? ((block as { input: unknown }).input as T) : null;
+    const tokensIn = response.usage.input_tokens;
+    const tokensOut = response.usage.output_tokens;
+
+    void this.usage.record({
+      userId: params.userId,
+      schoolId: params.schoolId,
+      actionType: params.action,
+      model,
+      tokensIn,
+      tokensOut,
+    });
+
+    return { data, model, tokensIn, tokensOut };
+  }
 }
