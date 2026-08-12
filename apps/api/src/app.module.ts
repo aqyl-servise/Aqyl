@@ -1,3 +1,4 @@
+import { join } from "path";
 import { Module } from "@nestjs/common";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { SchoolIsolationInterceptor } from "./common/interceptors/school-isolation.interceptor";
@@ -138,14 +139,20 @@ import { TrialFingerprint } from "./modules/trial-guard/entities/trial-fingerpri
         type: "postgres",
         url: cfg.get<string>("DATABASE_URL"),
         autoLoadEntities: true,
-        // synchronize applies new entities/columns automatically (additive changes only).
-        // SCALE SAFETY: never let it run unsupervised in production. In production it is OFF
-        // by default; set DB_SYNCHRONIZE=true explicitly on the VPS to keep the current
-        // deploy-time auto-sync workflow until a TypeORM migration pipeline is introduced.
-        // TODO: ADD_MIGRATIONS — replace prod synchronize with versioned migrations.
+        // Схема разъезжается по двум режимам:
+        //  • dev / чистая БД — synchronize строит схему из сущностей (быстрая итерация);
+        //  • прод — миграции. synchronize там ВЫКЛ (DB_SYNCHRONIZE=false), а
+        //    migrationsRun прогоняет незапущенные миграции на старте, так что
+        //    новые колонки/таблицы больше НЕ надо накатывать вручную.
+        // Форс DB_SYNCHRONIZE=true оставлен как аварийный выход и отключает
+        // авто-миграции, чтобы два механизма не спорили за схему.
         synchronize:
           cfg.get<string>("NODE_ENV") !== "production" ||
           cfg.get<string>("DB_SYNCHRONIZE") === "true",
+        migrations: [join(__dirname, "migrations", "*.{js,ts}")],
+        migrationsRun:
+          cfg.get<string>("NODE_ENV") === "production" &&
+          cfg.get<string>("DB_SYNCHRONIZE") !== "true",
         // Connection pooling — bounded pool prevents exhausting Postgres connections under load.
         extra: { max: 10, min: 2, idleTimeoutMillis: 30000 },
         entities: [
