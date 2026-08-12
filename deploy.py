@@ -25,7 +25,11 @@ from pathlib import Path
 
 import paramiko
 
-HOST = os.environ.get("AQYL_HOST", "vps.aqyl-service.kz")
+# Вывод сервера содержит UTF-8 (рамки таблиц Next, кириллица); консоль Windows
+# по умолчанию cp1251 и падает на них. Печатаем в UTF-8 с заменой.
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+HOST = os.environ.get("AQYL_HOST", "77.67.8.115")  # vps.aqyl-service.kz — внутреннее имя, публично не резолвится
 USER = os.environ.get("AQYL_USER", "root")
 KEY = os.path.expanduser(os.environ.get("AQYL_SSH_KEY", "~/.ssh/aqyl_deploy"))
 APP_DIR = "/root/Aqyl"
@@ -53,8 +57,12 @@ def main() -> int:
     client.connect(HOST, username=USER, key_filename=KEY, timeout=30)
     print("Подключено.")
 
-    if run(client, f"cd {APP_DIR} && git pull origin main 2>&1", timeout=180, label="git pull origin main") != 0:
-        print("\n!! git pull не удался — остановка, ничего не перезапускал")
+    # Сервер должен ТОЧНО соответствовать origin/main. reset --hard, а не pull:
+    # посерверный npm install переписывает package-lock.json, и pull ловил бы
+    # конфликт. .env и node_modules gitignored — reset их не трогает.
+    if run(client, f"cd {APP_DIR} && git fetch origin main && git reset --hard origin/main 2>&1",
+           timeout=180, label="git fetch + reset --hard origin/main") != 0:
+        print("\n!! git fetch/reset не удался — остановка, ничего не перезапускал")
         client.close()
         return 1
     run(client, f"cd {APP_DIR} && git log -1 --oneline", label="текущий коммит")
