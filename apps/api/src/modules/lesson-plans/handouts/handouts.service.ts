@@ -12,10 +12,8 @@ import { AiClientService } from '../../../services/ai-client.service';
 import { CostLoggerService } from './cost-logger.service';
 import { handoutTypeFor, isLeveled, handoutAction, parsedHandoutHasContent } from './handout-content';
 import { buildHandoutPrompt, HANDOUT_TOOL } from './handout-prompts';
-import { docLabels } from '../export/doc-labels';
-import { planChildren, handoutChildren, pageBreak } from '../export/docx-kit';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { Document, Packer } = require('docx') as typeof import('docx');
+import { PdfService } from '../export/pdf.service';
+import { packageHandoutsHtml, singleHandoutHtml, HandoutLessonMeta } from '../export/handout-html';
 
 export type ExportMode = 'student' | 'teacher';
 
@@ -38,6 +36,7 @@ export class HandoutsService {
     @InjectRepository(HandoutPackage) private readonly pkgRepo: Repository<HandoutPackage>,
     private readonly ai: AiClientService,
     private readonly cost: CostLoggerService,
+    private readonly pdf: PdfService,
   ) {}
 
   // ── Public API ──────────────────────────────────────────────────
@@ -98,48 +97,30 @@ export class HandoutsService {
     return saved;
   }
 
-  // ── Export (.docx) ──────────────────────────────────────────────
-  /**
-   * Пакет одним документом: план + Приложения 1..N. Версия выбирается mode:
-   * student — без ключей, teacher — с ключами/критериями/баллами.
-   */
+  // ── Export (.pdf) ───────────────────────────────────────────────
+  // Раздатки отдаются PDF с фирменным дизайном (ТЗ 1.4). План (КСП) — по-прежнему
+  // отдельным docx (эндпоинт /export). Версия mode: student без ключей, teacher
+  // с ключами/критериями/дескрипторами.
+  private meta(lesson: Lesson): HandoutLessonMeta {
+    return { lessonTitle: lesson.lessonTitle, subject: lesson.subject, grade: lesson.grade, language: lesson.language };
+  }
+
+  /** Пакет: все приложения одним PDF, каждое с новой страницы. */
   async exportPackage(lessonId: string, ctx: HandoutCtx, mode: ExportMode): Promise<Buffer> {
-    const lesson = await this.loadLessonWithStages(lessonId, ctx);
+    const lesson = await this.own(lessonId, ctx);
     const handouts = await this.handoutRepo.find({ where: { lessonId }, order: { order: 'ASC' } });
     if (!handouts.length) {
       throw new HttpException('Материалы ещё не сгенерированы', HttpStatus.BAD_REQUEST);
     }
-    const lbl = docLabels(lesson.language);
-    const appendixByStageId = new Map(handouts.map((h) => [h.stageId, h.order]));
-
-    const children: any[] = [...planChildren(lesson, lbl, appendixByStageId)];
-    for (const h of handouts) {
-      children.push(pageBreak());
-      children.push(...handoutChildren(h, lbl, mode));
-    }
-    const doc = new Document({ sections: [{ children }] });
-    return Packer.toBuffer(doc);
+    return this.pdf.render(packageHandoutsHtml(handouts, this.meta(lesson), mode));
   }
 
-  /** Отдельный лист (одно приложение) той же версии. */
+  /** Отдельный лист (одно приложение) той же версии, PDF. */
   async exportSingle(lessonId: string, handoutId: string, ctx: HandoutCtx, mode: ExportMode): Promise<Buffer> {
     const lesson = await this.own(lessonId, ctx);
     const handout = await this.handoutRepo.findOne({ where: { id: handoutId, lessonId } });
     if (!handout) throw new HttpException('Приложение не найдено', HttpStatus.NOT_FOUND);
-    const lbl = docLabels(lesson.language);
-    const doc = new Document({ sections: [{ children: handoutChildren(handout, lbl, mode) }] });
-    return Packer.toBuffer(doc);
-  }
-
-  /** Урок со всеми этапами и их дескрипторами — для рендера плана в пакете. */
-  private async loadLessonWithStages(lessonId: string, ctx: HandoutCtx): Promise<Lesson> {
-    const lesson = await this.own(lessonId, ctx);
-    const stages = await this.stageRepo.find({ where: { lessonId }, order: { order: 'ASC' } });
-    for (const s of stages) {
-      s.descriptors = await this.descRepo.find({ where: { stageId: s.id }, order: { order: 'ASC' } });
-    }
-    lesson.stages = stages;
-    return lesson;
+    return this.pdf.render(singleHandoutHtml(handout, this.meta(lesson), mode));
   }
 
   // ── Generation pipeline ─────────────────────────────────────────

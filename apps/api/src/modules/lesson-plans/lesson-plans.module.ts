@@ -13,6 +13,7 @@ import { LessonPlansService } from './lesson-plans.service';
 import { LessonPlansController } from './lesson-plans.controller';
 import { HandoutsService } from './handouts/handouts.service';
 import { CostLoggerService } from './handouts/cost-logger.service';
+import { PdfService } from './export/pdf.service';
 import { AiClientModule } from '../../services/ai-client.module';
 import { BillingModule } from '../billing/billing.module';
 
@@ -34,7 +35,7 @@ import { BillingModule } from '../billing/billing.module';
     BillingModule,
   ],
   controllers: [LessonPlansController],
-  providers: [LessonsSeedService, LessonPlansService, HandoutsService, CostLoggerService],
+  providers: [LessonsSeedService, LessonPlansService, HandoutsService, CostLoggerService, PdfService],
   exports: [LessonPlansService, HandoutsService],
 })
 export class LessonPlansModule {}
