@@ -670,7 +670,7 @@ function HandoutsPanel({ token, lessonId, t }: { token: string; lessonId: string
             <div style={{ color: "var(--danger)", fontSize: 13, marginBottom: 10 }}>⚠ {t.matPartial}</div>
           )}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
-            <button onClick={() => download(`${base}/export?mode=${mode}`, `handouts-${mode}.docx`)} style={btnPrimary}>
+            <button onClick={() => download(`${base}/export?mode=${mode}`, `handouts-${mode}.pdf`)} style={btnPrimary}>
               ↓ {t.downloadPackage} · {mode === "student" ? t.versionStudent : t.versionTeacher}
             </button>
             {cost && (
@@ -700,7 +700,7 @@ function HandoutsPanel({ token, lessonId, t }: { token: string; lessonId: string
                       </button>
                     </>
                   ) : (
-                    <button onClick={() => download(`${base}/${h.id}/export?mode=${mode}`, `handout-${h.order}-${mode}.docx`)} style={{ ...btnGhost, padding: "4px 10px", fontSize: 12 }}>↓ {t.downloadSheet}</button>
+                    <button onClick={() => download(`${base}/${h.id}/export?mode=${mode}`, `handout-${h.order}-${mode}.pdf`)} style={{ ...btnGhost, padding: "4px 10px", fontSize: 12 }}>↓ {t.downloadSheet}</button>
                   )}
                 </div>
               );
