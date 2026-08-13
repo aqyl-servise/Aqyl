@@ -67,14 +67,20 @@ def main() -> int:
         return 1
     run(client, f"cd {APP_DIR} && git log -1 --oneline", label="текущий коммит")
 
+    # Установка зависимостей — ОДИН раз в корне воркспейса (npm workspaces), а не
+    # по приложению: per-app install в воркспейсе не доставил puppeteer. Без
+    # `| tail`, иначе код возврата берётся от tail и падение npm маскируется.
+    # PUPPETEER_SKIP_DOWNLOAD: Chrome уже лежит в /root/.cache/puppeteer (поставлен
+    # вручную, см. память деплоя) — повторно не качаем, его загрузчик тут флапает.
+    if run(client, f"cd {APP_DIR} && PUPPETEER_SKIP_DOWNLOAD=true npm install --legacy-peer-deps",
+           timeout=900, tail=8, label="npm install (корень воркспейса)") != 0:
+        print("\n!! npm install не удался — остановка до перезапуска")
+        client.close()
+        return 1
+
     for name, path in (("api", "apps/api"), ("web", "apps/web")):
-        if run(client, f"cd {APP_DIR}/{path} && npm install --legacy-peer-deps 2>&1 | tail -6",
-               timeout=900, label=f"[{name}] npm install") != 0:
-            print(f"\n!! npm install ({name}) не удался — остановка до перезапуска")
-            client.close()
-            return 1
-        if run(client, f"cd {APP_DIR}/{path} && npm run build 2>&1 | tail -20",
-               timeout=900, label=f"[{name}] npm run build") != 0:
+        if run(client, f"cd {APP_DIR}/{path} && npm run build",
+               timeout=900, tail=20, label=f"[{name}] npm run build") != 0:
             print(f"\n!! СБОРКА {name.upper()} УПАЛА — процессы НЕ перезапускались, прод на старой версии")
             client.close()
             return 1
