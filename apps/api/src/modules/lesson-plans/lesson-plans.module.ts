@@ -8,12 +8,14 @@ import { ValueLinkReference } from './entities/value-link-reference.entity';
 import { Handout } from './entities/handout.entity';
 import { HandoutPackage } from './entities/handout-package.entity';
 import { GenerationCostLog } from './entities/generation-cost-log.entity';
+import { Presentation } from './entities/presentation.entity';
 import { LessonsSeedService } from './lesson-plans.seed.service';
 import { LessonPlansService } from './lesson-plans.service';
 import { LessonPlansController } from './lesson-plans.controller';
 import { HandoutsService } from './handouts/handouts.service';
 import { CostLoggerService } from './handouts/cost-logger.service';
 import { PdfService } from './export/pdf.service';
+import { PresentationService } from './presentation/presentation.service';
 import { AiClientModule } from '../../services/ai-client.module';
 import { BillingModule } from '../billing/billing.module';
 
@@ -30,12 +32,13 @@ import { BillingModule } from '../billing/billing.module';
       Handout,
       HandoutPackage,
       GenerationCostLog,
+      Presentation,
     ]),
     AiClientModule,
     BillingModule,
   ],
   controllers: [LessonPlansController],
-  providers: [LessonsSeedService, LessonPlansService, HandoutsService, CostLoggerService, PdfService],
+  providers: [LessonsSeedService, LessonPlansService, HandoutsService, CostLoggerService, PdfService, PresentationService],
   exports: [LessonPlansService, HandoutsService],
 })
 export class LessonPlansModule {}
