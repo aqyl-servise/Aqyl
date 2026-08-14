@@ -135,6 +135,12 @@ export class LessonPlansController {
     return this.presentation.getStatus(id, this.ctx(req));
   }
 
+  @Get(':id/presentation/export')
+  async exportPresentation(@Param('id') id: string, @Req() req: AuthRequest, @Res() res: Response) {
+    const buf = await this.presentation.exportPdf(id, this.ctx(req));
+    this.sendPdf(res, `presentation-${id}.pdf`, buf);
+  }
+
   // Пакет материалов PDF (ТЗ 1.4). mode=student (без ключей) | teacher.
   @Get(':id/handouts/export')
   async exportHandouts(@Param('id') id: string, @Query('mode') mode: string, @Req() req: AuthRequest, @Res() res: Response) {

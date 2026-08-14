@@ -6,8 +6,10 @@ import { LessonStage } from '../entities/lesson-stage.entity';
 import { Presentation } from '../entities/presentation.entity';
 import { AiClientService } from '../../../services/ai-client.service';
 import { CostLoggerService } from '../handouts/cost-logger.service';
+import { PdfService } from '../export/pdf.service';
 import { findWrongTerms, flattenStrings } from '../prompts/term-glossary';
 import { buildPresentationPrompt, PRESENTATION_TOOL, PresStageInput } from './presentation-prompts';
+import { presentationHtml } from './presentation-html';
 
 export interface PresCtx {
   userId: string;
@@ -31,7 +33,14 @@ export class PresentationService {
     @InjectRepository(Presentation) private readonly presRepo: Repository<Presentation>,
     private readonly ai: AiClientService,
     private readonly cost: CostLoggerService,
+    private readonly pdf: PdfService,
   ) {}
+
+  /** Готовая презентация → PDF (16:9), фаза 2. */
+  async exportPdf(lessonId: string, ctx: PresCtx): Promise<Buffer> {
+    const { lesson, pres } = await this.loadForExport(lessonId, ctx);
+    return this.pdf.renderSlides(presentationHtml(pres.slides ?? [], lesson.lessonTitle ?? ''));
+  }
 
   // ── Public API ──────────────────────────────────────────────────
   async generate(lessonId: string, ctx: PresCtx): Promise<{ status: string }> {
