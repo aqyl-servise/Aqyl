@@ -467,7 +467,7 @@ export default function LessonGeneratorPage() {
 
         {step === 5 && lesson && (
           <>
-            <LessonView lesson={lesson} onRegen={regenStage} regenId={regenId} onExport={() => token && downloadExport(lesson, token)} t={t} lang={lang} />
+            <LessonView lesson={lesson} onRegen={regenStage} regenId={regenId} onExport={() => token && downloadExport(lesson, token)} presentation={<PresentationButton token={token} lessonId={lesson.id} t={t} />} t={t} lang={lang} />
             {lesson.status === "ready" && <HandoutsPanel token={token} lessonId={lesson.id} t={t} />}
           </>
         )}
@@ -476,7 +476,7 @@ export default function LessonGeneratorPage() {
   );
 }
 
-function LessonView({ lesson, onRegen, regenId, onExport, t, lang }: { lesson: LpLesson; onRegen: (sid: string) => void; regenId: string | null; onExport: () => void; t: T; lang: Lang }) {
+function LessonView({ lesson, onRegen, regenId, onExport, presentation, t, lang }: { lesson: LpLesson; onRegen: (sid: string) => void; regenId: string | null; onExport: () => void; presentation: React.ReactNode; t: T; lang: Lang }) {
   const th: React.CSSProperties = { textAlign: "left", padding: "8px 10px", background: "var(--ink)", fontSize: 12, color: "var(--muted)", border: "1px solid var(--line)" };
   const td: React.CSSProperties = { padding: "8px 10px", fontSize: 13, color: DARK, border: "1px solid var(--line)", verticalAlign: "top" };
   if (lesson.status === "error") {
@@ -540,7 +540,7 @@ function LessonView({ lesson, onRegen, regenId, onExport, t, lang }: { lesson: L
 
       <div style={{ marginTop: 16, display: "flex", gap: 12 }}>
         <button onClick={onExport} style={btnPrimary}>{t.downloadPlan}</button>
-        <button disabled title={t.soon} style={{ ...btnGhost, opacity: 0.5, cursor: "not-allowed" }}>{t.createPresentation}</button>
+        {presentation}
       </div>
     </div>
   );
@@ -548,6 +548,70 @@ function LessonView({ lesson, onRegen, regenId, onExport, t, lang }: { lesson: L
 
 function toolName(tl: { nameRu: string; nameKz: string; nameEn: string }, lang: Lang): string {
   return lang === "kz" ? tl.nameKz : lang === "en" ? tl.nameEn : tl.nameRu;
+}
+
+// ── Презентация (ТЗ 2.0): кнопка генерации + поллинг + скачивание PDF ──
+function PresentationButton({ token, lessonId, t }: { token: string; lessonId: string; t: T }) {
+  const [status, setStatus] = useState<"idle" | "generating" | "ready" | "error">("idle");
+  const [error, setError] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const check = useCallback(async (): Promise<string | undefined> => {
+    try {
+      const r = await api.lpGetPresentation(token, lessonId);
+      if (r.status === "ready") setStatus("ready");
+      else if (r.status === "generating") setStatus("generating");
+      else if (r.status === "error") setStatus("error");
+      return r.status ?? undefined;
+    } catch { return undefined; }
+  }, [token, lessonId]);
+
+  const startPoll = useCallback(() => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      const s = await check();
+      if (s === "ready" || s === "error") { if (pollRef.current) clearInterval(pollRef.current); }
+    }, 3000);
+  }, [check]);
+
+  useEffect(() => {
+    (async () => { if ((await check()) === "generating") startPoll(); })();
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [check, startPoll]);
+
+  async function generate() {
+    setError(null); setStatus("generating");
+    try { await api.lpGeneratePresentation(token, lessonId); startPoll(); }
+    catch (e) { setStatus("error"); setError(t.presError + " " + msg(e)); }
+  }
+  async function download() {
+    try {
+      const res = await fetch(`${API_URL}/lesson-plans/${lessonId}/presentation/export`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) { setError(t.presError); return; }
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = `presentation-${lessonId}.pdf`; a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (e) { setError(t.presError + " " + msg(e)); }
+  }
+
+  if (status === "generating") {
+    return <button disabled style={{ ...btnGhost, opacity: 0.6, cursor: "wait" }}>⏳ {t.presGenerating}</button>;
+  }
+  if (status === "ready") {
+    return (
+      <>
+        <button onClick={download} style={btnGhost}>↓ {t.presDownload}</button>
+        <button onClick={generate} title={t.presRegen} style={{ ...btnGhost, padding: "8px 12px" }}>↻</button>
+      </>
+    );
+  }
+  return (
+    <>
+      <button onClick={generate} style={btnGhost}>🖥 {t.presCreate}</button>
+      {error && <span style={{ color: "var(--danger)", fontSize: 12, alignSelf: "center" }}>{error}</span>}
+    </>
+  );
 }
 
 // ── Раздаточные материалы (срез 2): кнопка генерации + просмотр пакета ──

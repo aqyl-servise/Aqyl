@@ -37,4 +37,26 @@ export class PdfService {
       await browser.close().catch((e) => this.logger.warn(`browser.close: ${(e as Error).message}`));
     }
   }
+
+  /** Слайды 16:9 (ТЗ 2.0): каждая страница landscape 1280×720, без полей. */
+  async renderSlides(html: string): Promise<Buffer> {
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+    });
+    try {
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'load' });
+      await page.evaluateHandle('document.fonts.ready');
+      const pdf = await page.pdf({
+        printBackground: true,
+        width: '1280px',
+        height: '720px',
+        margin: { top: '0', bottom: '0', left: '0', right: '0' },
+      });
+      return Buffer.from(pdf);
+    } finally {
+      await browser.close().catch((e) => this.logger.warn(`browser.close: ${(e as Error).message}`));
+    }
+  }
 }

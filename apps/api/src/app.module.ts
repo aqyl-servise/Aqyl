@@ -119,6 +119,7 @@ import { ValueLinkReference } from "./modules/lesson-plans/entities/value-link-r
 import { Handout } from "./modules/lesson-plans/entities/handout.entity";
 import { HandoutPackage } from "./modules/lesson-plans/entities/handout-package.entity";
 import { GenerationCostLog } from "./modules/lesson-plans/entities/generation-cost-log.entity";
+import { Presentation } from "./modules/lesson-plans/entities/presentation.entity";
 import { LiteracyModule } from "./modules/literacy/literacy.module";
 import { ConsentRecord } from "./modules/consent/entities/consent-record.entity";
 import { TrialGuardModule } from "./modules/trial-guard/trial-guard.module";
@@ -185,6 +186,7 @@ import { TrialFingerprint } from "./modules/trial-guard/entities/trial-fingerpri
           Handout,
           HandoutPackage,
           GenerationCostLog,
+          Presentation,
           LiteracySet,
           LiteracyQuestion,
           TrialFingerprint,

@@ -374,6 +374,7 @@ export interface LpHandout {
 export interface LpHandoutPackage { status: "generating" | "ready" | "error"; generationCost: number; generationError?: string | null }
 export interface LpHandoutsResponse { package: LpHandoutPackage | null; handouts: LpHandout[] }
 export interface LpCost { total: number; byOperation: Record<string, number> }
+export interface LpPresentation { status: "generating" | "ready" | "error" | null; generationError?: string | null; slideCount: number; generationCost: number }
 
 // ── Functional literacy (PISA) ────────────────────────────────────
 export interface LitQuestion {
@@ -494,6 +495,10 @@ export const api = {
     request<LpCost>(`/lesson-plans/${id}/cost`, undefined, token),
   lpRegenerateHandout: (token: string, id: string, hid: string) =>
     request<LpHandout>(`/lesson-plans/${id}/handouts/${hid}/regenerate`, { method: "POST" }, token),
+  lpGeneratePresentation: (token: string, id: string) =>
+    request<{ status: string }>(`/lesson-plans/${id}/presentation`, { method: "POST" }, token),
+  lpGetPresentation: (token: string, id: string) =>
+    request<LpPresentation>(`/lesson-plans/${id}/presentation`, undefined, token),
 
   // Functional literacy (PISA)
   litCreate: (token: string, input: LitCreateInput) =>

@@ -34,7 +34,7 @@ export const ACTION_MODEL_MAP: Record<string, keyof typeof AI_MODELS> = {
 export const MAX_TOKENS_MAP: Record<string, number> = {
   kmzh_generate: 2000,
   kmzh_objectives: 300,
-  presentation_generate: 1500,
+  presentation_generate: 3000, // все слайды одним вызовом (ТЗ 2.0)
   task_generate: 800,
   analysis_class: 600,
   assistant_chat: 400,

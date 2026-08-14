@@ -10,6 +10,7 @@ import { SkipSchoolIsolation } from '../../common/decorators/skip-school-isolati
 import { ALL_TEACHER_ROLES, ADMIN_ROLES } from '../../common/roles.constants';
 import { LessonPlansService } from './lesson-plans.service';
 import { HandoutsService, ExportMode } from './handouts/handouts.service';
+import { PresentationService } from './presentation/presentation.service';
 import { LessonHeaderDto } from './dto/lesson-header.dto';
 import { SetStagesDto, GenerateLessonDto, SwapToolDto } from './dto/lesson-actions.dto';
 
@@ -25,6 +26,7 @@ export class LessonPlansController {
   constructor(
     private readonly service: LessonPlansService,
     private readonly handouts: HandoutsService,
+    private readonly presentation: PresentationService,
   ) {}
 
   private ctx(req: AuthRequest) {
@@ -119,6 +121,24 @@ export class LessonPlansController {
   @UseGuards(SubscriptionGuard)
   regenerateHandout(@Param('id') id: string, @Param('hid') hid: string, @Req() req: AuthRequest) {
     return this.handouts.regenerateHandout(id, hid, this.ctx(req));
+  }
+
+  // ── Презентация по плану (ТЗ 2.0) ────────────────────────────────
+  @Post(':id/presentation')
+  @UseGuards(SubscriptionGuard)
+  generatePresentation(@Param('id') id: string, @Req() req: AuthRequest) {
+    return this.presentation.generate(id, this.ctx(req));
+  }
+
+  @Get(':id/presentation')
+  presentationStatus(@Param('id') id: string, @Req() req: AuthRequest) {
+    return this.presentation.getStatus(id, this.ctx(req));
+  }
+
+  @Get(':id/presentation/export')
+  async exportPresentation(@Param('id') id: string, @Req() req: AuthRequest, @Res() res: Response) {
+    const buf = await this.presentation.exportPdf(id, this.ctx(req));
+    this.sendPdf(res, `presentation-${id}.pdf`, buf);
   }
 
   // Пакет материалов PDF (ТЗ 1.4). mode=student (без ключей) | teacher.
