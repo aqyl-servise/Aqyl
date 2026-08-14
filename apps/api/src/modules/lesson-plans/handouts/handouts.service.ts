@@ -12,6 +12,7 @@ import { AiClientService } from '../../../services/ai-client.service';
 import { CostLoggerService } from './cost-logger.service';
 import { handoutTypeFor, isLeveled, handoutAction, parsedHandoutHasContent } from './handout-content';
 import { buildHandoutPrompt, HANDOUT_TOOL } from './handout-prompts';
+import { findWrongTerms, flattenStrings } from '../prompts/term-glossary';
 import { PdfService } from '../export/pdf.service';
 import { packageHandoutsHtml, singleHandoutHtml, HandoutLessonMeta } from '../export/handout-html';
 
@@ -192,7 +193,17 @@ export class HandoutsService {
       cost += await this.cost.log(lesson.id, 'handouts', {
         content: '', model: res.model, tokensIn: res.tokensIn, tokensOut: res.tokensOut,
       });
-      if (res.data && parsedHandoutHasContent(res.data, type)) { parsed = res.data; break; }
+      if (res.data && parsedHandoutHasContent(res.data, type)) {
+        // B.3 (ТЗ 1.5.1): русские термины из глоссария в казахском листе → повтор.
+        const wrong = lesson.language === 'kz' ? findWrongTerms(flattenStrings(res.data), lesson.subject) : [];
+        if (!wrong.length || attempt === 2) {
+          parsed = res.data;
+          if (wrong.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: остались русские термины [${wrong.join(', ')}]`);
+          break;
+        }
+        this.logger.warn(`Лист «${type}» урока ${lesson.id}: русские термины [${wrong.join(', ')}], повтор`);
+        continue;
+      }
       this.logger.warn(`Лист «${type}» урока ${lesson.id}: пустой ответ, попытка ${attempt}/2`);
     }
 

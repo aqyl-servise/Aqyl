@@ -1,5 +1,5 @@
 import {
-  Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, HeadingLevel, PageBreak,
+  Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, HeadingLevel, PageBreak, AlignmentType,
 } from 'docx';
 import { Lesson } from '../entities/lesson.entity';
 import { Handout } from '../entities/handout.entity';
@@ -40,6 +40,13 @@ export function pageBreak(): Paragraph {
 export function planChildren(lesson: Lesson, lbl: DocLabels, appendixByStageId?: Map<string, number>): Child[] {
   const hRow = (label: string, value: string) =>
     new TableRow({ children: [cell([para(label, true)], 3000), cell([para(value)], 6360)] });
+  // Ячейка с несколькими строками (ТЗ 1.5.1, A.2/A.3): каждая цель отдельным
+  // абзацем — в docx \n внутри одного run не переносит, нужны разные Paragraph.
+  const hRowLines = (label: string, paras: Paragraph[]) =>
+    new TableRow({ children: [cell([para(label, true)], 3000), cell(paras.length ? paras : [para('')], 6360)] });
+
+  const learnObjLines = (lesson.learningObjectives ?? []).map((o) => para(o));
+  const lessonObjLines = (lesson.lessonObjectives ?? []).map((o, i) => para(`${i + 1}. ${o}`));
 
   const headerTable = new Table({
     width: { size: TEXT_W, type: WidthType.DXA },
@@ -53,8 +60,8 @@ export function planChildren(lesson: Lesson, lbl: DocLabels, appendixByStageId?:
       hRow(lbl.presentAbsent, `${lesson.presentCount ?? ''} / ${lesson.absentCount ?? ''}`),
       hRow(lbl.lessonTitle, lesson.lessonTitle ?? ''),
       hRow(lbl.languageFocus, lesson.languageFocus ?? ''),
-      hRow(lbl.learningObjectives, (lesson.learningObjectives ?? []).join('\n')),
-      hRow(lbl.lessonObjectives, (lesson.lessonObjectives ?? []).join('\n')),
+      hRowLines(lbl.learningObjectives, learnObjLines),
+      hRowLines(lbl.lessonObjectives, lessonObjLines),
       hRow(lbl.valueLinks, lesson.valueLink ?? ''),
     ],
   });
@@ -95,7 +102,13 @@ export function planChildren(lesson: Lesson, lbl: DocLabels, appendixByStageId?:
   });
 
   return [
-    new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: lbl.docTitle, bold: true })] }),
+    // Заголовок ҚМЖ — по центру, один отступ до таблицы (ТЗ 1.5.1, A.1).
+    new Paragraph({
+      heading: HeadingLevel.HEADING_2,
+      alignment: AlignmentType.CENTER,
+      children: [new TextRun({ text: lbl.docTitle, bold: true })],
+    }),
+    para(''),
     headerTable,
     para(''),
     new Paragraph({ children: [new TextRun({ text: lbl.plan, bold: true, size: 22 })] }),

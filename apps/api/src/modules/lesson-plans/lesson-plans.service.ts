@@ -18,6 +18,7 @@ import {
   StagePointsProposal,
 } from './engine/points-engine';
 import { findImperativeObjectives } from './engine/objective-mood';
+import { findWrongTerms } from './prompts/term-glossary';
 import {
   LessonContext,
   objectivesPrompt,
@@ -333,13 +334,31 @@ export class LessonPlansService {
     }
     for (const s of stages) {
       const desc = s.toolId ? toolMap.get(s.toolId)?.description ?? '' : '';
-      const p = stagePrompt(
-        { stageType: s.stageType, toolId: s.toolId, timeMinutes: s.timeMinutes }, desc, ctx,
-        { linkedToValue: s.linkedToValue, valueName: stageValueName },
-      );
-      const res = await this.safeRequest('lesson_stage', p.system, p.user, lesson);
-      await this.cost.log(id, 'plan', res);
-      const c = this.parseJson<any>(res.content) ?? {};
+      // До двух попыток: если в казахском этапе русские термины из глоссария
+      // (B.3, ТЗ 1.5.1) — перегенерируем один раз, потом принимаем лучший.
+      let c: any = {};
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const p = stagePrompt(
+          { stageType: s.stageType, toolId: s.toolId, timeMinutes: s.timeMinutes }, desc, ctx,
+          { linkedToValue: s.linkedToValue, valueName: stageValueName },
+        );
+        const res = await this.safeRequest('lesson_stage', p.system, p.user, lesson);
+        await this.cost.log(id, 'plan', res);
+        const cand = this.parseJson<any>(res.content) ?? {};
+        const wrong = lesson.language === 'kz'
+          ? findWrongTerms(
+              [cand.stageName, cand.teacherActions, cand.studentActions, cand.method, cand.assessmentCriteria, cand.resources]
+                .filter(Boolean).join(' '),
+              lesson.subject,
+            )
+          : [];
+        if (!wrong.length || attempt === 2) {
+          c = cand;
+          if (wrong.length) this.logger.warn(`Этап ${s.stageType} урока ${id}: остались русские термины [${wrong.join(', ')}]`);
+          break;
+        }
+        this.logger.warn(`Этап ${s.stageType} урока ${id}: русские термины [${wrong.join(', ')}], повтор`);
+      }
       s.stageName = c.stageName ?? s.stageName ?? s.stageType;
       s.teacherActions = c.teacherActions ?? '';
       s.studentActions = c.studentActions ?? '';
