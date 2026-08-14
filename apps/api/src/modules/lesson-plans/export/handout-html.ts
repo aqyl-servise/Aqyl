@@ -119,28 +119,12 @@ function teacherExtras(block: Record<string, any>, lg: string): string {
 }
 
 // Тело листа: индивидуальное — три уровня A/B/C; остальное — один блок.
-function body(h: Handout, mode: Mode, lg: string): string {
-  const t = L[lg];
-  if (h.handoutType === 'individual' && h.levels) {
-    const lv = h.levels as Record<string, any>;
-    const names: Record<string, string> = { A: t.levelA, B: t.levelB, C: t.levelC };
-    return ['A', 'B', 'C'].filter((k) => lv[k]).map((k) => {
-      const block = mode === 'teacher' ? lv[k].teacher : lv[k].student;
-      return `<div class="level level-${k}"><div class="level-h">${names[k]}</div>${blockBody(block, 'individual', mode, lg)}</div>`;
-    }).join('');
-  }
-  const content = (mode === 'teacher' ? h.teacherContent : h.studentContent) as Record<string, any> | null;
-  return blockBody(content, h.handoutType, mode, lg);
-}
-
-// ── Один лист = одна страница ───────────────────────────────────────
-export function handoutSheet(h: Handout, meta: HandoutLessonMeta, mode: Mode): string {
+// Каркас одного листа (шапка/акцент/поля/иконка/заголовок/тело/подвал).
+function frame(meta: HandoutLessonMeta, type: HandoutType, order: number, sheetTitle: string, contentHtml: string): string {
   const lg = lang(meta.language);
   const t = L[lg];
-  const acc = ACCENT[h.handoutType];
-  const title = (h.studentContent as { title?: string } | null)?.title ?? '';
+  const acc = ACCENT[type];
   const gradeStr = meta.grade != null ? `${meta.grade}-${lg === 'kz' ? 'сынып' : lg === 'en' ? 'grade' : 'класс'}` : '';
-
   return (
     `<section class="sheet" style="--acc:${acc.color}">` +
     `<header class="head">` +
@@ -150,13 +134,36 @@ export function handoutSheet(h: Handout, meta: HandoutLessonMeta, mode: Mode): s
     `</header>` +
     `<div class="accent-bar"></div>` +
     `<div class="fields"><span>${t.student}: <span class="fl"></span></span><span>${t.date}: <span class="fl short"></span></span></div>` +
-    `<div class="block-h"><span class="ti">${acc.icon}</span><span class="tn">${esc(TYPE_NAME[lg][h.handoutType])}</span>` +
-      `<span class="app">${t.appendix} ${h.order}</span></div>` +
-    `<h1 class="sheet-title">${esc(title)}</h1>` +
-    `<div class="content">${body(h, mode, lg)}</div>` +
-    `<footer class="foot"><span>Aqyl · aqyl-service.kz</span><span>${t.appendix} ${h.order} · ${esc(TYPE_NAME[lg][h.handoutType])}</span></footer>` +
+    `<div class="block-h"><span class="ti">${acc.icon}</span><span class="tn">${esc(TYPE_NAME[lg][type])}</span>` +
+      `<span class="app">${t.appendix} ${order}</span></div>` +
+    `<h1 class="sheet-title">${esc(sheetTitle)}</h1>` +
+    `<div class="content">${contentHtml}</div>` +
+    `<footer class="foot"><span>Aqyl · aqyl-service.kz</span><span>${t.appendix} ${order} · ${esc(TYPE_NAME[lg][type])}</span></footer>` +
     `</section>`
   );
+}
+
+/**
+ * Раздаточный лист → одна или несколько страниц (.sheet). Уровневое задание
+ * A/B/C — ТРИ отдельные страницы (ТЗ 1.5.1, часть E): каждый уровень с чистой
+ * страницы, каркас (шапка/поля/подвал) повторяется на каждой.
+ */
+export function handoutSheets(h: Handout, meta: HandoutLessonMeta, mode: Mode): string {
+  const lg = lang(meta.language);
+  const t = L[lg];
+  const title = (h.studentContent as { title?: string } | null)?.title ?? '';
+
+  if (h.handoutType === 'individual' && h.levels) {
+    const lv = h.levels as Record<string, any>;
+    const names: Record<string, string> = { A: t.levelA, B: t.levelB, C: t.levelC };
+    return ['A', 'B', 'C'].filter((k) => lv[k]).map((k) => {
+      const block = mode === 'teacher' ? lv[k].teacher : lv[k].student;
+      const inner = `<div class="level level-${k}"><div class="level-h">${names[k]}</div>${blockBody(block, 'individual', mode, lg)}</div>`;
+      return frame(meta, 'individual', h.order, `${title} — ${names[k]}`, inner);
+    }).join('');
+  }
+  const content = (mode === 'teacher' ? h.teacherContent : h.studentContent) as Record<string, any> | null;
+  return frame(meta, h.handoutType, h.order, title, blockBody(content, h.handoutType, mode, lg));
 }
 
 const CSS = `
@@ -213,10 +220,10 @@ function docShell(inner: string): string {
 
 /** Один лист как самостоятельный PDF. */
 export function singleHandoutHtml(h: Handout, meta: HandoutLessonMeta, mode: Mode): string {
-  return docShell(handoutSheet(h, meta, mode));
+  return docShell(handoutSheets(h, meta, mode));
 }
 
-/** Пакет: все приложения, каждое с новой страницы. */
+/** Пакет: все приложения, каждое с новой страницы (уровни A/B/C — по странице). */
 export function packageHandoutsHtml(handouts: Handout[], meta: HandoutLessonMeta, mode: Mode): string {
-  return docShell(handouts.map((h) => handoutSheet(h, meta, mode)).join('\n'));
+  return docShell(handouts.map((h) => handoutSheets(h, meta, mode)).join('\n'));
 }
