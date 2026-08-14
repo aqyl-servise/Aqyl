@@ -8,6 +8,8 @@ export const SYSTEM_BASE =
   'владеешь терминологией КМЖ/КТЖ/БЖБ/ТЖБ, формативным и суммативным оцениванием. ' +
   'Отвечай СТРОГО валидным JSON без преамбулы и без markdown-ограждений (```).';
 
+import { kazakhTermsBlock } from './term-glossary';
+
 const LANG_NAME: Record<string, string> = { kz: 'казахском', ru: 'русском', en: 'английском' };
 
 /**
@@ -16,15 +18,17 @@ const LANG_NAME: Record<string, string> = { kz: 'казахском', ru: 'ру�
  * одном документе. Теперь язык приходит явно и требование стоит в каждом
  * вызове, а не один раз в общей части.
  */
-function langRule(language?: string): string {
+function langRule(language?: string, subject?: string | null): string {
   const name = LANG_NAME[language ?? ''] ?? 'казахском';
-  return (
+  const base =
     `ЯЗЫК ОТВЕТА: пиши ИСКЛЮЧИТЕЛЬНО на ${name} языке. ` +
     'Это касается всего текста без исключений: названий этапов, действий учителя и ученика, ' +
     'метода, критериев, дескрипторов и ресурсов. ' +
     'Не вставляй слова и подписи на других языках. ' +
-    'Исключение только для формул, химических символов и общепринятых сокращений.'
-  );
+    'Исключение только для формул, химических символов и общепринятых сокращений.';
+  // Чистка казахской терминологии (ТЗ 1.5.1, B.1 + глоссарий B.2 по предмету).
+  const terms = kazakhTermsBlock(language, subject);
+  return terms ? `${base}\n${terms}` : base;
 }
 
 export interface LessonContext {
@@ -94,7 +98,7 @@ export function objectivesPrompt(
       `Каждая цель начинается сразу с результата — с глагола действия.\n` +
       `${moodRule(ctx.language)}\n` +
       correction +
-      `${langRule(ctx.language)}\n` +
+      `${langRule(ctx.language, ctx.subject)}\n` +
       `Предмет: ${ctx.subject ?? '—'}\nКласс: ${ctx.grade ?? '—'}\nТема: ${ctx.lessonTitle ?? '—'}\n` +
       `Языковая цель: ${ctx.languageFocus ?? '—'}\n` +
       `Цели обучения (коды): ${ctx.learningObjectives.join(', ') || '—'}\n\n` +
@@ -142,7 +146,7 @@ export function stagePrompt(
       `Верни JSON: {"stageName": "...", "teacherActions": "...", "studentActions": "...", ` +
       `"method": "...", "assessmentCriteria": "...", "resources": "..."}. ` +
       `teacherActions и studentActions — конкретные действия. Разогрев и рефлексия — формативно, без баллов.\n` +
-      `${langRule(ctx.language)}\n` +
+      `${langRule(ctx.language, ctx.subject)}\n` +
       `${methodRule}\n` +
       // Ограничения длины: это ячейки таблицы КСП, их читают глазами на одном
       // листе. Развёрнутые абзацы там не нужны, а выходные токены — основная
@@ -165,7 +169,7 @@ export function descriptorsPrompt(
       `Сгенерируй 2-3 ДЕСКРИПТОРА для оцениваемого задания (этап ${stage.stageType}), ` +
       `сумма баллов дескрипторов = ${points}. Каждый дескриптор — измеримый критерий выполнения.\n` +
       `Задание учителя: ${stage.teacherActions ?? '—'}\nПредмет: ${ctx.subject}, класс: ${ctx.grade}.\n\n` +
-      `${langRule(ctx.language)}\n` +
+      `${langRule(ctx.language, ctx.subject)}\n` +
       `Верни JSON: {"descriptors": [{"text": "...", "points": N}]}. Сумма points = ${points}. ` +
       // Дескриптор — короткий проверяемый критерий, а не описание задания.
       `Каждый дескриптор — до 15 слов, начинается с глагола. Без markdown и пояснений вне JSON.`,
@@ -189,7 +193,7 @@ export function valueLinkPrompt(valueName: string, ctx: LessonContext): { system
       `Напиши 1–2 предложения о том, КАК ИМЕННО эта ценность реализуется на данном уроке — ` +
       `через содержание темы и деятельность учеников. Не пересказывай определение ценности ` +
       `и не пиши общих фраз, применимых к любому уроку.\n` +
-      `${langRule(ctx.language)}\n` +
+      `${langRule(ctx.language, ctx.subject)}\n` +
       `Начни с названия ценности и двоеточия. До 45 слов.\n` +
       `Верни JSON: {"valueLink": "..."}. Без markdown и пояснений вне JSON.`,
   };

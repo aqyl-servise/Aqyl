@@ -1,5 +1,6 @@
 import { HandoutType } from '../entities/handout.entity';
 import { isLeveled } from './handout-content';
+import { kazakhTermsBlock } from '../prompts/term-glossary';
 
 const SYSTEM =
   'Ты — опытный методист системы образования Республики Казахстан. ' +
@@ -9,12 +10,14 @@ const SYSTEM =
 
 const LANG_NAME: Record<string, string> = { kz: 'казахском', ru: 'русском', en: 'английском' };
 
-function langRule(language?: string): string {
+function langRule(language?: string, subject?: string | null): string {
   const name = LANG_NAME[language ?? ''] ?? 'казахском';
-  return (
+  const base =
     `ЯЗЫК: пиши ВЕСЬ материал ИСКЛЮЧИТЕЛЬНО на ${name} языке — задания, тексты, вопросы, ключи, ` +
-    'критерии. Не вставляй слова на других языках, кроме формул, химических символов и общепринятых сокращений.'
-  );
+    'критерии. Не вставляй слова на других языках, кроме формул, химических символов и общепринятых сокращений.';
+  // Чистка казахской терминологии (ТЗ 1.5.1, B.1 + глоссарий B.2).
+  const terms = kazakhTermsBlock(language, subject);
+  return terms ? `${base}\n${terms}` : base;
 }
 
 // Ограничения объёма по типу листа (ТЗ 1.2, оптимизация трат). Платим за
@@ -149,7 +152,7 @@ export function buildHandoutPrompt(opts: HandoutPromptOpts): { system: string; u
       `Цели урока: ${ctx.lessonObjectives.join('; ') || '—'}.\n` +
       valueRule +
       `${teacherRule}\n` +
-      `${langRule(ctx.language)}\n` +
+      `${langRule(ctx.language, ctx.subject)}\n` +
       `Материал должен быть готов к печати: конкретные формулировки, без «вставьте сюда» и плейсхолдеров.\n` +
       `${LENGTH_CAP[handoutType]} Пиши компактно, по делу.\n` +
       `Верни результат вызовом инструмента emit_handout. ${fields}`,
