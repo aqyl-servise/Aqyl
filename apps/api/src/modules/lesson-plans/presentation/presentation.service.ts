@@ -16,10 +16,10 @@ export interface PresCtx {
   schoolId: string | null;
 }
 
-const LABELS: Record<string, { objectives: string; quiz: string; thanks: string }> = {
-  kz: { objectives: 'Сабақ мақсаттары', quiz: 'Квиз', thanks: 'Рахмет!' },
-  ru: { objectives: 'Цели урока', quiz: 'Квиз', thanks: 'Спасибо!' },
-  en: { objectives: 'Lesson objectives', quiz: 'Quiz', thanks: 'Thank you!' },
+const LABELS: Record<string, { learning: string; quiz: string; thanks: string; review: string }> = {
+  kz: { learning: 'Оқу мақсаттары', quiz: 'Квиз', thanks: 'Рахмет!', review: 'Бекіту сұрақтары' },
+  ru: { learning: 'Цели обучения', quiz: 'Квиз', thanks: 'Спасибо!', review: 'Вопросы для закрепления' },
+  en: { learning: 'Learning objectives', quiz: 'Quiz', thanks: 'Thank you!', review: 'Review questions' },
 };
 const lg = (l?: string | null) => (l && LABELS[l] ? l : 'kz');
 
@@ -111,20 +111,21 @@ export class PresentationService {
       this.logger.warn(`Презентация урока ${lessonId}: пустой ответ, попытка ${attempt}/2`);
     }
 
-    const slides = this.assemble(lesson, ai?.slides ?? []);
+    const slides = this.assemble(lesson, ai?.slides ?? [], Array.isArray(ai?.review) ? ai!.review : []);
     // TypeORM не любит jsonb-массив в partial update — приводим тип.
     await this.presRepo.update({ lessonId }, { status: 'ready', generationCost: cost, slides: slides as never });
   }
 
-  /** Собирает финальный набор: титул + цели + слайды по этапам + финал. */
-  private assemble(lesson: Lesson, aiSlides: any[]): Record<string, unknown>[] {
+  /** Собирает финальный набор: титул + цели обучения + этапы + закрепление + финал. */
+  private assemble(lesson: Lesson, aiSlides: any[], review: unknown[]): Record<string, unknown>[] {
     const t = LABELS[lg(lesson.language)];
     const out: Record<string, unknown>[] = [];
     out.push({
       kind: 'title', title: lesson.lessonTitle ?? '', subject: lesson.subject ?? '',
       grade: lesson.grade ?? null, lessonNumber: lesson.lessonNumber ?? '',
     });
-    out.push({ kind: 'objectives', title: t.objectives, bullets: lesson.lessonObjectives ?? [] });
+    // Слайд целей — цели ОБУЧЕНИЯ с кодами (ТЗ 2.1, #2), не цели урока.
+    out.push({ kind: 'objectives', title: t.learning, bullets: lesson.learningObjectives ?? [] });
 
     let explanationCount = 0;
     for (const s of Array.isArray(aiSlides) ? aiSlides : []) {
@@ -142,6 +143,10 @@ export class PresentationService {
       }
       out.push({ kind: 'content', stageType, title: String(s?.title ?? ''), bullets: Array.isArray(s?.bullets) ? s.bullets : [] });
     }
+
+    // Предпоследний слайд — закрепление: 5-6 открытых вопросов (ТЗ 2.1, #4).
+    const reviewQ = (Array.isArray(review) ? review : []).map((q) => String(q ?? '')).filter(Boolean).slice(0, 6);
+    if (reviewQ.length) out.push({ kind: 'review', title: t.review, questions: reviewQ });
 
     out.push({ kind: 'final', title: t.thanks });
     return out;

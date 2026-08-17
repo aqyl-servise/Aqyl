@@ -35,6 +35,21 @@ function logo(size = 40, onDark = false): string {
   );
 }
 
+// Декоративные фирменные линии (ТЗ 2.1, #3): по КРАЯМ слайда (углы), не поверх
+// текста. Текст живёт слева-по-центру, а линии — в правом-верхнем и
+// левом-нижнем углах, поэтому не мешают читаемости.
+function decor(): string {
+  return (
+    `<svg class="decor" width="1280" height="720" viewBox="0 0 1280 720" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">` +
+    `<line x1="1150" y1="0" x2="1280" y2="130" stroke="${C.violet}" stroke-width="7"/>` +
+    `<line x1="1200" y1="0" x2="1280" y2="80" stroke="${C.green}" stroke-width="7"/>` +
+    `<line x1="1245" y1="0" x2="1280" y2="35" stroke="${C.orange}" stroke-width="6"/>` +
+    `<line x1="0" y1="640" x2="100" y2="720" stroke="${C.indigo}" stroke-width="7"/>` +
+    `<line x1="0" y1="685" x2="55" y2="720" stroke="${C.orange}" stroke-width="6"/>` +
+    `</svg>`
+  );
+}
+
 interface Meta { topic: string; slideNo: number; total: number }
 
 function footer(meta: Meta, onDark: boolean): string {
@@ -44,7 +59,7 @@ function footer(meta: Meta, onDark: boolean): string {
 
 function slideTitle(s: any, meta: Meta): string {
   return (
-    `<section class="slide title">` +
+    `<section class="slide title">` + decor() +
     `<div class="brand-lg">${logo(64, true)}<span>Aqyl</span></div>` +
     `<h1>${esc(s.title)}</h1>` +
     `<div class="meta">${[esc(s.subject), s.grade != null ? esc(s.grade) + '-сынып' : '', s.lessonNumber ? '№ ' + esc(s.lessonNumber) : ''].filter(Boolean).join('  ·  ')}</div>` +
@@ -55,7 +70,7 @@ function slideTitle(s: any, meta: Meta): string {
 
 function slideFinal(s: any, meta: Meta): string {
   return (
-    `<section class="slide final">` +
+    `<section class="slide final">` + decor() +
     `<div class="brand-lg">${logo(64, true)}<span>Aqyl</span></div>` +
     `<h1>${esc(s.title)}</h1>` +
     footer(meta, true) +
@@ -71,7 +86,7 @@ function bulletsHtml(bullets: unknown): string {
 function slideContent(s: any, meta: Meta): string {
   const acc = ACCENT[String(s.stageType ?? 'content')] ?? C.indigo;
   return (
-    `<section class="slide content" style="--acc:${acc}">` +
+    `<section class="slide content" style="--acc:${acc}">` + decor() +
     `<div class="accent"></div>` +
     `<h2>${esc(s.title)}</h2>` +
     bulletsHtml(s.bullets) +
@@ -82,7 +97,7 @@ function slideContent(s: any, meta: Meta): string {
 
 function slideObjectives(s: any, meta: Meta): string {
   return (
-    `<section class="slide content" style="--acc:${C.indigo}">` +
+    `<section class="slide content" style="--acc:${C.indigo}">` + decor() +
     `<div class="accent"></div>` +
     `<h2>${esc(s.title)}</h2>` +
     `<ol class="obj">${(Array.isArray(s.bullets) ? s.bullets : []).map((b: unknown) => `<li>${esc(b)}</li>`).join('')}</ol>` +
@@ -94,11 +109,24 @@ function slideObjectives(s: any, meta: Meta): string {
 function slideQuiz(s: any, meta: Meta): string {
   const opts = Array.isArray(s.options) ? s.options : [];
   return (
-    `<section class="slide content quiz" style="--acc:${C.pink}">` +
+    `<section class="slide content quiz" style="--acc:${C.pink}">` + decor() +
     `<div class="accent"></div>` +
     `<h2>${esc(s.title)}</h2>` +
     `<div class="question">${esc(s.question)}</div>` +
     `<div class="opts">${opts.map((o: unknown) => `<div class="opt"><span class="b"></span>${esc(o)}</div>`).join('')}</div>` +
+    footer(meta, false) +
+    `</section>`
+  );
+}
+
+// Слайд закрепления (ТЗ 2.1, #4): 5-6 открытых вопросов, нумерованно, без вариантов.
+function slideReview(s: any, meta: Meta): string {
+  const qs = Array.isArray(s.questions) ? s.questions : [];
+  return (
+    `<section class="slide content" style="--acc:${C.orange}">` + decor() +
+    `<div class="accent"></div>` +
+    `<h2>${esc(s.title)}</h2>` +
+    `<ol class="obj review">${qs.map((q: unknown) => `<li>${esc(q)}</li>`).join('')}</ol>` +
     footer(meta, false) +
     `</section>`
   );
@@ -109,6 +137,7 @@ function renderSlide(s: any, meta: Meta): string {
     case 'title': return slideTitle(s, meta);
     case 'objectives': return slideObjectives(s, meta);
     case 'quiz': return slideQuiz(s, meta);
+    case 'review': return slideReview(s, meta);
     case 'final': return slideFinal(s, meta);
     default: return slideContent(s, meta);
   }
@@ -118,20 +147,26 @@ const CSS = `
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 body{font-family:'Inter',sans-serif;color:${C.ink}}
-.slide{width:1280px;height:720px;position:relative;overflow:hidden;page-break-after:always;padding:64px 72px 56px;display:flex;flex-direction:column;background:${C.paper}}
+.slide{width:1280px;height:720px;position:relative;overflow:hidden;page-break-after:always;padding:64px 72px 56px;display:flex;flex-direction:column;background:${C.paper};isolation:isolate}
 .slide:last-child{page-break-after:auto}
+/* Декор — под контентом (z-index:-1 в контексте .slide через isolation): текст, футер и
+   акцент-полоса остаются выше и сохраняют своё absolute-позиционирование (ТЗ 2.1, #3). */
+.decor{position:absolute;top:0;left:0;width:100%;height:100%;z-index:-1;pointer-events:none}
 .foot{position:absolute;left:72px;right:72px;bottom:26px;display:flex;justify-content:space-between;align-items:center;font-size:18px;font-family:'Inter'}
 .foot span{display:flex;align-items:center;gap:8px}
-/* Титул и финал — тёмный индиго */
-.title,.final{background:linear-gradient(135deg,${C.indigo} 0%,${C.indigoDeep} 100%);color:#fff;align-items:flex-start;justify-content:center}
-.final{align-items:center;text-align:center}
+/* Титул и финал — тёмный индиго, по центру (ТЗ 2.1, #1) */
+.title,.final{background:linear-gradient(135deg,${C.indigo} 0%,${C.indigoDeep} 100%);color:#fff;align-items:center;justify-content:center;text-align:center}
 .brand-lg{display:flex;align-items:center;gap:16px;font-family:'Nunito';font-weight:800;font-size:34px;margin-bottom:26px}
-.title h1{font-family:'Nunito';font-weight:800;font-size:60px;line-height:1.12;max-width:1000px;text-wrap:balance}
+.title h1{font-family:'Nunito';font-weight:800;font-size:60px;line-height:1.12;max-width:1080px;text-wrap:balance}
 .final h1{font-family:'Nunito';font-weight:800;font-size:88px}
 .title .meta{margin-top:28px;font-size:30px;color:#FFFFFFCC;font-weight:600}
 /* Контентные слайды — светлый фон, индиго-акцент */
 .content .accent{position:absolute;top:0;left:0;width:14px;height:100%;background:var(--acc)}
 .content h2{font-family:'Nunito';font-weight:800;font-size:46px;color:var(--acc);line-height:1.15;margin-bottom:30px;text-wrap:balance}
+/* Фирменная линия-разделитель под заголовком (ТЗ 2.1, #3) */
+.content h2::after{content:'';display:block;width:96px;height:6px;background:var(--acc);border-radius:3px;margin-top:14px}
+/* Закрепление — компактнее, чтобы 5-6 вопросов влезли крупно */
+.content ol.obj.review li{font-size:27px;margin-bottom:16px}
 .content ul{list-style:none}
 .content ul li{position:relative;font-size:31px;line-height:1.4;padding-left:44px;margin-bottom:20px}
 .content ul li::before{content:'';position:absolute;left:6px;top:14px;width:16px;height:16px;border-radius:50%;background:var(--acc)}
