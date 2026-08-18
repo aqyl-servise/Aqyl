@@ -89,14 +89,14 @@ export class LiteracyController {
     return this.service.deleteQuestion(id, qid, this.ctx(req));
   }
 
-  // Export: mode=student (без ключей) | teacher (с ключами).
+  // Export: mode=student (без ключей) | teacher (с ключами). Фирменный PDF (ТЗ 2.2 A).
   @Get('sets/:id/export')
   async export(@Param('id') id: string, @Query('mode') mode: string, @Req() req: AuthRequest, @Res() res: Response) {
     const teacher = mode === 'teacher';
-    const buf = await this.service.exportDocx(id, this.ctx(req), teacher ? 'teacher' : 'student');
+    const buf = await this.service.exportPdf(id, this.ctx(req), teacher ? 'teacher' : 'student');
     res.set({
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'Content-Disposition': `attachment; filename="literacy-${id}-${teacher ? 'teacher' : 'student'}.docx"`,
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="literacy-${id}-${teacher ? 'teacher' : 'student'}.pdf"`,
     });
     res.send(buf);
   }

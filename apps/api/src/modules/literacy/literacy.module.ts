@@ -7,13 +7,15 @@ import { LiteracyGeneratorService } from './literacy-generator.service';
 import { LiteracyController } from './literacy.controller';
 import { AiClientModule } from '../../services/ai-client.module';
 import { BillingModule } from '../billing/billing.module';
+import { PdfService } from '../lesson-plans/export/pdf.service';
 
 // Функциональная грамотность (PISA) — Срез 2. Base path `/literacy`.
 @Module({
   // BillingModule нужен, чтобы @UseGuards(SubscriptionGuard) резолвил SubscriptionService.
   imports: [TypeOrmModule.forFeature([LiteracySet, LiteracyQuestion]), AiClientModule, BillingModule],
   controllers: [LiteracyController],
-  providers: [LiteracyService, LiteracyGeneratorService],
+  // PdfService (из lesson-plans/export) — переиспользуем рендер раздаток для PDF функграмотности (ТЗ 2.2 A).
+  providers: [LiteracyService, LiteracyGeneratorService, PdfService],
   // Export the generator so the lesson generator can reuse it (next срез).
   exports: [LiteracyService, LiteracyGeneratorService],
 })

@@ -126,7 +126,7 @@ export default function LiteracyPage() {
   function download(mode: "student" | "teacher") {
     if (!token || !setId) return;
     fetch(`${API_URL}/literacy/sets/${setId}/export?mode=${mode}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => r.blob()).then((b) => { const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = `literacy-${mode}.docx`; a.click(); URL.revokeObjectURL(u); });
+      .then((r) => r.blob()).then((b) => { const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = `literacy-${mode}.pdf`; a.click(); URL.revokeObjectURL(u); });
   }
 
   if (!token) return <Center>{t.loading}</Center>;
