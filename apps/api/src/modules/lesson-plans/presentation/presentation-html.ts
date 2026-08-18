@@ -83,6 +83,19 @@ function bulletsHtml(bullets: unknown): string {
   return `<ul>${arr.map((b) => `<li>${esc(b)}</li>`).join('')}</ul>`;
 }
 
+// Блок дескрипторов под оцениваемым заданием (ТЗ 2.2, часть B): компактная плашка
+// внизу слайда, отделена от условия, помельче — дескрипторы вторичны к заданию.
+function descriptorsBlock(s: any): string {
+  const ds = Array.isArray(s.descriptors) ? s.descriptors : [];
+  if (!ds.length) return '';
+  return (
+    `<div class="desc">` +
+    `<ol>${ds.map((d: any) => `<li>${esc(d?.text)} <span class="dp">${esc(d?.points)}</span></li>`).join('')}</ol>` +
+    (s.descriptorsTotalText ? `<div class="desc-total">${esc(s.descriptorsTotalText)}</div>` : '') +
+    `</div>`
+  );
+}
+
 function slideContent(s: any, meta: Meta): string {
   const acc = ACCENT[String(s.stageType ?? 'content')] ?? C.indigo;
   return (
@@ -90,6 +103,7 @@ function slideContent(s: any, meta: Meta): string {
     `<div class="accent"></div>` +
     `<h2>${esc(s.title)}</h2>` +
     bulletsHtml(s.bullets) +
+    descriptorsBlock(s) +
     footer(meta, false) +
     `</section>`
   );
@@ -114,6 +128,7 @@ function slideQuiz(s: any, meta: Meta): string {
     `<h2>${esc(s.title)}</h2>` +
     `<div class="question">${esc(s.question)}</div>` +
     `<div class="opts">${opts.map((o: unknown) => `<div class="opt"><span class="b"></span>${esc(o)}</div>`).join('')}</div>` +
+    descriptorsBlock(s) +
     footer(meta, false) +
     `</section>`
   );
@@ -178,6 +193,14 @@ body{font-family:'Inter',sans-serif;color:${C.ink}}
 .quiz .opts{display:flex;flex-direction:column;gap:18px}
 .quiz .opt{display:flex;align-items:center;gap:16px;font-size:30px}
 .quiz .opt .b{width:26px;height:26px;border:3px solid var(--acc);border-radius:50%;flex:none}
+/* Дескрипторы под оцениваемым заданием (ТЗ 2.2 B): плашка внизу, отделена,
+   помельче основного текста. margin-top:auto прижимает к низу над футером. */
+.desc{margin-top:auto;margin-bottom:30px;background:#fff;border:2px solid ${C.paper};
+  border-left:8px solid var(--acc);border-radius:12px;padding:16px 24px 14px;box-shadow:0 2px 10px rgba(46,39,128,.06)}
+.desc ol{list-style:decimal;margin:0 0 0 26px;padding:0}
+.desc li{font-size:22px;line-height:1.32;margin-bottom:6px;color:${C.ink}}
+.desc .dp{color:var(--acc);font-weight:700}
+.desc-total{margin-top:8px;font-family:'Nunito';font-weight:800;font-size:22px;color:var(--acc)}
 `;
 
 export function presentationHtml(slides: Record<string, unknown>[], topic: string): string {

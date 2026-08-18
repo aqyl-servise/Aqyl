@@ -23,6 +23,25 @@ const LABELS: Record<string, { learning: string; quiz: string; thanks: string; r
 };
 const lg = (l?: string | null) => (l && LABELS[l] ? l : 'kz');
 
+// Дескрипторы на слайде (ТЗ 2.2, часть B): «Всего: N баллов» на языке урока.
+const POINTS_WORD: Record<string, { total: string; points: string }> = {
+  kz: { total: 'Барлығы', points: 'ұпай' },
+  ru: { total: 'Всего', points: 'баллов' },
+  en: { total: 'Total', points: 'points' },
+};
+function descTotalText(language: string, points: number): string {
+  const w = POINTS_WORD[language] ?? POINTS_WORD.kz;
+  return `${w.total}: ${points} ${w.points}`;
+}
+// Дескрипторы оцениваемого этапа (task/квиз) — берём ГОТОВЫЕ из плана, без AI (ТЗ 2.2 B.3).
+function mapDescriptors(stage: LessonStage): { text: string; points: number }[] {
+  return (Array.isArray(stage.descriptors) ? stage.descriptors : [])
+    .slice()
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map((d) => ({ text: String(d.text ?? ''), points: Number(d.points ?? 0) }))
+    .filter((d) => d.text);
+}
+
 @Injectable()
 export class PresentationService {
   private readonly logger = new Logger(PresentationService.name);
@@ -76,7 +95,8 @@ export class PresentationService {
   // ── Generation ──────────────────────────────────────────────────
   private async runPresentation(lesson: Lesson): Promise<void> {
     const lessonId = lesson.id;
-    const stages = await this.stageRepo.find({ where: { lessonId }, order: { order: 'ASC' } });
+    // Дескрипторы грузим вместе с этапами: их берём ГОТОВЫМИ на слайды (ТЗ 2.2 B).
+    const stages = await this.stageRepo.find({ where: { lessonId }, order: { order: 'ASC' }, relations: ['descriptors'] });
     const presStages: PresStageInput[] = stages.map((s) => ({
       stageType: s.stageType, stageName: s.stageName, teacherActions: s.teacherActions, studentActions: s.studentActions,
     }));
@@ -111,15 +131,24 @@ export class PresentationService {
       this.logger.warn(`Презентация урока ${lessonId}: пустой ответ, попытка ${attempt}/2`);
     }
 
-    const slides = this.assemble(lesson, ai?.slides ?? [], Array.isArray(ai?.review) ? ai!.review : []);
+    const slides = this.assemble(lesson, ai?.slides ?? [], Array.isArray(ai?.review) ? ai!.review : [], stages);
     // TypeORM не любит jsonb-массив в partial update — приводим тип.
     await this.presRepo.update({ lessonId }, { status: 'ready', generationCost: cost, slides: slides as never });
   }
 
   /** Собирает финальный набор: титул + цели обучения + этапы + закрепление + финал. */
-  private assemble(lesson: Lesson, aiSlides: any[], review: unknown[]): Record<string, unknown>[] {
-    const t = LABELS[lg(lesson.language)];
+  private assemble(lesson: Lesson, aiSlides: any[], review: unknown[], stages: LessonStage[]): Record<string, unknown>[] {
+    const language = lg(lesson.language);
+    const t = LABELS[language];
     const out: Record<string, unknown>[] = [];
+    // Очереди дескрипторов оцениваемых заданий (только task/квиз) в порядке этапов
+    // плана. AI отдаёт слайды в том же порядке — сопоставляем по типу (ТЗ 2.2 B.3).
+    const descQueue: Record<string, LessonStage[]> = { task: [], quiz: [] };
+    for (const st of Array.isArray(stages) ? stages : []) {
+      if ((st.stageType === 'task' || st.stageType === 'quiz') && st.isAssessed && mapDescriptors(st).length) {
+        descQueue[st.stageType].push(st);
+      }
+    }
     out.push({
       kind: 'title', title: lesson.lessonTitle ?? '', subject: lesson.subject ?? '',
       grade: lesson.grade ?? null, lessonNumber: lesson.lessonNumber ?? '',
@@ -131,9 +160,13 @@ export class PresentationService {
     for (const s of Array.isArray(aiSlides) ? aiSlides : []) {
       const stageType = String(s?.stageType ?? 'content');
       if (stageType === 'quiz' && Array.isArray(s?.questions) && s.questions.length) {
-        for (const q of s.questions) {
-          out.push({ kind: 'quiz', stageType: 'quiz', title: s.title || t.quiz, question: String(q?.q ?? ''), options: Array.isArray(q?.options) ? q.options : [] });
-        }
+        // Дескрипторы оцениваемого квиза — на ПЕРВОМ слайде-вопросе, без повтора.
+        const qStage = descQueue.quiz.shift();
+        s.questions.forEach((q: any, idx: number) => {
+          const slide: Record<string, unknown> = { kind: 'quiz', stageType: 'quiz', title: s.title || t.quiz, question: String(q?.q ?? ''), options: Array.isArray(q?.options) ? q.options : [] };
+          if (idx === 0 && qStage) { slide.descriptors = mapDescriptors(qStage); slide.descriptorsTotalText = descTotalText(language, qStage.points ?? 0); }
+          out.push(slide);
+        });
         continue;
       }
       // Объяснение — максимум 3 слайда (ТЗ 2.0): лишние отбрасываем.
@@ -141,7 +174,13 @@ export class PresentationService {
         if (explanationCount >= 3) continue;
         explanationCount++;
       }
-      out.push({ kind: 'content', stageType, title: String(s?.title ?? ''), bullets: Array.isArray(s?.bullets) ? s.bullets : [] });
+      const slide: Record<string, unknown> = { kind: 'content', stageType, title: String(s?.title ?? ''), bullets: Array.isArray(s?.bullets) ? s.bullets : [] };
+      // Дескрипторы под оцениваемым заданием (ТЗ 2.2 B): только task, из готовых данных этапа.
+      if (stageType === 'task') {
+        const tStage = descQueue.task.shift();
+        if (tStage) { slide.descriptors = mapDescriptors(tStage); slide.descriptorsTotalText = descTotalText(language, tStage.points ?? 0); }
+      }
+      out.push(slide);
     }
 
     // Предпоследний слайд — закрепление: 5-6 открытых вопросов (ТЗ 2.1, #4).

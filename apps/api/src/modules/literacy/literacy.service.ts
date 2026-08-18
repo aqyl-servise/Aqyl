@@ -5,6 +5,8 @@ import { LiteracySet, LiteracyType, LiteracyLang } from './entities/literacy-set
 import { LiteracyQuestion } from './entities/literacy-question.entity';
 import { LiteracyGeneratorService } from './literacy-generator.service';
 import { sum } from './engine/literacy-validator';
+import { PdfService } from '../lesson-plans/export/pdf.service';
+import { literacyHtml } from './export/literacy-html';
 
 export interface UserCtx { userId: string; schoolId: string | null; role?: string }
 
@@ -29,6 +31,7 @@ export class LiteracyService {
     @InjectRepository(LiteracySet) private readonly setRepo: Repository<LiteracySet>,
     @InjectRepository(LiteracyQuestion) private readonly qRepo: Repository<LiteracyQuestion>,
     private readonly generator: LiteracyGeneratorService,
+    private readonly pdf: PdfService,
   ) {}
 
   // ── CRUD ────────────────────────────────────────────────────────
@@ -152,67 +155,10 @@ export class LiteracyService {
     return set;
   }
 
-  // ── Export (.docx): student (no keys) / teacher (full) ──────────
-  async exportDocx(id: string, ctx: UserCtx, mode: 'student' | 'teacher'): Promise<Buffer> {
+  // ── Export (PDF, ТЗ 2.2 A): student (no keys) / teacher (full) ──
+  // Фирменный HTML→PDF, переиспользует дизайн-систему и рендер раздаток.
+  async exportPdf(id: string, ctx: UserCtx, mode: 'student' | 'teacher'): Promise<Buffer> {
     const set = await this.getOne(id, ctx);
-    const teacher = mode === 'teacher';
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, HeadingLevel } =
-      require('docx') as typeof import('docx');
-
-    const p = (text: string, o: { bold?: boolean; italics?: boolean; size?: number } = {}) =>
-      new Paragraph({ children: [new TextRun({ text: text ?? '', bold: o.bold, italics: o.italics, size: o.size ?? 20 })] });
-
-    const TYPE_LABEL: Record<string, string> = { reading: 'Читательская', math: 'Математическая', science: 'Естественно-научная' };
-    const children: (import('docx').Paragraph | import('docx').Table)[] = [
-      new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: `Функциональная грамотность — ${TYPE_LABEL[set.literacyType] ?? set.literacyType}`, bold: true })] }),
-      p(`Предмет: ${set.subject ?? '—'} · Класс: ${set.grade ?? '—'}${teacher ? ` · Всего баллов: ${set.totalPoints}` : ''}`),
-      p(''),
-      p('Стимульный материал', { bold: true, size: 24 }),
-    ];
-    (set.stimulusText ?? '').split('\n').forEach((line) => children.push(p(line)));
-
-    // Optional data tables (math/science)
-    const tables = (set.stimulusData as { tables?: { title?: string; columns?: string[]; rows?: string[][] }[] } | null)?.tables;
-    if (Array.isArray(tables)) {
-      const border = { style: BorderStyle.SINGLE, size: 4, color: '000000' };
-      const borders = { top: border, bottom: border, left: border, right: border };
-      for (const tbl of tables) {
-        if (tbl.title) children.push(p(tbl.title, { bold: true }));
-        const head = new TableRow({ children: (tbl.columns ?? []).map((c) => new TableCell({ borders, children: [p(c, { bold: true })] })) });
-        const rows = (tbl.rows ?? []).map((r) => new TableRow({ children: r.map((c) => new TableCell({ borders, children: [p(String(c))] })) }));
-        // Ширины в твипах, а не в процентах: docx 9.6.1 выдаёт для PERCENTAGE
-        // значение w:w="100%", которое схема OOXML не допускает, и Word
-        // считает файл повреждённым. TEXT_W — полоса набора Letter без полей.
-        const TEXT_W = 9360;
-        const colCount = Math.max(1, (tbl.columns ?? []).length);
-        const colW = Math.floor(TEXT_W / colCount);
-        children.push(new Table({
-          width: { size: colW * colCount, type: WidthType.DXA },
-          columnWidths: Array(colCount).fill(colW),
-          rows: [head, ...rows],
-        }));
-      }
-    }
-
-    children.push(p(''));
-    children.push(p('Вопросы', { bold: true, size: 24 }));
-    const fmt = (v: unknown): string => (typeof v === 'string' ? v : v == null ? '' : JSON.stringify(v));
-    (set.questions ?? []).forEach((q, i) => {
-      const meta = teacher ? `  [PISA ${q.pisaLevel} · ${q.points} б.]` : '';
-      children.push(p(`${i + 1}. ${q.questionText}${meta}`, { bold: true }));
-      if (Array.isArray(q.options)) {
-        (q.options as unknown[]).forEach((o, j) => children.push(p(`    ${String.fromCharCode(65 + j)}) ${fmt(o)}`)));
-      }
-      if (teacher) {
-        children.push(p(`    Ключ: ${fmt(q.correctAnswer)}`, { italics: true }));
-        if (q.answerCriteria) children.push(p(`    Критерий: ${q.answerCriteria}`, { italics: true }));
-      } else {
-        children.push(p('    Ответ: ______________________________'));
-      }
-    });
-
-    const doc = new Document({ sections: [{ children }] });
-    return Packer.toBuffer(doc);
+    return this.pdf.render(literacyHtml(set, mode));
   }
 }
