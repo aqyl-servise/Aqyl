@@ -21,12 +21,12 @@ type Plan = {
   popular?: boolean;
 };
 
-// Цены совпадают с backend (computeAmount): 2990₸/мес со скидками за период.
-// 3 мес = 2990×3×0.9 = 8073; 12 мес = 2990×12×0.8 = 28704.
+// Цены совпадают с backend (computeAmount): 5990₸/мес со скидками за период.
+// 3 мес = 5990×3×0.9 = 16173; 12 мес = 5990×12×0.8 = 57504.
 const PLANS: Plan[] = [
-  { months: 1, titleKey: "subM1", total: 2990, discountLabel: null },
-  { months: 3, titleKey: "subM3", total: 8073, discountLabel: "−10%", popular: true },
-  { months: 12, titleKey: "subM12", total: 28704, discountLabel: "−20%" },
+  { months: 1, titleKey: "subM1", total: 5990, discountLabel: null },
+  { months: 3, titleKey: "subM3", total: 16173, discountLabel: "−10%", popular: true },
+  { months: 12, titleKey: "subM12", total: 57504, discountLabel: "−20%" },
 ];
 
 function formatTenge(n: number): string {

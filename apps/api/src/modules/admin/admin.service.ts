@@ -15,7 +15,7 @@ import { Subscription } from "../billing/entities/subscription.entity";
 import { SmsService } from "../notifications/sms.service";
 
 /** Цена, проставляемая при ручной выдаче. Совпадает с PRICE_PER_MONTH в billing.service. */
-const ADMIN_GRANT_PRICE = 2990;
+const ADMIN_GRANT_PRICE = 5990;
 
 @Injectable()
 export class AdminService {
