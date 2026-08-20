@@ -39,13 +39,41 @@ export function getModelPrice(model: string): ModelPrice {
   return base ? PRICES[base] : FALLBACK;
 }
 
+/**
+ * Множители кэша промптов (Anthropic): запись в кэш дороже обычного входа,
+ * чтение — почти бесплатно. Ставка та же входная, меняется только множитель.
+ */
+export const CACHE_WRITE_MULTIPLIER = 1.25;
+export const CACHE_READ_MULTIPLIER = 0.1;
+
+/** Токены кэша одного вызова. Нулевые, если кэш не использовался. */
+export interface CacheTokens {
+  /** Записано в кэш (тариф ×1.25). */
+  write?: number;
+  /** Прочитано из кэша (тариф ×0.1). */
+  read?: number;
+}
+
+/**
+ * Входные токены, приведённые к обычному тарифу.
+ *
+ * При кэшировании usage.input_tokens — это ТОЛЬКО некэшированный остаток, а
+ * запись и чтение кэша идут отдельными полями по своим множителям. Без этого
+ * приведения учёт занижал бы расход на объём кэша.
+ */
+export function billableInputTokens(tokensIn: number, cache?: CacheTokens): number {
+  return tokensIn
+    + (cache?.write ?? 0) * CACHE_WRITE_MULTIPLIER
+    + (cache?.read ?? 0) * CACHE_READ_MULTIPLIER;
+}
+
 /** Стоимость вызова в долларах. */
-export function costUsd(model: string, tokensIn: number, tokensOut: number): number {
+export function costUsd(model: string, tokensIn: number, tokensOut: number, cache?: CacheTokens): number {
   const p = getModelPrice(model);
-  return (tokensIn * p.inputPerMTok + tokensOut * p.outputPerMTok) / 1_000_000;
+  return (billableInputTokens(tokensIn, cache) * p.inputPerMTok + tokensOut * p.outputPerMTok) / 1_000_000;
 }
 
 /** Стоимость вызова в тенге — для отчётности в кабинете. */
-export function costKzt(model: string, tokensIn: number, tokensOut: number): number {
-  return costUsd(model, tokensIn, tokensOut) * usdToKzt();
+export function costKzt(model: string, tokensIn: number, tokensOut: number, cache?: CacheTokens): number {
+  return costUsd(model, tokensIn, tokensOut, cache) * usdToKzt();
 }
