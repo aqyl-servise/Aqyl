@@ -14,7 +14,7 @@ export const TRIAL_LESSONS = 10;
 export const TRIAL_LABEL = `${TRIAL_LESSONS} полных уроков бесплатно`;
 
 /** Цена личной подписки, тенге в месяц. Должна совпадать с PRICE_PER_MONTH в apps/api. */
-export const PRICE_PER_MONTH = 2990;
+export const PRICE_PER_MONTH = 5990;
 
 /** Срок, в течение которого удалённый аккаунт можно восстановить (календарные дни). */
 export const ACCOUNT_RESTORE_DAYS = 14;
