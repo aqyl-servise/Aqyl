@@ -15,6 +15,17 @@ export interface AiRequestParams {
    */
   userId?: string | null;
   schoolId?: string | null;
+  /**
+   * Кэшировать стабильный префикс запроса (инструменты + системный промпт).
+   *
+   * Включать только там, где ОДИН И ТОТ ЖЕ префикс идёт подряд несколькими
+   * вызовами (раздатки: один лист = один вызов, листов за урок несколько).
+   * Кэш — префиксный: любое изменение байта выше точки останова обнуляет его,
+   * поэтому системный промпт для таких вызовов должен быть константой.
+   * Порог кэширования зависит от модели (Sonnet 4.6 — 1024 токена,
+   * Haiku 4.5 — 4096): более короткий префикс молча не кэшируется.
+   */
+  cachePrefix?: boolean;
 }
 
 export interface AiResponse {
@@ -22,6 +33,10 @@ export interface AiResponse {
   model: string;
   tokensIn: number;
   tokensOut: number;
+  /** Токены, записанные в кэш (тариф ×1.25). */
+  cacheWriteTokens?: number;
+  /** Токены, прочитанные из кэша (тариф ×0.1). */
+  cacheReadTokens?: number;
 }
 
 @Injectable()
@@ -38,6 +53,24 @@ export class AiClientService {
 
   get isConfigured(): boolean {
     return !!this.client;
+  }
+
+  /**
+   * Системный промпт как параметр запроса. При cachePrefix — блоком с точкой
+   * останова кэша: инструменты рендерятся перед системным промптом, поэтому
+   * одна метка кэширует их вместе.
+   */
+  private systemParam(params: AiRequestParams): string | Anthropic.TextBlockParam[] {
+    if (!params.cachePrefix) return params.systemPrompt;
+    return [{ type: 'text', text: params.systemPrompt, cache_control: { type: 'ephemeral' } }];
+  }
+
+  /** Токены кэша из ответа. Нули означают, что кэш не сработал. */
+  private cacheTokens(usage: Anthropic.Usage): { write: number; read: number } {
+    return {
+      write: usage.cache_creation_input_tokens ?? 0,
+      read: usage.cache_read_input_tokens ?? 0,
+    };
   }
 
   async request(params: AiRequestParams): Promise<AiResponse> {
@@ -68,7 +101,7 @@ export class AiClientService {
     const response = await this.client.messages.create({
       model,
       max_tokens: maxTokens,
-      system: params.systemPrompt,
+      system: this.systemParam(params),
       messages: params.messages,
     });
 
@@ -79,19 +112,22 @@ export class AiClientService {
 
     const tokensIn = response.usage.input_tokens;
     const tokensOut = response.usage.output_tokens;
+    const cache = this.cacheTokens(response.usage);
 
     // Учёт не в await: ответ уже получен и оплачен, ждать записи в отчёт
     // незачем, а её сбой не должен задерживать генерацию.
+    // В общий отчёт идёт ВЕСЬ обработанный вход: при кэше input_tokens — лишь
+    // некэшированный остаток, а кэш-токены приходят отдельными полями.
     void this.usage.record({
       userId: params.userId,
       schoolId: params.schoolId,
       actionType: params.action,
       model,
-      tokensIn,
+      tokensIn: tokensIn + cache.write + cache.read,
       tokensOut,
     });
 
-    return { content, model, tokensIn, tokensOut };
+    return { content, model, tokensIn, tokensOut, cacheWriteTokens: cache.write, cacheReadTokens: cache.read };
   }
 
   /**
@@ -113,7 +149,7 @@ export class AiClientService {
     const response = await this.client.messages.create({
       model,
       max_tokens: maxTokens,
-      system: params.systemPrompt,
+      system: this.systemParam(params),
       messages: params.messages,
       tools: [{ name: tool.name, description: tool.description, input_schema: tool.input_schema as never }],
       tool_choice: { type: 'tool', name: tool.name },
@@ -123,16 +159,20 @@ export class AiClientService {
     const data = block ? ((block as { input: unknown }).input as T) : null;
     const tokensIn = response.usage.input_tokens;
     const tokensOut = response.usage.output_tokens;
+    const cache = this.cacheTokens(response.usage);
+    if (params.cachePrefix) {
+      this.logger.debug(`${params.action}: кэш префикса — запись ${cache.write}, чтение ${cache.read} токенов`);
+    }
 
     void this.usage.record({
       userId: params.userId,
       schoolId: params.schoolId,
       actionType: params.action,
       model,
-      tokensIn,
+      tokensIn: tokensIn + cache.write + cache.read,
       tokensOut,
     });
 
-    return { data, model, tokensIn, tokensOut };
+    return { data, model, tokensIn, tokensOut, cacheWriteTokens: cache.write, cacheReadTokens: cache.read };
   }
 }

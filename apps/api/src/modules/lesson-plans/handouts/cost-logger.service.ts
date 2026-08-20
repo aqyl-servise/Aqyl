@@ -23,11 +23,15 @@ export class CostLoggerService {
 
   /** Записать стоимость вызова и вернуть её в тенге (0 при сбое записи). */
   async log(lessonId: string, operation: string, res: AiResponse): Promise<number> {
-    const cost = costKzt(res.model, res.tokensIn, res.tokensOut);
+    // Кэш промптов: input_tokens — только некэшированный остаток, поэтому
+    // токены записи/чтения кэша идут в расчёт по своим множителям, а в
+    // inputTokens пишем весь обработанный вход (иначе отчёт занижает объём).
+    const cache = { write: res.cacheWriteTokens ?? 0, read: res.cacheReadTokens ?? 0 };
+    const cost = costKzt(res.model, res.tokensIn, res.tokensOut, cache);
     try {
       await this.repo.save(this.repo.create({
         lessonId, operation, model: res.model,
-        inputTokens: res.tokensIn, outputTokens: res.tokensOut, costKzt: cost,
+        inputTokens: res.tokensIn + cache.write + cache.read, outputTokens: res.tokensOut, costKzt: cost,
       }));
     } catch (err) {
       this.logger.warn(`Не удалось записать стоимость (${operation}, урок ${lessonId}): ${(err as Error).message}`);

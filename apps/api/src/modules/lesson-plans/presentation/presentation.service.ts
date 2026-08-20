@@ -117,6 +117,7 @@ export class PresentationService {
       }, PRESENTATION_TOOL);
       cost += await this.cost.log(lessonId, 'presentation', {
         content: '', model: res.model, tokensIn: res.tokensIn, tokensOut: res.tokensOut,
+        cacheWriteTokens: res.cacheWriteTokens, cacheReadTokens: res.cacheReadTokens,
       });
       if (res.data && Array.isArray(res.data.slides) && res.data.slides.length) {
         const wrong = lesson.language === 'kz' ? findWrongTerms(flattenStrings(res.data), lesson.subject) : [];

@@ -186,12 +186,16 @@ export class HandoutsService {
       const maxTokens = attempt === 1 ? undefined : action === 'lesson_handout' ? 6500 : 3400;
       // Структурированный вывод: API отдаёт валидный JSON по схеме, парсить
       // текст (и ловить обрывы) не нужно — это и была причина пустых листов.
+      // cachePrefix: листы урока генерируются подряд с одним и тем же
+      // префиксом (схема emit_handout + константный системный промпт), поэтому
+      // со второго листа он читается из кэша по 0.1 тарифа.
       const res = await this.ai.requestTool<Record<string, any>>({
         action, systemPrompt: p.system, messages: [{ role: 'user', content: p.user }],
-        userId: lesson.userId, schoolId: lesson.schoolId, maxTokens,
+        userId: lesson.userId, schoolId: lesson.schoolId, maxTokens, cachePrefix: true,
       }, HANDOUT_TOOL);
       cost += await this.cost.log(lesson.id, 'handouts', {
         content: '', model: res.model, tokensIn: res.tokensIn, tokensOut: res.tokensOut,
+        cacheWriteTokens: res.cacheWriteTokens, cacheReadTokens: res.cacheReadTokens,
       });
       if (res.data && parsedHandoutHasContent(res.data, type)) {
         // B.3 (ТЗ 1.5.1): русские термины из глоссария в казахском листе → повтор.
