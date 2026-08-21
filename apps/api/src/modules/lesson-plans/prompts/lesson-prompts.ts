@@ -207,11 +207,21 @@ export function descriptorsFromTaskPrompt(
   taskText: string,
   ctx: LessonContext,
   problems: string[] = [],
+  // Число пронумерованных заданий в приложении (ТЗ №2, задача 3): дескриптор
+  // обязан покрыть каждое. Если заданий больше пунктов — объединять близкие.
+  taskCount = 0,
 ): { system: string; user: string } {
   const correction = problems.length
     ? `\nПРЕДЫДУЩАЯ ПОПЫТКА ОТКЛОНЕНА автоматической проверкой:\n` +
       problems.map((p) => `— ${p}`).join('\n') +
       `\nИсправь это: описывай ровно то, что есть в задании ниже.\n`
+    : '';
+
+  const coverageRule = taskCount > 1
+    ? `ПОКРЫТИЕ: в задании ${taskCount} пронумерованных подзаданий — КАЖДОЕ должно ` +
+      `быть отражено хотя бы в одном пункте дескриптора. Если подзаданий больше, ` +
+      `чем пунктов, объединяй близкие в один пункт (не отбрасывай), напр. ` +
+      `«Produces one 'wish' clause and one relative clause with 'why' (2)».\n`
     : '';
 
   return {
@@ -223,6 +233,7 @@ export function descriptorsFromTaskPrompt(
       `Предмет: ${ctx.subject ?? '—'}, класс: ${ctx.grade ?? '—'}, тема: ${ctx.lessonTitle ?? '—'}.\n` +
       `Цели урока: ${ctx.lessonObjectives.join('; ') || '—'}\n` +
       correction +
+      coverageRule +
       `ЗАПРЕЩЕНО:\n` +
       `— упоминать текст/мәтін для чтения, если его в задании нет;\n` +
       `— называть количество частей, которого в задании нет («all three sections» при двух);\n` +
