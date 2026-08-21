@@ -5,6 +5,7 @@ import { Language, translations } from "../../lib/translations";
 import { AppLayout, type NavItem } from "../layout/app-layout";
 import { SchoolProvider } from "../../contexts/school-context";
 import { SchoolSwitcher } from "./school-switcher";
+import { B2cPanel } from "./b2c-panel";
 import { AdminDashboard } from "./admin-dashboard";
 import { TeacherListPanel } from "./teacher-list-panel";
 import { SchoolAnalyticsPanel } from "./school-analytics-panel";
@@ -79,10 +80,13 @@ function AdminAppContent({ token, user, language, setLanguage, onLogout }: {
       {section === "users" && (user.role === "admin" || user.role === "principal") && <UsersPanel token={token} language={language} t={t} currentUserId={user.id} />}
       {section === "registrations" && (user.role === "admin" || user.role === "principal") && <RegistrationsPanel token={token} language={language} t={t} />}
       {section === "schools" && user.role === "admin" && <SchoolsPanel token={token} language={language} t={t} />}
+      {section === "b2c" && user.role === "admin" && <B2cPanel token={token} />}
       {section === "sor-soch" && <SorSochPanel token={token} language={language} t={t} isAdmin={true} userRole={user.role} />}
       {section === "fl" && <FLAdminPanel token={token} language={language} userRole={user.role} />}
       {section === "rating" && <RatingAdminPanel token={token} language={language} userRole={user.role} />}
-      {section === "ai-usage" && <AiUsagePanelAdmin token={token} language={language} />}
+      {/* role обязателен: по нему панель показывает себестоимость генерации и
+          кнопку очистки KMZh-кэша — без пропа обе секции молча не отрисуются. */}
+      {section === "ai-usage" && <AiUsagePanelAdmin token={token} language={language} role={user.role} />}
       {section === "schedule-admin" && <ScheduleAdminPanel token={token} language={language} userRole={user.role} />}
       {section === "questionnaires" && <QuestionnairesPanel token={token} language={language} userRole={user.role} />}
     </AppLayout>
@@ -146,6 +150,9 @@ function getNavItemsForRole(role: string, t: Record<string, string>, isGlobalAdm
       { key: "users", label: t.nav_users, icon: "users" },
       { key: "registrations", label: t.nav_registrations, icon: "inbox" },
       { key: "schools", label: t.nav_schools, icon: "bank" },
+      // Воронка B2C. Только у глобального админа: у B2C-учителей нет школы,
+      // и школьным ролям эта воронка не подчинена.
+      { key: "b2c", label: "B2C", icon: "users" },
     ];
   }
   return baseNav;

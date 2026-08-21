@@ -93,6 +93,16 @@ export class AdminController {
     return this.service.revokeSubscription(id, req.user.id);
   }
 
+  /**
+   * Воронка B2C: список и сводка. Только `admin` — это платформенная воронка,
+   * школьного разреза у неё нет, директору и завучу показывать нечего.
+   */
+  @Get("b2c")
+  @Roles("admin")
+  getB2cFunnel() {
+    return this.service.getB2cFunnel();
+  }
+
   @Get("security-audit")
   @Roles("admin")
   getSecurityAuditLog(

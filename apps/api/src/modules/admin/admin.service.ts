@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import * as bcrypt from "bcryptjs";
-import { Repository } from "typeorm";
+import { In, Repository } from "typeorm";
 import { Teacher } from "../teachers/entities/teacher.entity";
 import { Classroom } from "../schools/entities/classroom.entity";
 import { Student } from "../schools/entities/student.entity";
@@ -373,5 +373,97 @@ export class AdminService {
       order: { createdAt: "DESC" },
       take: limit,
     });
+  }
+
+  /**
+   * Воронка B2C: список учителей и сводка.
+   *
+   * Отдельно от школьных панелей: у B2C-учителей нет schoolId, и школьные
+   * метрики (классы, ученики) для них бессмысленны. Здесь показывается то, что
+   * для этой воронки и есть предмет управления — подписка, пробный период,
+   * сколько уроков сгенерировано, сколько заплачено.
+   *
+   * Действия над пользователем (выдать/снять подписку, перевести воронку,
+   * сбросить пароль, удалить) уже есть отдельными ручками admin-контроллера.
+   */
+  async getB2cFunnel(): Promise<{
+    summary: {
+      users: number; active: number; trial: number; expired: number;
+      paidTotalKzt: number; payments: number; mrrKzt: number;
+    };
+    users: Array<{
+      id: string; email: string; fullName: string; phone: string | null; subject: string | null;
+      status: string; createdAt: Date; onboardingCompleted: boolean;
+      trialEndsAt: Date | null; trialActive: boolean;
+      subscriptionStatus: string | null; currentPeriodEnd: Date | null;
+      pricePerMonth: number | null; cancelAtPeriodEnd: boolean;
+      lessons: number; paidKzt: number;
+    }>;
+  }> {
+    const teachers = await this.teacherRepo.find({
+      where: { registrationSource: 'b2c' },
+      order: { createdAt: 'DESC' },
+    });
+    if (!teachers.length) {
+      return { summary: { users: 0, active: 0, trial: 0, expired: 0, paidTotalKzt: 0, payments: 0, mrrKzt: 0 }, users: [] };
+    }
+    const ids = teachers.map((t) => t.id);
+
+    const subs = await this.subscriptionRepo.find({ where: { teacherId: In(ids) } });
+    const subByTeacher = new Map(subs.map((s) => [s.teacherId, s]));
+
+    // Уроки и платежи считаем агрегатами: по строке на учителя, а не выборкой.
+    const em = this.teacherRepo.manager;
+    const lessonRows = await em.createQueryBuilder()
+      .select('l."userId"', 'userId').addSelect('COUNT(*)', 'n')
+      .from('lessons', 'l').where('l."userId" IN (:...ids)', { ids })
+      .groupBy('l."userId"').getRawMany<{ userId: string; n: string }>();
+    const lessonsBy = new Map(lessonRows.map((r) => [r.userId, Number(r.n)]));
+
+    const payRows = await em.createQueryBuilder()
+      .select('p."teacherId"', 'teacherId')
+      .addSelect('COALESCE(SUM(p."amount"), 0)', 'sum').addSelect('COUNT(*)', 'n')
+      .from('payments', 'p')
+      .where('p."teacherId" IN (:...ids) AND p."status" = :ok', { ids, ok: 'paid' })
+      .groupBy('p."teacherId"').getRawMany<{ teacherId: string; sum: string; n: string }>();
+    const paidBy = new Map(payRows.map((r) => [r.teacherId, { sum: Number(r.sum), n: Number(r.n) }]));
+
+    const now = new Date();
+    const users = teachers.map((t) => {
+      const s = subByTeacher.get(t.id) ?? null;
+      const pay = paidBy.get(t.id) ?? { sum: 0, n: 0 };
+      // Пробный период: без подписки действует Teacher.trialEndsAt, с подпиской
+      // в статусе trial — её собственный срок (см. subscription.service).
+      const trialEnds = s?.status === 'trial' ? s.trialEndsAt ?? t.trialEndsAt ?? null : t.trialEndsAt ?? null;
+      return {
+        id: t.id, email: t.email, fullName: t.fullName,
+        phone: t.phone ?? null, subject: t.subject ?? null,
+        status: t.status, createdAt: t.createdAt, onboardingCompleted: t.onboardingCompleted,
+        trialEndsAt: trialEnds, trialActive: !!trialEnds && trialEnds > now,
+        subscriptionStatus: s?.status ?? null,
+        currentPeriodEnd: s?.currentPeriodEnd ?? null,
+        pricePerMonth: s?.pricePerMonth ?? null,
+        cancelAtPeriodEnd: s?.cancelAtPeriodEnd ?? false,
+        lessons: lessonsBy.get(t.id) ?? 0,
+        paidKzt: pay.sum,
+      };
+    });
+
+    const active = users.filter((u) => u.subscriptionStatus === 'active').length;
+    return {
+      summary: {
+        users: users.length,
+        active,
+        trial: users.filter((u) => u.trialActive && u.subscriptionStatus !== 'active').length,
+        expired: users.filter((u) => u.subscriptionStatus === 'expired' || u.subscriptionStatus === 'cancelled').length,
+        paidTotalKzt: users.reduce((a, u) => a + u.paidKzt, 0),
+        payments: [...paidBy.values()].reduce((a, p) => a + p.n, 0),
+        // MRR по фактической цене активных подписок, а не по прайсу: часть
+        // выдана вручную и могла быть заведена по прежней цене.
+        mrrKzt: users.filter((u) => u.subscriptionStatus === 'active')
+          .reduce((a, u) => a + (u.pricePerMonth ?? 0), 0),
+      },
+      users,
+    };
   }
 }
