@@ -214,3 +214,21 @@ export function noteReferenceGaps(note: string, cardText: string): string[] {
   if ([...named].some(inCard)) return [];
   return [...named];
 }
+
+// ── Дробные баллы в критерии оценивания (ТЗ №2, задача 6) ────────────
+//
+// «Part 1: 2 pts (0.4 per correct sentence)» — учителю неудобно считать для
+// БЖБ. Ловим дробь ТОЛЬКО рядом со словом-баллом или «per/each/за/үшін»:
+// наивная проверка на любую десятичную била бы по математическим ответам
+// («47,35+12,6») и по диапазонам ответов («6/5-6 correct = 3 pts»).
+const FRACTION_SRC = '\\d*[.,]\\d+|\\d+\\s*/\\s*\\d+';
+const POINT_WORDS = 'pts?|points?|балл\\w*|ұпай\\w*';
+const FRACTIONAL_POINTS = new RegExp(
+  `(?:${FRACTION_SRC})\\s*(?:${POINT_WORDS}|per\\b|each\\b|за\\b|үшін\\b)`,
+  'iu',
+);
+
+/** Есть ли в критерии дробные баллы (0.5 pt, 1/2 балл, 0.4 per correct). */
+export function hasFractionalPoints(criteria: string): boolean {
+  return FRACTIONAL_POINTS.test(String(criteria ?? ''));
+}
