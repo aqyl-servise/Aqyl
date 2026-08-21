@@ -10,7 +10,7 @@ import { Handout, HandoutType } from '../entities/handout.entity';
 import { HandoutPackage } from '../entities/handout-package.entity';
 import { AiClientService } from '../../../services/ai-client.service';
 import { CostLoggerService } from './cost-logger.service';
-import { handoutTypeFor, isLeveled, handoutAction, parsedHandoutHasContent, taskFactsFromParsed, deriveStageFromHandout, levelFacts } from './handout-content';
+import { handoutTypeFor, isLeveled, handoutAction, parsedHandoutHasContent, taskFactsFromParsed, deriveStageFromHandout, levelFacts, extractNumberedTasks } from './handout-content';
 import { Presentation } from '../entities/presentation.entity';
 import { buildHandoutPrompt, HANDOUT_TOOL } from './handout-prompts';
 import { descriptorsFromTaskPrompt, leveledDescriptorsPrompt } from '../prompts/lesson-prompts';
@@ -18,7 +18,7 @@ import { descriptorsFromTaskPrompt, leveledDescriptorsPrompt } from '../prompts/
 /** Дескрипторы по уровням дифференцированного задания (ТЗ №2, задача 2). */
 type Descr = { text: string; points: number };
 type LevelDescriptors = { A: Descr[]; B: Descr[]; C: Descr[] };
-import { findDescriptorProblems } from '../engine/descriptor-validator';
+import { findDescriptorProblems, uncoveredTaskTargets } from '../engine/descriptor-validator';
 import { parseRequiredElements, missingElements } from '../engine/objective-elements';
 import { adjustDescriptorSum } from '../engine/points-engine';
 import { findWrongTerms, flattenStrings } from '../prompts/term-glossary';
@@ -440,13 +440,17 @@ export class HandoutsService {
       facts.taskText,
     ].filter(Boolean).join(' ');
 
+    // Пронумерованные задания приложения (ТЗ №2, задача 3): каждое обязано быть
+    // отражено в дескрипторе. Групповая работа с 4 заданиями теряла балл за 4-е.
+    const tasks = extractNumberedTasks(parsed, type);
+
     let cost = 0;
     let items: { text: string; points: number }[] = [];
     let problems: string[] = [];
 
     for (let attempt = 1; attempt <= 3; attempt++) {
       const p = descriptorsFromTaskPrompt(
-        { stageType: stage.stageType, toolId: stage.toolId }, pts, facts.taskText, ctx, problems,
+        { stageType: stage.stageType, toolId: stage.toolId }, pts, facts.taskText, ctx, problems, tasks.length,
       );
       const res = await this.ai.request({
         action: 'lesson_descriptors', systemPrompt: p.system,
@@ -466,9 +470,15 @@ export class HandoutsService {
       const found = findDescriptorProblems(cand, {
         hasText: facts.hasText, partCount: facts.partCount, context,
       });
-      if (!found.length) break;
+      // Непокрытые целевые метки заданий — тоже расхождение (ТЗ №2, задача 3).
+      const uncovered = uncoveredTaskTargets(tasks, cand.map((d) => d.text).join(' '));
+      const problemDetails = [
+        ...found.map((f) => f.detail),
+        ...uncovered.map((u) => `задание с «${u}» не отражено в дескрипторе`),
+      ];
+      if (!problemDetails.length) break;
 
-      problems = found.map((f) => f.detail);
+      problems = problemDetails;
       if (attempt === 3) {
         this.logger.warn(
           `Дескрипторы урока ${lesson.id}, этап ${stage.id} (${stage.stageType}): ` +

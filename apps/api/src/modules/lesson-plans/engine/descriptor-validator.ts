@@ -94,6 +94,45 @@ export function namedConstructions(text: string): string[] {
   return [...found];
 }
 
+// ── Покрытие пронумерованных заданий дескриптором (ТЗ №2, задача 3) ──
+//
+// Целевые метки задания: именованные конструкции (выше) + отдельные слова-цели
+// семейства условных предложений и придаточных, которые часто стоят в задании
+// капсом или в кавычках («use UNLESS», «relative clause with 'why'»).
+const TARGET_WORDS = [
+  /(?<!\p{L})(unless|wish|if only|why)(?!\p{L})/giu,
+  /(?<!\p{L})relative\s+clauses?(?!\p{L})/giu,
+];
+
+/** Целевые метки одного задания — по ним проверяем покрытие дескриптором. */
+export function taskTargets(text: string): string[] {
+  const out = new Set(namedConstructions(text));
+  for (const re of TARGET_WORDS) for (const m of text.matchAll(re)) out.add(norm(m[0]));
+  return [...out];
+}
+
+/**
+ * Целевые метки заданий, НЕ отражённые в дескрипторе (ТЗ №2, задача 3).
+ * Сравнение по границам слова с учётом Unicode (\b в JS на кириллице не
+ * работает). Пустой массив — каждая цель заданий встречается в дескрипторе.
+ */
+export function uncoveredTaskTargets(tasks: string[], descriptorsText: string): string[] {
+  const hay = descriptorsText.toLowerCase().replace(/\s+/g, ' ');
+  const targets = new Set<string>();
+  for (const t of tasks) for (const g of taskTargets(t)) targets.add(g);
+  // Ключ покрытия: для «relative clause», «wish clauses» проверяем по головному
+  // слову (relative, wish) — дескриптор редко повторяет фразу дословно, а слово
+  // почти всегда есть. Одиночные метки (unless, why) — как есть.
+  const coverageKey = (g: string) => g.replace(/\s+(clauses?|forms?|tenses?|structures?)$/i, '').trim() || g;
+  const covered = (key: string) => {
+    const esc = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`(?<!\\p{L})${esc}(?!\\p{L})`, 'iu').test(hay);
+  };
+  const missing = new Set<string>();
+  for (const g of targets) if (!covered(coverageKey(g))) missing.add(coverageKey(g));
+  return [...missing];
+}
+
 // ── Сводная проверка ─────────────────────────────────────────────────
 export interface DescriptorProblem {
   kind: 'text' | 'parts' | 'construction';

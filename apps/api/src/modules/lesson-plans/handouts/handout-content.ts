@@ -136,6 +136,31 @@ function collectText(v: unknown, out: string[] = []): string[] {
 }
 
 /**
+ * Пронумерованные задания раздатки (ТЗ №2, задача 3): «Task 1 …», «1. …»,
+ * «Задание 2 …». Групповая/парная работа держит их в items секции-списка или
+ * в вопросах. Нужны, чтобы проверить: каждое отражено в дескрипторе.
+ */
+const NUM_ITEM = /^\s*(?:task|тапсырма|задание|сұрақ)?\s*\d+\s*[.):]/i;
+
+export function extractNumberedTasks(parsed: Record<string, any> | null, type: HandoutType): string[] {
+  const o = parsed ?? {};
+  const blocks: Record<string, any>[] = isLeveled(type)
+    ? ['A', 'B', 'C'].map((k) => (o.levels?.[k] ?? {}) as Record<string, any>)
+    : [(o.student ?? {}) as Record<string, any>];
+
+  const tasks: string[] = [];
+  for (const b of blocks) {
+    for (const s of b.sections ?? []) {
+      for (const it of s.items ?? []) if (NUM_ITEM.test(String(it))) tasks.push(String(it).trim());
+      // Задания иногда пронумерованы строками внутри body.
+      for (const line of String(s.body ?? '').split('\n')) if (NUM_ITEM.test(line)) tasks.push(line.trim());
+    }
+    for (const q of b.questions ?? []) if (q?.q) tasks.push(String(q.q).trim());
+  }
+  return tasks;
+}
+
+/**
  * Факты одного уровня (A/B/C) уровневого задания — для дескриптора этого
  * уровня (ТЗ №2, задача 2). Считаются по ученической части КАРТОЧКИ, чтобы
  * дескриптор ссылался только на её содержимое, не на другие уровни.
