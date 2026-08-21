@@ -14,7 +14,7 @@ import { handoutTypeFor, isLeveled, handoutAction, parsedHandoutHasContent, task
 import { Presentation } from '../entities/presentation.entity';
 import { buildHandoutPrompt, HANDOUT_TOOL } from './handout-prompts';
 import { descriptorsFromTaskPrompt, leveledDescriptorsPrompt } from '../prompts/lesson-prompts';
-import { findDescriptorProblems, uncoveredTaskTargets } from '../engine/descriptor-validator';
+import { findDescriptorProblems, uncoveredTaskTargets, noteReferenceGaps } from '../engine/descriptor-validator';
 import { findRewriteProblems, parseAnswerKeys, RewriteProblem } from '../engine/rewrite-validator';
 import { parseRequiredElements, missingElements } from '../engine/objective-elements';
 import { adjustDescriptorSum } from '../engine/points-engine';
@@ -222,15 +222,19 @@ export class HandoutsService {
         const wrong = lesson.language === 'kz' ? findWrongTerms(flattenStrings(res.data), lesson.subject) : [];
         // Задания rewrite/transform: конструкция уже в условии / ключ = условию (ТЗ №2, задача 4).
         const rewrite = this.rewriteProblemsInParsed(res.data, type);
-        if ((!wrong.length && !rewrite.length) || attempt === 2) {
+        // Подсказка учителю называет формы, которых нет в задании/ключе (ТЗ №2, задача 5).
+        const notes = this.noteProblemsInParsed(res.data, type);
+        if ((!wrong.length && !rewrite.length && !notes.length) || attempt === 2) {
           parsed = res.data;
           if (wrong.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: остались русские термины [${wrong.join(', ')}]`);
           if (rewrite.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: невалидные трансформации — ${rewrite.map((r) => r.detail).join('; ')}`);
+          if (notes.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: подсказка не по заданию — ${notes.join('; ')}`);
           break;
         }
         const reasons = [
           wrong.length ? `русские термины [${wrong.join(', ')}]` : '',
           rewrite.length ? `трансформации: ${rewrite.map((r) => r.detail).join('; ')}` : '',
+          notes.length ? `подсказка: ${notes.join('; ')}` : '',
         ].filter(Boolean).join('; ');
         this.logger.warn(`Лист «${type}» урока ${lesson.id}: ${reasons}, повтор`);
         continue;
@@ -290,6 +294,29 @@ export class HandoutsService {
       }
       const keys = parseAnswerKeys(String(b.teacherExtra?.answers ?? ''));
       out.push(...findRewriteProblems(items, keys));
+    }
+    return out;
+  }
+
+  /**
+   * Подсказки учителю (notes), называющие формы/конструкции, которых нет в
+   * задании или ключе этой карточки (ТЗ №2, задача 5). Обходит блоки уровней
+   * или ученический; текст карточки = задание + ключ (answers).
+   */
+  private noteProblemsInParsed(parsed: Record<string, any>, type: HandoutType): string[] {
+    const blocks: Record<string, any>[] = isLeveled(type) && parsed.levels
+      ? ['A', 'B', 'C'].map((k) => (parsed.levels[k] ?? {}) as Record<string, any>)
+      : [{ ...(parsed.student ?? {}), teacherExtra: parsed.teacherExtra }];
+    const out: string[] = [];
+    for (const b of blocks) {
+      const note = String(b.teacherExtra?.notes ?? '').trim();
+      if (!note) continue;
+      const cardText = [
+        JSON.stringify({ instructions: b.instructions, sections: b.sections, questions: b.questions }),
+        String(b.teacherExtra?.answers ?? ''),
+      ].join(' ');
+      const gaps = noteReferenceGaps(note, cardText);
+      if (gaps.length) out.push(`«${note}» → [${gaps.join(', ')}] нет в задании`);
     }
     return out;
   }
