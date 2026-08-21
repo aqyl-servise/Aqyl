@@ -10,10 +10,14 @@ import { Handout, HandoutType } from '../entities/handout.entity';
 import { HandoutPackage } from '../entities/handout-package.entity';
 import { AiClientService } from '../../../services/ai-client.service';
 import { CostLoggerService } from './cost-logger.service';
-import { handoutTypeFor, isLeveled, handoutAction, parsedHandoutHasContent, taskFactsFromParsed, deriveStageFromHandout } from './handout-content';
+import { handoutTypeFor, isLeveled, handoutAction, parsedHandoutHasContent, taskFactsFromParsed, deriveStageFromHandout, levelFacts } from './handout-content';
 import { Presentation } from '../entities/presentation.entity';
 import { buildHandoutPrompt, HANDOUT_TOOL } from './handout-prompts';
-import { descriptorsFromTaskPrompt } from '../prompts/lesson-prompts';
+import { descriptorsFromTaskPrompt, leveledDescriptorsPrompt } from '../prompts/lesson-prompts';
+
+/** Дескрипторы по уровням дифференцированного задания (ТЗ №2, задача 2). */
+type Descr = { text: string; points: number };
+type LevelDescriptors = { A: Descr[]; B: Descr[]; C: Descr[] };
 import { findDescriptorProblems } from '../engine/descriptor-validator';
 import { parseRequiredElements, missingElements } from '../engine/objective-elements';
 import { adjustDescriptorSum } from '../engine/points-engine';
@@ -231,10 +235,12 @@ export class HandoutsService {
     // раздаток), здесь уточняются по факту: правка идёт в ту же таблицу, из
     // которой читают КМЖ, презентация и сам лист.
     let descriptors: { text: string; points: number }[] | undefined;
+    let perLevel: LevelDescriptors | undefined;
     if (stage.isAssessed) {
       if (parsed) {
         const r = await this.refreshDescriptors(lesson, stage, parsed, type);
         descriptors = r.descriptors;
+        perLevel = r.perLevel;
         cost += r.cost;
       } else {
         descriptors = (await this.descRepo.find({ where: { stageId: stage.id }, order: { order: 'ASC' } }))
@@ -252,7 +258,7 @@ export class HandoutsService {
     }
 
     const handout = parsed
-      ? this.buildHandout(lesson.id, stage, order, type, parsed, descriptors)
+      ? this.buildHandout(lesson.id, stage, order, type, parsed, descriptors, perLevel)
       : this.buildErrorHandout(lesson.id, stage, order, type);
     return { handout, cost };
   }
@@ -412,8 +418,13 @@ export class HandoutsService {
     stage: LessonStage,
     parsed: Record<string, any>,
     type: HandoutType,
-  ): Promise<{ descriptors: { text: string; points: number }[]; cost: number }> {
+  ): Promise<{ descriptors: { text: string; points: number }[]; cost: number; perLevel?: LevelDescriptors }> {
     const pts = stage.points ?? 1;
+    // Уровневое задание (ТЗ №2, задача 2): отдельный дескриптор на A/B/C для
+    // карточек + обобщённый для таблицы (его читают КМЖ и презентация).
+    if (isLeveled(type) && parsed.levels) {
+      return this.refreshLeveledDescriptors(lesson, stage, parsed, pts);
+    }
     const facts = taskFactsFromParsed(parsed, type);
     const ctx = {
       subject: lesson.subject, grade: lesson.grade, lessonTitle: lesson.lessonTitle,
@@ -485,6 +496,84 @@ export class HandoutsService {
     return { descriptors: finalItems, cost };
   }
 
+  /**
+   * Уровневые дескрипторы (ТЗ №2, задача 2): по одному набору на карточку
+   * A/B/C + обобщённый для таблицы. Один AI-вызов на все уровни, до 2 повторов
+   * при расхождениях кодовой проверки (пункт ссылается на чужой уровень / на
+   * текст, которого нет). Обобщённый идёт в lesson_descriptors — его читают
+   * КМЖ и презентация (решение: показывать один обобщённый). Наборы уровней
+   * возвращаются для карточек в jsonb раздатки.
+   */
+  private async refreshLeveledDescriptors(
+    lesson: Lesson,
+    stage: LessonStage,
+    parsed: Record<string, any>,
+    pts: number,
+  ): Promise<{ descriptors: { text: string; points: number }[]; cost: number; perLevel: LevelDescriptors }> {
+    const ctx = {
+      subject: lesson.subject, grade: lesson.grade, lessonTitle: lesson.lessonTitle,
+      languageFocus: lesson.languageFocus ?? null, language: lesson.language ?? 'kz',
+      learningObjectives: lesson.learningObjectives ?? [], lessonObjectives: lesson.lessonObjectives ?? [],
+    };
+    const facts = { A: levelFacts(parsed, 'A'), B: levelFacts(parsed, 'B'), C: levelFacts(parsed, 'C') };
+    const themeCtx = [lesson.lessonTitle, lesson.languageFocus, ...(lesson.learningObjectives ?? []), ...(lesson.lessonObjectives ?? [])]
+      .filter(Boolean).join(' ');
+
+    type Sets = { A: any[]; B: any[]; C: any[]; general: any[] };
+    let cost = 0;
+    let got: Sets | null = null;
+    let problems: string[] = [];
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const p = leveledDescriptorsPrompt(
+        { A: facts.A.taskText, B: facts.B.taskText, C: facts.C.taskText }, pts, ctx, problems,
+      );
+      const res = await this.ai.request({
+        action: 'lesson_descriptors', systemPrompt: p.system, messages: [{ role: 'user', content: p.user }],
+        userId: lesson.userId, schoolId: lesson.schoolId,
+      });
+      cost += await this.cost.log(lesson.id, 'handouts', res);
+      const parsedSets = this.parseJson<Sets>(res.content);
+      const ok = parsedSets && (['A', 'B', 'C', 'general'] as const).every((k) => Array.isArray(parsedSets[k]) && parsedSets[k].some((d) => d?.text?.trim()));
+      if (!ok) { problems = ['ответ не содержал все четыре набора дескрипторов']; continue; }
+      got = parsedSets!;
+
+      // Каждый уровень проверяем ПРОТИВ СВОЕЙ карточки: пункт про другой уровень
+      // или про несуществующий текст — расхождение (ТЗ №2, задача 2).
+      const found: string[] = [];
+      for (const k of ['A', 'B', 'C'] as const) {
+        const f = facts[k];
+        const probs = findDescriptorProblems(got[k], { hasText: f.hasText, partCount: f.partCount, context: `${themeCtx} ${f.taskText}` });
+        found.push(...probs.map((x) => `[уровень ${k}] ${x.detail}`));
+      }
+      if (!found.length) break;
+      problems = found;
+      if (attempt === 3) {
+        this.logger.warn(`Уровневые дескрипторы урока ${lesson.id}, этап ${stage.id}: после 2 регенераций расхождения — ${found.join('; ')}`);
+      }
+    }
+
+    if (!got) {
+      const kept = (await this.descRepo.find({ where: { stageId: stage.id }, order: { order: 'ASC' } })).map((d) => ({ text: d.text, points: d.points }));
+      this.logger.warn(`Уровневые дескрипторы урока ${lesson.id}, этап ${stage.id}: модель ничего не вернула, оставлены прежние`);
+      return { descriptors: kept, cost, perLevel: { A: kept, B: kept, C: kept } };
+    }
+
+    // Каждый набор приводим суммой ровно к баллам этапа — и уровни, и обобщённый.
+    const norm = (arr: any[]) => {
+      const clean = arr.filter((d) => d?.text?.trim());
+      const adj = adjustDescriptorSum(clean.map((d) => Number(d.points) || 0), pts);
+      return clean.map((d, i) => ({ text: String(d.text).trim(), points: adj[i] }));
+    };
+    const perLevel: LevelDescriptors = { A: norm(got.A), B: norm(got.B), C: norm(got.C) };
+    const general = norm(got.general);
+
+    // Обобщённый — в таблицу (КМЖ + презентация читают её).
+    await this.descRepo.delete({ stageId: stage.id });
+    await this.descRepo.save(general.map((d, i) => this.descRepo.create({ stageId: stage.id, order: i, text: d.text, points: d.points })));
+    return { descriptors: general, cost, perLevel };
+  }
+
   /** Пустой лист-заглушка с пометкой ошибки — для UI «Повторить этот лист». */
   private buildErrorHandout(lessonId: string, stage: LessonStage, order: number, type: HandoutType): Handout {
     return this.handoutRepo.create({
@@ -506,6 +595,7 @@ export class HandoutsService {
     type: HandoutType,
     parsed: Record<string, any>,
     descriptors?: { text: string; points: number }[],
+    perLevel?: LevelDescriptors,
   ): Handout {
     const title = typeof parsed.title === 'string' ? parsed.title : '';
     const h = this.handoutRepo.create({
@@ -519,7 +609,12 @@ export class HandoutsService {
         const L = (parsed.levels[k] ?? {}) as Record<string, any>;
         const student = this.pickStudent(L);
         const extra = stage.isAssessed ? this.pickExtra(L.teacherExtra) : {};
-        levels[k] = { student, teacher: { ...student, ...extra, ...scoring } };
+        // Дескриптор КАРТОЧКИ — свой на каждый уровень (ТЗ №2, задача 2).
+        // Обобщённый (scoring.descriptors) на карточку не идёт — он для КМЖ.
+        const levelScoring = stage.isAssessed
+          ? { descriptors: perLevel?.[k] ?? descriptors, points: stage.points }
+          : {};
+        levels[k] = { student, teacher: { ...student, ...extra, ...levelScoring } };
       }
       h.levels = levels;
       h.studentContent = { title };
