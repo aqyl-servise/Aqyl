@@ -96,6 +96,46 @@ export function parsedHandoutHasContent(parsed: unknown, type: HandoutType): boo
 }
 
 /**
+ * Факты о сгенерированном задании — вход для проверки дескрипторов
+ * (ТЗ, задача 2). Считаются по фактической структуре ответа модели, а не по
+ * тому, что задумывалось: дескриптор сверяется с тем, что реально в листе.
+ */
+export function taskFactsFromParsed(
+  parsed: Record<string, any> | null,
+  type: HandoutType,
+): { hasText: boolean; partCount: number; taskText: string } {
+  const o = parsed ?? {};
+  const blocks: Record<string, any>[] = isLeveled(type)
+    ? ['A', 'B', 'C'].map((k) => (o.levels?.[k] ?? {}) as Record<string, any>)
+    : [(o.student ?? {}) as Record<string, any>];
+
+  const wordsIn = (s: unknown) => String(s ?? '').split(/\s+/).filter(Boolean).length;
+
+  // Связный текст для чтения: либо это лист «работа с текстом», либо в задании
+  // есть абзац от 40 слов. Короткая инструкция текстом для чтения не считается.
+  const hasText =
+    type === 'text' ||
+    blocks.some((b) => (b.sections ?? []).some((s: any) => wordsIn(s?.body) >= 40));
+
+  // Частей ровно столько, сколько видит ОДИН ученик: на уровневом листе он
+  // работает со своим уровнем, а не со всеми тремя.
+  const partCount = Math.max(
+    0,
+    ...blocks.map((b) => (b.sections?.length ?? 0) + (b.questions?.length ?? 0)),
+  );
+
+  const taskText = [o.title, ...blocks.flatMap((b) => collectText(b))].filter(Boolean).join(' ');
+  return { hasText, partCount, taskText };
+}
+
+function collectText(v: unknown, out: string[] = []): string[] {
+  if (typeof v === 'string') out.push(v);
+  else if (Array.isArray(v)) for (const x of v) collectText(x, out);
+  else if (v && typeof v === 'object') for (const x of Object.values(v)) collectText(x, out);
+  return out;
+}
+
+/**
  * Тип раздаточного материала по этапу и инструменту.
  * Для задания смотрим на инструмент; для остальных этапов — на тип этапа.
  */

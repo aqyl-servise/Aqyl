@@ -10,8 +10,11 @@ import { Handout, HandoutType } from '../entities/handout.entity';
 import { HandoutPackage } from '../entities/handout-package.entity';
 import { AiClientService } from '../../../services/ai-client.service';
 import { CostLoggerService } from './cost-logger.service';
-import { handoutTypeFor, isLeveled, handoutAction, parsedHandoutHasContent } from './handout-content';
+import { handoutTypeFor, isLeveled, handoutAction, parsedHandoutHasContent, taskFactsFromParsed } from './handout-content';
 import { buildHandoutPrompt, HANDOUT_TOOL } from './handout-prompts';
+import { descriptorsFromTaskPrompt } from '../prompts/lesson-prompts';
+import { findDescriptorProblems } from '../engine/descriptor-validator';
+import { adjustDescriptorSum } from '../engine/points-engine';
 import { findWrongTerms, flattenStrings } from '../prompts/term-glossary';
 import { PdfService } from '../export/pdf.service';
 import { packageHandoutsHtml, singleHandoutHtml, HandoutLessonMeta } from '../export/handout-html';
@@ -170,11 +173,6 @@ export class HandoutsService {
       subject: lesson.subject, grade: lesson.grade, lessonTitle: lesson.lessonTitle,
       language: lesson.language ?? 'kz', lessonObjectives: lesson.lessonObjectives ?? [],
     };
-    const descriptors = stage.isAssessed
-      ? (await this.descRepo.find({ where: { stageId: stage.id }, order: { order: 'ASC' } }))
-          .map((d) => ({ text: d.text, points: d.points }))
-      : undefined;
-
     let cost = 0;
     let parsed: Record<string, any> | null = null;
     for (let attempt = 1; attempt <= 2; attempt++) {
@@ -211,10 +209,113 @@ export class HandoutsService {
       this.logger.warn(`Лист «${type}» урока ${lesson.id}: пустой ответ, попытка ${attempt}/2`);
     }
 
+    // Дескрипторы — ПОСЛЕ задания и по его тексту (ТЗ, задача 2). В плане они
+    // уже сгенерированы по описанию этапа (чтобы КМЖ был полным и без
+    // раздаток), здесь уточняются по факту: правка идёт в ту же таблицу, из
+    // которой читают КМЖ, презентация и сам лист.
+    let descriptors: { text: string; points: number }[] | undefined;
+    if (stage.isAssessed) {
+      if (parsed) {
+        const r = await this.refreshDescriptors(lesson, stage, parsed, type);
+        descriptors = r.descriptors;
+        cost += r.cost;
+      } else {
+        descriptors = (await this.descRepo.find({ where: { stageId: stage.id }, order: { order: 'ASC' } }))
+          .map((d) => ({ text: d.text, points: d.points }));
+      }
+    }
+
     const handout = parsed
       ? this.buildHandout(lesson.id, stage, order, type, parsed, descriptors)
       : this.buildErrorHandout(lesson.id, stage, order, type);
     return { handout, cost };
+  }
+
+  /**
+   * Перегенерация дескрипторов по фактическому тексту задания с кодовой
+   * проверкой (ТЗ, задача 2).
+   *
+   * Максимум две регенерации: после второго провала пишем в лог с ID урока и
+   * этапа и отдаём последний вариант — выдача пакета учителю не блокируется.
+   * Если модель не вернула ничего, оставляем то, что уже есть в БД: пустые
+   * дескрипторы хуже неточных.
+   */
+  private async refreshDescriptors(
+    lesson: Lesson,
+    stage: LessonStage,
+    parsed: Record<string, any>,
+    type: HandoutType,
+  ): Promise<{ descriptors: { text: string; points: number }[]; cost: number }> {
+    const pts = stage.points ?? 1;
+    const facts = taskFactsFromParsed(parsed, type);
+    const ctx = {
+      subject: lesson.subject, grade: lesson.grade, lessonTitle: lesson.lessonTitle,
+      languageFocus: lesson.languageFocus ?? null, language: lesson.language ?? 'kz',
+      learningObjectives: lesson.learningObjectives ?? [],
+      lessonObjectives: lesson.lessonObjectives ?? [],
+    };
+    // Контекст для проверки «чужой конструкции»: тема, обе группы целей и сам
+    // текст задания. Названное в дескрипторе должно встречаться хоть где-то.
+    const context = [
+      lesson.lessonTitle, lesson.languageFocus,
+      ...(lesson.learningObjectives ?? []), ...(lesson.lessonObjectives ?? []),
+      facts.taskText,
+    ].filter(Boolean).join(' ');
+
+    let cost = 0;
+    let items: { text: string; points: number }[] = [];
+    let problems: string[] = [];
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const p = descriptorsFromTaskPrompt(
+        { stageType: stage.stageType, toolId: stage.toolId }, pts, facts.taskText, ctx, problems,
+      );
+      const res = await this.ai.request({
+        action: 'lesson_descriptors', systemPrompt: p.system,
+        messages: [{ role: 'user', content: p.user }],
+        userId: lesson.userId, schoolId: lesson.schoolId,
+      });
+      cost += await this.cost.log(lesson.id, 'handouts', res);
+
+      const got = this.parseJson<{ descriptors: { text: string; points: number }[] }>(res.content);
+      const cand = Array.isArray(got?.descriptors) ? got!.descriptors.filter((d) => d?.text?.trim()) : [];
+      if (!cand.length) {
+        problems = ['ответ не содержал дескрипторов'];
+        continue;
+      }
+      items = cand;
+
+      const found = findDescriptorProblems(cand, {
+        hasText: facts.hasText, partCount: facts.partCount, context,
+      });
+      if (!found.length) break;
+
+      problems = found.map((f) => f.detail);
+      if (attempt === 3) {
+        this.logger.warn(
+          `Дескрипторы урока ${lesson.id}, этап ${stage.id} (${stage.stageType}): ` +
+          `после 2 регенераций остались расхождения — ${problems.join('; ')}`,
+        );
+      }
+    }
+
+    if (!items.length) {
+      const kept = (await this.descRepo.find({ where: { stageId: stage.id }, order: { order: 'ASC' } }))
+        .map((d) => ({ text: d.text, points: d.points }));
+      this.logger.warn(`Дескрипторы урока ${lesson.id}, этап ${stage.id}: модель ничего не вернула, оставлены прежние`);
+      return { descriptors: kept, cost };
+    }
+
+    // Сумма приводится кодом ровно к баллам этапа — инвариант тот же, что и в
+    // плане; проверять его моделью не нужно.
+    const adjusted = adjustDescriptorSum(items.map((d) => Number(d.points) || 0), pts);
+    const finalItems = items.map((d, i) => ({ text: String(d.text).trim(), points: adjusted[i] }));
+
+    await this.descRepo.delete({ stageId: stage.id });
+    await this.descRepo.save(finalItems.map((d, i) =>
+      this.descRepo.create({ stageId: stage.id, order: i, text: d.text, points: d.points }),
+    ));
+    return { descriptors: finalItems, cost };
   }
 
   /** Пустой лист-заглушка с пометкой ошибки — для UI «Повторить этот лист». */
