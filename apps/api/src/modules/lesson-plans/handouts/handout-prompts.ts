@@ -10,6 +10,17 @@ const SYSTEM =
 
 const LANG_NAME: Record<string, string> = { kz: 'казахском', ru: 'русском', en: 'английском' };
 
+// Ряд букв вариантов — должен совпадать с OPTION_LETTERS в export/handout-html.ts,
+// иначе ключ учителя будет ссылаться на буквы, которых нет на листе ученика.
+const OPTION_LETTERS_HINT: Record<string, string> = {
+  kz: 'А, Ә, Б, В',
+  ru: 'А, Б, В, Г',
+  en: 'A, B, C, D',
+};
+function optionLettersHint(language?: string): string {
+  return OPTION_LETTERS_HINT[language ?? ''] ?? OPTION_LETTERS_HINT.kz;
+}
+
 function langRule(language?: string, subject?: string | null): string {
   const name = LANG_NAME[language ?? ''] ?? 'казахском';
   const base =
@@ -146,7 +157,12 @@ export function buildHandoutPrompt(opts: HandoutPromptOpts): { system: string; u
       `в каждом instructions и sections` + (isAssessed ? `, а ключи/критерии в его teacherExtra.` : `.`)
     : handoutType === 'quiz'
     ? `Заполни student.questions (каждый: q + options)` +
-      (isAssessed ? ` и teacherExtra (answers — правильные варианты, criteria).` : `.`)
+      (isAssessed ? ` и teacherExtra (answers — правильные варианты, criteria).` : `.`) +
+      // Буквы вариантов проставляет вёрстка листа, поэтому в самом тексте
+      // варианта их быть не должно, а ключ обязан ссылаться на тот же ряд.
+      ` БУКВЫ ВАРИАНТОВ: в options НЕ вставляй буквы и номера — только текст варианта. ` +
+      `В ключе нумеруй ответы по ряду ${optionLettersHint(ctx.language)} в порядке вариантов ` +
+      `(формат «1-${optionLettersHint(ctx.language).split(', ')[0]} | 2-…»).`
     : `Заполни student (instructions + sections)` +
       (isAssessed ? ` и teacherExtra (answers, criteria).` : `.`);
 

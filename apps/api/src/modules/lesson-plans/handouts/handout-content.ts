@@ -55,11 +55,16 @@ export function isLeveled(type: HandoutType): boolean {
 
 /**
  * Модель под тип листа (ТЗ 1.2, оптимизация трат). Задания требуют качества и
- * объёма → Sonnet; разминка/объяснение/квиз/рефлексия проще → Haiku втрое
- * дешевле на выходе. Возвращает action для ai-models (модель и лимит токенов).
+ * объёма → Sonnet; разминка/объяснение/рефлексия проще → Haiku втрое дешевле
+ * на выходе. Возвращает action для ai-models (модель и лимит токенов).
+ *
+ * Квиз переведён с Haiku на Sonnet: на замере Haiku давал бессмысленные
+ * формулировки вопросов, опечатки в терминах («төт» вместо «тот») и неверную
+ * терминологию («білік қабілеті» вместо «меншікті жылу сыйымдылығы»). Квиз —
+ * оцениваемый лист, ошибка в вопросе стоит дороже сэкономленных токенов.
  */
 export function handoutAction(type: HandoutType): 'lesson_handout' | 'lesson_handout_light' {
-  return type === 'individual' || type === 'pair' || type === 'group' || type === 'text'
+  return type === 'individual' || type === 'pair' || type === 'group' || type === 'text' || type === 'quiz'
     ? 'lesson_handout'
     : 'lesson_handout_light';
 }

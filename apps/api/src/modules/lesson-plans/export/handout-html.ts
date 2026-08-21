@@ -51,6 +51,27 @@ function esc(s: unknown): string {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
 }
 
+// Буквы вариантов ответа по языку урока. Казахский ряд — А, Ә, Б, В (порядок
+// казахского алфавита): именно на него ссылается ключ учителя («1-Ә»).
+const OPTION_LETTERS: Record<string, string[]> = {
+  kz: ['А', 'Ә', 'Б', 'В', 'Г', 'Д', 'Е', 'Ж'],
+  ru: ['А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ж', 'З'],
+  en: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
+};
+function optionLetter(lg: string, i: number): string {
+  const row = OPTION_LETTERS[lg] ?? OPTION_LETTERS.kz;
+  return row[i] ?? String(i + 1);
+}
+
+/**
+ * Убирает букву-метку, если модель уже вписала её в текст варианта («А) FeO»).
+ * Без этого на листе выходило бы «А) А) FeO»: модель проставляет метку
+ * непоследовательно — иногда есть, иногда нет.
+ */
+function stripOptionLabel(opt: unknown): string {
+  return String(opt ?? '').replace(/^\s*[A-Za-zА-ЯӘҒҚҢӨҰҮҺІа-яәғқңөұүһі0-9]\s*[).:]\s+/, '').trim();
+}
+
 // ── Мини-логотип Aqyl (буква «A»: индиго-фон, сиреневая/зелёная ноги,
 //    оранжевая перекладина, белая точка) — inline SVG, без файла ассета.
 function logo(size = 26): string {
@@ -89,9 +110,16 @@ function blockBody(block: Record<string, any> | null | undefined, type: HandoutT
     parts.push('<ol class="quiz">');
     for (const q of block.questions) {
       parts.push(`<li><div class="q">${esc(q?.q)}</div>`);
-      for (const opt of Array.isArray(q?.options) ? q.options : []) {
-        parts.push(`<div class="opt"><span class="bubble"></span>${esc(opt)}</div>`);
-      }
+      const opts = Array.isArray(q?.options) ? q.options : [];
+      opts.forEach((opt: unknown, j: number) => {
+        // Буква варианта: ключ учителя ссылается на неё («1-Ә»), а на листе
+        // ученика её раньше не было — стояли только кружки, и учителю
+        // приходилось отсчитывать позиции. Алфавит по языку урока.
+        parts.push(
+          `<div class="opt"><span class="bubble"></span>` +
+          `<span class="ol">${esc(optionLetter(lg, j))})</span> ${esc(stripOptionLabel(opt))}</div>`,
+        );
+      });
       parts.push('</li>');
     }
     parts.push('</ol>');
@@ -200,6 +228,7 @@ body{font-family:'Inter',sans-serif;color:${T.ink};background:#fff;font-size:12.
 .q{font-weight:600;margin-bottom:4px}
 .opt{display:flex;align-items:center;gap:7px;padding:2px 0}
 .bubble{width:13px;height:13px;border:1.6px solid var(--acc);border-radius:50%;flex:none}
+.opt .ol{font-weight:700;color:var(--acc);flex:none}
 .ans{margin-top:8px}
 .ans .line{height:0;border-bottom:1.3px solid #D5D1EC;margin:12px 0}
 .level{border:1.6px solid var(--acc);border-radius:12px;padding:10px 12px;margin-bottom:10px}
