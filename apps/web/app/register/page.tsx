@@ -278,7 +278,11 @@ export default function RegisterPage() {
                     style={{ marginTop: 3, flex: "none" }}
                   />
                   <span>
-                    Я даю согласие на сбор и обработку персональных данных и принимаю{" "}
+                    Я даю{" "}
+                    <a href="/consent" target="_blank" rel="noopener noreferrer" style={consentLink}>
+                      согласие на сбор и обработку персональных данных
+                    </a>
+                    , принимаю{" "}
                     <a href="/privacy" target="_blank" rel="noopener noreferrer" style={consentLink}>
                       Политику конфиденциальности
                     </a>{" "}
@@ -299,11 +303,10 @@ export default function RegisterPage() {
                   />
                   <span>
                     Я даю{" "}
-                    <a href="/consent" target="_blank" rel="noopener noreferrer" style={consentLink}>
-                      согласие
+                    <a href="/consent#cross-border" target="_blank" rel="noopener noreferrer" style={consentLink}>
+                      согласие на трансграничную передачу
                     </a>{" "}
-                    на трансграничную передачу содержания моих запросов для создания учебных
-                    материалов.
+                    содержания моих запросов для создания учебных материалов.
                   </span>
                 </label>
 

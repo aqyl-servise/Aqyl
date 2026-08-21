@@ -10,7 +10,7 @@ import { ConsentAction, ConsentRecord, ConsentType } from './entities/consent-re
  * соглашения или формулировок отметок на экране регистрации. По этому номеру
  * видно, под какой именно версией человек поставил отметку.
  */
-export const CONSENT_DOCUMENT_VERSION = '2026-08-08';
+export const CONSENT_DOCUMENT_VERSION = '1.0';
 
 /** Откуда пришло согласие. */
 export type ConsentMethod = 'registration' | 'profile';
@@ -63,6 +63,21 @@ export class ConsentService {
       await this.record(userId, 'cross_border', 'registration', ctx);
     } catch (err) {
       this.logger.error(`Не удалось записать согласия для пользователя ${userId}: ${(err as Error).message}`);
+    }
+  }
+
+  /**
+   * Отзыв обоих согласий — при удалении учётной записи (это и есть отзыв).
+   * Пишем отдельными записями action='revoked', историю не затираем: от даты
+   * отзыва отсчитывается 3-летний срок хранения записи (ТЗ, раздел 8).
+   * Сбой записи не должен ронять удаление аккаунта.
+   */
+  async recordRevocation(userId: string, ctx: ConsentContext = {}): Promise<void> {
+    try {
+      await this.record(userId, 'personal_data', 'profile', ctx, 'revoked');
+      await this.record(userId, 'cross_border', 'profile', ctx, 'revoked');
+    } catch (err) {
+      this.logger.error(`Не удалось записать отзыв согласий для пользователя ${userId}: ${(err as Error).message}`);
     }
   }
 

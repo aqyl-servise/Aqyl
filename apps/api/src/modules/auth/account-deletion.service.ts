@@ -6,6 +6,7 @@ import { Teacher } from '../teachers/entities/teacher.entity';
 import { EmailVerification } from './entities/email-verification.entity';
 import { MailService } from '../mail/mail.service';
 import { TrialGuardService } from '../trial-guard/trial-guard.service';
+import { ConsentService } from '../consent/consent.service';
 
 /**
  * Удаление аккаунта B2C-учителя.
@@ -36,6 +37,7 @@ export class AccountDeletionService {
     @InjectRepository(EmailVerification) private readonly verificationRepo: Repository<EmailVerification>,
     private readonly mail: MailService,
     private readonly trialGuard: TrialGuardService,
+    private readonly consentService: ConsentService,
   ) {}
 
   private purgeDate(from = new Date()): Date {
@@ -57,6 +59,10 @@ export class AccountDeletionService {
       // документы остаются нетронутыми в биллинге.
       subscriptionStatus: 'expired',
     });
+
+    // Удаление аккаунта = отзыв согласий: фиксируем отдельными записями
+    // action='revoked' (ТЗ публикации, раздел 8). Историю не затираем.
+    await this.consentService.recordRevocation(teacher.id);
 
     await this.mail.sendAccountDeletion(teacher.email, purgeAfter, RESTORE_DAYS);
     this.logger.log(`Account ${teacher.id} marked for deletion, purge after ${purgeAfter.toISOString()}`);

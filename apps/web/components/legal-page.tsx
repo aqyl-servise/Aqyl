@@ -1,5 +1,6 @@
 import { PublicHeader } from "./public-header";
 import { PublicFooter } from "./public-footer";
+import { LegalBody } from "./legal-body";
 import { COMPANY } from "../lib/company";
 import type { LegalDoc } from "../lib/legal-docs";
 
@@ -8,7 +9,7 @@ import type { LegalDoc } from "../lib/legal-docs";
  * магазины и платёжный оператор проверяют документ по постоянному адресу.
  */
 export function LegalPage({ doc, children }: { doc: LegalDoc; children?: React.ReactNode }) {
-  const paragraphs = doc.body.trim() ? doc.body.trim().split(/\n\s*\n/) : [];
+  const hasBody = doc.body.trim().length > 0;
 
   return (
     <div className="aqyl-pub">
@@ -23,16 +24,8 @@ export function LegalPage({ doc, children }: { doc: LegalDoc; children?: React.R
             </p>
           )}
 
-          {paragraphs.length > 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {paragraphs.map((p, i) =>
-                p.startsWith("## ") ? (
-                  <h2 key={i} style={{ marginTop: 12 }}>{p.slice(3)}</h2>
-                ) : (
-                  <p key={i} style={{ lineHeight: 1.75 }}>{p}</p>
-                ),
-              )}
-            </div>
+          {hasBody ? (
+            <LegalBody body={doc.body} />
           ) : (
             <div className="pub-card">
               <h3 style={{ marginBottom: 8 }}>Документ готовится к публикации</h3>
