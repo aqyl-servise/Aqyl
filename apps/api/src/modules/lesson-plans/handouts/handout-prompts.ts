@@ -152,9 +152,20 @@ export function buildHandoutPrompt(opts: HandoutPromptOpts): { system: string; u
     : 'Это ТРЕНИРОВОЧНОЕ задание без баллов. teacherExtra оставь пустым объектом {}.';
 
   // Какие поля инструмента заполнять (структуру задаёт схема HANDOUT_TOOL).
+  // Второе задание уровня C (ТЗ, задача 4). После оптимизации уровень C
+  // сократился вдвое и из него ушло продуктивное письмо связным текстом — при
+  // том что вторая цель урока (8.5.3.1 write with moderate grammatical
+  // accuracy) именно про письмо, а сильному ученику 3 пункта на 8 минут мало.
+  // Замер прироста: +299 выходных токенов на лист ≈ +2,35 ₸ на урок.
+  const levelCWriting =
+    `\nУРОВЕНЬ C — ВТОРОЕ ЗАДАНИЕ: после основного добавь короткое продуктивное письмо: ` +
+    `связный текст 3-4 предложения по теме, в котором ученик применяет минимум ДВЕ целевые ` +
+    `конструкции урока. Это отдельная секция уровня C, до 40 слов инструкции.`;
+
   const fields = isLeveled(handoutType)
     ? `Заполни levels.A, levels.B, levels.C — три самостоятельных задания по теме (A проще C), ` +
-      `в каждом instructions и sections` + (isAssessed ? `, а ключи/критерии в его teacherExtra.` : `.`)
+      `в каждом instructions и sections` + (isAssessed ? `, а ключи/критерии в его teacherExtra.` : `.`) +
+      levelCWriting
     : handoutType === 'quiz'
     ? `Заполни student.questions (каждый: q + options)` +
       (isAssessed ? ` и teacherExtra (answers — правильные варианты, criteria).` : `.`) +
