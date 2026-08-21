@@ -135,6 +135,26 @@ function collectText(v: unknown, out: string[] = []): string[] {
   return out;
 }
 
+/**
+ * Факты одного уровня (A/B/C) уровневого задания — для дескриптора этого
+ * уровня (ТЗ №2, задача 2). Считаются по ученической части КАРТОЧКИ, чтобы
+ * дескриптор ссылался только на её содержимое, не на другие уровни.
+ */
+export function levelFacts(
+  parsed: Record<string, any> | null,
+  level: 'A' | 'B' | 'C',
+): { hasText: boolean; partCount: number; taskText: string } {
+  const block = ((parsed?.levels ?? {})[level] ?? {}) as Record<string, any>;
+  // Сырой ответ модели держит содержимое уровня напрямую (instructions,
+  // sections), ключи/критерии — в teacherExtra: их в факты задания не берём.
+  const student = { instructions: block.instructions, sections: block.sections, questions: block.questions };
+  const wordsIn = (s: unknown) => String(s ?? '').split(/\s+/).filter(Boolean).length;
+  const hasText = (student.sections ?? []).some((s: any) => wordsIn(s?.body) >= 40);
+  const partCount = (student.sections?.length ?? 0) + (student.questions?.length ?? 0);
+  const taskText = collectText(student).filter(Boolean).join(' ');
+  return { hasText, partCount, taskText };
+}
+
 // ── Обратная запись КМЖ из раздатки (ТЗ №2, задача 1) ────────────────
 //
 // Источник истины — приложение: КМЖ описывал ресурсы и действия ученика
