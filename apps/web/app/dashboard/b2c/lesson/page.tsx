@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getValidAccessToken } from "../../../../lib/auth";
-import { api, API_URL, type LpLesson, type LpToolsResponse, type LpStageInput, type LpHeader, type LpHandout, type LpHandoutPackage, type LpCost } from "../../../../lib/api";
+import { api, API_URL, type LpLesson, type LpToolsResponse, type LpStageInput, type LpHeader, type LpHandout, type LpHandoutPackage } from "../../../../lib/api";
 import { useLang, LT, VALUE_MONTHS, type Lang } from "../../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../../components/lang-switcher";
 import { Icon } from "../../../../components/ui/icon";
@@ -618,7 +618,6 @@ function PresentationButton({ token, lessonId, t }: { token: string; lessonId: s
 function HandoutsPanel({ token, lessonId, t }: { token: string; lessonId: string; t: T }) {
   const [pkg, setPkg] = useState<LpHandoutPackage | null>(null);
   const [handouts, setHandouts] = useState<LpHandout[]>([]);
-  const [cost, setCost] = useState<LpCost | null>(null);
   const [mode, setMode] = useState<"student" | "teacher">("student");
   const [busy, setBusy] = useState(false);
   const [retryId, setRetryId] = useState<string | null>(null);
@@ -630,10 +629,9 @@ function HandoutsPanel({ token, lessonId, t }: { token: string; lessonId: string
       const r = await api.lpGetHandouts(token, lessonId);
       setPkg(r.package);
       setHandouts(r.handouts);
-      // Стоимость показываем и для частично-готового пакета (status=error).
-      if (r.package?.status === "ready" || r.package?.status === "error") {
-        try { setCost(await api.lpGetCost(token, lessonId)); } catch { /* стоимость не критична */ }
-      }
+      // Себестоимость генерации учителю не показывается — это внутренняя
+      // метрика. Она по-прежнему считается и пишется в generation_cost_log,
+      // сводка доступна в админ-панели (/dashboard/admin → «Стоимость»).
       return r.package?.status;
     } catch { return undefined; }
   }, [token, lessonId]);
@@ -737,12 +735,6 @@ function HandoutsPanel({ token, lessonId, t }: { token: string; lessonId: string
             <button onClick={() => download(`${base}/export?mode=${mode}`, `handouts-${mode}.pdf`)} style={btnPrimary}>
               ↓ {t.downloadPackage} · {mode === "student" ? t.versionStudent : t.versionTeacher}
             </button>
-            {cost && (
-              <span style={{ fontSize: 12, color: "var(--muted)" }}>
-                {t.matCost}: {Math.round(cost.total)} {t.tenge}
-                {typeof cost.byOperation.plan === "number" && ` (${t.costPlan} ${Math.round(cost.byOperation.plan)} · ${t.costHandouts} ${Math.round(cost.byOperation.handouts ?? 0)})`}
-              </span>
-            )}
             <button onClick={generate} style={{ ...btnGhost, padding: "8px 14px" }}>↻ {t.regenMaterials}</button>
           </div>
 

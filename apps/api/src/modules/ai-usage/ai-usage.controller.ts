@@ -43,4 +43,16 @@ export class AiUsageController {
   getMostActive(@Req() req: ReqUser) {
     return this.svc.getMostActiveToday(req.user.schoolId ?? "");
   }
+
+  /**
+   * Себестоимость генерации по операциям и моделям. Только `admin`: метрика
+   * платформенная (юнит-экономика), а не школьная — директору и завучу она не
+   * нужна и разрезом по школе не считается.
+   */
+  @Get("generation-cost")
+  @Roles("admin")
+  getGenerationCost(@Query("days") days?: string) {
+    const n = Number(days);
+    return this.svc.getGenerationCost(Number.isFinite(n) && n > 0 ? Math.min(n, 365) : 30);
+  }
 }

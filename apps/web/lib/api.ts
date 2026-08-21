@@ -374,6 +374,15 @@ export interface LpHandout {
 export interface LpHandoutPackage { status: "generating" | "ready" | "error"; generationCost: number; generationError?: string | null }
 export interface LpHandoutsResponse { package: LpHandoutPackage | null; handouts: LpHandout[] }
 export interface LpCost { total: number; byOperation: Record<string, number> }
+
+/** Сводка себестоимости генерации для админ-панели (не для учителя). */
+export interface GenerationCost {
+  days: number;
+  totalKzt: number;
+  lessons: number;
+  avgPerLessonKzt: number;
+  byOperation: Array<{ operation: string; model: string; count: number; kzt: number; avgOutTokens: number }>;
+}
 export interface LpPresentation { status: "generating" | "ready" | "error" | null; generationError?: string | null; slideCount: number; generationCost: number }
 
 // ── Functional literacy (PISA) ────────────────────────────────────
@@ -861,6 +870,9 @@ export const api = {
     request<Array<{ date: string; totalCount: number; totalCostKzt: number }>>(`/ai-usage/chart${days ? `?days=${days}` : ""}`, undefined, token),
   getAiMostActive: (token: string) =>
     request<{ teacherName: string; count: number } | null>("/ai-usage/most-active", undefined, token),
+  // Себестоимость генерации (только admin). Учителю не показывается.
+  getGenerationCost: (token: string, days?: number) =>
+    request<GenerationCost>(`/ai-usage/generation-cost${days ? `?days=${days}` : ""}`, undefined, token),
 
   // KMZh cache
   getKmzhCacheStats: (token: string) =>

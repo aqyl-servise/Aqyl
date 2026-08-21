@@ -261,4 +261,61 @@ export class AiUsageService {
     const teacher = await this.teacherRepo.findOne({ where: { id: rows[0].userId } });
     return { teacherName: teacher?.fullName ?? rows[0].userId, count: Number(rows[0].total) };
   }
+
+  /**
+   * Себестоимость генерации по операциям и моделям (generation_cost_log).
+   *
+   * Раньше эта цифра висела строкой на экране раздаток у учителя — внутренняя
+   * метрика, которой там не место. Расчёт и запись в лог не тронуты, изменилось
+   * только место показа: сводка доступна администратору.
+   *
+   * Метрика платформенная, а не школьная: у B2C-учителей schoolId нет, и лог
+   * ведётся по уроку, поэтому разрез по школе тут неприменим.
+   */
+  async getGenerationCost(days = 30): Promise<{
+    days: number;
+    totalKzt: number;
+    lessons: number;
+    avgPerLessonKzt: number;
+    byOperation: { operation: string; model: string; count: number; kzt: number; avgOutTokens: number }[];
+  }> {
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const rows = await this.dailyRepo.manager
+      .createQueryBuilder()
+      .select('g."operation"', 'operation')
+      .addSelect('g."model"', 'model')
+      .addSelect('COUNT(*)', 'count')
+      .addSelect('COALESCE(SUM(g."costKzt"), 0)', 'kzt')
+      .addSelect('COALESCE(AVG(g."outputTokens"), 0)', 'avgOut')
+      .from('generation_cost_log', 'g')
+      .where('g."createdAt" >= :since', { since })
+      .groupBy('g."operation"')
+      .addGroupBy('g."model"')
+      .orderBy('"kzt"', 'DESC')
+      .getRawMany<{ operation: string; model: string; count: string; kzt: string; avgOut: string }>();
+
+    const totals = await this.dailyRepo.manager
+      .createQueryBuilder()
+      .select('COUNT(DISTINCT g."lessonId")', 'lessons')
+      .addSelect('COALESCE(SUM(g."costKzt"), 0)', 'kzt')
+      .from('generation_cost_log', 'g')
+      .where('g."createdAt" >= :since', { since })
+      .getRawOne<{ lessons: string; kzt: string }>();
+
+    const totalKzt = Number(totals?.kzt ?? 0);
+    const lessons = Number(totals?.lessons ?? 0);
+    return {
+      days,
+      totalKzt,
+      lessons,
+      avgPerLessonKzt: lessons ? totalKzt / lessons : 0,
+      byOperation: rows.map((r) => ({
+        operation: r.operation,
+        model: r.model,
+        count: Number(r.count),
+        kzt: Number(r.kzt),
+        avgOutTokens: Math.round(Number(r.avgOut)),
+      })),
+    };
+  }
 }

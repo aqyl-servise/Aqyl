@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { api } from "../../lib/api";
+import { api, type GenerationCost } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
 import { Icon } from "../ui/icon";
 
@@ -22,6 +22,15 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
   const [tokenStatus, setTokenStatus] = useState<TokenStatus>(null);
   const [clearing, setClearing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [genCost, setGenCost] = useState<GenerationCost | null>(null);
+  const [costDays, setCostDays] = useState(30);
+
+  // Себестоимость грузим отдельно: эндпоинт только для admin, у остальных
+  // ролей вернёт 403 — не должно ронять загрузку остальной панели.
+  useEffect(() => {
+    if (role !== "admin") return;
+    api.getGenerationCost(token, costDays).then(setGenCost).catch(() => setGenCost(null));
+  }, [token, role, costDays]);
 
   useEffect(() => {
     setLoading(true);
@@ -155,6 +164,65 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
           </div>
         )}
       </div>
+
+      {/* Себестоимость генерации — только admin. Учителю эта метрика не
+          показывается: раньше висела строкой на экране раздаток. */}
+      {role === "admin" && genCost && (
+        <div style={{ background: "var(--bg-card, #fff)", borderRadius: 10, padding: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.07)", marginBottom: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, gap: 12, flexWrap: "wrap" }}>
+            <h3 style={{ margin: 0, fontSize: 16 }}><Icon name="chart-line" size={16} /> Себестоимость генерации</h3>
+            <div style={{ display: "flex", gap: 6 }}>
+              {[7, 30, 90].map((d) => (
+                <button key={d} onClick={() => setCostDays(d)} style={{
+                  padding: "4px 10px", fontSize: 12, borderRadius: 6, cursor: "pointer",
+                  border: "1px solid var(--border, #ddd)",
+                  background: costDays === d ? "var(--primary, #2E2780)" : "transparent",
+                  color: costDays === d ? "#fff" : "inherit",
+                }}>{d} дн.</button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 16 }}>
+            <SummaryCard icon="₸" label="Всего за период" value={`${Math.round(genCost.totalKzt)} ₸`} />
+            <SummaryCard icon="◆" label="Уроков" value={String(genCost.lessons)} />
+            <SummaryCard icon="≈" label="На один урок" value={`${genCost.avgPerLessonKzt.toFixed(1)} ₸`} />
+          </div>
+          {genCost.byOperation.length === 0 ? (
+            <p style={{ color: "var(--text-secondary, #888)" }}>{t.ai_no_data}</p>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--border, #eee)", textAlign: "left" }}>
+                    <th style={{ padding: "8px 12px" }}>Операция</th>
+                    <th style={{ padding: "8px 12px" }}>Модель</th>
+                    <th style={{ padding: "8px 12px", textAlign: "right" }}>Вызовов</th>
+                    <th style={{ padding: "8px 12px", textAlign: "right" }}>Ср. выход</th>
+                    <th style={{ padding: "8px 12px", textAlign: "right" }}>Стоимость</th>
+                    <th style={{ padding: "8px 12px", textAlign: "right" }}>Доля</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {genCost.byOperation.map((r) => (
+                    <tr key={`${r.operation}-${r.model}`} style={{ borderBottom: "1px solid var(--border, #f5f5f5)" }}>
+                      <td style={{ padding: "8px 12px" }}>{r.operation}</td>
+                      <td style={{ padding: "8px 12px", color: "var(--text-secondary, #888)" }}>
+                        {r.model.replace(/^claude-/, "").replace(/-\d{8}$/, "")}
+                      </td>
+                      <td style={{ padding: "8px 12px", textAlign: "right" }}>{r.count}</td>
+                      <td style={{ padding: "8px 12px", textAlign: "right" }}>{r.avgOutTokens}</td>
+                      <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600 }}>{Math.round(r.kzt)} ₸</td>
+                      <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--text-secondary, #888)" }}>
+                        {genCost.totalKzt > 0 ? Math.round((100 * r.kzt) / genCost.totalKzt) : 0}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 30-day chart */}
       <div style={{ background: "var(--bg-card, #fff)", borderRadius: 10, padding: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.07)", marginBottom: 24 }}>
