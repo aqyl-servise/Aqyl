@@ -375,6 +375,25 @@ export interface LpHandoutPackage { status: "generating" | "ready" | "error"; ge
 export interface LpHandoutsResponse { package: LpHandoutPackage | null; handouts: LpHandout[] }
 export interface LpCost { total: number; byOperation: Record<string, number> }
 
+/** Строка воронки B2C в админ-панели. */
+export interface B2cUser {
+  id: string; email: string; fullName: string;
+  phone: string | null; subject: string | null;
+  status: string; createdAt: string; onboardingCompleted: boolean;
+  trialEndsAt: string | null; trialActive: boolean;
+  subscriptionStatus: string | null; currentPeriodEnd: string | null;
+  pricePerMonth: number | null; cancelAtPeriodEnd: boolean;
+  lessons: number; paidKzt: number;
+}
+
+export interface B2cFunnel {
+  summary: {
+    users: number; active: number; trial: number; expired: number;
+    paidTotalKzt: number; payments: number; mrrKzt: number;
+  };
+  users: B2cUser[];
+}
+
 /** Сводка себестоимости генерации для админ-панели (не для учителя). */
 export interface GenerationCost {
   days: number;
@@ -621,6 +640,8 @@ export const api = {
       `/admin/users/${id}/subscription`, { method: "POST", body: JSON.stringify({ months }) }, token),
   revokeSubscription: (token: string, id: string) =>
     request<{ ok: boolean }>(`/admin/users/${id}/subscription`, { method: "DELETE" }, token),
+  // Воронка B2C (только admin): список учителей и сводка по подпискам.
+  getB2cFunnel: (token: string) => request<B2cFunnel>("/admin/b2c", undefined, token),
 
   // Students
   getStudents: (token: string, classroomId?: string) =>
