@@ -135,6 +135,78 @@ function collectText(v: unknown, out: string[] = []): string[] {
   return out;
 }
 
+// ── Обратная запись КМЖ из раздатки (ТЗ №2, задача 1) ────────────────
+//
+// Источник истины — приложение: КМЖ описывал ресурсы и действия ученика
+// плановым текстом (жесты, «4 ситуации»), а по факту раздатка — печатный лист
+// с иной структурой. Ресурсы выводятся из ТИПА листа детерминированно; действия
+// ученика — из фактической структуры (число заданий) и инструкции листа.
+
+const RESOURCES: Record<HandoutType, Record<string, string>> = {
+  individual: { kz: 'A/B/C деңгейлік тапсырма парақтары (басып шығару)', ru: 'Листы уровневых заданий A/B/C (на печать)', en: 'Levelled task sheets A/B/C (printed)' },
+  text: { kz: 'Мәтін мен тапсырма парағы (басып шығару)', ru: 'Лист с текстом и заданиями (на печать)', en: 'Text and task sheet (printed)' },
+  pair: { kz: 'Жұптық жұмыс карточкалары (басып шығару)', ru: 'Карточки для парной работы (на печать)', en: 'Pair-work cards (printed)' },
+  group: { kz: 'Топтық кейс-парақтар (басып шығару)', ru: 'Кейс-листы для групповой работы (на печать)', en: 'Group case sheets (printed)' },
+  quiz: { kz: 'Квиз парағы (басып шығару)', ru: 'Лист-квиз (на печать)', en: 'Quiz sheet (printed)' },
+  warmup: { kz: 'Қыздыру парағы (басып шығару)', ru: 'Лист разминки (на печать)', en: 'Warm-up sheet (printed)' },
+  explanation: { kz: 'Тірек-конспект парағы (басып шығару)', ru: 'Опорный лист (на печать)', en: 'Reference sheet (printed)' },
+  reflection: { kz: 'Рефлексия парағы: белгі қою (басып шығару)', ru: 'Лист рефлексии с отметками (на печать)', en: 'Reflection sheet with checkboxes (printed)' },
+};
+
+// Слово «задание» по языку и числу — для фактической структуры.
+function tasksWord(n: number, language: string): string {
+  if (language === 'en') return n === 1 ? 'task' : 'tasks';
+  if (language === 'ru') return n === 1 ? 'задание' : (n >= 2 && n <= 4 ? 'задания' : 'заданий');
+  return 'тапсырма'; // казахский — без числовой формы
+}
+
+function lang3(v?: string | null): 'kz' | 'ru' | 'en' {
+  return v === 'ru' || v === 'en' ? v : 'kz';
+}
+
+/**
+ * Фактические «Ресурсы» и «Действия ученика» этапа по готовой раздатке.
+ * Действия строятся из инструкции листа (что ученик реально делает) и числа
+ * заданий, поэтому структура в КМЖ совпадает с приложением, а не с планом.
+ */
+export function deriveStageFromHandout(
+  parsed: Record<string, any> | null,
+  type: HandoutType,
+  language?: string | null,
+): { resources: string; studentActions: string } {
+  const lg = lang3(language);
+  const resources = RESOURCES[type][lg];
+
+  const o = parsed ?? {};
+  const blocks: Record<string, any>[] = isLeveled(type)
+    ? ['A', 'B', 'C'].map((k) => (o.levels?.[k] ?? {}) as Record<string, any>)
+    : [(o.student ?? {}) as Record<string, any>];
+
+  // Число заданий = максимум частей, которые видит один ученик (как в фактах).
+  const partCount = Math.max(0, ...blocks.map((b) => (b.sections?.length ?? 0) + (b.questions?.length ?? 0)));
+  const countStr = partCount > 1 ? ` (${partCount} ${tasksWord(partCount, lg)})` : '';
+
+  // Инструкция листа — то, что ученик делает по факту. Для уровневого берём
+  // краткую сводку по A/B/C.
+  const trim = (s: string, n = 200) => {
+    const t = String(s ?? '').replace(/\s+/g, ' ').trim();
+    return t.length > n ? t.slice(0, n).replace(/\s\S*$/, '') + '…' : t;
+  };
+
+  let studentActions: string;
+  if (isLeveled(type)) {
+    const lead = { kz: 'Әр оқушы өз деңгейіндегі тапсырманы орындайды (A/B/C)', ru: 'Каждый ученик выполняет задание своего уровня (A/B/C)', en: 'Each learner completes the task of their level (A/B/C)' }[lg];
+    const aInstr = trim(blocks[0]?.instructions ?? '', 120);
+    studentActions = aInstr ? `${lead}: ${aInstr}` : lead;
+  } else {
+    const instr = trim(blocks[0]?.instructions ?? '');
+    const lead = { kz: 'Оқушылар тапсырманы орындайды', ru: 'Ученики выполняют задание', en: 'Learners complete the task' }[lg];
+    studentActions = (instr || lead) + countStr;
+  }
+
+  return { resources, studentActions };
+}
+
 /**
  * Тип раздаточного материала по этапу и инструменту.
  * Для задания смотрим на инструмент; для остальных этапов — на тип этапа.
