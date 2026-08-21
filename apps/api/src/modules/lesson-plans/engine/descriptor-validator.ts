@@ -173,3 +173,44 @@ export function findDescriptorProblems(
   }
   return problems;
 }
+
+// ── Релевантность подсказки учителю содержимому карточки (ТЗ №2, задача 5) ──
+//
+// Подсказка «Students often confuse 'were' with 'was'» ставилась по теме урока,
+// а на карточке A выбора were/was не было. Проверка: формы и конструкции,
+// НАЗВАННЫЕ в подсказке, должны присутствовать в задании или ключе этой
+// карточки. Если подсказка общая (не называет конкретных форм) — проверять
+// нечего, пропускаем.
+
+/** Конкретные формы/слова, названные в подсказке: в кавычках 'were', «құрал». */
+function quotedForms(note: string): string[] {
+  const out = new Set<string>();
+  for (const m of String(note ?? '').matchAll(/['"«]([^'"»]{1,40})['"»]/g)) {
+    const w = norm(m[1]);
+    // Одиночная грамматическая форма/термин, не целая фраза-пример.
+    if (w && w.split(' ').length <= 2) out.add(w);
+  }
+  return [...out];
+}
+
+/**
+ * Формы/конструкции из подсказки, которых НЕТ ни в задании, ни в ключе карточки
+ * (ТЗ №2, задача 5). Пустой массив — подсказка релевантна (или не называет
+ * конкретных форм).
+ */
+export function noteReferenceGaps(note: string, cardText: string): string[] {
+  const named = new Set<string>([...quotedForms(note), ...namedConstructions(note)]);
+  if (!named.size) return [];
+  const hay = norm(cardText);
+  const inCard = (form: string) => {
+    const key = form.replace(/\s+(clauses?|forms?|tenses?|structures?)$/i, '').trim() || form;
+    const esc = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`(?<!\\p{L})${esc}(?!\\p{L})`, 'iu').test(hay);
+  };
+  // Подсказка допустима, если ЛЮБАЯ названная форма есть на карточке — тогда она
+  // привязана к заданию, а вторая может стоять для контраста («'were', не 'was'»).
+  // Провал — когда НИ ОДНА не найдена (подсказка про тему урока, а не про эту
+  // карточку: кейс ТЗ — were/was на карточке, где ни того, ни другого нет).
+  if ([...named].some(inCard)) return [];
+  return [...named];
+}
