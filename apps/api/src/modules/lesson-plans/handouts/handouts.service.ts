@@ -14,16 +14,17 @@ import { handoutTypeFor, isLeveled, handoutAction, parsedHandoutHasContent, task
 import { Presentation } from '../entities/presentation.entity';
 import { buildHandoutPrompt, HANDOUT_TOOL } from './handout-prompts';
 import { descriptorsFromTaskPrompt, leveledDescriptorsPrompt } from '../prompts/lesson-prompts';
-
-/** Дескрипторы по уровням дифференцированного задания (ТЗ №2, задача 2). */
-type Descr = { text: string; points: number };
-type LevelDescriptors = { A: Descr[]; B: Descr[]; C: Descr[] };
 import { findDescriptorProblems, uncoveredTaskTargets } from '../engine/descriptor-validator';
+import { findRewriteProblems, parseAnswerKeys, RewriteProblem } from '../engine/rewrite-validator';
 import { parseRequiredElements, missingElements } from '../engine/objective-elements';
 import { adjustDescriptorSum } from '../engine/points-engine';
 import { findWrongTerms, flattenStrings } from '../prompts/term-glossary';
 import { PdfService } from '../export/pdf.service';
 import { packageHandoutsHtml, singleHandoutHtml, HandoutLessonMeta } from '../export/handout-html';
+
+/** Дескрипторы по уровням дифференцированного задания (ТЗ №2, задача 2). */
+type Descr = { text: string; points: number };
+type LevelDescriptors = { A: Descr[]; B: Descr[]; C: Descr[] };
 
 export type ExportMode = 'student' | 'teacher';
 
@@ -219,12 +220,19 @@ export class HandoutsService {
       if (res.data && parsedHandoutHasContent(res.data, type)) {
         // B.3 (ТЗ 1.5.1): русские термины из глоссария в казахском листе → повтор.
         const wrong = lesson.language === 'kz' ? findWrongTerms(flattenStrings(res.data), lesson.subject) : [];
-        if (!wrong.length || attempt === 2) {
+        // Задания rewrite/transform: конструкция уже в условии / ключ = условию (ТЗ №2, задача 4).
+        const rewrite = this.rewriteProblemsInParsed(res.data, type);
+        if ((!wrong.length && !rewrite.length) || attempt === 2) {
           parsed = res.data;
           if (wrong.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: остались русские термины [${wrong.join(', ')}]`);
+          if (rewrite.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: невалидные трансформации — ${rewrite.map((r) => r.detail).join('; ')}`);
           break;
         }
-        this.logger.warn(`Лист «${type}» урока ${lesson.id}: русские термины [${wrong.join(', ')}], повтор`);
+        const reasons = [
+          wrong.length ? `русские термины [${wrong.join(', ')}]` : '',
+          rewrite.length ? `трансформации: ${rewrite.map((r) => r.detail).join('; ')}` : '',
+        ].filter(Boolean).join('; ');
+        this.logger.warn(`Лист «${type}» урока ${lesson.id}: ${reasons}, повтор`);
         continue;
       }
       this.logger.warn(`Лист «${type}» урока ${lesson.id}: пустой ответ, попытка ${attempt}/2`);
@@ -261,6 +269,29 @@ export class HandoutsService {
       ? this.buildHandout(lesson.id, stage, order, type, parsed, descriptors, perLevel)
       : this.buildErrorHandout(lesson.id, stage, order, type);
     return { handout, cost };
+  }
+
+  /**
+   * Невалидные задания rewrite/transform в листе (ТЗ №2, задача 4): целевая
+   * конструкция уже в условии либо ключ дословно повторяет условие. Обходит
+   * все блоки (уровни A/B/C или ученический), пункты и ключи берёт из их
+   * содержимого. Не-rewrite пункты валидатор игнорирует — ложных нет.
+   */
+  private rewriteProblemsInParsed(parsed: Record<string, any>, type: HandoutType): RewriteProblem[] {
+    const blocks: Record<string, any>[] = isLeveled(type) && parsed.levels
+      ? ['A', 'B', 'C'].map((k) => (parsed.levels[k] ?? {}) as Record<string, any>)
+      : [parsed.student ?? {}];
+    const out: RewriteProblem[] = [];
+    for (const b of blocks) {
+      const items: string[] = [];
+      for (const s of b.sections ?? []) {
+        for (const it of s.items ?? []) items.push(String(it));
+        for (const line of String(s.body ?? '').split('\n')) if (/[→\]]/.test(line)) items.push(line);
+      }
+      const keys = parseAnswerKeys(String(b.teacherExtra?.answers ?? ''));
+      out.push(...findRewriteProblems(items, keys));
+    }
+    return out;
   }
 
   /**
