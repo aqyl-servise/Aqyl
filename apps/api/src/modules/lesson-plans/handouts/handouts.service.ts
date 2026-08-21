@@ -14,7 +14,7 @@ import { handoutTypeFor, isLeveled, handoutAction, parsedHandoutHasContent, task
 import { Presentation } from '../entities/presentation.entity';
 import { buildHandoutPrompt, HANDOUT_TOOL } from './handout-prompts';
 import { descriptorsFromTaskPrompt, leveledDescriptorsPrompt } from '../prompts/lesson-prompts';
-import { findDescriptorProblems, uncoveredTaskTargets, noteReferenceGaps } from '../engine/descriptor-validator';
+import { findDescriptorProblems, uncoveredTaskTargets, noteReferenceGaps, hasFractionalPoints } from '../engine/descriptor-validator';
 import { findRewriteProblems, parseAnswerKeys, RewriteProblem } from '../engine/rewrite-validator';
 import { parseRequiredElements, missingElements } from '../engine/objective-elements';
 import { adjustDescriptorSum } from '../engine/points-engine';
@@ -224,17 +224,21 @@ export class HandoutsService {
         const rewrite = this.rewriteProblemsInParsed(res.data, type);
         // Подсказка учителю называет формы, которых нет в задании/ключе (ТЗ №2, задача 5).
         const notes = this.noteProblemsInParsed(res.data, type);
-        if ((!wrong.length && !rewrite.length && !notes.length) || attempt === 2) {
+        // Дробные баллы в критериях (ТЗ №2, задача 6): «0,5 балла», «0.4 per».
+        const fractional = this.fractionalPointsInParsed(res.data, type);
+        if ((!wrong.length && !rewrite.length && !notes.length && !fractional) || attempt === 2) {
           parsed = res.data;
           if (wrong.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: остались русские термины [${wrong.join(', ')}]`);
           if (rewrite.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: невалидные трансформации — ${rewrite.map((r) => r.detail).join('; ')}`);
           if (notes.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: подсказка не по заданию — ${notes.join('; ')}`);
+          if (fractional) this.logger.warn(`Лист «${type}» урока ${lesson.id}: в критериях остались дробные баллы`);
           break;
         }
         const reasons = [
           wrong.length ? `русские термины [${wrong.join(', ')}]` : '',
           rewrite.length ? `трансформации: ${rewrite.map((r) => r.detail).join('; ')}` : '',
           notes.length ? `подсказка: ${notes.join('; ')}` : '',
+          fractional ? 'дробные баллы в критериях' : '',
         ].filter(Boolean).join('; ');
         this.logger.warn(`Лист «${type}» урока ${lesson.id}: ${reasons}, повтор`);
         continue;
@@ -296,6 +300,14 @@ export class HandoutsService {
       out.push(...findRewriteProblems(items, keys));
     }
     return out;
+  }
+
+  /** Есть ли дробные баллы в любом критерии листа (ТЗ №2, задача 6). */
+  private fractionalPointsInParsed(parsed: Record<string, any>, type: HandoutType): boolean {
+    const blocks: Record<string, any>[] = isLeveled(type) && parsed.levels
+      ? ['A', 'B', 'C'].map((k) => (parsed.levels[k] ?? {}) as Record<string, any>)
+      : [{ teacherExtra: parsed.teacherExtra }];
+    return blocks.some((b) => hasFractionalPoints(String(b.teacherExtra?.criteria ?? '')));
   }
 
   /**
