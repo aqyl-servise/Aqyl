@@ -10,7 +10,8 @@ import { Handout, HandoutType } from '../entities/handout.entity';
 import { HandoutPackage } from '../entities/handout-package.entity';
 import { AiClientService } from '../../../services/ai-client.service';
 import { CostLoggerService } from './cost-logger.service';
-import { handoutTypeFor, isLeveled, handoutAction, parsedHandoutHasContent, taskFactsFromParsed } from './handout-content';
+import { handoutTypeFor, isLeveled, handoutAction, parsedHandoutHasContent, taskFactsFromParsed, deriveStageFromHandout } from './handout-content';
+import { Presentation } from '../entities/presentation.entity';
 import { buildHandoutPrompt, HANDOUT_TOOL } from './handout-prompts';
 import { descriptorsFromTaskPrompt } from '../prompts/lesson-prompts';
 import { findDescriptorProblems } from '../engine/descriptor-validator';
@@ -39,6 +40,7 @@ export class HandoutsService {
     @InjectRepository(ValueLinkReference) private readonly valueRepo: Repository<ValueLinkReference>,
     @InjectRepository(Handout) private readonly handoutRepo: Repository<Handout>,
     @InjectRepository(HandoutPackage) private readonly pkgRepo: Repository<HandoutPackage>,
+    @InjectRepository(Presentation) private readonly presRepo: Repository<Presentation>,
     private readonly ai: AiClientService,
     private readonly cost: CostLoggerService,
     private readonly pdf: PdfService,
@@ -153,6 +155,16 @@ export class HandoutsService {
     // цели 8.6.17.1 терялись и не попадали ни в одно задание.
     await this.ensureObjectiveCoverage(lesson);
 
+    // Проверка синхронизации КМЖ↔приложение (ТЗ №2, задача 1): дескрипторы в
+    // таблице (их читает КМЖ) должны посимвольно совпадать со снапшотом в
+    // раздатке. Совпадают по построению — общий источник; проверка ловит регресс.
+    await this.verifyDescriptorSync(lessonId);
+
+    // Инвалидация презентации (ТЗ №2, задача 1): если её сгенерировали РАНЬШЕ
+    // раздаток, слайды держат плановые дескрипторы. Сбрасываем — при повторной
+    // генерации презентация прочитает уже синхронную таблицу.
+    await this.invalidateStalePresentation(lessonId);
+
     // Пакет не «ready», пока есть пустые листы (ТЗ 1.2): статус error, но сами
     // листы сохранены — учитель дожмёт проблемные кнопкой «Повторить».
     await this.pkgRepo.update({ lessonId }, {
@@ -230,10 +242,78 @@ export class HandoutsService {
       }
     }
 
+    // Обратная запись в КМЖ (ТЗ №2, задача 1): фактические ресурсы и действия
+    // ученика из готового листа. Источник истины — приложение; КМЖ читает эти
+    // поля живьём, поэтому правка расходится в план сама. Только при успешном
+    // листе — по пустышке структуру не выведешь.
+    if (parsed) {
+      const derived = deriveStageFromHandout(parsed, type, lesson.language);
+      await this.stageRepo.update(stage.id, { resources: derived.resources, studentActions: derived.studentActions });
+    }
+
     const handout = parsed
       ? this.buildHandout(lesson.id, stage, order, type, parsed, descriptors)
       : this.buildErrorHandout(lesson.id, stage, order, type);
     return { handout, cost };
+  }
+
+  /**
+   * Посимвольная сверка дескрипторов КМЖ (таблица) и приложения (jsonb).
+   * Несовпадение — в лог с ID урока и этапа (ТЗ №2, задача 1, критерий приёмки).
+   * Выдачу пакета не блокируем: расхождение — сигнал для разбора, а не отказ
+   * учителю (лучше отдать пакет, чем оставить учителя без материалов).
+   */
+  private async verifyDescriptorSync(lessonId: string): Promise<void> {
+    const handouts = await this.handoutRepo.find({ where: { lessonId } });
+    for (const h of handouts) {
+      if (h.error) continue;
+      const stageId = h.stageId;
+      if (!stageId) continue;
+      const table = (await this.descRepo.find({ where: { stageId }, order: { order: 'ASC' } }))
+        .map((d) => d.text.trim());
+      if (!table.length) continue;
+      const inHandout = this.descriptorsFromHandout(h);
+      // Уровневый лист держит один набор дескрипторов на A/B/C — сравниваем с
+      // уникальным набором, а не с утроенным (это не рассинхрон, а Задача 2).
+      const uniq = [...new Set(inHandout.map((s) => s.trim()))];
+      const match = table.length === uniq.length && table.every((t, i) => t === uniq[i]);
+      if (!match && uniq.length) {
+        this.logger.warn(
+          `Урок ${lessonId}, этап ${stageId} (${h.handoutType}): дескрипторы КМЖ≠приложение — ` +
+          `таблица [${table.join(' | ')}] vs лист [${uniq.join(' | ')}]`,
+        );
+      }
+    }
+  }
+
+  /** Тексты дескрипторов из jsonb раздатки (teacherContent или levels). */
+  private descriptorsFromHandout(h: Handout): string[] {
+    const out: string[] = [];
+    const walk = (v: unknown) => {
+      if (Array.isArray(v)) v.forEach(walk);
+      else if (v && typeof v === 'object') {
+        const o = v as Record<string, any>;
+        if (Array.isArray(o.descriptors)) for (const d of o.descriptors) if (d?.text) out.push(String(d.text));
+        for (const val of Object.values(o)) walk(val);
+      }
+    };
+    walk(h.levels ?? h.teacherContent);
+    return out;
+  }
+
+  /**
+   * Сбрасывает презентацию, если она была сгенерирована раньше раздаток и
+   * держит устаревшие дескрипторы. Удаляем запись — при следующей генерации
+   * презентация прочитает уже синхронную таблицу. Учитель увидит, что
+   * презентации нет, и пересоздаст её — это честнее, чем показывать слайды с
+   * дескрипторами, которых нет в КМЖ.
+   */
+  private async invalidateStalePresentation(lessonId: string): Promise<void> {
+    const pres = await this.presRepo.findOne({ where: { lessonId } });
+    if (pres && pres.status === 'ready') {
+      await this.presRepo.delete({ lessonId });
+      this.logger.log(`Урок ${lessonId}: презентация сброшена после перегенерации раздаток (синхронизация дескрипторов)`);
+    }
   }
 
   /**
