@@ -22,17 +22,60 @@ const T = {
   paper: '#FBFAFF', line: '#E6E3F5',
 };
 
-// Акцент + иконка по типу этапа (ТЗ A.3).
-const ACCENT: Record<HandoutType, { color: string; icon: string }> = {
-  warmup: { color: T.orange, icon: '🔥' },
-  explanation: { color: T.indigo, icon: '📘' },
-  individual: { color: T.green, icon: '✏️' },
-  pair: { color: T.violet, icon: '👥' },
-  group: { color: T.violet, icon: '👥' },
-  text: { color: T.green, icon: '📖' },
-  quiz: { color: T.pink, icon: '❓' },
-  reflection: { color: T.teal, icon: '💭' },
+/**
+ * Иконки типов — контурные SVG в фирменном цвете этапа.
+ *
+ * Раньше тут стояли эмодзи (🔥, 📘, ❓). Во вшитых шрифтах (Nunito/Inter,
+ * кириллические сабсеты) эмодзи-глифов нет, а на сервере нет эмодзи-шрифта для
+ * подстановки — в PDF на месте иконки печатался пустой квадрат на КАЖДОМ листе.
+ * Контуры рисуются самим PDF и от шрифтов не зависят.
+ */
+const ICONS: Record<HandoutType, string> = {
+  // Пламя. Симметричная капля читалась как капля воды — нужен наклон вершины
+  // и внутренний язычок, иначе на 17px это не пламя.
+  warmup: '<path d="M13 2.6c.2 2.7 1.9 4 3 5.8 1.3 2.2.7 5.1-1.5 6.6-2.1 1.5-5.1 1-6.6-1.1-1.2-1.7-1.1-4 .2-5.6.2 1 .9 1.7 1.8 1.9-.6-2.8.6-5.4 3.1-7.6z"/>'
+    + '<path d="M10.4 14.4c.3-1.5 1.2-2.3 2.3-2.9"/>',
+  // Раскрытая книга
+  explanation: '<path d="M4 4.8h5.4c1.4 0 2.6 1 2.6 2.3v12.1a2.7 2.7 0 0 0-2.6-1.8H4z"/>'
+    + '<path d="M20 4.8h-5.4c-1.4 0-2.6 1-2.6 2.3v12.1a2.7 2.7 0 0 1 2.6-1.8H20z"/>',
+  // Карандаш
+  individual: '<path d="M4.6 19.4l3.6-.8L19 7.9a1.9 1.9 0 0 0 0-2.7l-.5-.5a1.9 1.9 0 0 0-2.7 0L5.4 15.8z"/>'
+    + '<path d="M14.8 6.2l3 3"/>',
+  // Двое
+  pair: '<circle cx="9" cy="8.4" r="2.9"/><path d="M3.6 19.4c0-3 2.4-4.9 5.4-4.9s5.4 1.9 5.4 4.9"/>'
+    + '<circle cx="17.6" cy="9.6" r="2.2"/><path d="M15.6 19.4c0-2.3 .9-3.6 2.4-3.6s2.6 1.2 2.6 3.2"/>',
+  // Трое
+  group: '<circle cx="12" cy="7.4" r="2.7"/><path d="M7.2 19.2c0-2.7 2.1-4.5 4.8-4.5s4.8 1.8 4.8 4.5"/>'
+    + '<circle cx="5" cy="11" r="2.1"/><circle cx="19" cy="11" r="2.1"/>',
+  // Лист с текстом
+  text: '<path d="M6.4 3.6h6.4l5 5v11.3a.6.6 0 0 1-.6.6H6.4a.6.6 0 0 1-.6-.6V4.2a.6.6 0 0 1 .6-.6z"/>'
+    + '<path d="M12.8 3.6v5h5"/><path d="M9 13.2h6M9 16.4h6"/>',
+  // Вопрос в круге
+  quiz: '<circle cx="12" cy="12" r="8.8"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.8.8c0 1.7-2.4 2-2.4 3.6"/>'
+    + '<path d="M12 17.1h.01"/>',
+  // Облако мысли
+  reflection: '<path d="M20.4 11.4a8 8 0 1 0-14.9 3.9L4 20.4l5.3-1.4a8 8 0 0 0 11.1-7.6z"/>',
 };
+
+// Акцент по типу этапа (ТЗ A.3).
+const ACCENT: Record<HandoutType, { color: string }> = {
+  warmup: { color: T.orange },
+  explanation: { color: T.indigo },
+  individual: { color: T.green },
+  pair: { color: T.violet },
+  group: { color: T.violet },
+  text: { color: T.green },
+  quiz: { color: T.pink },
+  reflection: { color: T.teal },
+};
+
+function typeIcon(type: HandoutType, color: string, size = 17): string {
+  return (
+    `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" ` +
+    `stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">` +
+    `${ICONS[type] ?? ICONS.explanation}</svg>`
+  );
+}
 
 // Локализованные подписи листа.
 const L: Record<string, Record<string, string>> = {
@@ -162,7 +205,7 @@ function frame(meta: HandoutLessonMeta, type: HandoutType, order: number, sheetT
     `</header>` +
     `<div class="accent-bar"></div>` +
     `<div class="fields"><span>${t.student}: <span class="fl"></span></span><span>${t.date}: <span class="fl short"></span></span></div>` +
-    `<div class="block-h"><span class="ti">${acc.icon}</span><span class="tn">${esc(TYPE_NAME[lg][type])}</span>` +
+    `<div class="block-h"><span class="ti">${typeIcon(type, acc.color)}</span><span class="tn">${esc(TYPE_NAME[lg][type])}</span>` +
       `<span class="app">${t.appendix} ${order}</span></div>` +
     `<h1 class="sheet-title">${esc(sheetTitle)}</h1>` +
     `<div class="content">${contentHtml}</div>` +
@@ -211,7 +254,7 @@ body{font-family:'Inter',sans-serif;color:${T.ink};background:#fff;font-size:12.
 .fields .fl{display:inline-block;width:150px;border-bottom:1.4px dotted ${T.muted};vertical-align:baseline}
 .fields .fl.short{width:80px}
 .block-h{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.ti{font-size:17px}
+.ti{display:inline-flex;align-items:center;flex:none}
 .tn{font-family:'Nunito';font-weight:800;font-size:14px;color:var(--acc)}
 .app{margin-left:auto;font-size:10.5px;font-weight:700;color:#fff;background:var(--acc);padding:2px 9px;border-radius:20px}
 .sheet-title{font-family:'Nunito';font-weight:700;font-size:16px;color:${T.ink};margin-bottom:9px;text-wrap:balance}
