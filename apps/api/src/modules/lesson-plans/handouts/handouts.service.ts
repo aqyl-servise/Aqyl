@@ -14,6 +14,7 @@ import { handoutTypeFor, isLeveled, handoutAction, parsedHandoutHasContent, task
 import { buildHandoutPrompt, HANDOUT_TOOL } from './handout-prompts';
 import { descriptorsFromTaskPrompt } from '../prompts/lesson-prompts';
 import { findDescriptorProblems } from '../engine/descriptor-validator';
+import { parseRequiredElements, missingElements } from '../engine/objective-elements';
 import { adjustDescriptorSum } from '../engine/points-engine';
 import { findWrongTerms, flattenStrings } from '../prompts/term-glossary';
 import { PdfService } from '../export/pdf.service';
@@ -148,6 +149,10 @@ export class HandoutsService {
       await this.handoutRepo.save(handout);
     }
 
+    // Покрытие целевых конструкций (ТЗ, задача 3): «unless» и «if only» из
+    // цели 8.6.17.1 терялись и не попадали ни в одно задание.
+    await this.ensureObjectiveCoverage(lesson);
+
     // Пакет не «ready», пока есть пустые листы (ТЗ 1.2): статус error, но сами
     // листы сохранены — учитель дожмёт проблемные кнопкой «Повторить».
     await this.pkgRepo.update({ lessonId }, {
@@ -229,6 +234,88 @@ export class HandoutsService {
       ? this.buildHandout(lesson.id, stage, order, type, parsed, descriptors)
       : this.buildErrorHandout(lesson.id, stage, order, type);
     return { handout, cost };
+  }
+
+  /**
+   * Проверка покрытия целевых конструкций и точечная досылка (ТЗ, задача 3).
+   *
+   * Цель 8.6.17.1 требует «use if / unless / if only», но `unless` и `if only`
+   * терялись при разворачивании цели обучения в цели урока и дальше не
+   * попадали ни в одно задание. Корневая правка — в промпте целей; здесь
+   * страховка на случай, когда конструкция всё же не дошла до материалов.
+   *
+   * Досылаем ТОЧЕЧНО, отдельным пунктом, не перегенерируя пакет: перегенерация
+   * стоит денег и может испортить то, что уже вышло удачно.
+   */
+  private async ensureObjectiveCoverage(lesson: Lesson): Promise<void> {
+    const required = parseRequiredElements(lesson.learningObjectives);
+    if (!required.length) return;
+
+    const handouts = await this.handoutRepo.find({ where: { lessonId: lesson.id }, order: { order: 'ASC' } });
+    const usable = handouts.filter((h) => !h.error);
+    if (!usable.length) return;
+
+    const materials = usable.map((h) => JSON.stringify([h.studentContent, h.levels])).join(' ');
+    const missing = missingElements(required, materials);
+    if (!missing.length) return;
+
+    // Приоритет из ТЗ: уровневое задание (там место для доп. пункта), затем
+    // групповая работа, затем любое другое задание.
+    const target =
+      usable.find((h) => h.handoutType === 'individual' && h.levels) ??
+      usable.find((h) => h.handoutType === 'group') ??
+      usable.find((h) => h.handoutType === 'pair' || h.handoutType === 'text');
+    if (!target) {
+      this.logger.warn(`Урок ${lesson.id}: не покрыты [${missing.join(', ')}], но подходящего листа для досылки нет`);
+      return;
+    }
+
+    for (const el of missing) this.appendCoverageItem(target, el, lesson.language ?? 'kz');
+    await this.handoutRepo.save(target);
+    this.logger.warn(
+      `Урок ${lesson.id}: элементы цели [${missing.join(', ')}] не попали в материалы, ` +
+      `дописаны точечно в лист «${target.handoutType}» (приложение ${target.order})`,
+    );
+  }
+
+  /** Формулировка досылаемого пункта на языке урока. */
+  private coverageItemText(element: string, language: string): { heading: string; body: string } {
+    const q = `«${element}»`;
+    if (language === 'en') {
+      return { heading: 'Additional task', body: `Write one sentence of your own using ${q}.` };
+    }
+    if (language === 'ru') {
+      return { heading: 'Дополнительное задание', body: `Составь одно своё предложение с ${q}.` };
+    }
+    return { heading: 'Қосымша тапсырма', body: `${q} қолданып өз сөйлеміңді жаз.` };
+  }
+
+  /**
+   * Дописывает пункт в лист. Для уровневого — в уровень B (по ТЗ приоритетный
+   * кандидат: базовый уровень A трогать не стоит, C и так самый нагруженный).
+   * Пункт добавляется и в ученическую, и в учительскую версию, иначе учитель
+   * не увидит того, что раздал ученику.
+   */
+  private appendCoverageItem(handout: Handout, element: string, language: string): void {
+    const item = this.coverageItemText(element, language);
+    const pushTo = (block: Record<string, any> | null | undefined) => {
+      if (!block || typeof block !== 'object') return;
+      if (!Array.isArray(block.sections)) block.sections = [];
+      block.sections.push({ heading: item.heading, body: item.body });
+    };
+
+    const levels = handout.levels as Record<string, any> | null;
+    if (levels) {
+      const key = levels.B ? 'B' : levels.C ? 'C' : 'A';
+      pushTo(levels[key]?.student);
+      pushTo(levels[key]?.teacher);
+      handout.levels = { ...levels };
+      return;
+    }
+    pushTo(handout.studentContent as Record<string, any>);
+    pushTo(handout.teacherContent as Record<string, any>);
+    handout.studentContent = { ...(handout.studentContent as Record<string, any>) };
+    handout.teacherContent = { ...(handout.teacherContent as Record<string, any>) };
   }
 
   /**

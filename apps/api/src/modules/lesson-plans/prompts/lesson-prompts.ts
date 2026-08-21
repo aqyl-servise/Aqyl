@@ -9,6 +9,7 @@ export const SYSTEM_BASE =
   'Отвечай СТРОГО валидным JSON без преамбулы и без markdown-ограждений (```).';
 
 import { kazakhTermsBlock } from './term-glossary';
+import { parseAllObjectiveElements } from '../engine/objective-elements';
 
 const LANG_NAME: Record<string, string> = { kz: 'казахском', ru: 'русском', en: 'английском' };
 
@@ -86,6 +87,17 @@ export function objectivesPrompt(
       `${imperativeSamples.map((s) => `«${s}»`).join(', ')}. ` +
       `Переформулируй их в форме действия ученика и проверь каждую цель перед ответом.\n`
     : '';
+
+  // Целевые элементы цели обучения (ТЗ, задача 3). Здесь и терялись «unless»
+  // и «if only»: цель 8.6.17.1 перечисляет три конструкции, а цели урока
+  // разворачивались только вокруг первой, и дальше по цепочке их уже никто не
+  // возвращал. Перечисление извлекается правилами, не моделью.
+  const elements = parseAllObjectiveElements(ctx.learningObjectives);
+  const elementsRule = elements.length
+    ? `ОБЯЗАТЕЛЬНОЕ ПОКРЫТИЕ: цель обучения перечисляет ${elements.map((e) => `«${e}»`).join(', ')}. ` +
+      `Каждый элемент должен быть отражён минимум в одной цели урока — не сводись к первому из списка.\n`
+    : '';
+
   return {
     system: SYSTEM_BASE,
     user:
@@ -97,6 +109,7 @@ export function objectivesPrompt(
       `«Все ученики смогут», «Барлық оқушылар ... алады» и любых их вариантов. ` +
       `Каждая цель начинается сразу с результата — с глагола действия.\n` +
       `${moodRule(ctx.language)}\n` +
+      elementsRule +
       correction +
       `${langRule(ctx.language, ctx.subject)}\n` +
       `Предмет: ${ctx.subject ?? '—'}\nКласс: ${ctx.grade ?? '—'}\nТема: ${ctx.lessonTitle ?? '—'}\n` +
