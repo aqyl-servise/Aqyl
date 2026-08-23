@@ -270,6 +270,19 @@ test('регрессия C: суммы совпадают, а распредел
   assert.ok(found.includes('R9'), 'ожидалось R9 (пункты 3 и 4 склеены)');
 });
 
+test('R11: дробные баллы — в числах scoring и в тексте критериев', () => {
+  const s = validScoring();
+  s.descriptors[0].points = 0.5;
+  s.descriptors[1].points = 1.5;
+  assert.ok(rules(s).includes('R11'));
+
+  // Текстовая форма из живого бага: «Each correct gap is worth 0.5 points».
+  const t = validScoring();
+  assert.ok(rules(t, '', 'Each correct gap is worth 0.5 points, maximum 3 points').includes('R11'));
+  // Математический ответ «47,35» дробью баллов не считается.
+  assert.ok(!rules(t, '', 'Ответ: 47,35 км. За верный ответ 1 балл').includes('R11'));
+});
+
 // ── Запасной вариант (п. 4.4.3) ──────────────────────────────────────────
 test('fallback: шкала монотонна, без дыр, покрывает максимум, сумма дескрипторов сходится', () => {
   const broken: Scoring = {

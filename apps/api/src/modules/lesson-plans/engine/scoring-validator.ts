@@ -46,6 +46,10 @@ export type ScoringRule =
   | 'R1' | 'R2' | 'R3' | 'R4' | 'R5' | 'R6'
   | 'R7' | 'R8' | 'R9' | 'R10' | 'R11';
 
+// Дробные баллы (ТЗ №2, задача 6) — переиспользуем выверенный детектор:
+// наивная проверка на любую десятичную била бы по математическим ответам.
+import { hasFractionalPoints } from './descriptor-validator';
+
 export interface ScoringViolation {
   rule: ScoringRule;
   /** Человекочитаемое описание — уходит в лог и в промпт перегенерации. */
@@ -158,9 +162,18 @@ export function validateScoring(
   if (!(total > 0)) add('R11', `totalPoints должен быть больше нуля, получено ${total}`);
   for (const d of descriptors) {
     if (!(d.points >= 0)) add('R11', `отрицательный балл в дескрипторе «${d.text}»: ${d.points}`);
+    else if (!Number.isInteger(d.points)) add('R11', `дробный балл в дескрипторе «${d.text}»: ${d.points}`);
   }
   for (const b of bands) {
     if (!(b.points >= 0)) add('R11', `отрицательный балл в шкале ${b.minCorrect}–${b.maxCorrect}: ${b.points}`);
+    else if (!Number.isInteger(b.points)) add('R11', `дробный балл в шкале ${b.minCorrect}–${b.maxCorrect}: ${b.points}`);
+  }
+  // Дробные баллы в ТЕКСТЕ критериев/дескрипторов («0.5 points», «1/2 балла»).
+  // Проверка листа из ТЗ №2 их видит, но чинит перегенерацией всего листа и
+  // после двух неудач выпускает с warn — здесь же ретрай emit_scoring
+  // переписывает только блок оценивания, поэтому нарушение объявляем.
+  if (scoringText && hasFractionalPoints(scoringText)) {
+    add('R11', 'дробные баллы в тексте критериев/дескрипторов — баллы должны быть целыми');
   }
 
   // ── R1: сумма дескрипторов равна объявленному итогу.
