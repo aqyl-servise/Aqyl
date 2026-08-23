@@ -93,6 +93,13 @@ export class AdminController {
     return this.service.revokeSubscription(id, req.user.id);
   }
 
+  /** Начисление уроков (пакеты, ТЗ №3): промо и оплаты мимо Kaspi. */
+  @Post("users/:id/lessons")
+  @Roles("admin")
+  grantLessons(@Param("id") id: string, @Body() body: { lessons: number }, @Req() req: ReqUser) {
+    return this.service.grantLessons(id, req.user.id, Number(body?.lessons));
+  }
+
   /**
    * Воронка B2C: список и сводка. Только `admin` — это платформенная воронка,
    * школьного разреза у неё нет, директору и завучу показывать нечего.

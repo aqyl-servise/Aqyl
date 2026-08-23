@@ -44,6 +44,16 @@ export function B2cPanel({ token }: { token: string }) {
     finally { setBusyId(null); }
   }
 
+  // Пакеты уроков (ТЗ №3): начисление продлевает весь баланс на 3 месяца.
+  async function grantLessonsTo(u: B2cUser) {
+    const lessons = Number(window.prompt(`Начислить уроки «${u.email}». Сколько?`, "10"));
+    if (!Number.isInteger(lessons) || lessons <= 0) return;
+    setBusyId(u.id);
+    try { await api.grantLessons(token, u.id, lessons); load(); }
+    catch { setError("Не удалось начислить уроки"); }
+    finally { setBusyId(null); }
+  }
+
   if (loading) return <div style={{ padding: 24 }}><span className="spinner" /></div>;
 
   return (
@@ -102,13 +112,23 @@ export function B2cPanel({ token }: { token: string }) {
                 </td>
                 <td style={{ ...td, color: "var(--text-secondary, #888)" }}>{u.subject || "—"}</td>
                 <td style={{ ...td, textAlign: "center" }}><Access u={u} /></td>
-                <td style={{ ...td, textAlign: "right" }}>{u.lessons}</td>
+                <td style={{ ...td, textAlign: "right" }}>
+                  {u.lessons}
+                  {/* Баланс пакетов (ТЗ №3): остаток и срок. */}
+                  {u.paidLessonsBalance > 0 && (
+                    <div style={{ fontSize: 11, color: "#059669" }}>
+                      баланс {u.paidLessonsBalance}
+                      {u.balanceExpiresAt ? ` до ${new Date(u.balanceExpiresAt).toLocaleDateString("ru-RU")}` : ""}
+                    </div>
+                  )}
+                </td>
                 <td style={{ ...td, textAlign: "right" }}>
                   {u.paidKzt ? `${u.paidKzt.toLocaleString("ru-RU")} ₸` : "—"}
                 </td>
                 <td style={{ ...td, textAlign: "center" }}>{u.onboardingCompleted ? "✓" : "—"}</td>
                 <td style={{ ...td, textAlign: "right", whiteSpace: "nowrap" }}>
-                  <button onClick={() => grant(u)} disabled={busyId === u.id} style={ghostBtn}>Выдать</button>
+                  <button onClick={() => grantLessonsTo(u)} disabled={busyId === u.id} style={ghostBtn}>+Уроки</button>
+                  <button onClick={() => grant(u)} disabled={busyId === u.id} style={{ ...ghostBtn, marginLeft: 6 }}>Подписка</button>
                   {u.subscriptionStatus === "active" && (
                     <button onClick={() => revoke(u)} disabled={busyId === u.id}
                       style={{ ...ghostBtn, marginLeft: 6, color: "#dc2626" }}>Снять</button>

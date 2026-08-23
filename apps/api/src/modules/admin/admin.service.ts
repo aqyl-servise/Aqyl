@@ -12,6 +12,7 @@ import { Protocol } from "../schools/entities/protocol.entity";
 import { School } from "../schools/entities/school.entity";
 import { SecurityAuditLog } from "../schools/entities/security-audit-log.entity";
 import { Subscription } from "../billing/entities/subscription.entity";
+import { BillingService } from "../billing/billing.service";
 import { SmsService } from "../notifications/sms.service";
 
 /** Цена, проставляемая при ручной выдаче. Совпадает с PRICE_PER_MONTH в billing.service. */
@@ -31,6 +32,7 @@ export class AdminService {
     @InjectRepository(SecurityAuditLog) private readonly auditRepo: Repository<SecurityAuditLog>,
     @InjectRepository(Subscription) private readonly subscriptionRepo: Repository<Subscription>,
     private readonly smsService: SmsService,
+    private readonly billingService: BillingService,
   ) {}
 
   async getOverview(schoolId?: string | null) {
@@ -306,6 +308,36 @@ export class AdminService {
   }
 
   /**
+   * Начисление уроков администратором (ТЗ №3, п. 8) — промо, оплата мимо
+   * Kaspi, компенсации. Пакет 'admin' с нулевой ценой: журнал покупок хранит
+   * след, баланс и срок продлеваются по общему правилу «+3 месяца всему».
+   */
+  async grantLessons(id: string, requesterId: string, lessons: number) {
+    if (!Number.isInteger(lessons) || lessons < 1 || lessons > 200) {
+      throw new BadRequestException("Число уроков — целое от 1 до 200");
+    }
+    const user = await this.teacherRepo.findOne({ where: { id } });
+    if (!user) throw new NotFoundException("Пользователь не найден");
+    if (user.registrationSource !== "b2c") {
+      throw new BadRequestException("Пакеты уроков действуют только в воронке B2C");
+    }
+
+    const { balance, expiresAt } = await this.billingService.creditPackage(
+      id,
+      { code: "admin", lessons, priceKzt: 0 },
+      null,
+    );
+
+    await this.auditRepo.save(this.auditRepo.create({
+      eventType: "lessons_granted",
+      details: `${user.email}: +${lessons} ур., баланс ${balance}, до ${expiresAt.toISOString().slice(0, 10)}`,
+      actorId: requesterId,
+    } as never));
+
+    return { ok: true, balance, expiresAt };
+  }
+
+  /**
    * Ручная выдача подписки администратором — для оплат мимо Kaspi
    * (наличные, счёт, промо). Продлевает от текущей даты окончания, если
    * подписка ещё действует, иначе от сегодняшнего дня.
@@ -398,6 +430,7 @@ export class AdminService {
       subscriptionStatus: string | null; currentPeriodEnd: Date | null;
       pricePerMonth: number | null; cancelAtPeriodEnd: boolean;
       lessons: number; paidKzt: number;
+      paidLessonsBalance: number; balanceExpiresAt: Date | null;
     }>;
   }> {
     const teachers = await this.teacherRepo.find({
@@ -446,6 +479,9 @@ export class AdminService {
         cancelAtPeriodEnd: s?.cancelAtPeriodEnd ?? false,
         lessons: lessonsBy.get(t.id) ?? 0,
         paidKzt: pay.sum,
+        // Пакеты уроков (ТЗ №3): баланс и срок — прямо с учителя.
+        paidLessonsBalance: t.paidLessonsBalance ?? 0,
+        balanceExpiresAt: t.balanceExpiresAt ?? null,
       };
     });
 

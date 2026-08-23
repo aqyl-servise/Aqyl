@@ -324,6 +324,58 @@ export class BillingService {
   }
 
   /**
+   * Сгорание баланса пакетов (ТЗ №3, п. 7): срок истёк — баланс в 0.
+   * Запускается кроном раз в сутки. Списанные уроки не трогаются: их
+   * материалы остаются доступны всегда.
+   */
+  async expireBalances(): Promise<{ expired: number }> {
+    // Сколько именно сгорело — восстановимо из журнала покупок и списаний;
+    // здесь фиксируем факт по каждому учителю.
+    const rows: { id: string }[] = await this.teacherRepo.query(
+      `UPDATE "teacher"
+       SET "paidLessonsBalance" = 0
+       WHERE "paidLessonsBalance" > 0 AND "balanceExpiresAt" < now()
+       RETURNING id`,
+    );
+    for (const r of rows) {
+      this.logger.warn(`Баланс пакетов учителя ${r.id} сгорел по сроку`);
+    }
+    return { expired: rows.length };
+  }
+
+  /**
+   * Письмо за N дней до сгорания баланса (ТЗ №3, п. 7) — удержание: «любая
+   * покупка продлит уроки». Окно ровно в одни сутки, как и у напоминаний о
+   * подписке: крон суточный, каждый учитель попадает в окно единожды.
+   */
+  async sendBalanceExpiryReminders(daysBefore = 7): Promise<{ sent: number }> {
+    const now = new Date();
+    const from = new Date(now.getTime() + daysBefore * DAY_MS);
+    const to = new Date(from.getTime() + DAY_MS);
+    const teachers: { id: string; email: string; balance: number; expires: Date }[] =
+      await this.teacherRepo.query(
+        `SELECT id, email, "paidLessonsBalance" AS balance, "balanceExpiresAt" AS expires
+         FROM "teacher"
+         WHERE "paidLessonsBalance" > 0 AND "balanceExpiresAt" >= $1 AND "balanceExpiresAt" < $2`,
+        [from, to],
+      );
+    let sent = 0;
+    for (const tch of teachers) {
+      try {
+        await this.mail.sendBalanceExpiryReminder({
+          email: tch.email,
+          balance: Number(tch.balance),
+          expiresAt: new Date(tch.expires),
+        });
+        sent++;
+      } catch (err) {
+        this.logger.error(`Напоминание о сгорании ${tch.id}: ${(err as Error).message}`);
+      }
+    }
+    return { sent };
+  }
+
+  /**
    * Напоминания об окончании подписки за 3 дня. Вызывается по расписанию.
    *
    * Окно ровно в одни сутки, а не «осталось меньше трёх дней»: иначе письмо

@@ -238,6 +238,28 @@ export class MailService {
    * документ об оплате. Номер заказа и есть тот идентификатор, по которому
    * учитель и мы находим платёж в кабинете Kaspi при разборе обращения.
    */
+  /** За 7 дней до сгорания баланса пакетов (ТЗ №3, п. 7) — удержание. */
+  async sendBalanceExpiryReminder(params: {
+    email: string; balance: number; expiresAt: Date;
+  }): Promise<void> {
+    const { email, balance, expiresAt } = params;
+    const until = expiresAt.toLocaleDateString("ru-RU");
+    const html = `<div style="font-family: Arial, sans-serif; max-width: 520px; color: #1e293b;">
+  <h2 style="margin:0 0 16px;">У вас остались уроки</h2>
+  <p>На вашем балансе Aqyl — <b>${balance}</b> ${balance === 1 ? "урок" : balance < 5 ? "урока" : "уроков"},
+  срок действия — до <b>${until}</b>.</p>
+  <p>Любая покупка — даже докупка на 5 уроков — продлевает весь баланс на 3 месяца:
+  ни один оплаченный урок не пропадёт.</p>
+  <p><a href="https://aqyl-service.kz/dashboard/b2c/subscribe" style="color:#6f61d6">Выбрать пакет →</a></p>
+  <p style="color:#666;font-size:13px">Это единственное напоминание — мы не шлём повторных писем.</p>
+</div>`;
+    const masked = email.replace(/(.{2}).+(@.+)/, "$1***$2");
+    await this.transporter.sendMail({
+      from: this.from, to: email, subject: `Aqyl — ${balance} ур. на балансе до ${until}`, html,
+    });
+    this.logger.log(`Balance expiry reminder sent to ${masked}`);
+  }
+
   /** Квитанция за пакет уроков (ТЗ №3). Обязательство оферты — раздел 3.2. */
   async sendPackageReceipt(params: {
     email: string; amount: number; lessons: number; balance: number; orderId: string; expiresAt: Date;

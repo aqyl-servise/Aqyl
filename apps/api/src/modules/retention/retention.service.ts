@@ -77,5 +77,24 @@ export class RetentionService {
     } catch (err) {
       this.logger.error(`Не удалось разослать напоминания: ${(err as Error).message}`);
     }
+    // Пакеты уроков (ТЗ №3, п. 7): письмо за 7 дней до сгорания баланса.
+    // То же утреннее окно и то же суточное «окно в одни сутки» внутри.
+    try {
+      const { sent } = await this.billing.sendBalanceExpiryReminders(7);
+      if (sent > 0) this.logger.log(`Напоминаний о сгорании баланса отправлено: ${sent}`);
+    } catch (err) {
+      this.logger.error(`Не удалось разослать напоминания о балансе: ${(err as Error).message}`);
+    }
+  }
+
+  /** Сгорание платного баланса по сроку (ТЗ №3, п. 7) — ночью, вместе с очисткой. */
+  @Cron(CronExpression.EVERY_DAY_AT_3AM, { name: 'balance-expiry' })
+  async expireBalances(): Promise<void> {
+    try {
+      const { expired } = await this.billing.expireBalances();
+      if (expired > 0) this.logger.warn(`Сгоревших балансов пакетов: ${expired}`);
+    } catch (err) {
+      this.logger.error(`Не удалось обнулить просроченные балансы: ${(err as Error).message}`);
+    }
   }
 }

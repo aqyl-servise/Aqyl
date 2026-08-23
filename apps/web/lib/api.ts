@@ -399,6 +399,7 @@ export interface B2cUser {
   subscriptionStatus: string | null; currentPeriodEnd: string | null;
   pricePerMonth: number | null; cancelAtPeriodEnd: boolean;
   lessons: number; paidKzt: number;
+  paidLessonsBalance: number; balanceExpiresAt: string | null;
 }
 
 export interface B2cFunnel {
@@ -664,6 +665,10 @@ export const api = {
       `/admin/users/${id}/subscription`, { method: "POST", body: JSON.stringify({ months }) }, token),
   revokeSubscription: (token: string, id: string) =>
     request<{ ok: boolean }>(`/admin/users/${id}/subscription`, { method: "DELETE" }, token),
+  // Начисление уроков (пакеты, ТЗ №3): промо и оплаты мимо Kaspi.
+  grantLessons: (token: string, id: string, lessons: number) =>
+    request<{ ok: boolean; balance: number; expiresAt: string }>(
+      `/admin/users/${id}/lessons`, { method: "POST", body: JSON.stringify({ lessons }) }, token),
   // Воронка B2C (только admin): список учителей и сводка по подпискам.
   getB2cFunnel: (token: string) => request<B2cFunnel>("/admin/b2c", undefined, token),
 
