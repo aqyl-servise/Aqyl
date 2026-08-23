@@ -88,6 +88,9 @@ export type UpdateB2CProfileInput = Partial<{
   onboardingCompleted: boolean;
 }>;
 
+/** Бесплатный доступ меряется комплектами материалов, а не днями (оферта, п. 4.1). */
+export type TrialQuota = { used: number; left: number; limit: number };
+
 export type Subscription = {
   id: string;
   teacherId: string;
@@ -493,6 +496,9 @@ export const api = {
     request<Subscription | null>("/billing/subscription", undefined, token),
   getPaymentHistory: (token: string) =>
     request<PaymentRecord[]>("/billing/payments", undefined, token),
+  // Остаток бесплатного доступа в комплектах (оферта, п. 4.1).
+  getTrial: (token: string) =>
+    request<TrialQuota>("/billing/trial", undefined, token),
 
   // Lesson-plans (КСП generator)
   lpCreate: (token: string, header: LpHeader) =>

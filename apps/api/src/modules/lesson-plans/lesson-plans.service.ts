@@ -292,7 +292,14 @@ export class LessonPlansService {
         HttpStatus.BAD_REQUEST,
       );
     }
-    await this.lessonRepo.update({ id, userId: ctx.userId }, { status: 'generating', mode, generationError: null });
+    // trialCounted — урок израсходовал комплект бесплатного доступа (оферта,
+    // п. 4.1). Ставим здесь, а не при создании черновика: лимит должен тратить
+    // только реально сгенерированный план. Пометка идемпотентна и ставится всем
+    // — для B2G она просто не используется, у них квоты нет.
+    await this.lessonRepo.update(
+      { id, userId: ctx.userId },
+      { status: 'generating', mode, generationError: null, trialCounted: true },
+    );
     // fire-and-forget; frontend polls GET /lessons/:id
     void this.runGeneration(id).catch(async (err) => {
       this.logger.error(`Lesson ${id} generation failed: ${(err as Error).message}`);

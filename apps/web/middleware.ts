@@ -61,6 +61,10 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|icons|images).*)',
+    // icon\.png — фавикон, который App Router генерирует из app/icon.png.
+    // Без этого исключения middleware редиректил его на /login, и на всех
+    // публичных страницах (лендинг, вход, юрдокументы) вкладка оставалась
+    // без иконки: браузер запрашивает её без токена.
+    '/((?!_next/static|_next/image|favicon.ico|icon\\.png|icons|images).*)',
   ],
 }

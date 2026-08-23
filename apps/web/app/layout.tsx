@@ -25,8 +25,9 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Aqyl MVP",
-  description: "Teacher dashboard MVP for lesson planning and analytics.",
+  title: "Aqyl — планы уроков",
+  description:
+    "Планы уроков, задания и раздаточные материалы по стандартам Министерства просвещения РК.",
 };
 
 const ANTI_FOUC = `(function(){try{var t=localStorage.getItem('aqyl-theme')||'system';var dark=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme:dark)').matches);document.documentElement.setAttribute('data-theme',dark?'dark':'light');}catch(e){}})();`;

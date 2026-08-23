@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { Teacher } from "../teachers/entities/teacher.entity";
+import { Lesson } from "../lesson-plans/entities/lesson.entity";
 import { Subscription } from "./entities/subscription.entity";
 import { Payment } from "./entities/payment.entity";
 import { BillingController } from "./billing.controller";
@@ -11,7 +12,8 @@ import { SubscriptionGuard } from "../../common/guards/subscription.guard";
 import { MailModule } from "../mail/mail.module";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Subscription, Payment, Teacher]), MailModule],
+  // Lesson — для подсчёта израсходованных комплектов бесплатного доступа.
+  imports: [TypeOrmModule.forFeature([Subscription, Payment, Teacher, Lesson]), MailModule],
   controllers: [BillingController],
   providers: [
     BillingService,

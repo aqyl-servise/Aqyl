@@ -32,12 +32,6 @@ const LANGUAGES = [
   { key: "obLangMixed", value: "mixed" },
 ];
 
-function daysLeft(date: string | null): number {
-  if (!date) return 0;
-  const diff = new Date(date).getTime() - Date.now();
-  return Math.max(0, Math.ceil(diff / (24 * 60 * 60 * 1000)));
-}
-
 type SavedData = {
   step?: number;
   subject?: string;
@@ -62,6 +56,8 @@ export default function OnboardingPage() {
   const [lang, setLang] = useLang();
   const t = LT[lang];
   const [profile, setProfile] = useState<B2CProfile | null>(null);
+  // Остаток бесплатных комплектов (оферта, п. 4.1) — заменил обратный отсчёт дней.
+  const [trialLeft, setTrialLeft] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -86,6 +82,8 @@ export default function OnboardingPage() {
         if (me.onboardingCompleted) { router.replace("/dashboard/b2c"); return; }
         setProfile(me);
         if (me.subject) setSubject(me.subject);
+        const quota = await api.getTrial(token).catch(() => null);
+        if (active) setTrialLeft(quota?.left ?? null);
       } catch {
         if (active) router.replace("/login");
         return;
@@ -158,7 +156,6 @@ export default function OnboardingPage() {
   }
   if (!profile) return null;
 
-  const trialDays = daysLeft(profile.trialEndsAt);
   const canSkip = step === 2 || step === 3;
 
   return (
@@ -227,7 +224,7 @@ export default function OnboardingPage() {
           )}
           {step === 4 && (
             <StepDone
-              trialDays={trialDays} saving={saving}
+              trialLeft={trialLeft ?? 0} saving={saving}
               onCreate={() => finishOnboarding("create-kmzh")}
               onExplore={() => finishOnboarding()} t={t}
             />
@@ -395,16 +392,16 @@ function StepDemo(props: {
 }
 
 // ── Step 4: Done ─────────────────────────────────────────────────────────────
-function StepDone(props: { trialDays: number; saving: boolean; onCreate: () => void; onExplore: () => void; t: T }) {
-  const { trialDays, saving, onCreate, onExplore, t } = props;
+function StepDone(props: { trialLeft: number; saving: boolean; onCreate: () => void; onExplore: () => void; t: T }) {
+  const { trialLeft, saving, onCreate, onExplore, t } = props;
   return (
     <div style={{ textAlign: "center" }}>
       <h1 style={{ fontFamily: "var(--font-display)", color: "var(--white)", fontSize: 30, fontWeight: 700, margin: "0 0 18px" }}>{t.obTitle4}</h1>
       <div style={{ background: "rgba(139,127,232,.14)", border: "1px solid var(--line)", borderRadius: 14, padding: "20px 22px", marginBottom: 26, textAlign: "left" }}>
         <div style={{ fontWeight: 700, color: "var(--white)", marginBottom: 8 }}>{t.obTrialAll}</div>
-        {/* Без склонения слова «день»: одна фраза корректна во всех трёх языках. */}
+        {/* Без склонения слова «урок»: одна фраза корректна во всех трёх языках. */}
         <div style={{ color: "var(--muted)", fontSize: 14 }}>
-          {t.obTrialDays.replace("{n}", String(trialDays))}
+          {t.obTrialLeft.replace("{n}", String(trialLeft))}
         </div>
       </div>
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>

@@ -20,6 +20,7 @@ import { SkipSchoolIsolation } from "../../common/decorators/skip-school-isolati
 import { ALL_TEACHER_ROLES } from "../../common/roles.constants";
 import { BillingService } from "./billing.service";
 import { KaspiService } from "./kaspi.service";
+import { SubscriptionService, TRIAL_LESSON_LIMIT } from "./subscription.service";
 import { CreateSessionDto } from "./dto/create-session.dto";
 
 interface ReqUser {
@@ -35,6 +36,7 @@ export class BillingController {
   constructor(
     private readonly billingService: BillingService,
     private readonly kaspiService: KaspiService,
+    private readonly subscriptionService: SubscriptionService,
   ) {}
 
   @Post("create-session")
@@ -95,5 +97,16 @@ export class BillingController {
   @UseGuards(JwtAuthGuard)
   getPayments(@Req() req: ReqUser) {
     return this.billingService.getPaymentHistory(req.user.id);
+  }
+
+  /**
+   * Остаток бесплатного доступа в комплектах (оферта, п. 4.1). Заменил показ
+   * «осталось N дней»: пробный период меряется объёмом, а не сроком.
+   */
+  @Get("trial")
+  @UseGuards(JwtAuthGuard)
+  async getTrial(@Req() req: ReqUser) {
+    const used = await this.subscriptionService.trialLessonsUsed(req.user.id);
+    return { used, left: Math.max(0, TRIAL_LESSON_LIMIT - used), limit: TRIAL_LESSON_LIMIT };
   }
 }
