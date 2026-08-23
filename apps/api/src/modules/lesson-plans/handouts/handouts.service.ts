@@ -12,7 +12,8 @@ import { AiClientService } from '../../../services/ai-client.service';
 import { CostLoggerService } from './cost-logger.service';
 import { handoutTypeFor, isLeveled, handoutAction, parsedHandoutHasContent, taskFactsFromParsed, deriveStageFromHandout, levelFacts, extractNumberedTasks } from './handout-content';
 import { Presentation } from '../entities/presentation.entity';
-import { buildHandoutPrompt, HANDOUT_TOOL } from './handout-prompts';
+import { buildHandoutPrompt, HANDOUT_TOOL, SCORING_FIX_TOOL, buildScoringFixPrompt } from './handout-prompts';
+import { validateScoring, buildFallbackScoring, describeViolations, Scoring } from '../engine/scoring-validator';
 import { descriptorsFromTaskPrompt, leveledDescriptorsPrompt } from '../prompts/lesson-prompts';
 import { findDescriptorProblems, uncoveredTaskTargets, noteReferenceGaps, hasFractionalPoints } from '../engine/descriptor-validator';
 import { findRewriteProblems, parseAnswerKeys, RewriteProblem } from '../engine/rewrite-validator';
@@ -246,6 +247,15 @@ export class HandoutsService {
       this.logger.warn(`Лист «${type}» урока ${lesson.id}: пустой ответ, попытка ${attempt}/2`);
     }
 
+    // Валидатор баллов (ТЗ 1.5.2): арифметика шкалы/критериев/дескрипторов
+    // сверяется и чинится ДО сохранения листа — дальше только БД и PDF.
+    let scoringFallback = false;
+    if (parsed) {
+      const sv = await this.validateAndFixScoring(lesson, stage, type, order, parsed);
+      cost += sv.cost;
+      scoringFallback = sv.fallback;
+    }
+
     // Дескрипторы — ПОСЛЕ задания и по его тексту (ТЗ, задача 2). В плане они
     // уже сгенерированы по описанию этапа (чтобы КМЖ был полным и без
     // раздаток), здесь уточняются по факту: правка идёт в ту же таблицу, из
@@ -276,7 +286,134 @@ export class HandoutsService {
     const handout = parsed
       ? this.buildHandout(lesson.id, stage, order, type, parsed, descriptors, perLevel)
       : this.buildErrorHandout(lesson.id, stage, order, type);
+    handout.scoringFallback = scoringFallback;
     return { handout, cost };
+  }
+
+  /** Тело задания одного блока — для подсчёта пропусков (R6). Ключи и критерии
+   *  живут в teacherExtra и сюда не попадают, как требует ТЗ 1.5.2. */
+  private scoringTaskText(block: Record<string, any>): string {
+    const parts: string[] = [];
+    if (typeof block.instructions === 'string') parts.push(block.instructions);
+    for (const s of block.sections ?? []) {
+      if (s?.heading) parts.push(String(s.heading));
+      if (s?.body) parts.push(String(s.body));
+      for (const it of s?.items ?? []) parts.push(String(it));
+    }
+    for (const q of block.questions ?? []) {
+      if (q?.q) parts.push(String(q.q));
+      for (const o of q?.options ?? []) parts.push(String(o));
+    }
+    return parts.join('\n');
+  }
+
+  /**
+   * Валидатор баллов (ТЗ 1.5.2): проверяет числовую согласованность блока
+   * оценивания каждого оцениваемого блока листа и чинит его ДО того, как лист
+   * уйдёт в БД (и дальше в PDF). Порядок из ТЗ, п. 4.4: до двух перегенераций
+   * ТОЛЬКО блока оценивания, затем детерминированный запасной вариант с
+   * флагом. Лист не блокируется никогда.
+   *
+   * Повторные вызовы инициированы системой и пользовательский лимит
+   * перегенерации не расходуют: они идут напрямую через ai, мимо
+   * regenerateHandout.
+   */
+  private async validateAndFixScoring(
+    lesson: Lesson,
+    stage: LessonStage,
+    type: HandoutType,
+    order: number,
+    parsed: Record<string, any>,
+  ): Promise<{ cost: number; fallback: boolean }> {
+    if (!stage.isAssessed) return { cost: 0, fallback: false };
+
+    // Блоки листа: уровни A/B/C или единственный ученический.
+    const blocks: { label: string; student: Record<string, any>; extra: Record<string, any> }[] =
+      isLeveled(type) && parsed.levels
+        ? (['A', 'B', 'C'] as const).map((k) => {
+            const L = (parsed.levels[k] ?? {}) as Record<string, any>;
+            return { label: `уровень ${k}`, student: L, extra: (L.teacherExtra ?? {}) as Record<string, any> };
+          })
+        : [{ label: 'лист', student: (parsed.student ?? {}) as Record<string, any>, extra: (parsed.teacherExtra ?? {}) as Record<string, any> }];
+
+    let cost = 0;
+    let fallback = false;
+    const logCtx = `урок ${lesson.id}, приложение ${order} (${type}), ${lesson.subject ?? '—'}, ` +
+      `${lesson.grade ?? '—'} класс, ${lesson.language ?? 'kz'}`;
+
+    for (const b of blocks) {
+      const scoring = b.extra?.scoring as Scoring | undefined;
+      if (!scoring || !Array.isArray(scoring.items)) continue; // модель не отдала метаданные — валидировать нечего
+
+      const taskText = this.scoringTaskText(b.student);
+      const scoringText = [
+        String(b.extra.criteria ?? ''),
+        ...(scoring.descriptors ?? []).map((d) => d.text),
+      ].join('\n');
+
+      let current = scoring;
+      let res = validateScoring(current, taskText, scoringText);
+      if (res.ok) continue;
+      // Исходный список нарушений — в лог уходит именно он (ТЗ 4.5): после
+      // удачной починки res.violations уже пуст.
+      const firstViolations = describeViolations(res.violations);
+
+      // До двух перегенераций только блока оценивания (п. 4.4.1–4.4.2).
+      let outcome: 'fixed_on_retry_1' | 'fixed_on_retry_2' | 'fallback' = 'fallback';
+      for (let attempt = 1; attempt <= 2 && !res.ok; attempt++) {
+        const p = buildScoringFixPrompt({
+          taskText,
+          itemCount: current.items.length,
+          gapCount: res.gapsInText || current.items.reduce((a, i) => a + (i.gaps ?? 0), 0),
+          totalPoints: current.totalPoints,
+          violations: describeViolations(res.violations),
+          language: lesson.language ?? 'kz',
+        });
+        const fix = await this.ai.requestTool<{ criteria?: string; scoring?: Scoring }>({
+          action: 'lesson_scoring_fix', systemPrompt: p.system,
+          messages: [{ role: 'user', content: p.user }],
+          userId: lesson.userId, schoolId: lesson.schoolId,
+        }, SCORING_FIX_TOOL);
+        cost += await this.cost.log(lesson.id, 'handouts', {
+          content: '', model: fix.model, tokensIn: fix.tokensIn, tokensOut: fix.tokensOut,
+          cacheWriteTokens: fix.cacheWriteTokens, cacheReadTokens: fix.cacheReadTokens,
+        });
+        const candidate = fix.data?.scoring;
+        if (candidate && Array.isArray(candidate.items)) {
+          const candText = [
+            String(fix.data?.criteria ?? b.extra.criteria ?? ''),
+            ...(candidate.descriptors ?? []).map((d) => d.text),
+          ].join('\n');
+          const check = validateScoring(candidate, taskText, candText);
+          if (check.ok) {
+            current = candidate;
+            res = check;
+            if (typeof fix.data?.criteria === 'string' && fix.data.criteria.trim()) {
+              b.extra.criteria = fix.data.criteria;
+            }
+            outcome = attempt === 1 ? 'fixed_on_retry_1' : 'fixed_on_retry_2';
+          }
+        }
+        if (!res.ok) {
+          this.logger.warn(`Валидатор баллов: ${logCtx}, ${b.label} — попытка ${attempt}/2 не прошла`);
+        }
+      }
+
+      // Детерминированный запасной вариант (п. 4.4.3). Лист не блокируем.
+      if (!res.ok) {
+        current = buildFallbackScoring(current, Math.max(res.scaleMax, res.gapsInText, 1));
+        fallback = true;
+      }
+
+      b.extra.scoring = current;
+
+      this.logger.warn(
+        `Валидатор баллов: ${logCtx}, ${b.label} — [${firstViolations}] ` +
+        `→ ${outcome}` + (outcome === 'fallback' ? ' (шкала построена кодом)' : ''),
+      );
+    }
+
+    return { cost, fallback };
   }
 
   /**

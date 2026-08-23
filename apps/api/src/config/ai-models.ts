@@ -25,6 +25,10 @@ export const ACTION_MODEL_MAP: Record<string, keyof typeof AI_MODELS> = {
   // простые (разминка/объяснение/квиз/рефлексия) — Haiku втрое дешевле (ТЗ 1.2).
   lesson_handout: 'SONNET',
   lesson_handout_light: 'HAIKU',
+  // Точечная перегенерация блока оценивания (ТЗ 1.5.2): чинит арифметику
+  // шкалы/дескрипторов по списку конкретных нарушений. Sonnet: Haiku эти же
+  // числа и перепутал при генерации листа.
+  lesson_scoring_fix: 'SONNET',
   literacy_stimulus: 'SONNET',
   literacy_analyze: 'HAIKU',
   literacy_questions: 'SONNET',
@@ -59,6 +63,8 @@ export const MAX_TOKENS_MAP: Record<string, number> = {
   // потолок. Лёгкие листы на Haiku — отдельный, меньший лимит.
   lesson_handout: 5000,
   lesson_handout_light: 2600,
+  lesson_scoring_fix: 1200, // только criteria + scoring, без текста задания
+
   literacy_stimulus: 900, // было 1500 — стимул ограничен 250 словами
   literacy_analyze: 400,
   literacy_questions: 2200, // было 3000

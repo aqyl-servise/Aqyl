@@ -102,9 +102,57 @@ const blockSchema = {
     answerLines: { type: 'number' },
   },
 };
+// Метаданные оценивания (ТЗ 1.5.2): модель отдаёт числа отдельным объектом,
+// чтобы код мог проверить согласованность шкалы, критериев и дескрипторов
+// арифметикой, не разбирая свободный текст.
+const scoringSchema = {
+  type: 'object',
+  properties: {
+    totalPoints: { type: 'number' },
+    items: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: { index: { type: 'number' }, gaps: { type: 'number' } },
+        required: ['index', 'gaps'],
+      },
+    },
+    bands: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          minCorrect: { type: 'number' },
+          maxCorrect: { type: 'number' },
+          points: { type: 'number' },
+        },
+        required: ['minCorrect', 'maxCorrect', 'points'],
+      },
+    },
+    perTaskPoints: { type: 'object', additionalProperties: { type: 'number' } },
+    descriptors: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          text: { type: 'string' },
+          points: { type: 'number' },
+          refersToItems: { type: 'array', items: { type: 'number' } },
+        },
+        required: ['text', 'points', 'refersToItems'],
+      },
+    },
+  },
+  required: ['totalPoints', 'items', 'descriptors'],
+};
 const teacherExtraSchema = {
   type: 'object',
-  properties: { answers: { type: 'string' }, criteria: { type: 'string' }, notes: { type: 'string' } },
+  properties: {
+    answers: { type: 'string' },
+    criteria: { type: 'string' },
+    notes: { type: 'string' },
+    scoring: scoringSchema,
+  },
 };
 const levelSchema = {
   type: 'object',
@@ -154,7 +202,16 @@ export function buildHandoutPrompt(opts: HandoutPromptOpts): { system: string; u
       `notes — до 15 слов и только если есть о чём предупредить. Подсказка про ошибку, ` +
       `возможную ИМЕННО в ЭТОМ задании: формы и конструкции, которые называешь в подсказке, ` +
       `должны реально встречаться в задании или ключе этой карточки. Не давай общих ` +
-      `подсказок по теме урока, если их не к чему привязать в самом задании (ТЗ №2, задача 5).`
+      `подсказок по теме урока, если их не к чему привязать в самом задании (ТЗ №2, задача 5).\n` +
+      // Метаданные оценивания (ТЗ 1.5.2): числа отдельным объектом, чтобы код
+      // сверил шкалу, критерии и дескриптор арифметикой.
+      `В teacherExtra.scoring продублируй числа оценивания структурой: totalPoints; items — ` +
+      `каждый пункт задания с числом пропусков в нём (gaps: 0, если пропусков нет); ` +
+      `bands — пороговая шкала диапазонов верных ответов (пустой массив, если баллы даются ` +
+      `за пункты по отдельности; тогда заполни perTaskPoints: {номер пункта: балл}); ` +
+      `descriptors — строки дескриптора с баллами и номерами пунктов, к которым строка ` +
+      `относится (refersToItems: [] — если ко всему листу). Числа в scoring обязаны ` +
+      `совпадать с текстом criteria и с фактическим заданием.`
     : 'Это ТРЕНИРОВОЧНОЕ задание без баллов. teacherExtra оставь пустым объектом {}.';
 
   // Какие поля инструмента заполнять (структуру задаёт схема HANDOUT_TOOL).
@@ -203,5 +260,52 @@ export function buildHandoutPrompt(opts: HandoutPromptOpts): { system: string; u
       `Материал должен быть готов к печати: конкретные формулировки, без «вставьте сюда» и плейсхолдеров.\n` +
       `${LENGTH_CAP[handoutType]} Пиши компактно, по делу.\n` +
       `Верни результат вызовом инструмента emit_handout. ${fields}`,
+  };
+}
+
+// ── Перегенерация ТОЛЬКО блока оценивания (ТЗ 1.5.2, п. 4.4) ────────────────
+// Текст задания не трогаем: модель получает его как данность вместе с
+// фактическими числами (пункты, пропуски, итог) и списком конкретных
+// нарушений — и возвращает только criteria + scoring.
+
+export const SCORING_FIX_TOOL = {
+  name: 'emit_scoring',
+  description: 'Вернуть исправленный блок оценивания листа: criteria и scoring.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      criteria: { type: 'string' },
+      scoring: scoringSchema,
+    },
+    required: ['criteria', 'scoring'],
+  },
+};
+
+export function buildScoringFixPrompt(opts: {
+  taskText: string;
+  itemCount: number;
+  gapCount: number;
+  totalPoints: number;
+  violations: string;
+  language?: string;
+}): { system: string; user: string } {
+  const { taskText, itemCount, gapCount, totalPoints, violations, language } = opts;
+  return {
+    system:
+      'Ты выпускающий редактор учебных материалов. Твоя задача — исправить ТОЛЬКО блок ' +
+      'оценивания раздаточного листа. Текст задания менять НЕЛЬЗЯ: он уже свёрстан.',
+    user:
+      `Задание (НЕ менять, дано для контекста):\n${taskText}\n\n` +
+      `Факты, посчитанные кодом по этому заданию:\n` +
+      `— пунктов: ${itemCount}\n` +
+      `— пропусков всего: ${gapCount}\n` +
+      `— итоговых баллов: ${totalPoints}\n\n` +
+      `В текущем блоке оценивания найдены нарушения:\n${violations}\n\n` +
+      `Составь блок оценивания заново так, чтобы все числа сходились с фактами выше: ` +
+      `шкала монотонна (больше верных — не меньше баллов), диапазоны не пересекаются и ` +
+      `покрывают все значения от 0 до максимума, дескрипторы ссылаются только на ` +
+      `существующие пункты, а баллы за каждый пункт совпадают в критериях и дескрипторах. ` +
+      `Баллы — только целые. Язык — ${language === 'kz' ? 'казахский' : language === 'en' ? 'английский' : 'русский'}. ` +
+      `Верни результат вызовом инструмента emit_scoring.`,
   };
 }

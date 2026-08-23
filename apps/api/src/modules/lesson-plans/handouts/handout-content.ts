@@ -31,6 +31,8 @@ export interface HandoutTeacherExtra {
   descriptors?: { text: string; points: number }[];
   points?: number | null;
   notes?: string;
+  /** Метаданные оценивания для валидатора баллов (ТЗ 1.5.2). */
+  scoring?: import('../engine/scoring-validator').Scoring;
 }
 
 /** Полная учительская версия = задание ученика + ключи/критерии. */
