@@ -250,6 +250,9 @@ export function validateScoring(
   if (perTask && Object.keys(perTask).length) {
     for (const [key, declared] of Object.entries(perTask)) {
       const idx = Number(key);
+      // Модель иногда шлёт нечисловые ключи («Part 1», «1a») — без этой
+      // проверки idx = NaN, и в лог с промптом ретрая уходил «пункт NaN».
+      if (!Number.isInteger(idx)) continue;
       const fromDescriptors = sum(
         descriptors.filter((d) => (d.refersToItems ?? []).includes(idx)).map((d) => d.points),
       );
