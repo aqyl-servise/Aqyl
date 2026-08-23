@@ -10,3 +10,4 @@ apps/api/generated
 apps/api/.env
 apps/web/.env.local
 __pycache__/
+*.tsbuildinfo
