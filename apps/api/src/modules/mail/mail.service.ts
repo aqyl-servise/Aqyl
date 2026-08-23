@@ -238,6 +238,38 @@ export class MailService {
    * документ об оплате. Номер заказа и есть тот идентификатор, по которому
    * учитель и мы находим платёж в кабинете Kaspi при разборе обращения.
    */
+  /** Квитанция за пакет уроков (ТЗ №3). Обязательство оферты — раздел 3.2. */
+  async sendPackageReceipt(params: {
+    email: string; amount: number; lessons: number; balance: number; orderId: string; expiresAt: Date;
+  }): Promise<void> {
+    const { email, amount, lessons, balance, orderId, expiresAt } = params;
+    const until = expiresAt.toLocaleDateString("ru-RU");
+    const sum = amount.toLocaleString("ru-RU");
+    const html = `<div style="font-family: Arial, sans-serif; max-width: 520px; color: #1e293b;">
+  <h2 style="margin:0 0 16px;">Оплата получена</h2>
+  <p>Спасибо, платёж прошёл. Уроки зачислены на ваш баланс.</p>
+  <table style="border-collapse:collapse;margin:16px 0;font-size:15px">
+    <tr><td style="padding:6px 16px 6px 0;color:#475569">Сумма</td><td style="padding:6px 0"><b>${sum} ₸</b></td></tr>
+    <tr><td style="padding:6px 16px 6px 0;color:#475569">Куплено уроков</td><td style="padding:6px 0">${lessons}</td></tr>
+    <tr><td style="padding:6px 16px 6px 0;color:#475569">Всего на балансе</td><td style="padding:6px 0"><b>${balance}</b></td></tr>
+    <tr><td style="padding:6px 16px 6px 0;color:#475569">Действуют до</td><td style="padding:6px 0"><b>${until}</b></td></tr>
+    <tr><td style="padding:6px 16px 6px 0;color:#475569">Номер заказа</td><td style="padding:6px 0">${orderId}</td></tr>
+  </table>
+  <p style="color:#475569;font-size:14px">Каждая покупка продлевает весь баланс на 3 месяца.
+  Списаний без вашей покупки не бывает: платёж разовый.</p>
+  <p style="color:#666;font-size:13px">Письмо служит подтверждением оплаты. Сохраните его.</p>
+</div>`;
+    const masked = email.replace(/(.{2}).+(@.+)/, "$1***$2");
+    try {
+      await this.transporter.sendMail({
+        from: this.from, to: email, subject: `Aqyl — оплата ${sum} ₸ получена`, html,
+      });
+      this.logger.log(`Package receipt sent to ${masked}`);
+    } catch (err) {
+      this.logger.error(`Package receipt to ${masked} failed: ${(err as Error).message}`);
+    }
+  }
+
   async sendPaymentReceipt(params: {
     email: string; amount: number; months: number; orderId: string; periodEnd: Date;
   }): Promise<void> {

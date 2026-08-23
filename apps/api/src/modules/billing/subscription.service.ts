@@ -3,9 +3,8 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Teacher } from "../teachers/entities/teacher.entity";
 import { Lesson } from "../lesson-plans/entities/lesson.entity";
-import { PackagePurchase } from "./entities/package-purchase.entity";
 import { BillingService } from "./billing.service";
-import { BALANCE_MONTHS, LessonPackage } from "./packages";
+import { LessonPackage } from "./packages";
 
 /**
  * Доступ к генерации у B2C-учителя (ТЗ №3). Порядок проверки:
@@ -58,8 +57,6 @@ export class SubscriptionService {
     private readonly teacherRepo: Repository<Teacher>,
     @InjectRepository(Lesson)
     private readonly lessonRepo: Repository<Lesson>,
-    @InjectRepository(PackagePurchase)
-    private readonly purchaseRepo: Repository<PackagePurchase>,
   ) {}
 
   /** Оплаченная подписка, действующая прямо сейчас (легаси/грант) — безлимит. */
@@ -196,45 +193,15 @@ export class SubscriptionService {
   }
 
   /**
-   * Начисление пакета (ТЗ №3, пп. 2.1, 4): баланс += уроки, срок ВСЕГО баланса
-   * = сейчас + 3 месяца, запись в журнал. Используется вебхуком Kaspi и
-   * админкой (packageCode 'admin', priceKzt 0).
+   * Начисление пакета — реализация в BillingService (там же вебхук Kaspi);
+   * здесь делегат для админки и тестов, чтобы модульная зависимость осталась
+   * односторонней (Subscription → Billing).
    */
   async creditPackage(
     teacherId: string,
     pkg: Pick<LessonPackage, "code" | "lessons" | "priceKzt">,
     paymentId?: string | null,
   ): Promise<{ balance: number; expiresAt: Date }> {
-    const expiresAt = new Date();
-    expiresAt.setMonth(expiresAt.getMonth() + BALANCE_MONTHS);
-
-    await this.teacherRepo
-      .createQueryBuilder()
-      .update(Teacher)
-      .set({
-        paidLessonsBalance: () => `"paidLessonsBalance" + ${Math.floor(pkg.lessons)}`,
-        balanceExpiresAt: expiresAt,
-      })
-      .where("id = :id", { id: teacherId })
-      .execute();
-
-    const teacher = await this.teacherRepo.findOne({ where: { id: teacherId } });
-    const balance = teacher?.paidLessonsBalance ?? pkg.lessons;
-
-    await this.purchaseRepo.save(
-      this.purchaseRepo.create({
-        teacherId,
-        packageCode: pkg.code,
-        lessons: pkg.lessons,
-        priceKzt: pkg.priceKzt,
-        paymentId: paymentId ?? null,
-        balanceAfter: balance,
-        expiresAtAfter: expiresAt,
-      }),
-    );
-    this.logger.log(
-      `Пакет ${pkg.code} (+${pkg.lessons}) учителю ${teacherId}: баланс ${balance}, срок до ${expiresAt.toISOString().slice(0, 10)}`,
-    );
-    return { balance, expiresAt };
+    return this.billingService.creditPackage(teacherId, pkg, paymentId);
   }
 }

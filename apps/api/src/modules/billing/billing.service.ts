@@ -1,12 +1,14 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Teacher } from "../teachers/entities/teacher.entity";
 import { Payment } from "./entities/payment.entity";
 import { Subscription } from "./entities/subscription.entity";
+import { PackagePurchase } from "./entities/package-purchase.entity";
 import { KaspiService } from "./kaspi.service";
 import { MailService } from "../mail/mail.service";
+import { BALANCE_MONTHS, findPackage } from "./packages";
 
 const PRICE_PER_MONTH = 5990; // тенге
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -30,6 +32,8 @@ export class BillingService {
     private readonly paymentRepo: Repository<Payment>,
     @InjectRepository(Teacher)
     private readonly teacherRepo: Repository<Teacher>,
+    @InjectRepository(PackagePurchase)
+    private readonly purchaseRepo: Repository<PackagePurchase>,
     private readonly kaspiService: KaspiService,
     private readonly config: ConfigService,
     private readonly mail: MailService,
@@ -80,6 +84,118 @@ export class BillingService {
     return { orderId, paymentUrl, amount };
   }
 
+  /**
+   * Платёжная сессия за ПАКЕТ уроков (ТЗ №3, п. 4). Цена и число уроков — из
+   * серверного каталога, и снимком кладутся в metadata платежа: начисление в
+   * вебхуке идёт по снимку, чтобы смена каталога между сессией и оплатой не
+   * меняла уже проданное.
+   */
+  async createPackageSession(teacherId: string, packageCode: string) {
+    const pkg = findPackage(packageCode);
+    if (!pkg) {
+      throw new BadRequestException(`Неизвестный пакет: ${packageCode}`);
+    }
+    const orderId = this.kaspiService.generateOrderId();
+
+    const payment = await this.paymentRepo.save(
+      this.paymentRepo.create({
+        teacherId,
+        provider: "kaspi",
+        orderId,
+        amount: pkg.priceKzt,
+        currency: "KZT",
+        status: "pending",
+        metadata: { packageCode: pkg.code, lessons: pkg.lessons },
+      }),
+    );
+
+    const paymentUrl = this.kaspiService.buildPaymentUrl({
+      orderId,
+      amount: pkg.priceKzt,
+      description: `Aqyl: пакет ${pkg.lessons} уроков`,
+      returnUrl: `${this.frontendUrl}/dashboard/b2c?payment=success`,
+      failUrl: `${this.frontendUrl}/dashboard/b2c?payment=failed`,
+    });
+
+    this.logger.log(
+      `Package session ${orderId}: ${pkg.code} (+${pkg.lessons}) for teacher ${teacherId}, ${pkg.priceKzt} KZT, paymentId=${payment.id}`,
+    );
+    return { orderId, paymentUrl, amount: pkg.priceKzt };
+  }
+
+  /**
+   * Начисление пакета (ТЗ №3, пп. 2.1–2.2): баланс += уроки, срок ВСЕГО
+   * баланса = сейчас + 3 месяца (перенос остатка — сам собой), запись в
+   * журнал. Вызывается вебхуком и админкой (code 'admin', priceKzt 0).
+   */
+  async creditPackage(
+    teacherId: string,
+    pkg: { code: string; lessons: number; priceKzt: number },
+    paymentId?: string | null,
+  ): Promise<{ balance: number; expiresAt: Date }> {
+    const expiresAt = new Date();
+    expiresAt.setMonth(expiresAt.getMonth() + BALANCE_MONTHS);
+    const add = Math.max(0, Math.floor(pkg.lessons));
+
+    await this.teacherRepo
+      .createQueryBuilder()
+      .update(Teacher)
+      .set({
+        paidLessonsBalance: () => `"paidLessonsBalance" + ${add}`,
+        balanceExpiresAt: expiresAt,
+      })
+      .where("id = :id", { id: teacherId })
+      .execute();
+
+    const teacher = await this.teacherRepo.findOne({ where: { id: teacherId } });
+    const balance = teacher?.paidLessonsBalance ?? add;
+
+    await this.purchaseRepo.save(
+      this.purchaseRepo.create({
+        teacherId,
+        packageCode: pkg.code,
+        lessons: add,
+        priceKzt: pkg.priceKzt,
+        paymentId: paymentId ?? null,
+        balanceAfter: balance,
+        expiresAtAfter: expiresAt,
+      }),
+    );
+    this.logger.log(
+      `Пакет ${pkg.code} (+${add}) учителю ${teacherId}: баланс ${balance}, срок до ${expiresAt.toISOString().slice(0, 10)}`,
+    );
+    return { balance, expiresAt };
+  }
+
+  /** Оплаченный пакет: начислить и отправить квитанцию. */
+  private async settlePackagePayment(payment: Payment): Promise<void> {
+    const meta = (payment.metadata ?? {}) as { packageCode?: string; lessons?: number };
+    // Начисляем по СНИМКУ из платежа; каталог — только фолбэк для lessons.
+    const lessons = Number(meta.lessons) || findPackage(String(meta.packageCode))?.lessons || 0;
+    if (!lessons) {
+      this.logger.error(`Оплаченный пакет ${payment.orderId}: в metadata нет lessons — начислять нечего`);
+      return;
+    }
+    const { balance, expiresAt } = await this.creditPackage(
+      payment.teacherId,
+      { code: String(meta.packageCode ?? "unknown"), lessons, priceKzt: payment.amount },
+      payment.id,
+    );
+
+    const teacher = await this.teacherRepo.findOne({ where: { id: payment.teacherId } });
+    if (teacher?.email) {
+      // Не в await: сбой почты не должен превращать успешную оплату в ошибку.
+      void this.mail.sendPackageReceipt({
+        email: teacher.email,
+        amount: payment.amount,
+        lessons,
+        balance,
+        orderId: payment.orderId ?? payment.id,
+        expiresAt,
+      });
+    }
+  }
+
   async handleWebhook(payload: Record<string, unknown>) {
     const parsed = this.kaspiService.parseWebhookPayload(payload);
 
@@ -107,10 +223,19 @@ export class BillingService {
       payment.paidAt = new Date();
       payment.metadata = { ...(payment.metadata ?? {}), webhook: payload };
       await this.paymentRepo.save(payment);
-      await this.activateSubscription(payment.teacherId, payment.id);
-      this.logger.log(
-        `Payment ${parsed.orderId} marked paid; subscription activated for teacher ${payment.teacherId}`,
-      );
+      // Пакет уроков и легаси-подписка различаются по метаданным платежа:
+      // запоздалый вебхук старой сессии с months обрабатывается как раньше.
+      if ((payment.metadata as { packageCode?: string }).packageCode) {
+        await this.settlePackagePayment(payment);
+        this.logger.log(
+          `Payment ${parsed.orderId} marked paid; package credited to teacher ${payment.teacherId}`,
+        );
+      } else {
+        await this.activateSubscription(payment.teacherId, payment.id);
+        this.logger.log(
+          `Payment ${parsed.orderId} marked paid; subscription activated for teacher ${payment.teacherId}`,
+        );
+      }
     } else {
       payment.status = "failed";
       payment.metadata = { ...(payment.metadata ?? {}), webhook: payload };

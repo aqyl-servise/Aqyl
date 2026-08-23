@@ -9,6 +9,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SubscriptionService } from './subscription.service';
+import { BillingService } from './billing.service';
 
 interface World {
   teacher: {
@@ -73,17 +74,24 @@ function makeService(w: World): SubscriptionService {
       return { affected: l ? 1 : 0 };
     },
   };
+  const purchaseRepo = {
+    create: (x: any) => x,
+    save: async (x: any) => (w.purchases.push(x), x),
+  };
+  // Начисление проверяем НАСТОЯЩИМ BillingService.creditPackage поверх тех же
+  // моков репозиториев; не задействованные в нём зависимости — заглушки.
+  const billingReal = new BillingService(
+    null as any, null as any, teacherRepo as any, purchaseRepo as any,
+    {} as any, { get: () => '' } as any, {} as any,
+  );
   const billing = {
     getSubscription: async () =>
       w.subscriptionActive
         ? { status: 'active', currentPeriodEnd: new Date(Date.now() + 86400e3) }
         : null,
+    creditPackage: billingReal.creditPackage.bind(billingReal),
   };
-  const purchaseRepo = {
-    create: (x: any) => x,
-    save: async (x: any) => (w.purchases.push(x), x),
-  };
-  return new SubscriptionService(billing as any, teacherRepo as any, lessonRepo as any, purchaseRepo as any);
+  return new SubscriptionService(billing as any, teacherRepo as any, lessonRepo as any);
 }
 
 const T = 't-1';

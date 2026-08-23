@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  BadRequestException,
   ForbiddenException,
   Get,
   Headers,
@@ -48,7 +49,14 @@ export class BillingController {
     if (req.user.registrationSource !== "b2c") {
       throw new ForbiddenException("Оплата доступна только для B2C-учителей");
     }
-    return this.billingService.createPaymentSession(req.user.id, body.months);
+    // Новый путь — пакеты уроков; months — переходный, для старого фронта.
+    if (body.packageCode) {
+      return this.billingService.createPackageSession(req.user.id, body.packageCode);
+    }
+    if (body.months) {
+      return this.billingService.createPaymentSession(req.user.id, body.months);
+    }
+    throw new BadRequestException("Укажите packageCode");
   }
 
   // ПУБЛИЧНЫЙ эндпоинт — Kaspi вызывает без JWT.
