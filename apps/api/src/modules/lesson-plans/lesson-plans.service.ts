@@ -27,6 +27,7 @@ import {
   descriptorsPrompt,
 } from './prompts/lesson-prompts';
 import { docLabels } from './export/doc-labels';
+import { SubscriptionService } from '../billing/subscription.service';
 import { planChildren } from './export/docx-kit';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Document, Packer } = require('docx') as typeof import('docx');
@@ -60,6 +61,7 @@ export class LessonPlansService {
     @InjectRepository(ValueLinkReference) private readonly valueRepo: Repository<ValueLinkReference>,
     private readonly ai: AiClientService,
     private readonly cost: CostLoggerService,
+    private readonly subscription: SubscriptionService,
   ) {}
 
   // ── Reference data ──────────────────────────────────────────────
@@ -292,13 +294,14 @@ export class LessonPlansService {
         HttpStatus.BAD_REQUEST,
       );
     }
-    // trialCounted — урок израсходовал комплект бесплатного доступа (оферта,
-    // п. 4.1). Ставим здесь, а не при создании черновика: лимит должен тратить
-    // только реально сгенерированный план. Пометка идемпотентна и ставится всем
-    // — для B2G она просто не используется, у них квоты нет.
+    // Списание комплекта (ТЗ №3): подписка → безлимит; иначе триал, потом
+    // платный баланс. Здесь, а не при создании черновика: лимит тратит только
+    // реально сгенерированный план. Идемпотентно; для B2G — no-op. Бросает
+    // 403 до смены статуса, если списывать нечего (гонка мимо гарда).
+    await this.subscription.chargeLessonStart(ctx.userId, id);
     await this.lessonRepo.update(
       { id, userId: ctx.userId },
-      { status: 'generating', mode, generationError: null, trialCounted: true },
+      { status: 'generating', mode, generationError: null },
     );
     // fire-and-forget; frontend polls GET /lessons/:id
     void this.runGeneration(id).catch(async (err) => {

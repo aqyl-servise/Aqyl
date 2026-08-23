@@ -20,7 +20,8 @@ import { SkipSchoolIsolation } from "../../common/decorators/skip-school-isolati
 import { ALL_TEACHER_ROLES } from "../../common/roles.constants";
 import { BillingService } from "./billing.service";
 import { KaspiService } from "./kaspi.service";
-import { SubscriptionService, TRIAL_LESSON_LIMIT } from "./subscription.service";
+import { SubscriptionService } from "./subscription.service";
+import { LESSON_PACKAGES } from "./packages";
 import { CreateSessionDto } from "./dto/create-session.dto";
 
 interface ReqUser {
@@ -100,13 +101,32 @@ export class BillingController {
   }
 
   /**
-   * Остаток бесплатного доступа в комплектах (оферта, п. 4.1). Заменил показ
-   * «осталось N дней»: пробный период меряется объёмом, а не сроком.
+   * Остаток бесплатного доступа в комплектах (оферта, п. 4.1).
+   * @deprecated фронт переходит на /billing/balance; оставлен как алиас.
    */
   @Get("trial")
   @UseGuards(JwtAuthGuard)
   async getTrial(@Req() req: ReqUser) {
-    const used = await this.subscriptionService.trialLessonsUsed(req.user.id);
-    return { used, left: Math.max(0, TRIAL_LESSON_LIMIT - used), limit: TRIAL_LESSON_LIMIT };
+    const s = await this.subscriptionService.balanceSummary(req.user.id);
+    return { used: s.trialUsed, left: s.trialLeft, limit: s.trialLimit };
+  }
+
+  /**
+   * Единый источник для баннеров и витрины (ТЗ №3, п. 5): триал, платный
+   * баланс со сроком, активность подписки и серверный каталог пакетов.
+   */
+  @Get("balance")
+  @UseGuards(JwtAuthGuard)
+  async getBalance(@Req() req: ReqUser) {
+    const s = await this.subscriptionService.balanceSummary(req.user.id);
+    return {
+      trialLeft: s.trialLeft,
+      trialLimit: s.trialLimit,
+      paidBalance: s.paidBalance,
+      expiresAt: s.expiresAt,
+      total: s.total,
+      subscriptionActive: s.subscriptionActive,
+      packages: LESSON_PACKAGES,
+    };
   }
 }

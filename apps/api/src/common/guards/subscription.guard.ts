@@ -32,8 +32,9 @@ export class SubscriptionGuard implements CanActivate {
       lessonId,
     );
     if (!hasAccess) {
+      // Текст различает «уроки закончились» и «срок пакета истёк» (ТЗ №3).
       throw new ForbiddenException(
-        "Бесплатный доступ исчерпан. Оформите подписку на aqyl-service.kz",
+        await this.subscriptionService.denialMessage(user.id),
       );
     }
     return true;

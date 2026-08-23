@@ -109,6 +109,14 @@ export class Lesson {
   @Column({ type: 'boolean', default: false })
   trialCounted!: boolean;
 
+  /**
+   * Урок списал один ПЛАТНЫЙ комплект из баланса пакетов (ТЗ №3). Ровно один
+   * из флагов trialCounted/paidCounted может быть истинным. Урок со списанным
+   * комплектом остаётся доступным всегда — и после сгорания баланса.
+   */
+  @Column({ type: 'boolean', default: false })
+  paidCounted!: boolean;
+
   @OneToMany(() => LessonStage, (stage) => stage.lesson, { cascade: true })
   stages!: LessonStage[];
 

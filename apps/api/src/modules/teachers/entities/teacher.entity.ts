@@ -54,6 +54,15 @@ export class Teacher {
   @Column({ type: "timestamp", nullable: true })
   trialEndsAt?: Date | null; // 14 days from B2C registration
 
+  // ── Пакеты уроков (ТЗ №3) ─────────────────────────────────────────────────
+  // Один баланс, одна дата: покупка любого пакета делает balance += N и
+  // expiresAt = now + 3 мес — перенос остатка получается сам собой.
+  @Column({ type: "int", default: 0 })
+  paidLessonsBalance!: number;
+
+  @Column({ type: "timestamptz", nullable: true })
+  balanceExpiresAt?: Date | null;
+
   // ── Удаление аккаунта ──────────────────────────────────────────────────────
   // Мягкое удаление: доступ закрывается сразу, но данные ещё можно вернуть
   // входом с прежними почтой и паролем. По истечении срока запись и все

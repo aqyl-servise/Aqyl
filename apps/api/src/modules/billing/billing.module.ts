@@ -3,6 +3,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { Teacher } from "../teachers/entities/teacher.entity";
 import { Lesson } from "../lesson-plans/entities/lesson.entity";
 import { Subscription } from "./entities/subscription.entity";
+import { PackagePurchase } from "./entities/package-purchase.entity";
 import { Payment } from "./entities/payment.entity";
 import { BillingController } from "./billing.controller";
 import { BillingService } from "./billing.service";
@@ -12,8 +13,8 @@ import { SubscriptionGuard } from "../../common/guards/subscription.guard";
 import { MailModule } from "../mail/mail.module";
 
 @Module({
-  // Lesson — для подсчёта израсходованных комплектов бесплатного доступа.
-  imports: [TypeOrmModule.forFeature([Subscription, Payment, Teacher, Lesson]), MailModule],
+  // Lesson — подсчёт израсходованных комплектов; PackagePurchase — журнал пакетов.
+  imports: [TypeOrmModule.forFeature([Subscription, Payment, Teacher, Lesson, PackagePurchase]), MailModule],
   controllers: [BillingController],
   providers: [
     BillingService,
