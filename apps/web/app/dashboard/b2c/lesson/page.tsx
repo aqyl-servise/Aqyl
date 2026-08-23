@@ -44,6 +44,10 @@ interface ConsState {
   reflection: { toolId: string; time: number };
 }
 
+// ВРЕМЕННО скрываем этап «Квиз» в конструкторе. Состояние и логика сборки
+// (quiz.enabled по умолчанию false) сохранены — чтобы вернуть, поставить true.
+const SHOW_QUIZ = false;
+
 export default function LessonGeneratorPage() {
   const router = useRouter();
   const [lang, setLang] = useLang();
@@ -398,7 +402,8 @@ export default function LessonGeneratorPage() {
               <button type="button" onClick={addTaskRow} style={{ ...btnGhost, marginTop: 10 }}>{t.addTask}</button>
             </div>
 
-            {/* Квиз — необязательный */}
+            {/* Квиз — необязательный. ВРЕМЕННО скрыт (SHOW_QUIZ). */}
+            {SHOW_QUIZ && (
             <div style={card}>
               <label style={{ ...radioRow, fontWeight: 700 }}>
                 <input type="checkbox" checked={cons.quiz.enabled} onChange={(e) => setCons((c) => (c ? { ...c, quiz: { ...c.quiz, enabled: e.target.checked } } : c))} />
@@ -425,6 +430,7 @@ export default function LessonGeneratorPage() {
                 </div>
               )}
             </div>
+            )}
 
             {/* Рефлексия — один инструмент */}
             <div style={card}>
