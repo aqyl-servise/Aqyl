@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, type B2CProfile, type Subscription, type LpLesson, type TrialQuota } from "../../../lib/api";
+import { api, type B2CProfile, type Subscription, type LpLesson, type BalanceInfo } from "../../../lib/api";
 import { getValidAccessToken, logout } from "../../../lib/auth";
 import { useLang, LT } from "../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../components/lang-switcher";
@@ -29,7 +29,8 @@ export default function B2CDashboardPage() {
   const t = LT[lang];
   const [profile, setProfile] = useState<B2CProfile | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [trial, setTrial] = useState<TrialQuota | null>(null);
+  const [balance, setBalance] = useState<BalanceInfo | null>(null);
+  const [topupBusy, setTopupBusy] = useState(false);
   const [lessons, setLessons] = useState<LpLesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [topic, setTopic] = useState("");
@@ -45,10 +46,10 @@ export default function B2CDashboardPage() {
         if (!active) return;
         if (!me.onboardingCompleted) { router.replace("/dashboard/b2c/onboarding"); return; }
         const sub = await api.getSubscription(token).catch(() => null);
-        const quota = await api.getTrial(token).catch(() => null);
+        const bal = await api.getBalance(token).catch(() => null);
         const list = await api.lpList(token).catch(() => [] as LpLesson[]);
         if (!active) return;
-        setProfile(me); setSubscription(sub); setTrial(quota); setLessons(list);
+        setProfile(me); setSubscription(sub); setBalance(bal); setLessons(list);
       } catch { if (active) router.replace("/login"); }
       finally { if (active) setLoading(false); }
     })();
@@ -75,14 +76,29 @@ export default function B2CDashboardPage() {
   if (!profile) return null;
 
   const status = subscription?.status ?? profile.subscriptionStatus;
-  const isActive = status === "active";
-  // Бесплатный доступ меряется комплектами материалов, а не днями (оферта, п. 4.1).
+  const isActive = status === "active" || balance?.subscriptionActive === true;
+  // Доступ меряется уроками на балансе: триал + купленные пакеты (ТЗ №3).
   // Если остаток не удалось получить (сеть) — не запираем экран: настоящая
   // проверка всё равно на сервере, а ложная блокировка хуже лишнего показа.
-  const trialLeft = trial?.left ?? null;
-  const isTrial = !isActive && trialLeft !== null && trialLeft > 0;
-  const isExpired = !isActive && trialLeft !== null && trialLeft <= 0;
+  const totalLeft = balance?.total ?? null;
+  const isTrial = !isActive && totalLeft !== null && totalLeft > 0;
+  const isExpired = !isActive && totalLeft !== null && totalLeft <= 0;
+  const hasPaid = (balance?.paidBalance ?? 0) > 0;
+  // Апселл (ТЗ №3, п. 6.3): докупка появляется при остатке 1–2 платных уроков.
+  const topup = balance?.packages.find((p) => p.upsellOnly);
+  const showTopup = hasPaid && totalLeft !== null && totalLeft <= 2 && !!topup;
   const firstName = (profile.fullName || "").trim().split(" ")[0] || "";
+
+  async function handleTopup() {
+    if (!topup || topupBusy) return;
+    setTopupBusy(true);
+    try {
+      const token = await getValidAccessToken();
+      if (!token) { router.replace("/login"); return; }
+      const { paymentUrl } = await api.createPackageSession(token, topup.code);
+      window.location.href = paymentUrl;
+    } catch { setTopupBusy(false); }
+  }
 
   const pipeline = [t.pipeTopic, t.pipePlan, t.pipeWarmup, t.pipeExplain, t.pipeTask, t.pipeQuiz, t.pipeReflect];
   // Пункт подписки скрыт в iOS-обёртке: см. lib/platform.ts.
@@ -132,18 +148,38 @@ export default function B2CDashboardPage() {
           <div style={{ ...banner, marginBottom: 24 }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 11, color: "var(--muted)", fontSize: 15 }}>
               <span aria-hidden style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--amber)", boxShadow: "0 0 10px var(--amber)", flex: "none" }} />
-              {t.trialLeft.replace("{n}", String(trialLeft ?? 0))}
+              {hasPaid
+                ? `${t.balLeft.replace("{n}", String(totalLeft ?? 0))}${balance?.expiresAt ? ` · ${t.balUntil.replace("{d}", new Date(balance.expiresAt).toLocaleDateString("ru-RU"))}` : ""}`
+                : t.trialLeft.replace("{n}", String(totalLeft ?? 0))}
             </span>
             {/* Вторичное действие — не янтарь: единственный янтарь на экране закреплён за «Собрать урок». */}
-            {iosApp === false && <button onClick={() => router.push("/dashboard/b2c/subscribe")} style={btnSecondary}>{t.getSub}</button>}
+            {iosApp === false && (
+              showTopup && topup ? (
+                <button onClick={handleTopup} disabled={topupBusy} style={{ ...btnSecondary, opacity: topupBusy ? 0.6 : 1 }}>
+                  {t.balTopupHint.replace("{n}", String(topup.lessons)).replace("{p}", topup.priceKzt.toLocaleString("ru-RU"))}
+                </button>
+              ) : (
+                <button onClick={() => router.push("/dashboard/b2c/subscribe")} style={btnSecondary}>{t.getSub}</button>
+              )
+            )}
           </div>
         )}
 
         {isExpired ? (
           <section style={{ ...card, textAlign: "center", padding: "48px 24px" }}>
-            <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 26, margin: "0 0 8px" }}>{status === "trial" ? t.trialEnded : t.subExpired}</h2>
-            <p style={{ color: "var(--muted)", fontSize: 15, margin: "0 0 22px" }}>{t.subExpiredHint}</p>
-            {iosApp === false && <button onClick={() => router.push("/dashboard/b2c/subscribe")} style={btnPrimary}>{t.extendSub}</button>}
+            <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 26, margin: "0 0 8px" }}>{t.balEmpty}</h2>
+            <p style={{ color: "var(--muted)", fontSize: 15, margin: "0 0 22px" }}>{t.balEmptyHint}</p>
+            {iosApp === false && (
+              <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+                <button onClick={() => router.push("/dashboard/b2c/subscribe")} style={btnPrimary}>{t.balBuy}</button>
+                {/* Докупка в момент «всё кончилось» — главный апселл (ТЗ №3, п. 6.3). */}
+                {hasPaid === false && topup && (
+                  <button onClick={handleTopup} disabled={topupBusy} style={{ ...btnSecondary, opacity: topupBusy ? 0.6 : 1 }}>
+                    {t.balTopup} +{topup.lessons} · {topup.priceKzt.toLocaleString("ru-RU")} ₸
+                  </button>
+                )}
+              </div>
+            )}
           </section>
         ) : (
           <>

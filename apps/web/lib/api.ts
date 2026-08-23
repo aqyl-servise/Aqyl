@@ -91,6 +91,18 @@ export type UpdateB2CProfileInput = Partial<{
 /** Бесплатный доступ меряется комплектами материалов, а не днями (оферта, п. 4.1). */
 export type TrialQuota = { used: number; left: number; limit: number };
 
+/** Пакеты уроков (ТЗ №3): каталог приходит с сервера, цены не хардкодятся. */
+export type LessonPackage = { code: string; lessons: number; priceKzt: number; upsellOnly?: boolean };
+export type BalanceInfo = {
+  trialLeft: number;
+  trialLimit: number;
+  paidBalance: number;
+  expiresAt: string | null;
+  total: number;
+  subscriptionActive: boolean;
+  packages: LessonPackage[];
+};
+
 export type Subscription = {
   id: string;
   teacherId: string;
@@ -499,6 +511,12 @@ export const api = {
   // Остаток бесплатного доступа в комплектах (оферта, п. 4.1).
   getTrial: (token: string) =>
     request<TrialQuota>("/billing/trial", undefined, token),
+  // Баланс пакетов + каталог (ТЗ №3) — единый источник для баннеров и витрины.
+  getBalance: (token: string) =>
+    request<BalanceInfo>("/billing/balance", undefined, token),
+  // Оплата пакета уроков через Kaspi.
+  createPackageSession: (token: string, packageCode: string) =>
+    request<CreateSessionResponse>("/billing/create-session", { method: "POST", body: JSON.stringify({ packageCode }) }, token),
 
   // Lesson-plans (КСП generator)
   lpCreate: (token: string, header: LpHeader) =>
