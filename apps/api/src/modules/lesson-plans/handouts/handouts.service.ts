@@ -211,7 +211,11 @@ export class HandoutsService {
     let cost = 0;
     let parsed: Record<string, any> | null = null;
     let gateHint = '';
-    for (let attempt = 1; attempt <= 2; attempt++) {
+    // Пустой ответ модели не тратит бюджет содержательных ретраев: иначе
+    // языковой шлюз получает единственную попытку (реальный случай листа
+    // explanation урока 2f6034d5 — «опорлық» пережил обе).
+    let maxAttempts = 2;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       const p = buildHandoutPrompt({
         handoutType: type, toolDescription, isAssessed: stage.isAssessed,
         points: stage.points, valueName: stage.linkedToValue ? valueName : null, ctx,
@@ -242,12 +246,13 @@ export class HandoutsService {
         const fractional = this.fractionalPointsInParsed(res.data, type);
         // Языковой шлюз (ТЗ 1.6): русские корни и семантические ловушки.
         const gateHard = hardViolations(this.gate.check(res.data, lesson.language));
-        if ((!wrong.length && !rewrite.length && !notes.length && !fractional && !gateHard.length) || attempt === 2) {
+        if ((!wrong.length && !rewrite.length && !notes.length && !fractional && !gateHard.length) || attempt === maxAttempts) {
           parsed = res.data;
           if (wrong.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: остались русские термины [${wrong.join(', ')}]`);
           if (rewrite.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: невалидные трансформации — ${rewrite.map((r) => r.detail).join('; ')}`);
           if (notes.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: подсказка не по заданию — ${notes.join('; ')}`);
           if (fractional) this.logger.warn(`Лист «${type}» урока ${lesson.id}: в критериях остались дробные баллы`);
+          if (gateHard.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: шлюз — остались [${gateHard.map((v) => v.word).join(', ')}]`);
           break;
         }
         const reasons = [
@@ -265,7 +270,8 @@ export class HandoutsService {
           : '';
         continue;
       }
-      this.logger.warn(`Лист «${type}» урока ${lesson.id}: пустой ответ, попытка ${attempt}/2`);
+      this.logger.warn(`Лист «${type}» урока ${lesson.id}: пустой ответ, попытка ${attempt}/${maxAttempts}`);
+      if (maxAttempts < 3) maxAttempts++;
     }
 
     // Валидатор баллов (ТЗ 1.5.2): арифметика шкалы/критериев/дескрипторов
