@@ -26,12 +26,13 @@ import {
   stagePrompt,
   descriptorsPrompt,
   lessonCorePrompt,
+  factSheetPrompt,
 } from './prompts/lesson-prompts';
 import { docLabels } from './export/doc-labels';
 import { SubscriptionService } from '../billing/subscription.service';
 import { LanguageGateService } from './language-gate.service';
 import { hardViolations } from './engine/language-gate';
-import { LessonCoreData, canonicalSubject, coreObjectivesProblems, normalizeStageMinutes, valueLexemes, containsValueLexeme } from './engine/lesson-core';
+import { LessonCoreData, CoreFact, CoreFactSheet, CoreWorkInterpretation, canonicalSubject, coreObjectivesProblems, normalizeStageMinutes, valueLexemes, containsValueLexeme, checkFactYears, checkWorkTheme, factsForPrompt } from './engine/lesson-core';
 import { planChildren } from './export/docx-kit';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Document, Packer } = require('docx') as typeof import('docx');
@@ -392,9 +393,13 @@ export class LessonPlansService {
       language: lesson.language ?? 'kz',
     };
 
+    // Лист фактов (ТЗ 1.6, этап 3) — вторым вызовом, до генерации контента.
+    core.facts = await this.generateFactSheet(lesson, ctx);
+
     // Единственная точка сохранения сгенерированного текста (ТЗ 1.6, п. 3.1).
     await this.gate.persistGeneratedText(
-      [core.objectives.curriculum.map((c) => c.text), core.objectives.lesson, core.value?.rationale ?? ''],
+      [core.objectives.curriculum.map((c) => c.text), core.objectives.lesson, core.value?.rationale ?? '',
+       (core.facts?.facts ?? []).map((f) => f.claim), core.facts?.workInterpretation?.mainTheme ?? ''],
       { lessonId: lesson.id, module: 'plan:core', language: lesson.language, allowFlag: true },
     );
     await this.lessonRepo.update({ id: lesson.id }, {
@@ -403,6 +408,41 @@ export class LessonPlansService {
       lessonObjectives: core.objectives.lesson,
     });
     return core;
+  }
+
+  /**
+   * Лист фактов (ТЗ 1.6, этап 3): даты, места, названия и трактовка
+   * произведения — одним вызовом до контента. Сбой не роняет генерацию:
+   * без фактов урок получится как раньше, с ними — согласованным.
+   */
+  private async generateFactSheet(lesson: Lesson, ctx: LessonContext): Promise<CoreFactSheet | null> {
+    try {
+      const p = factSheetPrompt(ctx);
+      const res = await this.safeRequest('lesson_facts', p.system, p.user, lesson);
+      await this.cost.log(lesson.id, 'plan', res);
+      const parsed = this.parseJson<{ facts?: CoreFact[]; workInterpretation?: CoreWorkInterpretation | null }>(res.content);
+      const facts = (Array.isArray(parsed?.facts) ? parsed!.facts : [])
+        .filter((f) => f?.entity && f?.attribute && f?.value)
+        .map((f) => ({
+          entity: String(f.entity), attribute: String(f.attribute),
+          value: String(f.value), claim: String(f.claim ?? ''),
+          confidence: (['high', 'medium', 'low'].includes(String(f.confidence)) ? f.confidence : 'low') as CoreFact['confidence'],
+        }));
+      const w = parsed?.workInterpretation;
+      const work = w?.mainTheme
+        ? {
+            title: String(w.title ?? lesson.lessonTitle ?? ''), year: w.year ? String(w.year) : undefined,
+            mainTheme: String(w.mainTheme), centralImage: String(w.centralImage ?? ''),
+            keyDevices: Array.isArray(w.keyDevices) ? w.keyDevices.map(String) : [],
+          }
+        : null;
+      const low = facts.filter((f) => f.confidence === 'low').length;
+      this.logger.log(`Урок ${lesson.id}: лист фактов — ${facts.length} факт(ов)${low ? `, из них ненадёжных ${low}` : ''}${work ? ', трактовка произведения задана' : ''}`);
+      return { facts, workInterpretation: work };
+    } catch (err) {
+      this.logger.warn(`Урок ${lesson.id}: лист фактов не сгенерирован: ${(err as Error).message}`);
+      return null;
+    }
   }
 
   private async runGeneration(id: string): Promise<void> {
@@ -454,6 +494,9 @@ export class LessonPlansService {
     }
     // C8 (ТЗ 1.6): основы слов ценности — проверяем присутствие в помеченных этапах.
     const valueLex = core.value ? valueLexemes(core.value) : [];
+    // Факты урока — в каждый промпт этапа (ТЗ 1.6, этап 3).
+    const factsBlock = factsForPrompt(core.facts);
+    const coreFacts = core.facts?.facts ?? [];
     for (const s of stages) {
       const desc = s.toolId ? toolMap.get(s.toolId)?.description ?? '' : '';
       // До двух попыток: русские термины из глоссария (B.3, ТЗ 1.5.1) или
@@ -466,7 +509,7 @@ export class LessonPlansService {
           { stageType: s.stageType, toolId: s.toolId, timeMinutes: s.timeMinutes }, desc, ctx,
           { linkedToValue: s.linkedToValue, valueName: stageValueName },
         );
-        const res = await this.safeRequest('lesson_stage', p.system, p.user + gateHint, lesson);
+        const res = await this.safeRequest('lesson_stage', p.system, p.user + factsBlock + gateHint, lesson);
         await this.cost.log(id, 'plan', res);
         const cand = this.parseJson<any>(res.content) ?? {};
         const joined = [cand.stageName, cand.teacherActions, cand.studentActions, cand.method, cand.assessmentCriteria, cand.resources]
@@ -475,10 +518,13 @@ export class LessonPlansService {
         const gateHard = hardViolations(this.gate.check(joined, lesson.language));
         // C8 (ТЗ 1.6): этап привязан к ценности — её лексика обязана присутствовать.
         const valueMissing = !!(s.linkedToValue && valueLex.length && !containsValueLexeme(joined, valueLex));
-        if ((!wrong.length && !gateHard.length && !valueMissing) || attempt === 2) {
+        // C1/C2 (ТЗ 1.6): даты и трактовка не противоречат листу фактов.
+        const factProblems = [...checkFactYears(joined, coreFacts), ...checkWorkTheme(joined, core.facts?.workInterpretation)];
+        if ((!wrong.length && !gateHard.length && !valueMissing && !factProblems.length) || attempt === 2) {
           c = cand;
           if (wrong.length) this.logger.warn(`Этап ${s.stageType} урока ${id}: остались русские термины [${wrong.join(', ')}]`);
           if (valueMissing) this.logger.warn(`Этап ${s.stageType} урока ${id}: ценность не раскрыта после ретрая (C8)`);
+          if (factProblems.length) this.logger.warn(`Этап ${s.stageType} урока ${id}: расхождение с фактами после ретрая — ${factProblems.map((x) => x.detail).join('; ')}`);
           break;
         }
         gateHint = [
@@ -488,8 +534,11 @@ export class LessonPlansService {
           valueMissing
             ? `\n\nОБЯЗАТЕЛЬНО: этап привязан к ценности «${core.value?.key ?? stageValueName}» — явно раскрой её в действиях учителя или учеников.`
             : '',
+          factProblems.length
+            ? `\n\nИСПРАВЬ РАСХОЖДЕНИЯ С ФАКТАМИ УРОКА: ${factProblems.map((x) => x.detail).join('; ')}.`
+            : '',
         ].join('');
-        this.logger.warn(`Этап ${s.stageType} урока ${id}: ${[wrong.length ? `русские термины [${wrong.join(', ')}]` : '', gateHard.length ? `шлюз: ${gateHard.map((v) => v.word).join(', ')}` : '', valueMissing ? 'ценность не раскрыта (C8)' : ''].filter(Boolean).join('; ')}, повтор`);
+        this.logger.warn(`Этап ${s.stageType} урока ${id}: ${[wrong.length ? `русские термины [${wrong.join(', ')}]` : '', gateHard.length ? `шлюз: ${gateHard.map((v) => v.word).join(', ')}` : '', valueMissing ? 'ценность не раскрыта (C8)' : '', factProblems.length ? `факты: ${factProblems.map((x) => x.rule).join(',')}` : ''].filter(Boolean).join('; ')}, повтор`);
       }
       s.stageName = c.stageName ?? s.stageName ?? s.stageType;
       s.teacherActions = c.teacherActions ?? '';

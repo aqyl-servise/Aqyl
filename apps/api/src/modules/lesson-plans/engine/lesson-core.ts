@@ -27,6 +27,29 @@ export interface CoreValue {
   stageIds: string[];
 }
 
+/** Один проверяемый факт урока (ТЗ 1.6, п. 2.2). */
+export interface CoreFact {
+  entity: string;       // «С. Сейфуллин»
+  attribute: string;    // «туған жылы» | «туған жері» | …
+  value: string;        // «1894»
+  claim: string;        // полная формулировка для вставки в текст
+  confidence: 'high' | 'medium' | 'low';
+}
+
+/** Трактовка изучаемого произведения — ОДНА на весь урок. */
+export interface CoreWorkInterpretation {
+  title: string;
+  year?: string;
+  mainTheme: string;
+  centralImage: string;
+  keyDevices: string[];
+}
+
+export interface CoreFactSheet {
+  facts: CoreFact[];
+  workInterpretation?: CoreWorkInterpretation | null;
+}
+
 export interface LessonCoreData {
   meta: {
     subject: string;      // полная каноническая форма (C12)
@@ -36,6 +59,8 @@ export interface LessonCoreData {
   };
   objectives: CoreObjectives;
   value: CoreValue | null;
+  /** Лист фактов (ТЗ 1.6, этап 3). Единственный источник дат, имён, трактовок. */
+  facts?: CoreFactSheet | null;
   generatedAt: string;
   language: string;
 }
@@ -125,4 +150,126 @@ export function valueLexemes(value: Pick<CoreValue, 'key' | 'rationale'>): strin
 export function containsValueLexeme(text: string, lexemes: string[]): boolean {
   const t = text.toLowerCase();
   return lexemes.some((l) => t.includes(l));
+}
+
+// ── Правила согласованности фактов (ТЗ 1.6, п. 4: C1, C2, C3) ─────────────
+
+export interface FactProblem {
+  rule: 'C1' | 'C2' | 'C3';
+  detail: string;
+}
+
+/** Годы из текста: 4 цифры в диапазоне исторических дат. */
+function yearsIn(text: string): string[] {
+  return [...text.matchAll(/(?<!\d)(1[0-9]{3}|20[0-2][0-9])(?!\d)/g)].map((m) => m[1]);
+}
+
+/** Основа слова для нестрогого сравнения (казахские аффиксы клеятся справа). */
+const stem = (w: string) => w.toLowerCase().slice(0, 5);
+
+/**
+ * C1 — годы рядом с сущностью не противоречат листу фактов.
+ *
+ * Проверяем только те годы, что стоят в предложении с упоминанием сущности:
+ * иначе любая дата в историческом тексте считалась бы нарушением. Год-нарушение
+ * — тот, которого нет ни в одном факте про эту сущность.
+ */
+export function checkFactYears(text: string, facts: CoreFact[]): FactProblem[] {
+  if (!text || !facts.length) return [];
+  const out: FactProblem[] = [];
+  const byEntity = new Map<string, Set<string>>();
+  for (const f of facts) {
+    const key = f.entity.toLowerCase();
+    if (!byEntity.has(key)) byEntity.set(key, new Set());
+    for (const y of yearsIn(`${f.value} ${f.claim}`)) byEntity.get(key)!.add(y);
+  }
+
+  // Близость, а не предложение: в ключах ответов имя стоит в вопросе, а год —
+  // в ответе, и разбиение по точкам их не связывало (реальный баг 1.1:
+  // «1898–1938» в ключе приложения 4).
+  const RADIUS = 160;
+  const lower = text.toLowerCase();
+  for (const [entity, years] of byEntity) {
+    if (!years.size) continue;
+    // Фамилия — самая устойчивая часть: «С. Сейфуллин» → «сейфуллин».
+    const surname = entity.split(/\s+/).filter((p) => p.length > 3).pop() ?? entity;
+    const mentions: number[] = [];
+    for (let i = lower.indexOf(surname); i >= 0; i = lower.indexOf(surname, i + 1)) mentions.push(i);
+    if (!mentions.length) continue;
+
+    const seen = new Set<string>();
+    for (const m of [...text.matchAll(/(?<!\d)(1[0-9]{3}|20[0-2][0-9])(?!\d)/g)]) {
+      const y = m[1];
+      if (years.has(y) || seen.has(y)) continue;
+      const pos = m.index ?? 0;
+      if (!mentions.some((mi) => Math.abs(mi - pos) <= RADIUS)) continue;
+      seen.add(y);
+      out.push({
+        rule: 'C1',
+        detail: `год ${y} рядом с «${entity}» противоречит листу фактов (${[...years].join(', ')})`,
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * C2 — трактовка произведения не противоречит паспорту: ключевое существительное
+ * главной темы обязано присутствовать в материале, где произведение разбирается.
+ */
+export function checkWorkTheme(
+  text: string,
+  work: CoreWorkInterpretation | null | undefined,
+): FactProblem[] {
+  if (!work?.mainTheme || !text) return [];
+  const title = work.title?.toLowerCase() ?? '';
+  // Проверяем только материалы, где произведение реально упоминается.
+  if (title && !text.toLowerCase().includes(title.slice(0, 6))) return [];
+  const themeStems = (work.mainTheme.toLowerCase().match(/[а-яёәғқңөұүһіa-z]{5,}/giu) ?? []).map(stem);
+  if (!themeStems.length) return [];
+  const lower = text.toLowerCase();
+  const hit = themeStems.some((s) => lower.includes(s));
+  return hit ? [] : [{
+    rule: 'C2',
+    detail: `трактовка расходится с паспортом: главной темы «${work.mainTheme}» нет в материале`,
+  }];
+}
+
+/**
+ * C3 — факт с confidence:'low' не должен становиться основой вопроса с
+ * однозначным ответом или ключа. Ищем значение low-факта в блоке ключей.
+ */
+export function checkLowConfidenceKeys(
+  answerKeysText: string,
+  facts: CoreFact[],
+): FactProblem[] {
+  if (!answerKeysText) return [];
+  const out: FactProblem[] = [];
+  const lower = answerKeysText.toLowerCase();
+  for (const f of facts.filter((x) => x.confidence === 'low')) {
+    const v = f.value?.trim().toLowerCase();
+    if (v && v.length > 2 && lower.includes(v)) {
+      out.push({
+        rule: 'C3',
+        detail: `ключ построен на ненадёжном факте «${f.entity} — ${f.attribute}: ${f.value}»`,
+      });
+    }
+  }
+  return out;
+}
+
+/** Компактный лист фактов для вставки в промпт. */
+export function factsForPrompt(sheet: CoreFactSheet | null | undefined): string {
+  if (!sheet) return '';
+  const lines: string[] = [];
+  for (const f of sheet.facts ?? []) {
+    lines.push(`- ${f.entity} · ${f.attribute}: ${f.value}${f.confidence === 'low' ? ' (НЕНАДЁЖНО — не использовать в вопросах с однозначным ответом и в ключах)' : ''}`);
+  }
+  const w = sheet.workInterpretation;
+  if (w?.title) {
+    lines.push(`- Произведение «${w.title}»${w.year ? ` (${w.year})` : ''}: главная тема — ${w.mainTheme}; центральный образ — ${w.centralImage}${w.keyDevices?.length ? `; приёмы: ${w.keyDevices.join(', ')}` : ''}`);
+  }
+  if (!lines.length) return '';
+  return `\n\nПРОВЕРЕННЫЕ ФАКТЫ УРОКА — единственный допустимый источник дат, имён и трактовок. ` +
+    `Не придумывай других значений и не противоречь им:\n${lines.join('\n')}`;
 }

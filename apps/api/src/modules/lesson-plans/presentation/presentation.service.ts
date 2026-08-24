@@ -8,6 +8,7 @@ import { AiClientService } from '../../../services/ai-client.service';
 import { CostLoggerService } from '../handouts/cost-logger.service';
 import { PdfService } from '../export/pdf.service';
 import { hardViolations } from '../engine/language-gate';
+import { checkFactYears, checkWorkTheme, factsForPrompt } from '../engine/lesson-core';
 import { LanguageGateService } from '../language-gate.service';
 import { findWrongTerms, flattenStrings } from '../prompts/term-glossary';
 import { buildPresentationPrompt, PRESENTATION_TOOL, PresStageInput } from './presentation-prompts';
@@ -114,7 +115,7 @@ export class PresentationService {
       const p = buildPresentationPrompt(ctx);
       const res = await this.ai.requestTool<Record<string, any>>({
         action: 'presentation_generate', systemPrompt: p.system,
-        messages: [{ role: 'user', content: p.user }],
+        messages: [{ role: 'user', content: p.user + factsForPrompt(lesson.core?.facts) }],
         userId: lesson.userId, schoolId: lesson.schoolId,
         maxTokens: attempt === 1 ? undefined : 3000,
       }, PRESENTATION_TOOL);
@@ -125,12 +126,19 @@ export class PresentationService {
       if (res.data && Array.isArray(res.data.slides) && res.data.slides.length) {
         const wrong = lesson.language === 'kz' ? findWrongTerms(flattenStrings(res.data), lesson.subject) : [];
         const gateHard = hardViolations(this.gate.check(res.data, lesson.language));
-        if ((!wrong.length && !gateHard.length) || attempt === 2) {
+        // C1/C2 (ТЗ 1.6): слайды не противоречат листу фактов урока.
+        const flatPres = flattenStrings(res.data);
+        const factProblems = [
+          ...checkFactYears(flatPres, lesson.core?.facts?.facts ?? []),
+          ...checkWorkTheme(flatPres, lesson.core?.facts?.workInterpretation),
+        ];
+        if ((!wrong.length && !gateHard.length && !factProblems.length) || attempt === 2) {
           ai = res.data;
           if (wrong.length) this.logger.warn(`Презентация урока ${lessonId}: остались русские термины [${wrong.join(', ')}]`);
+          if (factProblems.length) this.logger.warn(`Презентация урока ${lessonId}: расхождение с фактами — ${factProblems.map((x) => x.detail).join('; ')}`);
           break;
         }
-        this.logger.warn(`Презентация урока ${lessonId}: ${[wrong.length ? `русские термины [${wrong.join(', ')}]` : '', gateHard.length ? `шлюз: ${gateHard.map((v) => v.word).join(', ')}` : ''].filter(Boolean).join('; ')}, повтор`);
+        this.logger.warn(`Презентация урока ${lessonId}: ${[wrong.length ? `русские термины [${wrong.join(', ')}]` : '', gateHard.length ? `шлюз: ${gateHard.map((v) => v.word).join(', ')}` : '', factProblems.length ? `факты: ${factProblems.map((x) => x.rule).join(',')}` : ''].filter(Boolean).join('; ')}, повтор`);
         continue;
       }
       this.logger.warn(`Презентация урока ${lessonId}: пустой ответ, попытка ${attempt}/2`);

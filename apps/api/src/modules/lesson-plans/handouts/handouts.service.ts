@@ -18,7 +18,7 @@ import { descriptorsFromTaskPrompt, leveledDescriptorsPrompt } from '../prompts/
 import { findDescriptorProblems, uncoveredTaskTargets, noteReferenceGaps, hasFractionalPoints } from '../engine/descriptor-validator';
 import { findRewriteProblems, parseAnswerKeys, RewriteProblem } from '../engine/rewrite-validator';
 import { hardViolations } from '../engine/language-gate';
-import { valueLexemes, containsValueLexeme } from '../engine/lesson-core';
+import { valueLexemes, containsValueLexeme, checkFactYears, checkWorkTheme, checkLowConfidenceKeys, factsForPrompt } from '../engine/lesson-core';
 import { LanguageGateService } from '../language-gate.service';
 import { parseRequiredElements, missingElements } from '../engine/objective-elements';
 import { adjustDescriptorSum } from '../engine/points-engine';
@@ -212,6 +212,9 @@ export class HandoutsService {
     let cost = 0;
     let parsed: Record<string, any> | null = null;
     let gateHint = '';
+    // Факты урока (ТЗ 1.6, этап 3) — единственный источник дат и трактовок.
+    const factsBlock = factsForPrompt(lesson.core?.facts);
+    const coreFacts = lesson.core?.facts?.facts ?? [];
     // Пустой ответ модели не тратит бюджет содержательных ретраев: иначе
     // языковой шлюз получает единственную попытку (реальный случай листа
     // explanation урока 2f6034d5 — «опорлық» пережил обе).
@@ -229,7 +232,7 @@ export class HandoutsService {
       // префиксом (схема emit_handout + константный системный промпт), поэтому
       // со второго листа он читается из кэша по 0.1 тарифа.
       const res = await this.ai.requestTool<Record<string, any>>({
-        action, systemPrompt: p.system, messages: [{ role: 'user', content: p.user + gateHint }],
+        action, systemPrompt: p.system, messages: [{ role: 'user', content: p.user + factsBlock + gateHint }],
         userId: lesson.userId, schoolId: lesson.schoolId, maxTokens, cachePrefix: true,
       }, HANDOUT_TOOL);
       cost += await this.cost.log(lesson.id, 'handouts', {
@@ -252,7 +255,15 @@ export class HandoutsService {
           ? valueLexemes({ key: valueName, rationale: lesson.valueLink ?? '' })
           : [];
         const valueMissing = !!(vLex.length && !containsValueLexeme(flattenStrings(res.data), vLex));
-        if ((!wrong.length && !rewrite.length && !notes.length && !fractional && !gateHard.length && !valueMissing) || attempt === maxAttempts) {
+        // C1/C2/C3 (ТЗ 1.6): даты, трактовка и ключи сверяются с листом фактов.
+        const flat = flattenStrings(res.data);
+        const keysText = JSON.stringify([res.data?.teacherExtra?.answers ?? '', res.data?.levels ?? '']);
+        const factProblems = [
+          ...checkFactYears(flat, coreFacts),
+          ...checkWorkTheme(flat, lesson.core?.facts?.workInterpretation),
+          ...checkLowConfidenceKeys(keysText, coreFacts),
+        ];
+        if ((!wrong.length && !rewrite.length && !notes.length && !fractional && !gateHard.length && !valueMissing && !factProblems.length) || attempt === maxAttempts) {
           parsed = res.data;
           if (wrong.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: остались русские термины [${wrong.join(', ')}]`);
           if (rewrite.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: невалидные трансформации — ${rewrite.map((r) => r.detail).join('; ')}`);
@@ -260,6 +271,7 @@ export class HandoutsService {
           if (fractional) this.logger.warn(`Лист «${type}» урока ${lesson.id}: в критериях остались дробные баллы`);
           if (gateHard.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: шлюз — остались [${gateHard.map((v) => v.word).join(', ')}]`);
           if (valueMissing) this.logger.warn(`Лист «${type}» урока ${lesson.id}: ценность не раскрыта после ретраев (C8)`);
+          if (factProblems.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: расхождение с фактами после ретраев — ${factProblems.map((x) => x.detail).join('; ')}`);
           break;
         }
         const reasons = [
@@ -269,6 +281,7 @@ export class HandoutsService {
           fractional ? 'дробные баллы в критериях' : '',
           gateHard.length ? `шлюз: ${gateHard.map((v) => v.word).join(', ')}` : '',
           valueMissing ? 'ценность не раскрыта (C8)' : '',
+          factProblems.length ? `факты: ${factProblems.map((x) => x.rule).join(',')}` : '',
         ].filter(Boolean).join('; ');
         this.logger.warn(`Лист «${type}» урока ${lesson.id}: ${reasons}, повтор`);
         gateHint = [
@@ -281,6 +294,11 @@ export class HandoutsService {
             ? `
 
 ОБЯЗАТЕЛЬНО: задание привязано к ценности «${valueName}» — раскрой её в содержании явно.`
+            : '',
+          factProblems.length
+            ? `
+
+ИСПРАВЬ РАСХОЖДЕНИЯ С ФАКТАМИ УРОКА: ${factProblems.map((x) => x.detail).join('; ')}.`
             : '',
         ].join('');
         continue;
