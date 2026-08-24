@@ -894,6 +894,10 @@ export class HandoutsService {
         const probs = findDescriptorProblems(got[k], { hasText: f.hasText, partCount: f.partCount, context: `${themeCtx} ${f.taskText}` });
         found.push(...probs.map((x) => `[уровень ${k}] ${x.detail}`));
       }
+      // C4 (ТЗ 1.6): наборы уровней обязаны различаться. Проверяем здесь, а не
+      // постфактум предупреждением: цикл перегенерации уже есть, и приёмка
+      // требует, чтобы дескрипторы БЫЛИ разными, а не чтобы о совпадении знали.
+      found.push(...checkLevelDescriptorsDiffer(got).map((x) => x.detail));
       if (!found.length) break;
       problems = found;
       if (attempt === 3) {
