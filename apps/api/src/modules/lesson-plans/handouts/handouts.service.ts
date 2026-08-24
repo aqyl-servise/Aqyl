@@ -173,6 +173,7 @@ export class HandoutsService {
     // Покрытие целевых конструкций (ТЗ, задача 3): «unless» и «if only» из
     // цели 8.6.17.1 терялись и не попадали ни в одно задание.
     await this.ensureObjectiveCoverage(lesson);
+    await this.checkPackageTheme(lesson);
 
     // Проверка синхронизации КМЖ↔приложение (ТЗ №2, задача 1): дескрипторы в
     // таблице (их читает КМЖ) должны посимвольно совпадать со снапшотом в
@@ -258,9 +259,10 @@ export class HandoutsService {
         // C1/C2/C3 (ТЗ 1.6): даты, трактовка и ключи сверяются с листом фактов.
         const flat = flattenStrings(res.data);
         const keysText = JSON.stringify([res.data?.teacherExtra?.answers ?? '', res.data?.levels ?? '']);
+        // C2 — на уровне пакета (см. checkPackageTheme): отдельный лист не
+        // обязан пересказывать тему, достаточно одного приложения из пакета.
         const factProblems = [
           ...checkFactYears(flat, coreFacts),
-          ...checkWorkTheme(flat, lesson.core?.facts?.workInterpretation),
           ...checkLowConfidenceKeys(keysText, coreFacts),
         ];
         if ((!wrong.length && !rewrite.length && !notes.length && !fractional && !gateHard.length && !valueMissing && !factProblems.length) || attempt === maxAttempts) {
@@ -600,6 +602,25 @@ export class HandoutsService {
    * Досылаем ТОЧЕЧНО, отдельным пунктом, не перегенерируя пакет: перегенерация
    * стоит денег и может испортить то, что уже вышло удачно.
    */
+  /**
+   * C2 (ТЗ 1.6): трактовка произведения из паспорта обязана прозвучать хотя бы
+   * в ОДНОМ приложении пакета. Проверка на уровне пакета, а не листа: отдельный
+   * лист может упоминать произведение, не пересказывая его тему, и требовать
+   * это от каждого — ложное срабатывание (реальный случай приёмки этапа 3).
+   */
+  private async checkPackageTheme(lesson: Lesson): Promise<void> {
+    const work = lesson.core?.facts?.workInterpretation;
+    if (!work?.mainTheme) return;
+    const handouts = await this.handoutRepo.find({ where: { lessonId: lesson.id } });
+    const usable = handouts.filter((h) => !h.error);
+    if (!usable.length) return;
+    const all = usable.map((h) => JSON.stringify([h.studentContent, h.teacherContent, h.levels])).join(' ');
+    if (!checkWorkTheme(all, work).length) return;
+    this.logger.warn(
+      `Урок ${lesson.id}: главная тема «${work.mainTheme.slice(0, 60)}» не прозвучала ни в одном приложении (C2)`,
+    );
+  }
+
   private async ensureObjectiveCoverage(lesson: Lesson): Promise<void> {
     const required = parseRequiredElements(lesson.learningObjectives);
     if (!required.length) return;

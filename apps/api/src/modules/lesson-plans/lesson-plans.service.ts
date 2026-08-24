@@ -530,7 +530,10 @@ export class LessonPlansService {
         // C8 (ТЗ 1.6): этап привязан к ценности — её лексика обязана присутствовать.
         const valueMissing = !!(s.linkedToValue && valueLex.length && !containsValueLexeme(joined, valueLex));
         // C1/C2 (ТЗ 1.6): даты и трактовка не противоречат листу фактов.
-        const factProblems = [...checkFactYears(joined, coreFacts), ...checkWorkTheme(joined, core.facts?.workInterpretation)];
+        // C2 здесь НЕ проверяется: этап плана описывает действия на уроке и не
+        // обязан пересказывать тему произведения. По ТЗ C2 — про приложения,
+        // и проверяется на уровне пакета, а не каждого фрагмента.
+        const factProblems = checkFactYears(joined, coreFacts);
         if ((!wrong.length && !gateHard.length && !valueMissing && !factProblems.length) || attempt === 2) {
           c = cand;
           if (wrong.length) this.logger.warn(`Этап ${s.stageType} урока ${id}: остались русские термины [${wrong.join(', ')}]`);
