@@ -249,6 +249,14 @@ export function validateScoring(
     }
   }
 
+  // ── R10a (ТЗ 1.6, п. 1.11): если задание пронумеровано, хотя бы одна строка
+  // дескриптора обязана ссылаться на пункты. Пустой refersToItems у всех строк
+  // сразу — не «строка про весь лист», а выход по умолчанию, из-за которого
+  // R8 и R9 не выполнялись вообще и лист проходил молча.
+  if (items.length > 1 && descriptors.length && descriptors.every((d) => !(d.refersToItems ?? []).length)) {
+    add('R10', `в задании ${items.length} пронумерованных пунктов, но ни один дескриптор не ссылается на них (refersToItems пуст у всех строк)`);
+  }
+
   // ── R10: ссылки на существующие пункты.
   for (const d of descriptors) {
     for (const ref of d.refersToItems ?? []) {

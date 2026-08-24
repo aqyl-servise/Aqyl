@@ -312,3 +312,35 @@ test('регрессия D: корректный лист на 3 пункта н
   const res = validateScoring(validScoring(), 'Три пункта задания без пропусков.');
   assert.equal(res.ok, true, `ложное срабатывание: ${JSON.stringify(res.violations)}`);
 });
+
+// ── R10a: дыра refersToItems (ТЗ 1.6, п. 1.11) ───────────────────────────
+test('R10a: пронумерованное задание без единой ссылки на пункты — нарушение', () => {
+  const s: Scoring = {
+    totalPoints: 3,
+    items: [{ index: 1, gaps: 0 }, { index: 2, gaps: 0 }, { index: 3, gaps: 0 }],
+    bands: [],
+    descriptors: [
+      { text: 'Задание выполнено верно', points: 2, refersToItems: [] },
+      { text: 'Оформление аккуратное', points: 1, refersToItems: [] },
+    ],
+  };
+  assert.ok(rules(s).includes('R10'), 'пустой refersToItems у всех строк — выход по умолчанию');
+});
+
+test('R10a: одной ссылки достаточно; лист из одного пункта не проверяется', () => {
+  const ok: Scoring = {
+    totalPoints: 3,
+    items: [{ index: 1, gaps: 0 }, { index: 2, gaps: 0 }, { index: 3, gaps: 0 }],
+    bands: [],
+    descriptors: [
+      { text: 'Пункты 1–2 верны', points: 2, refersToItems: [1, 2] },
+      { text: 'Оформление аккуратное', points: 1, refersToItems: [] },
+    ],
+  };
+  assert.ok(!rules(ok).includes('R10'));
+  const single: Scoring = {
+    totalPoints: 1, items: [{ index: 1, gaps: 0 }], bands: [],
+    descriptors: [{ text: 'Задание выполнено', points: 1, refersToItems: [] }],
+  };
+  assert.ok(!rules(single).includes('R10'), 'один пункт — ссылка не обязательна');
+});

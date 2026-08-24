@@ -19,6 +19,7 @@ import { findDescriptorProblems, uncoveredTaskTargets, noteReferenceGaps, hasFra
 import { findRewriteProblems, parseAnswerKeys, RewriteProblem } from '../engine/rewrite-validator';
 import { hardViolations } from '../engine/language-gate';
 import { valueLexemes, containsValueLexeme, checkFactYears, checkWorkTheme, checkLowConfidenceKeys, factsForPrompt } from '../engine/lesson-core';
+import { checkLevelDescriptorsDiffer, checkActivityFormat, checkResourceLink, appendResourceLink, activityTypeOf } from '../engine/package-consistency';
 import { LanguageGateService } from '../language-gate.service';
 import { parseRequiredElements, missingElements } from '../engine/objective-elements';
 import { adjustDescriptorSum } from '../engine/points-engine';
@@ -179,6 +180,7 @@ export class HandoutsService {
     // таблице (их читает КМЖ) должны посимвольно совпадать со снапшотом в
     // раздатке. Совпадают по построению — общий источник; проверка ловит регресс.
     await this.verifyDescriptorSync(lessonId);
+    await this.checkPackageConsistency(lesson);
 
     // Инвалидация презентации (ТЗ №2, задача 1): если её сгенерировали РАНЬШЕ
     // раздаток, слайды держат плановые дескрипторы. Сбрасываем — при повторной
@@ -608,6 +610,54 @@ export class HandoutsService {
    * лист может упоминать произведение, не пересказывая его тему, и требовать
    * это от каждого — ложное срабатывание (реальный случай приёмки этапа 3).
    */
+  /**
+   * Правила согласованности пакета (ТЗ 1.6, этап 4): C4 — дескрипторы уровней
+   * различны, C6 — формат задания соответствует типу активности, C11 — этап
+   * ссылается на своё приложение. C11 чинится кодом (ссылка дописывается),
+   * C4 и C6 — предупреждение: перегенерация здесь стоит дороже пользы, а лист
+   * учителю всё равно нужен.
+   */
+  private async checkPackageConsistency(lesson: Lesson): Promise<void> {
+    const handouts = await this.handoutRepo.find({ where: { lessonId: lesson.id }, order: { order: 'ASC' } });
+    const stages = await this.stageRepo.find({ where: { lessonId: lesson.id } });
+    const stageById = new Map(stages.map((s) => [s.id, s]));
+    const problems: string[] = [];
+
+    for (const h of handouts) {
+      if (h.error) continue;
+      const stage = h.stageId ? stageById.get(h.stageId) : undefined;
+
+      // C4: уровневые дескрипторы A/B/C попарно различны.
+      if (h.levels) {
+        const lv = h.levels as Record<string, any>;
+        const pick = (k: string) => (lv?.[k]?.teacher?.descriptors ?? []) as { text: string }[];
+        for (const p of checkLevelDescriptorsDiffer({ A: pick('A'), B: pick('B'), C: pick('C') })) {
+          problems.push(`приложение ${h.order} (${h.handoutType}): ${p.detail}`);
+        }
+      }
+
+      // C6: формат задания соответствует типу активности этапа.
+      if (stage) {
+        const activity = activityTypeOf(stage.toolId, stage.stageType);
+        const taskText = JSON.stringify([h.studentContent, h.levels]);
+        for (const p of checkActivityFormat(activity, taskText)) {
+          problems.push(`приложение ${h.order} (${h.handoutType}): ${p.detail}`);
+        }
+
+        // C11: ссылка на приложение в ресурсах этапа — дописываем кодом.
+        if (checkResourceLink(stage.resources, h.order).length) {
+          stage.resources = appendResourceLink(stage.resources, h.order, lesson.language ?? 'kz');
+          await this.stageRepo.update({ id: stage.id }, { resources: stage.resources });
+          this.logger.log(`Урок ${lesson.id}: в ресурсы этапа ${stage.stageType} дописана ссылка на приложение ${h.order} (C11)`);
+        }
+      }
+    }
+
+    if (problems.length) {
+      this.logger.warn(`Урок ${lesson.id}: согласованность пакета — ${problems.join('; ')}`);
+    }
+  }
+
   private async checkPackageTheme(lesson: Lesson): Promise<void> {
     const work = lesson.core?.facts?.workInterpretation;
     if (!work?.mainTheme) return;
