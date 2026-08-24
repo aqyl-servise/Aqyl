@@ -184,31 +184,64 @@ export function checkFactYears(text: string, facts: CoreFact[]): FactProblem[] {
     for (const y of yearsIn(`${f.value} ${f.claim}`)) byEntity.get(key)!.add(y);
   }
 
-  // Близость, а не предложение: в ключах ответов имя стоит в вопросе, а год —
-  // в ответе, и разбиение по точкам их не связывало (реальный баг 1.1:
-  // «1898–1938» в ключе приложения 4).
-  const RADIUS = 160;
+  // Ловим ПРОТИВОРЕЧИЕ конкретному атрибуту, а не любой незнакомый год.
+  // Иначе правило било по легитимным случаям: дистракторы вопроса с выбором
+  // («а) 1900 ә) 1894 б) 1905» — неверные варианты там обязаны быть) и другие
+  // достоверные даты биографии, которых просто нет в листе. Нарушение — когда
+  // рядом со СВОИМ маркером атрибута («туған жылы», «родился») стоит год,
+  // отличный от записанного в факте.
+  const RADIUS = 90;
   const lower = text.toLowerCase();
-  for (const [entity, years] of byEntity) {
-    if (!years.size) continue;
-    // Фамилия — самая устойчивая часть: «С. Сейфуллин» → «сейфуллин».
-    const surname = entity.split(/\s+/).filter((p) => p.length > 3).pop() ?? entity;
-    const mentions: number[] = [];
-    for (let i = lower.indexOf(surname); i >= 0; i = lower.indexOf(surname, i + 1)) mentions.push(i);
-    if (!mentions.length) continue;
+  const seen = new Set<string>();
 
-    const seen = new Set<string>();
-    for (const m of [...text.matchAll(/(?<!\d)(1[0-9]{3}|20[0-2][0-9])(?!\d)/g)]) {
-      const y = m[1];
-      if (years.has(y) || seen.has(y)) continue;
-      const pos = m.index ?? 0;
-      if (!mentions.some((mi) => Math.abs(mi - pos) <= RADIUS)) continue;
-      seen.add(y);
-      out.push({
-        rule: 'C1',
-        detail: `год ${y} рядом с «${entity}» противоречит листу фактов (${[...years].join(', ')})`,
-      });
+  // Позиции маркеров всех атрибутов: год приписывается БЛИЖАЙШЕМУ маркеру.
+  // Иначе в перечислении «туған жылы 1894, қайтыс болған жылы 1938» год смерти
+  // попадал в окно маркера рождения и считался противоречием.
+  type Marker = { pos: number; fact: CoreFact; years: string[] };
+  const markers: Marker[] = [];
+  for (const f of facts) {
+    const factYears = yearsIn(`${f.value} ${f.claim}`);
+    if (!factYears.length) continue;
+    const words = (f.attribute.toLowerCase().match(/[а-яёәғқңөұүһіa-z]{4,}/giu) ?? [])
+      .filter((w) => !['жылы', 'жыл', 'года', 'год', 'year'].includes(w))
+      .map((w) => w.slice(0, 5));
+    for (const w of words) {
+      for (let i = lower.indexOf(w); i >= 0; i = lower.indexOf(w, i + 1)) {
+        markers.push({ pos: i, fact: f, years: factYears });
+      }
     }
+  }
+  if (!markers.length) return out;
+
+  for (const m of [...text.matchAll(/(?<!\d)(1[0-9]{3}|20[0-2][0-9])(?!\d)/g)]) {
+    const y = m[1];
+    const pos = m.index ?? 0;
+    // Вариант ответа в списке («ә) 1894») — не утверждение о факте.
+    const before = text.slice(Math.max(0, pos - 6), pos);
+    if (/[a-zа-яәғқңөұүһі]\s*\)\s*$/iu.test(before)) continue;
+
+    // Маркер и год должны быть в одной части предложения: запятая или точка
+    // между ними означают разные утверждения («туған жылы 1894, қайтыс болған
+    // жылы 1938» — год смерти не относится к маркеру рождения).
+    let nearest: Marker | null = null;
+    let best = RADIUS + 1;
+    for (const mk of markers) {
+      const d = Math.abs(mk.pos - pos);
+      if (d >= best) continue;
+      const from = Math.min(mk.pos, pos);
+      const to = Math.max(mk.pos, pos);
+      if (/[,;.!?\n]/.test(text.slice(from, to))) continue;
+      best = d; nearest = mk;
+    }
+    if (!nearest || nearest.years.includes(y)) continue;
+
+    const key = `${nearest.fact.attribute}|${y}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({
+      rule: 'C1',
+      detail: `«${nearest.fact.entity} — ${nearest.fact.attribute}» указан как ${y}, в листе фактов ${nearest.years.join(', ')}`,
+    });
   }
   return out;
 }

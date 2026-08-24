@@ -63,19 +63,24 @@ const SYR_SANDYQ: CoreWorkInterpretation = {
 };
 
 // ── C1 ────────────────────────────────────────────────────────────────────
-test('C1: ложная дата рядом с автором ловится (баг 1.1)', () => {
+test('C1: ложная дата рождения ловится (баг 1.1)', () => {
   // Реальные значения из урока: 1901 в ключе, 1898 в приложении 4.
-  const bad = checkFactYears('С. Сейфуллин 1901 жылы дүниеге келген.', SEIFULLIN_FACTS);
+  const bad = checkFactYears('Сейфуллин туған жылы: 1901.', SEIFULLIN_FACTS);
   assert.equal(bad.length, 1);
   assert.equal(bad[0].rule, 'C1');
-  assert.ok(checkFactYears('Ақын 1898-1938 жылдары өмір сүрген. Сейфуллин туралы.', SEIFULLIN_FACTS).length);
+  assert.ok(checkFactYears('Ақынның туған жылы — 1898.', SEIFULLIN_FACTS).length);
 });
 
-test('C1: верные даты и посторонние годы не дают ложных срабатываний', () => {
-  assert.equal(checkFactYears('С. Сейфуллин 1894 жылы туып, 1938 жылы қайтыс болды.', SEIFULLIN_FACTS).length, 0);
-  // Год далеко от автора — не наше дело (историческая дата в другом абзаце).
+test('C1: верные даты, дистракторы и чужие годы не дают ложных срабатываний', () => {
+  assert.equal(checkFactYears('С. Сейфуллин туған жылы 1894, қайтыс болған жылы 1938.', SEIFULLIN_FACTS).length, 0);
+  // Варианты ответа в вопросе с выбором обязаны содержать неверные годы.
+  assert.equal(
+    checkFactYears('Сәкен Сейфуллин қай жылы дүниеге келген? а) 1900 ә) 1894 б) 1905', SEIFULLIN_FACTS).length,
+    0, 'дистракторы вопроса с выбором — не нарушение',
+  );
+  // Другая достоверная дата биографии, которой просто нет в листе фактов.
+  assert.equal(checkFactYears('Ақын 1922 жылы «Асау тұлпар» жинағын шығарды.', SEIFULLIN_FACTS).length, 0);
   assert.equal(checkFactYears('Кеңес өкіметі 1917 жылы орнады.', SEIFULLIN_FACTS).length, 0);
-  assert.equal(checkFactYears(`Кеңес өкіметі 1917 жылы орнады.${' '.repeat(300)}Сейфуллин туралы.`, SEIFULLIN_FACTS).length, 0);
 });
 
 // ── C2 ────────────────────────────────────────────────────────────────────
