@@ -30,10 +30,10 @@ export interface LandingPackage {
   popular?: boolean;
 }
 export const LANDING_PACKAGES: readonly LandingPackage[] = [
-  { lessons: 10, priceKzt: 3990, note: "закрыть тяжёлые уроки недели" },
-  { lessons: 30, priceKzt: 9990, note: "1–2 готовых урока в учебный день", popular: true },
-  { lessons: 64, priceKzt: 19990, note: "полная месячная норма" },
-  { lessons: 128, priceKzt: 38990, note: "два месяца под ключ" },
+  { lessons: 10, priceKzt: 3990, note: "Для сложных тем и открытых уроков — когда план должен быть безупречным" },
+  { lessons: 30, priceKzt: 9990, note: "1–2 готовых урока каждый учебный день. Вечера — снова ваши", popular: true },
+  { lessons: 64, priceKzt: 19990, note: "Вся месячная нагрузка под ключ — ни одного вечера за планами" },
+  { lessons: 128, priceKzt: 38990, note: "Запас на четверть по лучшей цене урока — генерируйте, не считая" },
 ];
 
 /** Срок, в течение которого удалённый аккаунт можно восстановить (календарные дни). */

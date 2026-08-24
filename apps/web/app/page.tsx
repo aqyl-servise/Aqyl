@@ -115,9 +115,10 @@ export default function LandingPage() {
                 <div>
                   <span style={{ fontSize: "1.6rem", fontWeight: 700, color: "var(--pub-purple)" }}>{formatTenge(p.priceKzt)}</span>
                 </div>
-                <div style={{ color: "var(--pub-text-3)", fontSize: "0.85rem" }}>
-                  {Math.round(p.priceKzt / p.lessons)} ₸ за урок · {p.note}
+                <div style={{ color: "var(--pub-text-3)", fontSize: "0.8rem" }}>
+                  {Math.round(p.priceKzt / p.lessons)} ₸ за урок
                 </div>
+                <div style={{ fontSize: "0.9rem", lineHeight: 1.45 }}>{p.note}</div>
                 <Link href="/register" className="pub-btn pub-btn-primary pub-btn-full" style={{ marginTop: "auto" }}>Начать бесплатно →</Link>
               </div>
             ))}
