@@ -406,3 +406,24 @@ export const FACT_SHEET_TOOL = {
     required: ['facts'],
   },
 };
+
+/**
+ * Схема уровневых дескрипторов (ТЗ 1.6, этап 4). Структурированный вывод:
+ * четыре набора (A/B/C + обобщённый) не помещались в текстовый ответ при
+ * лимите токенов, парсер возвращал null, и лист молча оставался со старыми
+ * дескрипторами — включая совпадение уровней, ради которого правило и писалось.
+ */
+export const LEVELED_DESCRIPTORS_TOOL = {
+  name: 'emit_leveled_descriptors',
+  description: 'Вернуть дескрипторы по уровням A/B/C и обобщённый набор для КМЖ.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      A: { type: 'array', items: { type: 'object', properties: { text: { type: 'string' }, points: { type: 'number' } }, required: ['text', 'points'] } },
+      B: { type: 'array', items: { type: 'object', properties: { text: { type: 'string' }, points: { type: 'number' } }, required: ['text', 'points'] } },
+      C: { type: 'array', items: { type: 'object', properties: { text: { type: 'string' }, points: { type: 'number' } }, required: ['text', 'points'] } },
+      general: { type: 'array', items: { type: 'object', properties: { text: { type: 'string' }, points: { type: 'number' } }, required: ['text', 'points'] } },
+    },
+    required: ['A', 'B', 'C', 'general'],
+  },
+};

@@ -14,7 +14,7 @@ import { handoutTypeFor, isLeveled, handoutAction, parsedHandoutHasContent, task
 import { Presentation } from '../entities/presentation.entity';
 import { buildHandoutPrompt, HANDOUT_TOOL, SCORING_FIX_TOOL, buildScoringFixPrompt } from './handout-prompts';
 import { validateScoring, buildFallbackScoring, describeViolations, Scoring } from '../engine/scoring-validator';
-import { descriptorsFromTaskPrompt, leveledDescriptorsPrompt } from '../prompts/lesson-prompts';
+import { descriptorsFromTaskPrompt, leveledDescriptorsPrompt, LEVELED_DESCRIPTORS_TOOL } from '../prompts/lesson-prompts';
 import { findDescriptorProblems, uncoveredTaskTargets, noteReferenceGaps, hasFractionalPoints } from '../engine/descriptor-validator';
 import { findRewriteProblems, parseAnswerKeys, RewriteProblem } from '../engine/rewrite-validator';
 import { hardViolations } from '../engine/language-gate';
@@ -876,12 +876,19 @@ export class HandoutsService {
       const p = leveledDescriptorsPrompt(
         { A: facts.A.taskText, B: facts.B.taskText, C: facts.C.taskText }, pts, ctx, problems,
       );
-      const res = await this.ai.request({
-        action: 'lesson_descriptors', systemPrompt: p.system, messages: [{ role: 'user', content: p.user }],
+      // Структурированный вывод: четыре набора не помещались в текстовый ответ
+      // при лимите токенов, парсер возвращал null и лист молча оставался со
+      // старыми дескрипторами (та же причина, что у пустого листа фактов).
+      const res = await this.ai.requestTool<Sets>({
+        action: 'lesson_descriptors_leveled', systemPrompt: p.system,
+        messages: [{ role: 'user', content: p.user }],
         userId: lesson.userId, schoolId: lesson.schoolId,
+      }, LEVELED_DESCRIPTORS_TOOL);
+      cost += await this.cost.log(lesson.id, 'handouts', {
+        content: '', model: res.model, tokensIn: res.tokensIn, tokensOut: res.tokensOut,
+        cacheWriteTokens: res.cacheWriteTokens, cacheReadTokens: res.cacheReadTokens,
       });
-      cost += await this.cost.log(lesson.id, 'handouts', res);
-      const parsedSets = this.parseJson<Sets>(res.content);
+      const parsedSets = res.data;
       const ok = parsedSets && (['A', 'B', 'C', 'general'] as const).every((k) => Array.isArray(parsedSets[k]) && parsedSets[k].some((d) => d?.text?.trim()));
       if (!ok) { problems = ['ответ не содержал все четыре набора дескрипторов']; continue; }
       got = parsedSets!;

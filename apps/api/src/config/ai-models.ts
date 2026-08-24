@@ -25,6 +25,8 @@ export const ACTION_MODEL_MAP: Record<string, keyof typeof AI_MODELS> = {
   lesson_value_link: 'HAIKU',
   lesson_stage: 'SONNET',
   lesson_descriptors: 'SONNET',
+  // Уровневые: четыре набора сразу, потолок втрое выше обычного.
+  lesson_descriptors_leveled: 'SONNET',
   // Раздаточные листы (срез 2): задания — Sonnet (качество, объём A/B/C),
   // простые (разминка/объяснение/квиз/рефлексия) — Haiku втрое дешевле (ТЗ 1.2).
   lesson_handout: 'SONNET',
@@ -63,6 +65,7 @@ export const MAX_TOKENS_MAP: Record<string, number> = {
   lesson_value_link: 250, // 1–2 предложения, до 45 слов
   lesson_stage: 700, // было 1200 — с ограничением объёма столько не нужно
   lesson_descriptors: 350, // было 500
+  lesson_descriptors_leveled: 1500,
   // Раздаточный лист. Потолок 2600 обрывал казахский A/B/C и парную работу
   // (JSON рвался на полуслове → пустой лист, ТЗ 1.2 дефект 1). Казахский
   // токеномкий, поэтому запас большой; платим за фактический выход, не за
