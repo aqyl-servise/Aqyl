@@ -366,3 +366,43 @@ export function factSheetPrompt(ctx: LessonContext): { system: string; user: str
     (ctx.learningObjectives?.length ? ` Цели обучения: ${ctx.learningObjectives.join(', ')}.` : '');
   return { system, user };
 }
+
+/**
+ * Схема листа фактов. Структурированный вывод, а не текстовый JSON: при
+ * лимите токенов текстовый ответ обрывался на середине и парсер возвращал
+ * null — лист фактов приходил пустым (та же причина, что у пустых раздаток).
+ */
+export const FACT_SHEET_TOOL = {
+  name: 'emit_facts',
+  description: 'Вернуть проверенные факты урока и трактовку изучаемого произведения.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      facts: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            entity: { type: 'string' },
+            attribute: { type: 'string' },
+            value: { type: 'string' },
+            claim: { type: 'string' },
+            confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
+          },
+          required: ['entity', 'attribute', 'value', 'confidence'],
+        },
+      },
+      workInterpretation: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          year: { type: 'string' },
+          mainTheme: { type: 'string' },
+          centralImage: { type: 'string' },
+          keyDevices: { type: 'array', items: { type: 'string' } },
+        },
+      },
+    },
+    required: ['facts'],
+  },
+};

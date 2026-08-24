@@ -27,6 +27,7 @@ import {
   descriptorsPrompt,
   lessonCorePrompt,
   factSheetPrompt,
+  FACT_SHEET_TOOL,
 } from './prompts/lesson-prompts';
 import { docLabels } from './export/doc-labels';
 import { SubscriptionService } from '../billing/subscription.service';
@@ -418,9 +419,19 @@ export class LessonPlansService {
   private async generateFactSheet(lesson: Lesson, ctx: LessonContext): Promise<CoreFactSheet | null> {
     try {
       const p = factSheetPrompt(ctx);
-      const res = await this.safeRequest('lesson_facts', p.system, p.user, lesson);
-      await this.cost.log(lesson.id, 'plan', res);
-      const parsed = this.parseJson<{ facts?: CoreFact[]; workInterpretation?: CoreWorkInterpretation | null }>(res.content);
+      // Структурированный вывод: API гарантирует валидный JSON по схеме.
+      // Текстовый ответ на этом промпте упирался в лимит токенов и обрывался
+      // на середине — парсер возвращал null, лист фактов приходил пустым.
+      const res = await this.ai.requestTool<{ facts?: CoreFact[]; workInterpretation?: CoreWorkInterpretation | null }>({
+        action: 'lesson_facts', systemPrompt: p.system,
+        messages: [{ role: 'user', content: p.user }],
+        userId: lesson.userId, schoolId: lesson.schoolId,
+      }, FACT_SHEET_TOOL);
+      await this.cost.log(lesson.id, 'plan', {
+        content: '', model: res.model, tokensIn: res.tokensIn, tokensOut: res.tokensOut,
+        cacheWriteTokens: res.cacheWriteTokens, cacheReadTokens: res.cacheReadTokens,
+      });
+      const parsed = res.data;
       const facts = (Array.isArray(parsed?.facts) ? parsed!.facts : [])
         .filter((f) => f?.entity && f?.attribute && f?.value)
         .map((f) => ({
