@@ -358,7 +358,20 @@ export class LessonPlansService {
     const lessonGoals = (Array.isArray(parsed.lessonObjectives) ? parsed.lessonObjectives : [])
       .map((x) => stripObjectivePrefix(String(x))).filter(Boolean);
 
-    const valueStages = stages.filter((x) => x.linkedToValue);
+    // C8, первопричина дефекта 1.9: ценность задана, но ни один этап не
+    // помечен носителем (quick-режим флаг не ставил) — тогда ей негде
+    // обязательно проявиться. Дефолтный носитель — первое задание, иначе
+    // рефлексия: там ценность вплетается органичнее всего.
+    let valueStages = stages.filter((x) => x.linkedToValue);
+    if (valueName && !valueStages.length) {
+      const carrier = stages.find((x) => x.stageType === 'task') ?? stages.find((x) => x.stageType === 'reflection');
+      if (carrier) {
+        carrier.linkedToValue = true;
+        await this.stageRepo.update({ id: carrier.id }, { linkedToValue: true });
+        valueStages = [carrier];
+        this.logger.log(`Урок ${lesson.id}: носитель ценности не был выбран — назначен этап ${carrier.stageType} (C8)`);
+      }
+    }
     const core: LessonCoreData = {
       meta: {
         subject: canonicalSubject(lesson.subject),
