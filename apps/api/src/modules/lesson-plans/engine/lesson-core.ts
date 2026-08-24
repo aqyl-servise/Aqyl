@@ -217,12 +217,26 @@ export function checkFactYears(text: string, facts: CoreFact[]): FactProblem[] {
   }
   if (!markers.length) return out;
 
-  for (const m of [...text.matchAll(/(?<!\d)(1[0-9]{3}|20[0-2][0-9])(?!\d)/g)]) {
+  // Годы, известные листу фактов для этой сущности. Год, который есть в листе
+  // хотя бы под одним атрибутом, листу НЕ противоречит: в биографии подряд
+  // идут «1894 туған, 1922 жинақ, 1937 тұтқындалды, 1938 атылды», и ближайший
+  // маркер регулярно приписывал верный год чужому атрибуту. Флагим только то,
+  // чего в листе нет вовсе — то есть выдуманное (ровно смысл C1 в ТЗ).
+  const allKnownYears = new Set<string>();
+  for (const f of facts) for (const y of yearsIn(`${f.value} ${f.claim}`)) allKnownYears.add(y);
+
+  const yearMatches = [...text.matchAll(/(?<!\d)(1[0-9]{3}|20[0-2][0-9])(?!\d)/g)];
+  for (const m of yearMatches) {
     const y = m[1];
     const pos = m.index ?? 0;
+    if (allKnownYears.has(y)) continue;
     // Вариант ответа в списке («ә) 1894») — не утверждение о факте.
     const before = text.slice(Math.max(0, pos - 6), pos);
     if (/[a-zа-яәғқңөұүһі]\s*\)\s*$/iu.test(before)) continue;
+    // Плотный список годов (три и более в коротком отрезке) — тоже варианты
+    // ответа, даже если маркеры пунктов отформатированы иначе.
+    const nearby = yearMatches.filter((o) => Math.abs((o.index ?? 0) - pos) <= 80);
+    if (new Set(nearby.map((o) => o[1])).size >= 3) continue;
 
     // Маркер и год должны быть в одной части предложения: запятая или точка
     // между ними означают разные утверждения («туған жылы 1894, қайтыс болған
