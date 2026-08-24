@@ -25,11 +25,13 @@ import {
   valueLinkPrompt,
   stagePrompt,
   descriptorsPrompt,
+  lessonCorePrompt,
 } from './prompts/lesson-prompts';
 import { docLabels } from './export/doc-labels';
 import { SubscriptionService } from '../billing/subscription.service';
 import { LanguageGateService } from './language-gate.service';
 import { hardViolations } from './engine/language-gate';
+import { LessonCoreData, canonicalSubject, coreObjectivesProblems, normalizeStageMinutes, valueLexemes, containsValueLexeme } from './engine/lesson-core';
 import { planChildren } from './export/docx-kit';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Document, Packer } = require('docx') as typeof import('docx');
@@ -316,10 +318,100 @@ export class LessonPlansService {
     return { status: 'generating' };
   }
 
+  /**
+   * LessonCore (ТЗ 1.6, этап 2): полные формулировки целей обучения, цели
+   * урока и раскрытие ценности — одним вызовом, с C7-валидацией и одним
+   * ретраем. Дальше КМЖ, презентация и промпты этапов только читают.
+   */
+  private async ensureCore(lesson: Lesson, stages: LessonStage[]): Promise<LessonCoreData> {
+    const valueRef = lesson.valueMonth ? await this.getValueForMonth(lesson.valueMonth) : null;
+    const valueName = valueRef ? this.valueName(valueRef, lesson.language) : null;
+    const ctx = this.ctxOf(lesson);
+
+    let parsed: { curriculum?: { code: string; text: string }[]; lessonObjectives?: string[]; valueRationale?: string } = {};
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const p = lessonCorePrompt(ctx, valueName);
+      const res = await this.safeRequest('lesson_core', p.system, p.user, lesson);
+      await this.cost.log(lesson.id, 'plan', res);
+      const cand = this.parseJson<typeof parsed>(res.content) ?? {};
+      const problems = coreObjectivesProblems({
+        curriculum: Array.isArray(cand.curriculum) ? cand.curriculum : [],
+        lesson: Array.isArray(cand.lessonObjectives) ? cand.lessonObjectives : [],
+      });
+      if (!problems.length || attempt === 2) {
+        parsed = cand;
+        if (problems.length) this.logger.warn(`Урок ${lesson.id}: паспорт неполон после ретрая (C7): ${problems.join('; ')}`);
+        break;
+      }
+      this.logger.warn(`Урок ${lesson.id}: паспорт неполон (C7): ${problems.join('; ')}, повтор`);
+    }
+
+    // Фолбэки: пустая формулировка хуже всего (1.8) — хотя бы код с темой.
+    const curriculum = (Array.isArray(parsed.curriculum) ? parsed.curriculum : [])
+      .filter((c) => c?.code)
+      .map((c) => ({ code: String(c.code), text: String(c.text ?? '').trim() || `${lesson.lessonTitle ?? ''}`.trim() }));
+    for (const code of lesson.learningObjectives ?? []) {
+      if (!curriculum.some((c) => c.code === code)) {
+        curriculum.push({ code, text: `${lesson.lessonTitle ?? ''}`.trim() || code });
+      }
+    }
+    const lessonGoals = (Array.isArray(parsed.lessonObjectives) ? parsed.lessonObjectives : [])
+      .map((x) => stripObjectivePrefix(String(x))).filter(Boolean);
+
+    const valueStages = stages.filter((x) => x.linkedToValue);
+    const core: LessonCoreData = {
+      meta: {
+        subject: canonicalSubject(lesson.subject),
+        grade: lesson.grade ?? null,
+        topic: lesson.lessonTitle ?? '',
+        durationMin: lesson.durationMinutes ?? 45,
+      },
+      objectives: { curriculum, lesson: lessonGoals.length ? lessonGoals : lesson.lessonObjectives ?? [] },
+      value: valueName
+        ? {
+            key: valueName,
+            rationale: String(parsed.valueRationale ?? '').trim(),
+            appendixIndices: valueStages.map((x) => (x.order ?? 0) + 1),
+            stageIds: valueStages.map((x) => x.id),
+          }
+        : null,
+      generatedAt: new Date().toISOString(),
+      language: lesson.language ?? 'kz',
+    };
+
+    // Единственная точка сохранения сгенерированного текста (ТЗ 1.6, п. 3.1).
+    await this.gate.persistGeneratedText(
+      [core.objectives.curriculum.map((c) => c.text), core.objectives.lesson, core.value?.rationale ?? ''],
+      { lessonId: lesson.id, module: 'plan:core', language: lesson.language, allowFlag: true },
+    );
+    await this.lessonRepo.update({ id: lesson.id }, {
+      core: core as never,
+      subject: core.meta.subject,
+      lessonObjectives: core.objectives.lesson,
+    });
+    return core;
+  }
+
   private async runGeneration(id: string): Promise<void> {
     const lesson = await this.lessonRepo.findOne({ where: { id } });
     if (!lesson) return;
     const stages = await this.stageRepo.find({ where: { lessonId: id }, order: { order: 'ASC' } });
+
+    // LessonCore (ТЗ 1.6, этап 2): паспорт урока — ОДИН раз, до всех модулей.
+    // C12 — каноническое название предмета попадает и в мету, и в промпты.
+    lesson.subject = canonicalSubject(lesson.subject);
+    const core = await this.ensureCore(lesson, stages);
+    lesson.lessonObjectives = core.objectives.lesson;
+    lesson.core = core;
+
+    // C10: время этапов не превышает длительность урока — ужимаем кодом.
+    const fixed = normalizeStageMinutes(stages.map((x) => x.timeMinutes ?? 0), lesson.durationMinutes ?? 45);
+    if (fixed) {
+      this.logger.warn(`Урок ${id}: сумма минут этапов превышала ${lesson.durationMinutes} — ужато пропорционально (C10)`);
+      for (let i = 0; i < stages.length; i++) { stages[i].timeMinutes = fixed[i]; }
+      await this.stageRepo.save(stages);
+    }
+
     const ctx = this.ctxOf(lesson);
 
     // Оцениваемые выбирает учитель (срез 2), а не тип этапа: тренировочное
@@ -347,6 +439,8 @@ export class LessonPlansService {
       const ref = await this.getValueForMonth(lesson.valueMonth);
       if (ref) stageValueName = this.valueName(ref, lesson.language);
     }
+    // C8 (ТЗ 1.6): основы слов ценности — проверяем присутствие в помеченных этапах.
+    const valueLex = core.value ? valueLexemes(core.value) : [];
     for (const s of stages) {
       const desc = s.toolId ? toolMap.get(s.toolId)?.description ?? '' : '';
       // До двух попыток: русские термины из глоссария (B.3, ТЗ 1.5.1) или
@@ -366,15 +460,23 @@ export class LessonPlansService {
           .filter(Boolean).join(' ');
         const wrong = lesson.language === 'kz' ? findWrongTerms(joined, lesson.subject) : [];
         const gateHard = hardViolations(this.gate.check(joined, lesson.language));
-        if ((!wrong.length && !gateHard.length) || attempt === 2) {
+        // C8 (ТЗ 1.6): этап привязан к ценности — её лексика обязана присутствовать.
+        const valueMissing = !!(s.linkedToValue && valueLex.length && !containsValueLexeme(joined, valueLex));
+        if ((!wrong.length && !gateHard.length && !valueMissing) || attempt === 2) {
           c = cand;
           if (wrong.length) this.logger.warn(`Этап ${s.stageType} урока ${id}: остались русские термины [${wrong.join(', ')}]`);
+          if (valueMissing) this.logger.warn(`Этап ${s.stageType} урока ${id}: ценность не раскрыта после ретрая (C8)`);
           break;
         }
-        gateHint = gateHard.length
-          ? `\n\nЗАПРЕЩЕНО использовать слова: ${gateHard.map((v) => `«${v.word}»${v.suggestion ? ` (пиши «${v.suggestion}»)` : ''}`).join(', ')}. Замени их корректной казахской лексикой.`
-          : '';
-        this.logger.warn(`Этап ${s.stageType} урока ${id}: ${[wrong.length ? `русские термины [${wrong.join(', ')}]` : '', gateHard.length ? `шлюз: ${gateHard.map((v) => v.word).join(', ')}` : ''].filter(Boolean).join('; ')}, повтор`);
+        gateHint = [
+          gateHard.length
+            ? `\n\nЗАПРЕЩЕНО использовать слова: ${gateHard.map((v) => `«${v.word}»${v.suggestion ? ` (пиши «${v.suggestion}»)` : ''}`).join(', ')}. Замени их корректной казахской лексикой.`
+            : '',
+          valueMissing
+            ? `\n\nОБЯЗАТЕЛЬНО: этап привязан к ценности «${core.value?.key ?? stageValueName}» — явно раскрой её в действиях учителя или учеников.`
+            : '',
+        ].join('');
+        this.logger.warn(`Этап ${s.stageType} урока ${id}: ${[wrong.length ? `русские термины [${wrong.join(', ')}]` : '', gateHard.length ? `шлюз: ${gateHard.map((v) => v.word).join(', ')}` : '', valueMissing ? 'ценность не раскрыта (C8)' : ''].filter(Boolean).join('; ')}, повтор`);
       }
       s.stageName = c.stageName ?? s.stageName ?? s.stageType;
       s.teacherActions = c.teacherActions ?? '';
@@ -396,7 +498,14 @@ export class LessonPlansService {
     }
 
     // 4) Раскрытие ценности программы «Адал азамат» под тему урока.
-    await this.expandValueLink(lesson);
+    // Раскрытие ценности берётся из LessonCore (один вызов), а не отдельным
+    // обращением к модели: сущность порождается один раз (ТЗ 1.6).
+    if (core.value?.rationale) {
+      await this.gate.persistGeneratedText(core.value.rationale, { lessonId: id, module: 'plan:value', language: lesson.language, allowFlag: true });
+      await this.lessonRepo.update({ id }, { valueLink: core.value.rationale });
+    } else {
+      await this.expandValueLink(lesson);
+    }
 
     await this.lessonRepo.update(id, { status: 'ready', totalPoints: 10, homework: lesson.homework ?? null });
   }

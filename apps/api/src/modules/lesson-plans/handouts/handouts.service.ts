@@ -18,6 +18,7 @@ import { descriptorsFromTaskPrompt, leveledDescriptorsPrompt } from '../prompts/
 import { findDescriptorProblems, uncoveredTaskTargets, noteReferenceGaps, hasFractionalPoints } from '../engine/descriptor-validator';
 import { findRewriteProblems, parseAnswerKeys, RewriteProblem } from '../engine/rewrite-validator';
 import { hardViolations } from '../engine/language-gate';
+import { valueLexemes, containsValueLexeme } from '../engine/lesson-core';
 import { LanguageGateService } from '../language-gate.service';
 import { parseRequiredElements, missingElements } from '../engine/objective-elements';
 import { adjustDescriptorSum } from '../engine/points-engine';
@@ -246,13 +247,19 @@ export class HandoutsService {
         const fractional = this.fractionalPointsInParsed(res.data, type);
         // Языковой шлюз (ТЗ 1.6): русские корни и семантические ловушки.
         const gateHard = hardViolations(this.gate.check(res.data, lesson.language));
-        if ((!wrong.length && !rewrite.length && !notes.length && !fractional && !gateHard.length) || attempt === maxAttempts) {
+        // C8 (ТЗ 1.6): лист этапа, привязанного к ценности, обязан её раскрывать.
+        const vLex = stage.linkedToValue && valueName
+          ? valueLexemes({ key: valueName, rationale: lesson.valueLink ?? '' })
+          : [];
+        const valueMissing = !!(vLex.length && !containsValueLexeme(flattenStrings(res.data), vLex));
+        if ((!wrong.length && !rewrite.length && !notes.length && !fractional && !gateHard.length && !valueMissing) || attempt === maxAttempts) {
           parsed = res.data;
           if (wrong.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: остались русские термины [${wrong.join(', ')}]`);
           if (rewrite.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: невалидные трансформации — ${rewrite.map((r) => r.detail).join('; ')}`);
           if (notes.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: подсказка не по заданию — ${notes.join('; ')}`);
           if (fractional) this.logger.warn(`Лист «${type}» урока ${lesson.id}: в критериях остались дробные баллы`);
           if (gateHard.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: шлюз — остались [${gateHard.map((v) => v.word).join(', ')}]`);
+          if (valueMissing) this.logger.warn(`Лист «${type}» урока ${lesson.id}: ценность не раскрыта после ретраев (C8)`);
           break;
         }
         const reasons = [
@@ -261,13 +268,21 @@ export class HandoutsService {
           notes.length ? `подсказка: ${notes.join('; ')}` : '',
           fractional ? 'дробные баллы в критериях' : '',
           gateHard.length ? `шлюз: ${gateHard.map((v) => v.word).join(', ')}` : '',
+          valueMissing ? 'ценность не раскрыта (C8)' : '',
         ].filter(Boolean).join('; ');
         this.logger.warn(`Лист «${type}» урока ${lesson.id}: ${reasons}, повтор`);
-        gateHint = gateHard.length
-          ? `
+        gateHint = [
+          gateHard.length
+            ? `
 
 ЗАПРЕЩЕНО использовать слова: ${gateHard.map((v) => `«${v.word}»${v.suggestion ? ` (пиши «${v.suggestion}»)` : ''}`).join(', ')}. Замени корректной казахской лексикой.`
-          : '';
+            : '',
+          valueMissing
+            ? `
+
+ОБЯЗАТЕЛЬНО: задание привязано к ценности «${valueName}» — раскрой её в содержании явно.`
+            : '',
+        ].join('');
         continue;
       }
       this.logger.warn(`Лист «${type}» урока ${lesson.id}: пустой ответ, попытка ${attempt}/${maxAttempts}`);

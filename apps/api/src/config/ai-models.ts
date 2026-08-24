@@ -17,6 +17,8 @@ export const ACTION_MODEL_MAP: Record<string, keyof typeof AI_MODELS> = {
   visualizer_generate: 'SONNET',
   text_adapter_generate: 'SONNET',
   text_adapter_translate: 'SONNET',
+  // Паспорт урока (ТЗ 1.6): формулировки целей программы — Sonnet, точность важнее цены.
+  lesson_core: 'SONNET',
   lesson_objectives: 'HAIKU',
   lesson_value_link: 'HAIKU',
   lesson_stage: 'SONNET',
@@ -36,6 +38,7 @@ export const ACTION_MODEL_MAP: Record<string, keyof typeof AI_MODELS> = {
 };
 
 export const MAX_TOKENS_MAP: Record<string, number> = {
+  lesson_core: 1200,
   kmzh_generate: 2000,
   kmzh_objectives: 300,
   presentation_generate: 3000, // все слайды одним вызовом (ТЗ 2.0)

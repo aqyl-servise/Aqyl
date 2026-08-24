@@ -161,7 +161,14 @@ export class PresentationService {
       grade: lesson.grade ?? null, lessonNumber: lesson.lessonNumber ?? '',
     });
     // Слайд целей — цели ОБУЧЕНИЯ с кодами (ТЗ 2.1, #2), не цели урока.
-    out.push({ kind: 'objectives', title: t.learning, bullets: lesson.learningObjectives ?? [] });
+    // Из LessonCore (ТЗ 1.6): «код — формулировка», не голый код (дефект 1.8).
+    const curriculum = lesson.core?.objectives?.curriculum;
+    out.push({
+      kind: 'objectives', title: t.learning,
+      bullets: curriculum?.length
+        ? curriculum.map((c) => (c.text && c.text !== c.code ? `${c.code} — ${c.text}` : c.code))
+        : lesson.learningObjectives ?? [],
+    });
 
     let explanationCount = 0;
     for (const s of Array.isArray(aiSlides) ? aiSlides : []) {

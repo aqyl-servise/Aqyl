@@ -124,6 +124,14 @@ export class Lesson {
   @Column({ type: 'boolean', default: false })
   languageWarning!: boolean;
 
+  /**
+   * LessonCore — единый паспорт урока (ТЗ 1.6): мета, цели с полными
+   * формулировками, ценность. Генерируется один раз до остальных модулей;
+   * КМЖ, презентация и промпты этапов только читают его.
+   */
+  @Column({ type: 'jsonb', nullable: true })
+  core?: import('../engine/lesson-core').LessonCoreData | null;
+
   @OneToMany(() => LessonStage, (stage) => stage.lesson, { cascade: true })
   stages!: LessonStage[];
 

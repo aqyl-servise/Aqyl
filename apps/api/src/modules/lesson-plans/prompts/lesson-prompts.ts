@@ -314,3 +314,30 @@ export function valueLinkPrompt(valueName: string, ctx: LessonContext): { system
       `Верни JSON: {"valueLink": "..."}. Без markdown и пояснений вне JSON.`,
   };
 }
+
+/**
+ * LessonCore (ТЗ 1.6, этап 2): один вызов до остальных модулей — полные
+ * формулировки целей обучения по кодам, 3–4 цели урока, раскрытие ценности.
+ * Дальше модули это только читают.
+ */
+export function lessonCorePrompt(
+  ctx: LessonContext,
+  valueName: string | null,
+): { system: string; user: string } {
+  const lang = ctx.language === 'ru' ? 'русском' : ctx.language === 'en' ? 'английском' : 'казахском';
+  const system =
+    `Ты — методист школы Казахстана. Отвечай СТРОГО валидным JSON без пояснений, ` +
+    `все тексты — на ${lang} языке.\n` +
+    `Формат: {"curriculum":[{"code":"11.1.2.1","text":"полная формулировка цели обучения из типовой программы"}],` +
+    `"lessonObjectives":["3-4 цели урока, глагол в изъявительном наклонении (оқушы ... анықтайды)"],` +
+    `"valueRationale":"1-2 предложения, как ценность раскрывается на этом уроке"}\n` +
+    `Требования: text каждой цели — полная формулировка по коду из типовой учебной программы МОН РК, ` +
+    `НЕ повторение кода и НЕ пустая строка. Если точная формулировка неизвестна — восстанови её по ` +
+    `структуре кода и теме максимально близко к программе. lessonObjectives выводятся из curriculum и темы.`;
+  const user =
+    `Предмет: ${ctx.subject}. Класс: ${ctx.grade}. Тема: «${ctx.lessonTitle}». ` +
+    (ctx.languageFocus ? `Языковая цель: ${ctx.languageFocus}. ` : '') +
+    `Коды целей обучения: ${ctx.learningObjectives.join(', ')}.` +
+    (valueName ? ` Ценность месяца: «${valueName}».` : ' Ценность месяца не задана: valueRationale верни пустой строкой.');
+  return { system, user };
+}

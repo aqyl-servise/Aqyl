@@ -45,7 +45,12 @@ export function planChildren(lesson: Lesson, lbl: DocLabels, appendixByStageId?:
   const hRowLines = (label: string, paras: Paragraph[]) =>
     new TableRow({ children: [cell([para(label, true)], 3000), cell(paras.length ? paras : [para('')], 6360)] });
 
-  const learnObjLines = (lesson.learningObjectives ?? []).map((o) => para(o));
+  // Цели обучения — из LessonCore (ТЗ 1.6): «код — полная формулировка»,
+  // не голый код. Для уроков без паспорта (старые) — как раньше.
+  const curriculum = lesson.core?.objectives?.curriculum;
+  const learnObjLines = curriculum?.length
+    ? curriculum.map((c) => para(c.text && c.text !== c.code ? `${c.code} — ${c.text}` : c.code))
+    : (lesson.learningObjectives ?? []).map((o) => para(o));
   const lessonObjLines = (lesson.lessonObjectives ?? []).map((o, i) => para(`${i + 1}. ${o}`));
 
   const headerTable = new Table({
