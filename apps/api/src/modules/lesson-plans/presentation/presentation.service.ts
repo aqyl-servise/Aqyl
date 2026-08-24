@@ -147,8 +147,27 @@ export class PresentationService {
     const slides = this.assemble(lesson, ai?.slides ?? [], Array.isArray(ai?.review) ? ai!.review : [], stages);
     // Единственная точка сохранения сгенерированного текста (ТЗ 1.6, п. 3.1).
     await this.gate.persistGeneratedText(slides, { lessonId, module: 'presentation', language: lesson.language, allowFlag: true });
+    this.checkSlideStages(lessonId, slides, stages);
     // TypeORM не любит jsonb-массив в partial update — приводим тип.
     await this.presRepo.update({ lessonId }, { status: 'ready', generationCost: cost, slides: slides as never });
+  }
+
+  /**
+   * C9 (ТЗ 1.6): каждый содержательный слайд сопоставлен этапу урока либо
+   * помечен служебным. Предупреждение в лог: пересобирать презентацию из-за
+   * лишнего слайда дороже, чем показать его учителю.
+   */
+  private checkSlideStages(lessonId: string, slides: Record<string, unknown>[], stages: LessonStage[]): void {
+    const known = new Set(stages.map((s) => String(s.stageType)));
+    const orphans = slides
+      .filter((sl) => !sl.service)
+      .map((sl) => String(sl.stageType ?? ''))
+      .filter((st) => st && !known.has(st));
+    if (orphans.length) {
+      this.logger.warn(
+        `Презентация урока ${lessonId}: слайды без этапа в КМЖ — ${[...new Set(orphans)].join(', ')} (C9)`,
+      );
+    }
   }
 
   /** Собирает финальный набор: титул + цели обучения + этапы + закрепление + финал. */
@@ -164,15 +183,18 @@ export class PresentationService {
         descQueue[st.stageType].push(st);
       }
     }
+    // C9 (ТЗ 1.6): служебные слайды помечаются явно — они не обязаны иметь
+    // этап в КМЖ. Содержательные обязаны, иначе слайд обещает работу, на
+    // которую в плане нет времени (баг 1.10 — «Бекіту сұрақтары»).
     out.push({
-      kind: 'title', title: lesson.lessonTitle ?? '', subject: lesson.subject ?? '',
+      kind: 'title', service: true, title: lesson.lessonTitle ?? '', subject: lesson.subject ?? '',
       grade: lesson.grade ?? null, lessonNumber: lesson.lessonNumber ?? '',
     });
     // Слайд целей — цели ОБУЧЕНИЯ с кодами (ТЗ 2.1, #2), не цели урока.
     // Из LessonCore (ТЗ 1.6): «код — формулировка», не голый код (дефект 1.8).
     const curriculum = lesson.core?.objectives?.curriculum;
     out.push({
-      kind: 'objectives', title: t.learning,
+      kind: 'objectives', service: true, title: t.learning,
       bullets: curriculum?.length
         ? curriculum.map((c) => (c.text && c.text !== c.code ? `${c.code} — ${c.text}` : c.code))
         : lesson.learningObjectives ?? [],
@@ -207,9 +229,11 @@ export class PresentationService {
 
     // Предпоследний слайд — закрепление: 5-6 открытых вопросов (ТЗ 2.1, #4).
     const reviewQ = (Array.isArray(review) ? review : []).map((q) => String(q ?? '')).filter(Boolean).slice(0, 6);
-    if (reviewQ.length) out.push({ kind: 'review', title: t.review, questions: reviewQ });
+    // Слайд закрепления — служебный: отдельного этапа с временем в КМЖ у него
+    // нет, и выдавать его за этап урока было бы неправдой (ТЗ 1.6, C9).
+    if (reviewQ.length) out.push({ kind: 'review', service: true, title: t.review, questions: reviewQ });
 
-    out.push({ kind: 'final', title: t.thanks });
+    out.push({ kind: 'final', service: true, title: t.thanks });
     return out;
   }
 
