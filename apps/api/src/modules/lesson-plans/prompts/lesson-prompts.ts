@@ -427,3 +427,23 @@ export const LEVELED_DESCRIPTORS_TOOL = {
     required: ['A', 'B', 'C', 'general'],
   },
 };
+
+/** Схема одного набора дескрипторов (ТЗ 1.6): тот же класс защиты от обрывов. */
+export const DESCRIPTORS_TOOL = {
+  name: 'emit_descriptors',
+  description: 'Вернуть дескрипторы оцениваемого задания с баллами.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      descriptors: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: { text: { type: 'string' }, points: { type: 'number' } },
+          required: ['text', 'points'],
+        },
+      },
+    },
+    required: ['descriptors'],
+  },
+};

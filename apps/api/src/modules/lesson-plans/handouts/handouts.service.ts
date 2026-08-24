@@ -14,7 +14,7 @@ import { handoutTypeFor, isLeveled, handoutAction, parsedHandoutHasContent, task
 import { Presentation } from '../entities/presentation.entity';
 import { buildHandoutPrompt, HANDOUT_TOOL, SCORING_FIX_TOOL, buildScoringFixPrompt } from './handout-prompts';
 import { validateScoring, buildFallbackScoring, describeViolations, Scoring } from '../engine/scoring-validator';
-import { descriptorsFromTaskPrompt, leveledDescriptorsPrompt, LEVELED_DESCRIPTORS_TOOL } from '../prompts/lesson-prompts';
+import { descriptorsFromTaskPrompt, leveledDescriptorsPrompt, LEVELED_DESCRIPTORS_TOOL, DESCRIPTORS_TOOL } from '../prompts/lesson-prompts';
 import { findDescriptorProblems, uncoveredTaskTargets, noteReferenceGaps, hasFractionalPoints } from '../engine/descriptor-validator';
 import { findRewriteProblems, parseAnswerKeys, RewriteProblem } from '../engine/rewrite-validator';
 import { hardViolations } from '../engine/language-gate';
@@ -790,14 +790,19 @@ export class HandoutsService {
       const p = descriptorsFromTaskPrompt(
         { stageType: stage.stageType, toolId: stage.toolId }, pts, facts.taskText, ctx, problems, tasks.length,
       );
-      const res = await this.ai.request({
+      // Структурированный вывод: потолок 350 токенов оставлял мало запаса, а
+      // обрыв текстового JSON молча превращался в «модель ничего не вернула».
+      const res = await this.ai.requestTool<{ descriptors: { text: string; points: number }[] }>({
         action: 'lesson_descriptors', systemPrompt: p.system,
         messages: [{ role: 'user', content: p.user }],
         userId: lesson.userId, schoolId: lesson.schoolId,
+      }, DESCRIPTORS_TOOL);
+      cost += await this.cost.log(lesson.id, 'handouts', {
+        content: '', model: res.model, tokensIn: res.tokensIn, tokensOut: res.tokensOut,
+        cacheWriteTokens: res.cacheWriteTokens, cacheReadTokens: res.cacheReadTokens,
       });
-      cost += await this.cost.log(lesson.id, 'handouts', res);
 
-      const got = this.parseJson<{ descriptors: { text: string; points: number }[] }>(res.content);
+      const got = res.data;
       const cand = Array.isArray(got?.descriptors) ? got!.descriptors.filter((d) => d?.text?.trim()) : [];
       if (!cand.length) {
         problems = ['ответ не содержал дескрипторов'];

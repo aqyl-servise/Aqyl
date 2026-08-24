@@ -750,6 +750,16 @@ export class LessonPlansService {
     });
   }
 
+  /**
+   * Разбор текстового JSON от модели.
+   *
+   * Обрыв по лимиту токенов трижды за это ТЗ выглядел как «модель ничего не
+   * вернула» и уводил расследование в сторону: лист фактов приходил пустым,
+   * уровневые дескрипторы молча оставались старыми. Поэтому неудачный разбор
+   * логируется отдельно и с признаком обрыва — незакрытая скобка в конце.
+   * Где возможно, вызовы переведены на структурированный вывод (requestTool),
+   * где API сам гарантирует валидный JSON.
+   */
   private parseJson<T>(text: string): T | null {
     if (!text) return null;
     let s = text.trim().replace(/^```json?\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
@@ -762,6 +772,12 @@ export class LessonPlansService {
       for (let i = s.length; i > 0; i--) {
         try { return JSON.parse(s.slice(0, i)) as T; } catch { /* keep trimming */ }
       }
+      const opens = (s.match(/[[{]/g) ?? []).length;
+      const closes = (s.match(/[\]}]/g) ?? []).length;
+      this.logger.warn(
+        `Ответ модели не разобран как JSON (${s.length} символов` +
+        `${opens > closes ? ', похоже на обрыв по лимиту токенов' : ''}): ${s.slice(-80)}`,
+      );
       return null;
     }
   }
