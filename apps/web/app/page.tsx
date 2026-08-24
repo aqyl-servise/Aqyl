@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PublicHeader } from "../components/public-header";
 import { PublicFooter } from "../components/public-footer";
-import { TRIAL_LABEL, PRICE_PER_MONTH, formatTenge } from "../lib/product";
+import { TRIAL_LABEL, PACKAGE_FROM_KZT, PER_LESSON_POPULAR_KZT, formatTenge } from "../lib/product";
 
 const STATS = [
   { num: "до 3 часов", sub: "в неделю экономии" },
@@ -103,10 +103,14 @@ export default function LandingPage() {
           <h2 style={{ marginBottom: 32 }}>Прозрачная цена</h2>
           <div style={{ maxWidth: 420, margin: "0 auto" }}>
             <div className="pub-card" style={{ display: "flex", flexDirection: "column", gap: 16, border: "1px solid var(--pub-purple)", boxShadow: "var(--pub-shadow-lg)" }}>
-              <h3>Для учителя</h3>
+              <h3>Пакеты уроков</h3>
               <div>
-                <span style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--pub-purple)" }}>{formatTenge(PRICE_PER_MONTH)}</span>
-                <span style={{ color: "var(--pub-text-3)" }}> / месяц</span>
+                <span style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--pub-purple)" }}>от {formatTenge(PACKAGE_FROM_KZT)}</span>
+                <span style={{ color: "var(--pub-text-3)" }}> / пакет</span>
+              </div>
+              <div style={{ color: "var(--pub-text-3)", fontSize: "0.9rem", marginTop: -8 }}>
+                Один урок пакета — полный комплект: план, раздатки, оценивание, презентация.
+                В популярном пакете — {PER_LESSON_POPULAR_KZT} ₸ за урок.
               </div>
               <span className="pub-badge pub-badge-green" style={{ alignSelf: "flex-start" }}>{TRIAL_LABEL}</span>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

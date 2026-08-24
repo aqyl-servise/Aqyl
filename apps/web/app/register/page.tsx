@@ -153,7 +153,7 @@ export default function RegisterPage() {
           <div>
             <div className="pub-divider" style={{ background: "rgba(255,255,255,0.15)", marginBottom: 32 }} />
             <h2 style={{ color: "rgba(244,240,255,0.95)" }}>Начните бесплатно</h2>
-            <p style={{ color: "rgba(244,240,255,0.95)", marginTop: 4 }}>{TRIAL_LABEL}, без ограничений.</p>
+            <p style={{ color: "rgba(244,240,255,0.95)", marginTop: 4 }}>{TRIAL_LABEL}, со всеми функциями.</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 28 }}>
               {FEATURES.map((f) => (
                 <div key={f} className="pub-auth-feature">
