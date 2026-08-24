@@ -23,8 +23,18 @@ export const TRIAL_LABEL = `${TRIAL_LESSONS} полных уроков бесп�
  * здесь — только цифры для ПУБЛИЧНЫХ страниц, где запроса к API нет.
  * При смене прайса менять в обоих местах.
  */
-export const PACKAGE_FROM_KZT = 1490;
-export const PER_LESSON_POPULAR_KZT = 333; // пакет 30 уроков за 9 990 ₸
+export interface LandingPackage {
+  lessons: number;
+  priceKzt: number;
+  note: string;
+  popular?: boolean;
+}
+export const LANDING_PACKAGES: readonly LandingPackage[] = [
+  { lessons: 10, priceKzt: 3990, note: "закрыть тяжёлые уроки недели" },
+  { lessons: 30, priceKzt: 9990, note: "1–2 готовых урока в учебный день", popular: true },
+  { lessons: 64, priceKzt: 19990, note: "полная месячная норма" },
+  { lessons: 128, priceKzt: 38990, note: "два месяца под ключ" },
+];
 
 /** Срок, в течение которого удалённый аккаунт можно восстановить (календарные дни). */
 export const ACCOUNT_RESTORE_DAYS = 14;

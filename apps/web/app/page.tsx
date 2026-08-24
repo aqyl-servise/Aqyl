@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PublicHeader } from "../components/public-header";
 import { PublicFooter } from "../components/public-footer";
-import { TRIAL_LABEL, PACKAGE_FROM_KZT, PER_LESSON_POPULAR_KZT, formatTenge } from "../lib/product";
+import { TRIAL_LABEL, LANDING_PACKAGES, formatTenge } from "../lib/product";
 
 const STATS = [
   { num: "до 3 часов", sub: "в неделю экономии" },
@@ -100,26 +100,32 @@ export default function LandingPage() {
       {/* ТАРИФ */}
       <section className="pub-section">
         <div className="pub-container">
-          <h2 style={{ marginBottom: 32 }}>Прозрачная цена</h2>
-          <div style={{ maxWidth: 420, margin: "0 auto" }}>
-            <div className="pub-card" style={{ display: "flex", flexDirection: "column", gap: 16, border: "1px solid var(--pub-purple)", boxShadow: "var(--pub-shadow-lg)" }}>
-              <h3>Пакеты уроков</h3>
-              <div>
-                <span style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--pub-purple)" }}>от {formatTenge(PACKAGE_FROM_KZT)}</span>
-                <span style={{ color: "var(--pub-text-3)" }}> / пакет</span>
+          <h2 style={{ marginBottom: 10 }}>Прозрачная цена</h2>
+          <p style={{ color: "var(--pub-text-3)", marginBottom: 28, maxWidth: 640 }}>
+            Один урок пакета — полный комплект: план (КСП), раздатки трёх уровней,
+            критерии оценивания и презентация. {TRIAL_LABEL} при регистрации.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(215px, 1fr))", gap: 18 }}>
+            {LANDING_PACKAGES.map((p) => (
+              <div key={p.lessons} className="pub-card" style={{ display: "flex", flexDirection: "column", gap: 10, border: p.popular ? "2px solid var(--pub-purple)" : undefined, boxShadow: p.popular ? "var(--pub-shadow-lg)" : undefined, position: "relative" }}>
+                {p.popular && (
+                  <span className="pub-badge pub-badge-green" style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", whiteSpace: "nowrap" }}>Выбор учителей</span>
+                )}
+                <h3 style={{ margin: 0 }}>{p.lessons} уроков</h3>
+                <div>
+                  <span style={{ fontSize: "1.6rem", fontWeight: 700, color: "var(--pub-purple)" }}>{formatTenge(p.priceKzt)}</span>
+                </div>
+                <div style={{ color: "var(--pub-text-3)", fontSize: "0.85rem" }}>
+                  {Math.round(p.priceKzt / p.lessons)} ₸ за урок · {p.note}
+                </div>
+                <Link href="/register" className="pub-btn pub-btn-primary pub-btn-full" style={{ marginTop: "auto" }}>Начать бесплатно →</Link>
               </div>
-              <div style={{ color: "var(--pub-text-3)", fontSize: "0.9rem", marginTop: -8 }}>
-                Один урок пакета — полный комплект: план, раздатки, оценивание, презентация.
-                В популярном пакете — {PER_LESSON_POPULAR_KZT} ₸ за урок.
-              </div>
-              <span className="pub-badge pub-badge-green" style={{ alignSelf: "flex-start" }}>{TRIAL_LABEL}</span>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {PLAN_PERSONAL.map((f) => (
-                  <div key={f} style={listItem}><span className="pub-dot pub-dot-green" /> {f}</div>
-                ))}
-              </div>
-              <Link href="/register" className="pub-btn pub-btn-primary pub-btn-full" style={{ marginTop: "auto" }}>Начать бесплатно →</Link>
-            </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px 24px", marginTop: 22 }}>
+            {PLAN_PERSONAL.map((f) => (
+              <div key={f} style={listItem}><span className="pub-dot pub-dot-green" /> {f}</div>
+            ))}
           </div>
         </div>
       </section>
