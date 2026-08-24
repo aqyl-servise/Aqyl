@@ -28,6 +28,8 @@ import {
 } from './prompts/lesson-prompts';
 import { docLabels } from './export/doc-labels';
 import { SubscriptionService } from '../billing/subscription.service';
+import { LanguageGateService } from './language-gate.service';
+import { hardViolations } from './engine/language-gate';
 import { planChildren } from './export/docx-kit';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Document, Packer } = require('docx') as typeof import('docx');
@@ -62,6 +64,7 @@ export class LessonPlansService {
     private readonly ai: AiClientService,
     private readonly cost: CostLoggerService,
     private readonly subscription: SubscriptionService,
+    private readonly gate: LanguageGateService,
   ) {}
 
   // ── Reference data ──────────────────────────────────────────────
@@ -165,6 +168,7 @@ export class LessonPlansService {
       }
     }
 
+    await this.gate.persistGeneratedText(objectives, { lessonId: id, module: 'plan:objectives', language: lesson.language, allowFlag: true });
     await this.lessonRepo.update({ id, userId: ctx.userId }, { lessonObjectives: objectives });
     return objectives;
   }
@@ -218,6 +222,7 @@ export class LessonPlansService {
     } catch (err) {
       this.logger.warn(`Не удалось раскрыть ценность урока ${lesson.id}: ${(err as Error).message}`);
     }
+    await this.gate.persistGeneratedText(text, { lessonId: lesson.id, module: 'plan:value', language: lesson.language, allowFlag: true });
     await this.lessonRepo.update({ id: lesson.id }, { valueLink: text });
   }
 
@@ -344,30 +349,32 @@ export class LessonPlansService {
     }
     for (const s of stages) {
       const desc = s.toolId ? toolMap.get(s.toolId)?.description ?? '' : '';
-      // До двух попыток: если в казахском этапе русские термины из глоссария
-      // (B.3, ТЗ 1.5.1) — перегенерируем один раз, потом принимаем лучший.
+      // До двух попыток: русские термины из глоссария (B.3, ТЗ 1.5.1) или
+      // нарушения языкового шлюза (ТЗ 1.6) — перегенерируем, потом принимаем
+      // лучший вариант с пометкой урока.
       let c: any = {};
+      let gateHint = '';
       for (let attempt = 1; attempt <= 2; attempt++) {
         const p = stagePrompt(
           { stageType: s.stageType, toolId: s.toolId, timeMinutes: s.timeMinutes }, desc, ctx,
           { linkedToValue: s.linkedToValue, valueName: stageValueName },
         );
-        const res = await this.safeRequest('lesson_stage', p.system, p.user, lesson);
+        const res = await this.safeRequest('lesson_stage', p.system, p.user + gateHint, lesson);
         await this.cost.log(id, 'plan', res);
         const cand = this.parseJson<any>(res.content) ?? {};
-        const wrong = lesson.language === 'kz'
-          ? findWrongTerms(
-              [cand.stageName, cand.teacherActions, cand.studentActions, cand.method, cand.assessmentCriteria, cand.resources]
-                .filter(Boolean).join(' '),
-              lesson.subject,
-            )
-          : [];
-        if (!wrong.length || attempt === 2) {
+        const joined = [cand.stageName, cand.teacherActions, cand.studentActions, cand.method, cand.assessmentCriteria, cand.resources]
+          .filter(Boolean).join(' ');
+        const wrong = lesson.language === 'kz' ? findWrongTerms(joined, lesson.subject) : [];
+        const gateHard = hardViolations(this.gate.check(joined, lesson.language));
+        if ((!wrong.length && !gateHard.length) || attempt === 2) {
           c = cand;
           if (wrong.length) this.logger.warn(`Этап ${s.stageType} урока ${id}: остались русские термины [${wrong.join(', ')}]`);
           break;
         }
-        this.logger.warn(`Этап ${s.stageType} урока ${id}: русские термины [${wrong.join(', ')}], повтор`);
+        gateHint = gateHard.length
+          ? `\n\nЗАПРЕЩЕНО использовать слова: ${gateHard.map((v) => `«${v.word}»${v.suggestion ? ` (пиши «${v.suggestion}»)` : ''}`).join(', ')}. Замени их корректной казахской лексикой.`
+          : '';
+        this.logger.warn(`Этап ${s.stageType} урока ${id}: ${[wrong.length ? `русские термины [${wrong.join(', ')}]` : '', gateHard.length ? `шлюз: ${gateHard.map((v) => v.word).join(', ')}` : ''].filter(Boolean).join('; ')}, повтор`);
       }
       s.stageName = c.stageName ?? s.stageName ?? s.stageType;
       s.teacherActions = c.teacherActions ?? '';
@@ -375,6 +382,11 @@ export class LessonPlansService {
       s.method = c.method ?? '';
       s.assessmentCriteria = c.assessmentCriteria ?? '';
       s.resources = c.resources ?? '';
+      // Единственная точка сохранения сгенерированного текста (ТЗ 1.6, п. 3.1).
+      await this.gate.persistGeneratedText(
+        [s.stageName, s.teacherActions, s.studentActions, s.method, s.assessmentCriteria, s.resources],
+        { lessonId: id, module: `plan:${s.stageType}`, language: lesson.language, allowFlag: true },
+      );
       await this.stageRepo.save(s);
     }
 
@@ -404,6 +416,7 @@ export class LessonPlansService {
       ? parsed!.descriptors
       : this.fallbackDescriptors(lesson.language);
     const adjusted = adjustDescriptorSum(items.map((d) => d.points), pts);
+    await this.gate.persistGeneratedText(items.map((d) => d.text), { lessonId: lesson.id, module: 'plan:descriptors', language: lesson.language, allowFlag: true });
     await this.descRepo.delete({ stageId: s.id });
     await this.descRepo.save(
       items.map((d, i) =>
@@ -477,6 +490,10 @@ export class LessonPlansService {
       assessmentCriteria: c.assessmentCriteria ?? s.assessmentCriteria,
       resources: c.resources ?? s.resources,
     });
+    await this.gate.persistGeneratedText(
+      [s.stageName, s.teacherActions, s.studentActions, s.method, s.assessmentCriteria, s.resources],
+      { lessonId: id, module: `plan:regen:${s.stageType}`, language: lesson.language, allowFlag: true },
+    );
     const saved = await this.stageRepo.save(s);
 
     if (saved.isAssessed) {

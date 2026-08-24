@@ -15,6 +15,7 @@ import { LessonPlansController } from './lesson-plans.controller';
 import { HandoutsService } from './handouts/handouts.service';
 import { CostLoggerService } from './handouts/cost-logger.service';
 import { PdfService } from './export/pdf.service';
+import { LanguageGateService } from './language-gate.service';
 import { PresentationService } from './presentation/presentation.service';
 import { AiClientModule } from '../../services/ai-client.module';
 import { BillingModule } from '../billing/billing.module';
@@ -38,7 +39,7 @@ import { BillingModule } from '../billing/billing.module';
     BillingModule,
   ],
   controllers: [LessonPlansController],
-  providers: [LessonsSeedService, LessonPlansService, HandoutsService, CostLoggerService, PdfService, PresentationService],
+  providers: [LessonsSeedService, LessonPlansService, HandoutsService, CostLoggerService, PdfService, PresentationService, LanguageGateService],
   exports: [LessonPlansService, HandoutsService],
 })
 export class LessonPlansModule {}

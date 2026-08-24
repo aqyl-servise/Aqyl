@@ -17,6 +17,8 @@ import { validateScoring, buildFallbackScoring, describeViolations, Scoring } fr
 import { descriptorsFromTaskPrompt, leveledDescriptorsPrompt } from '../prompts/lesson-prompts';
 import { findDescriptorProblems, uncoveredTaskTargets, noteReferenceGaps, hasFractionalPoints } from '../engine/descriptor-validator';
 import { findRewriteProblems, parseAnswerKeys, RewriteProblem } from '../engine/rewrite-validator';
+import { hardViolations } from '../engine/language-gate';
+import { LanguageGateService } from '../language-gate.service';
 import { parseRequiredElements, missingElements } from '../engine/objective-elements';
 import { adjustDescriptorSum } from '../engine/points-engine';
 import { findWrongTerms, flattenStrings } from '../prompts/term-glossary';
@@ -49,6 +51,7 @@ export class HandoutsService {
     @InjectRepository(Presentation) private readonly presRepo: Repository<Presentation>,
     private readonly ai: AiClientService,
     private readonly cost: CostLoggerService,
+    private readonly gate: LanguageGateService,
     private readonly pdf: PdfService,
   ) {}
 
@@ -99,6 +102,10 @@ export class HandoutsService {
     const valueName = await this.resolveValueName(lesson);
     const { handout } = await this.generateOneHandout(lesson, stage, existing.order, valueName, tool?.description ?? '');
     handout.id = existing.id; // тот же ряд — save становится UPDATE
+    await this.gate.persistGeneratedText(
+      { s: handout.studentContent, t: handout.teacherContent, l: handout.levels },
+      { lessonId, module: `handout:regen:${handout.handoutType}`, language: lesson.language, allowFlag: true },
+    );
     const saved = await this.handoutRepo.save(handout);
 
     // Пересчитываем статус пакета: не осталось ли ошибочных листов.
@@ -154,6 +161,11 @@ export class HandoutsService {
       const { handout, cost } = await this.generateOneHandout(lesson, s, i + 1, valueName, desc);
       total += cost;
       if (handout.error) failed++;
+      // Единственная точка сохранения сгенерированного текста (ТЗ 1.6, п. 3.1).
+      await this.gate.persistGeneratedText(
+        { s: handout.studentContent, t: handout.teacherContent, l: handout.levels },
+        { lessonId: lesson.id, module: `handout:${handout.handoutType}`, language: lesson.language, allowFlag: true },
+      );
       await this.handoutRepo.save(handout);
     }
 
@@ -198,6 +210,7 @@ export class HandoutsService {
     };
     let cost = 0;
     let parsed: Record<string, any> | null = null;
+    let gateHint = '';
     for (let attempt = 1; attempt <= 2; attempt++) {
       const p = buildHandoutPrompt({
         handoutType: type, toolDescription, isAssessed: stage.isAssessed,
@@ -211,7 +224,7 @@ export class HandoutsService {
       // префиксом (схема emit_handout + константный системный промпт), поэтому
       // со второго листа он читается из кэша по 0.1 тарифа.
       const res = await this.ai.requestTool<Record<string, any>>({
-        action, systemPrompt: p.system, messages: [{ role: 'user', content: p.user }],
+        action, systemPrompt: p.system, messages: [{ role: 'user', content: p.user + gateHint }],
         userId: lesson.userId, schoolId: lesson.schoolId, maxTokens, cachePrefix: true,
       }, HANDOUT_TOOL);
       cost += await this.cost.log(lesson.id, 'handouts', {
@@ -227,7 +240,9 @@ export class HandoutsService {
         const notes = this.noteProblemsInParsed(res.data, type);
         // Дробные баллы в критериях (ТЗ №2, задача 6): «0,5 балла», «0.4 per».
         const fractional = this.fractionalPointsInParsed(res.data, type);
-        if ((!wrong.length && !rewrite.length && !notes.length && !fractional) || attempt === 2) {
+        // Языковой шлюз (ТЗ 1.6): русские корни и семантические ловушки.
+        const gateHard = hardViolations(this.gate.check(res.data, lesson.language));
+        if ((!wrong.length && !rewrite.length && !notes.length && !fractional && !gateHard.length) || attempt === 2) {
           parsed = res.data;
           if (wrong.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: остались русские термины [${wrong.join(', ')}]`);
           if (rewrite.length) this.logger.warn(`Лист «${type}» урока ${lesson.id}: невалидные трансформации — ${rewrite.map((r) => r.detail).join('; ')}`);
@@ -240,8 +255,14 @@ export class HandoutsService {
           rewrite.length ? `трансформации: ${rewrite.map((r) => r.detail).join('; ')}` : '',
           notes.length ? `подсказка: ${notes.join('; ')}` : '',
           fractional ? 'дробные баллы в критериях' : '',
+          gateHard.length ? `шлюз: ${gateHard.map((v) => v.word).join(', ')}` : '',
         ].filter(Boolean).join('; ');
         this.logger.warn(`Лист «${type}» урока ${lesson.id}: ${reasons}, повтор`);
+        gateHint = gateHard.length
+          ? `
+
+ЗАПРЕЩЕНО использовать слова: ${gateHard.map((v) => `«${v.word}»${v.suggestion ? ` (пиши «${v.suggestion}»)` : ''}`).join(', ')}. Замени корректной казахской лексикой.`
+          : '';
         continue;
       }
       this.logger.warn(`Лист «${type}» урока ${lesson.id}: пустой ответ, попытка ${attempt}/2`);

@@ -7,6 +7,8 @@ import { Presentation } from '../entities/presentation.entity';
 import { AiClientService } from '../../../services/ai-client.service';
 import { CostLoggerService } from '../handouts/cost-logger.service';
 import { PdfService } from '../export/pdf.service';
+import { hardViolations } from '../engine/language-gate';
+import { LanguageGateService } from '../language-gate.service';
 import { findWrongTerms, flattenStrings } from '../prompts/term-glossary';
 import { buildPresentationPrompt, PRESENTATION_TOOL, PresStageInput } from './presentation-prompts';
 import { presentationHtml } from './presentation-html';
@@ -52,6 +54,7 @@ export class PresentationService {
     @InjectRepository(Presentation) private readonly presRepo: Repository<Presentation>,
     private readonly ai: AiClientService,
     private readonly cost: CostLoggerService,
+    private readonly gate: LanguageGateService,
     private readonly pdf: PdfService,
   ) {}
 
@@ -121,18 +124,21 @@ export class PresentationService {
       });
       if (res.data && Array.isArray(res.data.slides) && res.data.slides.length) {
         const wrong = lesson.language === 'kz' ? findWrongTerms(flattenStrings(res.data), lesson.subject) : [];
-        if (!wrong.length || attempt === 2) {
+        const gateHard = hardViolations(this.gate.check(res.data, lesson.language));
+        if ((!wrong.length && !gateHard.length) || attempt === 2) {
           ai = res.data;
           if (wrong.length) this.logger.warn(`Презентация урока ${lessonId}: остались русские термины [${wrong.join(', ')}]`);
           break;
         }
-        this.logger.warn(`Презентация урока ${lessonId}: русские термины [${wrong.join(', ')}], повтор`);
+        this.logger.warn(`Презентация урока ${lessonId}: ${[wrong.length ? `русские термины [${wrong.join(', ')}]` : '', gateHard.length ? `шлюз: ${gateHard.map((v) => v.word).join(', ')}` : ''].filter(Boolean).join('; ')}, повтор`);
         continue;
       }
       this.logger.warn(`Презентация урока ${lessonId}: пустой ответ, попытка ${attempt}/2`);
     }
 
     const slides = this.assemble(lesson, ai?.slides ?? [], Array.isArray(ai?.review) ? ai!.review : [], stages);
+    // Единственная точка сохранения сгенерированного текста (ТЗ 1.6, п. 3.1).
+    await this.gate.persistGeneratedText(slides, { lessonId, module: 'presentation', language: lesson.language, allowFlag: true });
     // TypeORM не любит jsonb-массив в partial update — приводим тип.
     await this.presRepo.update({ lessonId }, { status: 'ready', generationCost: cost, slides: slides as never });
   }

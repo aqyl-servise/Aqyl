@@ -117,6 +117,13 @@ export class Lesson {
   @Column({ type: 'boolean', default: false })
   paidCounted!: boolean;
 
+  /**
+   * Языковой шлюз (ТЗ 1.6): после всех попыток в тексте остались нарушения —
+   * урок помечен для ручного разбора.
+   */
+  @Column({ type: 'boolean', default: false })
+  languageWarning!: boolean;
+
   @OneToMany(() => LessonStage, (stage) => stage.lesson, { cascade: true })
   stages!: LessonStage[];
 
