@@ -22,6 +22,18 @@ import { LessonPackage } from "./packages";
  * Лимит бесплатного доступа (оферта, п. 4.1). Из env TRIAL_LESSONS — менять
  * без деплоя (правка .env + pm2 restart) для экспериментов с конверсией.
  */
+/**
+ * Требовать ли подтверждение номера для бесплатных уроков.
+ *
+ * Выключено по умолчанию: пока SMS-провайдер не настроен, требование
+ * превращает регистрацию в тупик — учитель видит экран ввода кода, а код
+ * не приходит. Включается переменной REQUIRE_PHONE_VERIFICATION=true, когда
+ * ключ Mobizon прописан и проверен.
+ */
+export function requirePhoneVerification(): boolean {
+  return String(process.env.REQUIRE_PHONE_VERIFICATION ?? '').toLowerCase() === 'true';
+}
+
 export function trialLessonLimit(): number {
   const n = Number(process.env.TRIAL_LESSONS);
   return Number.isInteger(n) && n >= 0 ? n : 5;
@@ -178,7 +190,8 @@ export class SubscriptionService {
     // проваливаемся к платному балансу, а не отказываем: у заплатившего
     // генерация обязана работать.
     const trialLeft = (await this.trialLessonsUsed(teacherId)) < trialLessonLimit();
-    if (trialLeft && teacher.phoneVerifiedAt) {
+    const phoneOk = !requirePhoneVerification() || !!teacher.phoneVerifiedAt;
+    if (trialLeft && phoneOk) {
       // Триал первым: подарок дожигается раньше, платный баланс не тает.
       await this.lessonRepo.update({ id: lessonId, userId: teacherId }, { trialCounted: true });
       return "trial";
@@ -194,7 +207,7 @@ export class SubscriptionService {
     if (!res.affected) {
       // Бесплатные уроки ещё есть, но номер не подтверждён — просим номер,
       // а не сообщаем «уроки закончились»: это разные ситуации.
-      if (trialLeft) throw new ForbiddenException('PHONE_VERIFICATION_REQUIRED');
+      if (trialLeft && requirePhoneVerification()) throw new ForbiddenException('PHONE_VERIFICATION_REQUIRED');
       throw new ForbiddenException(await this.denialMessage(teacherId));
     }
     await this.lessonRepo.update({ id: lessonId, userId: teacherId }, { paidCounted: true });

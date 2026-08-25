@@ -13,21 +13,40 @@ export class SmsService {
     this.apiKey = config.get<string>("SMS_API_KEY") ?? "";
   }
 
-  async sendSms(phone: string, text: string): Promise<void> {
+  /**
+   * Отправка SMS через Mobizon.
+   *
+   * `strict` — для сценариев, где несостоявшаяся отправка ломает поток
+   * (подтверждение номера): тогда бросаем ошибку, чтобы пользователь увидел
+   * «не удалось отправить код», а не пустой экран ожидания. Уведомления
+   * (напоминания, одобрение регистрации) остаются нестрогими: их сбой не
+   * должен ронять основную операцию.
+   *
+   * Mobizon отвечает HTTP 200 и на ошибки — код лежит в теле (code !== 0),
+   * поэтому статуса ответа недостаточно.
+   */
+  async sendSms(phone: string, text: string, strict = false): Promise<void> {
     if (!this.apiKey) {
       this.logger.warn("SMS_API_KEY not configured, skipping SMS");
+      if (strict) throw new Error("SMS_NOT_CONFIGURED");
       return;
     }
-    const params = new URLSearchParams({ apiKey: this.apiKey, recipient: phone, text });
+    const params = new URLSearchParams({ apiKey: this.apiKey, recipient: phone, text, output: "json" });
+    const masked = `${phone.slice(0, 5)}***`;
     try {
       const res = await fetch(`${this.apiUrl}?${params.toString()}`, { method: "POST" });
-      if (!res.ok) {
-        this.logger.error(`Mobizon SMS error: ${res.status} ${res.statusText}`);
-      } else {
-        this.logger.log(`SMS sent to ${phone.slice(0, 5)}***`);
+      const body = (await res.json().catch(() => null)) as { code?: number; message?: string } | null;
+      if (!res.ok || !body || body.code !== 0) {
+        const detail = body?.message ?? `${res.status} ${res.statusText}`;
+        this.logger.error(`Mobizon SMS error (${masked}): ${detail}`);
+        if (strict) throw new Error("SMS_SEND_FAILED");
+        return;
       }
+      this.logger.log(`SMS sent to ${masked}`);
     } catch (err) {
-      this.logger.error(`Failed to send SMS to ${phone.slice(0, 5)}***`, err);
+      if (strict && err instanceof Error && err.message.startsWith("SMS_")) throw err;
+      this.logger.error(`Failed to send SMS to ${masked}`, err);
+      if (strict) throw new Error("SMS_SEND_FAILED");
     }
   }
 

@@ -230,22 +230,44 @@ test('balanceSummary: истёкший баланс показывается н�
 });
 
 // ── Защита бесплатного доступа от мультиаккаунтов ────────────────────────
-test('бесплатные уроки требуют подтверждённого номера', async () => {
+// Требование включается флагом REQUIRE_PHONE_VERIFICATION: пока SMS-провайдер
+// не настроен, оно превращает регистрацию в тупик. В тестах включаем явно.
+function withPhoneRequired<T>(fn: () => Promise<T>): Promise<T> {
+  const prev = process.env.REQUIRE_PHONE_VERIFICATION;
+  process.env.REQUIRE_PHONE_VERIFICATION = 'true';
+  return fn().finally(() => {
+    if (prev === undefined) delete process.env.REQUIRE_PHONE_VERIFICATION;
+    else process.env.REQUIRE_PHONE_VERIFICATION = prev;
+  });
+}
+
+test('бесплатные уроки требуют подтверждённого номера (когда защита включена)', async () => {
+  await withPhoneRequired(async () => {
+    const w = world({ phoneVerifiedAt: null });
+    lesson(w, 'l1');
+    const svc = makeService(w);
+    await assert.rejects(() => svc.chargeLessonStart(T, 'l1'), /PHONE_VERIFICATION_REQUIRED/);
+    assert.equal(w.lessons.get('l1')!.trialCounted, false, 'урок не списан');
+  });
+});
+
+test('защита выключена — бесплатные уроки выдаются без номера', async () => {
   const w = world({ phoneVerifiedAt: null });
   lesson(w, 'l1');
   const svc = makeService(w);
-  await assert.rejects(() => svc.chargeLessonStart(T, 'l1'), /PHONE_VERIFICATION_REQUIRED/);
-  assert.equal(w.lessons.get('l1')!.trialCounted, false, 'урок не списан');
+  assert.equal(await svc.chargeLessonStart(T, 'l1'), 'trial');
 });
 
 test('купленные уроки работают и без подтверждённого номера', async () => {
   // За платный пакет уже заплачено — требовать номер значило бы не пускать
   // клиента к тому, что он купил.
-  const w = world({ phoneVerifiedAt: null, paidLessonsBalance: 3, balanceExpiresAt: future() });
-  lesson(w, 'l1');
-  const svc = makeService(w);
-  assert.equal(await svc.chargeLessonStart(T, 'l1'), 'paid');
-  assert.equal(w.teacher.paidLessonsBalance, 2);
+  await withPhoneRequired(async () => {
+    const w = world({ phoneVerifiedAt: null, paidLessonsBalance: 3, balanceExpiresAt: future() });
+    lesson(w, 'l1');
+    const svc = makeService(w);
+    assert.equal(await svc.chargeLessonStart(T, 'l1'), 'paid');
+    assert.equal(w.teacher.paidLessonsBalance, 2);
+  });
 });
 
 test('подписка не требует подтверждения номера', async () => {

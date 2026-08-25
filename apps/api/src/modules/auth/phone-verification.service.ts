@@ -69,12 +69,18 @@ export class PhoneVerificationService {
     }
 
     const code = String(Math.floor(100000 + Math.random() * 900000));
+
+    // Сначала отправка, потом запись: иначе при сбое SMS остаётся запись, и
+    // пауза между отправками блокирует повтор — пользователь видит сначала
+    // «не удалось отправить», а следом «код уже отправлен, ждите минуту».
+    // strict: несостоявшаяся отправка ломает поток, пользователь должен
+    // увидеть ошибку, а не пустой экран ввода кода.
+    await this.sms.sendSms(phone, `Aqyl: код подтверждения ${code}. Никому его не сообщайте.`, true);
+
     await this.repo.save(this.repo.create({
       teacherId, phone, code,
       expiresAt: new Date(Date.now() + CODE_TTL_MS),
     }));
-
-    await this.sms.sendSms(phone, `Aqyl: код подтверждения ${code}. Никому его не сообщайте.`);
     this.logger.log(`Код подтверждения отправлен учителю ${teacherId} на ${phone.slice(0, 4)}***${phone.slice(-2)}`);
 
     return { phoneMasked: `+${phone.slice(0, 1)} ${phone.slice(1, 4)} *** ** ${phone.slice(-2)}` };
