@@ -93,6 +93,17 @@ export type TrialQuota = { used: number; left: number; limit: number };
 
 /** Пакеты уроков (ТЗ №3): каталог приходит с сервера, цены не хардкодятся. */
 export type LessonPackage = { code: string; lessons: number; priceKzt: number; upsellOnly?: boolean };
+/** Ответ на создание заявки: manual — начисление после подтверждения админом. */
+export type PackageSessionResponse = {
+  orderId: string; paymentUrl: string; amount: number; lessons: number; manual: boolean;
+};
+
+export type PendingPayment = {
+  id: string; orderId: string; amount: number; createdAt: string;
+  packageCode: string | null; lessons: number;
+  teacherId: string; email: string | null; fullName: string | null;
+};
+
 export type BalanceInfo = {
   trialLeft: number;
   trialLimit: number;
@@ -517,7 +528,14 @@ export const api = {
     request<BalanceInfo>("/billing/balance", undefined, token),
   // Оплата пакета уроков через Kaspi.
   createPackageSession: (token: string, packageCode: string) =>
-    request<CreateSessionResponse>("/billing/create-session", { method: "POST", body: JSON.stringify({ packageCode }) }, token),
+    request<PackageSessionResponse>("/billing/create-session", { method: "POST", body: JSON.stringify({ packageCode }) }, token),
+  // Заявки на оплату (ручная схема: у Kaspi нет API-интеграции при нашем обороте).
+  pendingPayments: (token: string) =>
+    request<PendingPayment[]>("/admin/payments/pending", undefined, token),
+  confirmPayment: (token: string, id: string) =>
+    request<{ ok: boolean; alreadyPaid: boolean }>(`/admin/payments/${id}/confirm`, { method: "POST" }, token),
+  rejectPayment: (token: string, id: string) =>
+    request<{ ok: boolean }>(`/admin/payments/${id}/reject`, { method: "POST" }, token),
 
   // Lesson-plans (КСП generator)
   lpCreate: (token: string, header: LpHeader) =>

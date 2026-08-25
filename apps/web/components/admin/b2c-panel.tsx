@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { api, type B2cFunnel, type B2cUser } from "../../lib/api";
+import { api, type B2cFunnel, type B2cUser, type PendingPayment } from "../../lib/api";
 import { Icon } from "../ui/icon";
 
 /**
@@ -16,9 +16,13 @@ export function B2cPanel({ token }: { token: string }) {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState<PendingPayment[]>([]);
 
   const load = useCallback(() => {
     setLoading(true);
+    // Заявки на оплату грузим вместе с воронкой: у Kaspi нет API-интеграции
+    // при нашем обороте, поэтому поступление подтверждает администратор.
+    api.pendingPayments(token).then(setPending).catch(() => setPending([]));
     api.getB2cFunnel(token)
       .then((d) => { setData(d); setError(null); })
       .catch(() => setError("Не удалось загрузить воронку B2C"))
@@ -54,6 +58,23 @@ export function B2cPanel({ token }: { token: string }) {
     finally { setBusyId(null); }
   }
 
+  async function confirmPay(p: PendingPayment) {
+    if (!window.confirm(`Подтвердить оплату ${p.amount.toLocaleString("ru-RU")} ₸ от «${p.email ?? p.teacherId}»?
+Будет начислено уроков: ${p.lessons}`)) return;
+    setBusyId(p.id);
+    try { await api.confirmPayment(token, p.id); load(); }
+    catch { setError("Не удалось подтвердить оплату"); }
+    finally { setBusyId(null); }
+  }
+
+  async function rejectPay(p: PendingPayment) {
+    if (!window.confirm(`Отклонить заявку ${p.orderId}? Уроки начислены не будут.`)) return;
+    setBusyId(p.id);
+    try { await api.rejectPayment(token, p.id); load(); }
+    catch { setError("Не удалось отклонить заявку"); }
+    finally { setBusyId(null); }
+  }
+
   if (loading) return <div style={{ padding: 24 }}><span className="spinner" /></div>;
 
   return (
@@ -64,6 +85,51 @@ export function B2cPanel({ token }: { token: string }) {
       </div>
 
       {error && <div style={{ color: "#dc2626", marginBottom: 14 }}>{error}</div>}
+
+      {/* Заявки на оплату: сверьте поступление в Kaspi и подтвердите. */}
+      {pending.length > 0 && (
+        <div style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 12, padding: 16, marginBottom: 22 }}>
+          <h3 style={{ margin: "0 0 4px", fontSize: 16 }}>Ожидают подтверждения оплаты — {pending.length}</h3>
+          <p style={{ margin: "0 0 12px", fontSize: 13, color: "#78350f" }}>
+            Найдите поступление в Kaspi по номеру заказа и подтвердите — уроки начислятся автоматически.
+          </p>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, minWidth: 680 }}>
+              <thead>
+                <tr style={{ textAlign: "left", color: "#78350f" }}>
+                  <th style={{ padding: "6px 10px" }}>Учитель</th>
+                  <th style={{ padding: "6px 10px" }}>Номер заказа</th>
+                  <th style={{ padding: "6px 10px", textAlign: "right" }}>Сумма</th>
+                  <th style={{ padding: "6px 10px", textAlign: "right" }}>Уроков</th>
+                  <th style={{ padding: "6px 10px" }}>Создана</th>
+                  <th style={{ padding: "6px 10px" }} />
+                </tr>
+              </thead>
+              <tbody>
+                {pending.map((p) => (
+                  <tr key={p.id} style={{ borderTop: "1px solid #fde68a" }}>
+                    <td style={{ padding: "8px 10px" }}>{p.email ?? p.teacherId}</td>
+                    <td style={{ padding: "8px 10px", fontFamily: "monospace", fontSize: 12.5 }}>{p.orderId}</td>
+                    <td style={{ padding: "8px 10px", textAlign: "right" }}>{p.amount.toLocaleString("ru-RU")} ₸</td>
+                    <td style={{ padding: "8px 10px", textAlign: "right" }}>{p.lessons}</td>
+                    <td style={{ padding: "8px 10px", color: "#6b7280" }}>{new Date(p.createdAt).toLocaleString("ru-RU")}</td>
+                    <td style={{ padding: "8px 10px", whiteSpace: "nowrap" }}>
+                      <button onClick={() => confirmPay(p)} disabled={busyId === p.id}
+                        style={{ ...ghostBtn, borderColor: "#16a34a", color: "#16a34a", marginRight: 8 }}>
+                        Оплачено
+                      </button>
+                      <button onClick={() => rejectPay(p)} disabled={busyId === p.id}
+                        style={{ ...ghostBtn, borderColor: "#9ca3af", color: "#6b7280" }}>
+                        Отклонить
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {data && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginBottom: 24 }}>

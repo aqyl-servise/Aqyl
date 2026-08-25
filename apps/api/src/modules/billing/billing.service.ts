@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { In, Repository } from "typeorm";
 import { Teacher } from "../teachers/entities/teacher.entity";
 import { Payment } from "./entities/payment.entity";
 import { Subscription } from "./entities/subscription.entity";
@@ -109,18 +109,90 @@ export class BillingService {
       }),
     );
 
-    const paymentUrl = this.kaspiService.buildPaymentUrl({
-      orderId,
-      amount: pkg.priceKzt,
-      description: `Aqyl: пакет ${pkg.lessons} уроков`,
-      returnUrl: `${this.frontendUrl}/dashboard/b2c?payment=success`,
-      failUrl: `${this.frontendUrl}/dashboard/b2c?payment=failed`,
-    });
+    // Kaspi не подключает API-интеграцию при нашем обороте (порог 30 млн ₸/мес),
+    // поэтому оплата идёт по статической ссылке, а сервер о ней не узнаёт:
+    // вебхука нет. Учитель платит и указывает номер заказа, администратор
+    // подтверждает поступление в админке — начисление делает confirmPayment.
+    // Когда подключим эквайер с API, вернём автоматический путь: запись
+    // платежа и начисление уже общие для обоих сценариев.
+    const payLink = this.config.get<string>('KASPI_PAY_LINK') ?? '';
+    const paymentUrl = payLink
+      ? payLink
+      : this.kaspiService.buildPaymentUrl({
+          orderId,
+          amount: pkg.priceKzt,
+          description: `Aqyl: пакет ${pkg.lessons} уроков`,
+          returnUrl: `${this.frontendUrl}/dashboard/b2c?payment=success`,
+          failUrl: `${this.frontendUrl}/dashboard/b2c?payment=failed`,
+        });
 
     this.logger.log(
       `Package session ${orderId}: ${pkg.code} (+${pkg.lessons}) for teacher ${teacherId}, ${pkg.priceKzt} KZT, paymentId=${payment.id}`,
     );
-    return { orderId, paymentUrl, amount: pkg.priceKzt };
+    return {
+      orderId, paymentUrl, amount: pkg.priceKzt,
+      lessons: pkg.lessons,
+      /** true — оплата по ссылке, начисление после подтверждения администратором. */
+      manual: !!payLink,
+    };
+  }
+
+  /** Платежи, ожидающие подтверждения (ручная схема) — для админки. */
+  async pendingPayments() {
+    const rows = await this.paymentRepo.find({
+      where: { status: 'pending' },
+      order: { createdAt: 'DESC' },
+      take: 100,
+    });
+    const ids = [...new Set(rows.map((p) => p.teacherId))];
+    const teachers = ids.length
+      ? await this.teacherRepo.find({ where: { id: In(ids) } })
+      : [];
+    const byId = new Map(teachers.map((t) => [t.id, t]));
+    return rows.map((p) => {
+      const meta = (p.metadata ?? {}) as { packageCode?: string; lessons?: number };
+      const t = byId.get(p.teacherId);
+      return {
+        id: p.id, orderId: p.orderId, amount: p.amount, createdAt: p.createdAt,
+        packageCode: meta.packageCode ?? null, lessons: Number(meta.lessons) || 0,
+        teacherId: p.teacherId,
+        email: t?.email ?? null, fullName: t?.fullName ?? null,
+      };
+    });
+  }
+
+  /**
+   * Подтверждение оплаты администратором (ручная схема): помечаем платёж
+   * оплаченным и начисляем пакет. Идемпотентно — повторное подтверждение
+   * уже оплаченного заказа ничего не начисляет второй раз.
+   */
+  async confirmPayment(paymentId: string, actorId: string) {
+    const payment = await this.paymentRepo.findOne({ where: { id: paymentId } });
+    if (!payment) throw new BadRequestException('Платёж не найден');
+    if (payment.status === 'paid') {
+      return { ok: true, alreadyPaid: true };
+    }
+    payment.status = 'paid';
+    payment.paidAt = new Date();
+    payment.metadata = { ...(payment.metadata ?? {}), confirmedBy: actorId };
+    await this.paymentRepo.save(payment);
+    await this.settlePackagePayment(payment);
+    this.logger.log(`Платёж ${payment.orderId} подтверждён вручную (админ ${actorId})`);
+    return { ok: true, alreadyPaid: false };
+  }
+
+  /** Отклонение заявки: платёж не поступил. Уроки не начисляются. */
+  async rejectPayment(paymentId: string, actorId: string) {
+    const payment = await this.paymentRepo.findOne({ where: { id: paymentId } });
+    if (!payment) throw new BadRequestException('Платёж не найден');
+    if (payment.status === 'paid') {
+      throw new BadRequestException('Платёж уже оплачен — отклонить нельзя');
+    }
+    payment.status = 'failed';
+    payment.metadata = { ...(payment.metadata ?? {}), rejectedBy: actorId };
+    await this.paymentRepo.save(payment);
+    this.logger.log(`Платёж ${payment.orderId} отклонён (админ ${actorId})`);
+    return { ok: true };
   }
 
   /**

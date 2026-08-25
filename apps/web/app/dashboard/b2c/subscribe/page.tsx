@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, type BalanceInfo, type LessonPackage } from "../../../../lib/api";
+import { api, type BalanceInfo, type LessonPackage, type PackageSessionResponse } from "../../../../lib/api";
 import { getValidAccessToken } from "../../../../lib/auth";
 import { useLang, LT } from "../../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../../components/lang-switcher";
@@ -35,6 +35,7 @@ export default function SubscribePage() {
   const t = LT[lang];
   const [info, setInfo] = useState<BalanceInfo | null>(null);
   const [loadingCode, setLoadingCode] = useState<string | null>(null);
+  const [order, setOrder] = useState<PackageSessionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const iosApp = useIsIosApp();
 
@@ -55,8 +56,15 @@ export default function SubscribePage() {
     try {
       const token = await getValidAccessToken();
       if (!token) { router.replace("/login"); return; }
-      const { paymentUrl } = await api.createPackageSession(token, code);
-      window.location.href = paymentUrl;
+      const session = await api.createPackageSession(token, code);
+      // Ручная схема (у Kaspi нет API-интеграции при нашем обороте): показываем
+      // инструкцию с номером заказа, а не уводим на несуществующий шлюз.
+      if (session.manual) {
+        setOrder(session);
+        setLoadingCode(null);
+        return;
+      }
+      window.location.href = session.paymentUrl;
     } catch {
       setError(t.subPayError);
       setLoadingCode(null);
@@ -79,6 +87,53 @@ export default function SubscribePage() {
             ← {t.back}
           </button>
         </div>
+      </div>
+    );
+  }
+
+  // Заявка создана: показываем инструкцию оплаты вместо витрины.
+  if (order) {
+    return (
+      <div className="aqyl-b2c" style={{ minHeight: "100vh" }}>
+        <header style={{ background: "var(--ink-2)", color: "var(--white)", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--line)" }}>
+          <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 20 }}>aqy<span style={{ color: "var(--amber)" }}>l</span></span>
+          <button onClick={() => setOrder(null)} style={{ background: "rgba(139,127,232,.12)", border: "1px solid var(--line)", color: "var(--white)", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
+            ← {t.back}
+          </button>
+        </header>
+        <main style={{ maxWidth: 560, margin: "0 auto", padding: "36px 24px" }}>
+          <h1 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 26, margin: "0 0 8px" }}>{t.payTitle}</h1>
+          <p style={{ color: "var(--muted)", fontSize: 15, margin: "0 0 24px" }}>{t.paySub}</p>
+
+          <div style={{ background: "var(--ink-2)", border: "1px solid var(--line)", borderRadius: 16, padding: "22px 24px", marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+              <span style={{ color: "var(--muted)", fontSize: 14 }}>{t.payAmount}</span>
+              <b style={{ fontSize: 20 }}>{formatTenge(order.amount)}</b>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+              <span style={{ color: "var(--muted)", fontSize: 14 }}>{t.payLessons}</span>
+              <b>{order.lessons}</b>
+            </div>
+            <div style={{ borderTop: "1px dashed var(--line)", paddingTop: 12 }}>
+              <div style={{ color: "var(--muted)", fontSize: 14, marginBottom: 6 }}>{t.payOrder}</div>
+              <div style={{ fontFamily: "monospace", fontSize: 16, fontWeight: 700, color: "var(--mint)", wordBreak: "break-all" }}>{order.orderId}</div>
+            </div>
+          </div>
+
+          <ol style={{ color: "var(--white)", fontSize: 15, lineHeight: 1.7, paddingLeft: 20, margin: "0 0 22px" }}>
+            <li>{t.payStep1}</li>
+            <li>{t.payStep2.replace("{o}", order.orderId)}</li>
+            <li>{t.payStep3}</li>
+          </ol>
+
+          <a
+            href={order.paymentUrl} target="_blank" rel="noopener noreferrer"
+            style={{ display: "block", textAlign: "center", background: "var(--amber)", color: "var(--on-amber)", borderRadius: 11, padding: "14px", fontWeight: 800, fontSize: 16, textDecoration: "none" }}
+          >
+            {t.payOpen}
+          </a>
+          <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 18, textAlign: "center" }}>{t.payWait}</p>
+        </main>
       </div>
     );
   }

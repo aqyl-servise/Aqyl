@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuard
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
+import { BillingService } from "../billing/billing.service";
 import { AdminService } from "./admin.service";
 import { SkipSchoolIsolation } from "../../common/decorators/skip-school-isolation.decorator";
 
@@ -12,7 +13,10 @@ interface ReqUser { user: { id: string; role: string; schoolId?: string | null }
 @Roles("admin", "principal", "vice_principal", "vice_principal_academic", "vice_principal_education", "psychologist", "social_pedagogue")
 @SkipSchoolIsolation()
 export class AdminController {
-  constructor(private readonly service: AdminService) {}
+  constructor(
+    private readonly service: AdminService,
+    private readonly billingService: BillingService,
+  ) {}
 
   @Get("overview")
   getOverview(@Req() req: ReqUser) {
@@ -98,6 +102,33 @@ export class AdminController {
   @Roles("admin")
   grantLessons(@Param("id") id: string, @Body() body: { lessons: number }, @Req() req: ReqUser) {
     return this.service.grantLessons(id, req.user.id, Number(body?.lessons));
+  }
+
+  // ── Ручная оплата по ссылке Kaspi ───────────────────────────────────────
+  // API-интеграции у нас нет (порог оборота 30 млн ₸/мес), поэтому вебхук не
+  // приходит: учитель платит по ссылке, администратор сверяет поступление в
+  // Kaspi и подтверждает здесь — уроки начисляются той же механикой, что и
+  // при автоматической оплате.
+
+  /** Заявки, ожидающие подтверждения оплаты. */
+  @Get("payments/pending")
+  @Roles("admin")
+  pendingPayments() {
+    return this.billingService.pendingPayments();
+  }
+
+  /** Деньги поступили: начислить пакет. */
+  @Post("payments/:id/confirm")
+  @Roles("admin")
+  confirmPayment(@Param("id") id: string, @Req() req: ReqUser) {
+    return this.billingService.confirmPayment(id, req.user.id);
+  }
+
+  /** Оплата не поступила: закрыть заявку без начисления. */
+  @Post("payments/:id/reject")
+  @Roles("admin")
+  rejectPayment(@Param("id") id: string, @Req() req: ReqUser) {
+    return this.billingService.rejectPayment(id, req.user.id);
   }
 
   /**

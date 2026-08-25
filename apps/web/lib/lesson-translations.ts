@@ -138,6 +138,13 @@ const ru: Dict = {
   balTopupHint: "Докупить +{n} ур. за {p} ₸ — весь баланс продлится на 3 месяца",
   balTopup: "Докупить", balBuy: "Выбрать пакет",
   balEmpty: "Уроки закончились", balEmptyHint: "Выберите пакет, чтобы продолжить создавать материалы.",
+  payTitle: "Оплата пакета", paySub: "Переведите сумму через Kaspi и укажите номер заказа — уроки начислим после поступления.",
+  payAmount: "К оплате", payLessons: "Уроков в пакете", payOrder: "Номер заказа",
+  payStep1: "Нажмите кнопку ниже — откроется страница оплаты Kaspi.",
+  payStep2: "В комментарии к платежу укажите номер заказа: {o}",
+  payStep3: "После поступления мы начислим уроки и пришлём письмо.",
+  payOpen: "Перейти к оплате Kaspi",
+  payWait: "Обычно занимает несколько часов в рабочее время.",
 };
 
 const kz: Dict = {
@@ -266,6 +273,13 @@ const kz: Dict = {
   balTopupHint: "+{n} сабақ {p} ₸ — бүкіл баланс 3 айға ұзарады",
   balTopup: "Қосып алу", balBuy: "Пакет таңдау",
   balEmpty: "Сабақтар таусылды", balEmptyHint: "Материал жасауды жалғастыру үшін пакет таңдаңыз.",
+  payTitle: "Пакет төлемі", paySub: "Соманы Kaspi арқылы аударыңыз да, тапсырыс нөмірін көрсетіңіз — түскеннен кейін сабақтар қосылады.",
+  payAmount: "Төлеу керек", payLessons: "Пакеттегі сабақ", payOrder: "Тапсырыс нөмірі",
+  payStep1: "Төмендегі түймені басыңыз — Kaspi төлем беті ашылады.",
+  payStep2: "Төлем түсініктемесінде тапсырыс нөмірін жазыңыз: {o}",
+  payStep3: "Ақша түскен соң сабақтарды қосып, хат жібереміз.",
+  payOpen: "Kaspi төлеміне өту",
+  payWait: "Әдетте жұмыс уақытында бірнеше сағат алады.",
 };
 
 const en: Dict = {
@@ -394,6 +408,13 @@ const en: Dict = {
   balTopupHint: "Top up +{n} for {p} ₸ — your whole balance extends by 3 months",
   balTopup: "Top up", balBuy: "Choose a package",
   balEmpty: "You are out of lessons", balEmptyHint: "Choose a package to keep creating materials.",
+  payTitle: "Package payment", paySub: "Transfer the amount via Kaspi and quote the order number — lessons are credited once the payment arrives.",
+  payAmount: "Amount due", payLessons: "Lessons in package", payOrder: "Order number",
+  payStep1: "Tap the button below to open the Kaspi payment page.",
+  payStep2: "In the payment comment, quote the order number: {o}",
+  payStep3: "Once the payment arrives we credit the lessons and email you.",
+  payOpen: "Go to Kaspi payment",
+  payWait: "Usually takes a few hours during business hours.",
 };
 
 export const LT: Record<Lang, Dict> = { ru, kz, en };
