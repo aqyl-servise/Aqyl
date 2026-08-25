@@ -11,3 +11,5 @@ apps/api/.env
 apps/web/.env.local
 __pycache__/
 *.tsbuildinfo
+apps/mobile/android
+apps/mobile/ios

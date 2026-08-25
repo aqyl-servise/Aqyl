@@ -2,24 +2,33 @@
 import { useEffect, useState } from "react";
 
 /**
- * Определение iOS-обёртки для правил App Store.
+ * Определение мобильной обёртки для правил магазинов приложений.
  *
- * Apple требует, чтобы доступ к платным возможностям внутри приложения
- * продавался через встроенные покупки. Наша подписка оплачивается на сайте
- * через Kaspi, а встроенные покупки с Kaspi несовместимы. Самая безопасная
- * конфигурация: в приложении нет ни одной кнопки, ведущей к оплате, и ни
- * одного текста, предлагающего оплатить — приложение лишь сообщает, что
- * подписка неактивна.
+ * И Apple, и Google требуют, чтобы доступ к платным возможностям внутри
+ * приложения продавался через их встроенные покупки. Наши пакеты уроков
+ * оплачиваются на сайте через Kaspi, а с встроенными покупками Kaspi
+ * несовместим. Самая безопасная конфигурация: в приложении нет ни одной
+ * кнопки, ведущей к оплате, и ни одного текста, предлагающего купить —
+ * приложение лишь сообщает, что уроки закончились.
  *
- * Нативной сборки в репозитории пока нет. Механизм сделан заранее, чтобы
- * правило соблюдалось с первого дня, когда обёртку соберут: обёртка должна
- * дописать маркер ниже в свой User-Agent (в Capacitor — опция
- * `appendUserAgent`, в чистом WKWebView — `customUserAgent`).
+ * Маркер дописывает сама обёртка в свой User-Agent: в Capacitor — опция
+ * `appendUserAgent` (см. capacitor.config.ts в apps/mobile), в чистом
+ * WKWebView — `customUserAgent`.
  */
 const IOS_APP_MARKER = "AqylApp/iOS";
+const ANDROID_APP_MARKER = "AqylApp/Android";
 
 export function isIosAppUA(ua: string): boolean {
   return ua.includes(IOS_APP_MARKER);
+}
+
+export function isAndroidAppUA(ua: string): boolean {
+  return ua.includes(ANDROID_APP_MARKER);
+}
+
+/** Любая мобильная обёртка: правило «без оплаты внутри» одинаково для обеих. */
+export function isMobileAppUA(ua: string): boolean {
+  return isIosAppUA(ua) || isAndroidAppUA(ua);
 }
 
 /**
@@ -29,10 +38,25 @@ export function isIosAppUA(ua: string): boolean {
  * Так они не мелькают на долю секунды в приложении: до выяснения не
  * рендерится ничего, а не «показать, потом убрать».
  */
-export function useIsIosApp(): boolean | null {
+function useUaFlag(test: (ua: string) => boolean): boolean | null {
   const [value, setValue] = useState<boolean | null>(null);
   useEffect(() => {
-    setValue(typeof navigator === "undefined" ? false : isIosAppUA(navigator.userAgent));
+    setValue(typeof navigator === "undefined" ? false : test(navigator.userAgent));
+    // test — стабильная функция модуля, в зависимостях не нужна
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return value;
+}
+
+/**
+ * Приложение любой платформы. Именно этот хук должны использовать экраны,
+ * решающие, показывать ли цены и кнопки покупки.
+ */
+export function useIsMobileApp(): boolean | null {
+  return useUaFlag(isMobileAppUA);
+}
+
+/** @deprecated используйте useIsMobileApp — правило одинаково для iOS и Android. */
+export function useIsIosApp(): boolean | null {
+  return useUaFlag(isMobileAppUA);
 }
