@@ -11,6 +11,9 @@ import { Teacher } from "../teachers/entities/teacher.entity";
 import { RefreshToken } from "./entities/refresh-token.entity";
 import { EmailVerification } from "./entities/email-verification.entity";
 import { AuthController } from "./auth.controller";
+import { PhoneVerification } from "./entities/phone-verification.entity";
+import { PhoneVerificationService } from "./phone-verification.service";
+import { NotificationsModule } from "../notifications/notifications.module";
 import { AuthService } from "./auth.service";
 import { B2cAuthService } from "./b2c-auth.service";
 import { JwtStrategy } from "./strategies/jwt.strategy";
@@ -22,10 +25,11 @@ import { ConsentModule } from "../consent/consent.module";
   imports: [
     TeachersModule,
     TrialGuardModule,
+    NotificationsModule,
     ConsentModule,
     PassportModule,
     MailModule,
-    TypeOrmModule.forFeature([PasswordReset, School, Teacher, RefreshToken, EmailVerification]),
+    TypeOrmModule.forFeature([PasswordReset, School, Teacher, RefreshToken, EmailVerification, PhoneVerification]),
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
@@ -40,7 +44,7 @@ import { ConsentModule } from "../consent/consent.module";
   ],
   controllers: [AuthController],
   providers: [
-    AccountDeletionService,AuthService, B2cAuthService, JwtStrategy],
+    AccountDeletionService, AuthService, B2cAuthService, PhoneVerificationService, JwtStrategy],
   exports: [JwtModule, PassportModule, AuthService, AccountDeletionService],
 })
 export class AuthModule {}

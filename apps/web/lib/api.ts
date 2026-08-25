@@ -523,6 +523,11 @@ export const api = {
   // Остаток бесплатного доступа в комплектах (оферта, п. 4.1).
   getTrial: (token: string) =>
     request<TrialQuota>("/billing/trial", undefined, token),
+  // Подтверждение телефона: защита бесплатных уроков от мультиаккаунтов.
+  sendPhoneCode: (token: string, phone: string) =>
+    request<{ phoneMasked: string }>("/auth/b2c/phone/send-code", { method: "POST", body: JSON.stringify({ phone }) }, token),
+  verifyPhoneCode: (token: string, code: string) =>
+    request<{ ok: boolean; trialAllowed: boolean }>("/auth/b2c/phone/verify", { method: "POST", body: JSON.stringify({ code }) }, token),
   // Баланс пакетов + каталог (ТЗ №3) — единый источник для баннеров и витрины.
   getBalance: (token: string) =>
     request<BalanceInfo>("/billing/balance", undefined, token),

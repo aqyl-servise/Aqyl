@@ -15,6 +15,7 @@ interface World {
   teacher: {
     id: string; registrationSource: string;
     paidLessonsBalance: number; balanceExpiresAt: Date | null;
+    phoneVerifiedAt: Date | null;
   };
   lessons: Map<string, { userId: string; trialCounted: boolean; paidCounted: boolean }>;
   subscriptionActive: boolean;
@@ -99,7 +100,11 @@ function world(over: Partial<World['teacher']> = {}, opts: Partial<World> = {}):
   return {
     teacher: {
       id: T, registrationSource: 'b2c',
-      paidLessonsBalance: 0, balanceExpiresAt: null, ...over,
+      paidLessonsBalance: 0, balanceExpiresAt: null,
+      // По умолчанию номер подтверждён: бесплатные уроки требуют его с
+      // момента защиты от мультиаккаунтов, а большинство тестов про другое.
+      phoneVerifiedAt: new Date(),
+      ...over,
     },
     lessons: new Map(),
     subscriptionActive: false,
@@ -222,4 +227,30 @@ test('balanceSummary: истёкший баланс показывается н�
   assert.equal(s.paidBalance, 0);
   assert.equal(s.expiresAt, null);
   assert.equal(s.total, s.trialLeft);
+});
+
+// ── Защита бесплатного доступа от мультиаккаунтов ────────────────────────
+test('бесплатные уроки требуют подтверждённого номера', async () => {
+  const w = world({ phoneVerifiedAt: null });
+  lesson(w, 'l1');
+  const svc = makeService(w);
+  await assert.rejects(() => svc.chargeLessonStart(T, 'l1'), /PHONE_VERIFICATION_REQUIRED/);
+  assert.equal(w.lessons.get('l1')!.trialCounted, false, 'урок не списан');
+});
+
+test('купленные уроки работают и без подтверждённого номера', async () => {
+  // За платный пакет уже заплачено — требовать номер значило бы не пускать
+  // клиента к тому, что он купил.
+  const w = world({ phoneVerifiedAt: null, paidLessonsBalance: 3, balanceExpiresAt: future() });
+  lesson(w, 'l1');
+  const svc = makeService(w);
+  assert.equal(await svc.chargeLessonStart(T, 'l1'), 'paid');
+  assert.equal(w.teacher.paidLessonsBalance, 2);
+});
+
+test('подписка не требует подтверждения номера', async () => {
+  const w = world({ phoneVerifiedAt: null }, { subscriptionActive: true });
+  lesson(w, 'l1');
+  const svc = makeService(w);
+  assert.equal(await svc.chargeLessonStart(T, 'l1'), 'none');
 });

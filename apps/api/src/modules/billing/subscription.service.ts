@@ -172,8 +172,14 @@ export class SubscriptionService {
     if (lesson.trialCounted) return "trial";
     if (lesson.paidCounted) return "paid";
 
-    // Триал первым: подарок дожигается раньше, платный баланс не тает.
-    if ((await this.trialLessonsUsed(teacherId)) < trialLessonLimit()) {
+    // Бесплатные уроки — только на подтверждённый номер (защита от
+    // мультиаккаунтов): почта бесплатна и безлимитна, номер — нет. Купленные
+    // уроки этого НЕ требуют, поэтому при неподтверждённом номере просто
+    // проваливаемся к платному балансу, а не отказываем: у заплатившего
+    // генерация обязана работать.
+    const trialLeft = (await this.trialLessonsUsed(teacherId)) < trialLessonLimit();
+    if (trialLeft && teacher.phoneVerifiedAt) {
+      // Триал первым: подарок дожигается раньше, платный баланс не тает.
       await this.lessonRepo.update({ id: lessonId, userId: teacherId }, { trialCounted: true });
       return "trial";
     }
@@ -186,6 +192,9 @@ export class SubscriptionService {
       .execute();
 
     if (!res.affected) {
+      // Бесплатные уроки ещё есть, но номер не подтверждён — просим номер,
+      // а не сообщаем «уроки закончились»: это разные ситуации.
+      if (trialLeft) throw new ForbiddenException('PHONE_VERIFICATION_REQUIRED');
       throw new ForbiddenException(await this.denialMessage(teacherId));
     }
     await this.lessonRepo.update({ id: lessonId, userId: teacherId }, { paidCounted: true });

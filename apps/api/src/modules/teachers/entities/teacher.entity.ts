@@ -94,6 +94,14 @@ export class Teacher {
   @Column({ nullable: true })
   phone?: string;
 
+  /**
+   * Момент подтверждения номера по SMS. Пока пусто — бесплатные уроки не
+   * выдаются: номер телефона единственный практичный барьер против
+   * регистрации на новый почтовый ящик ради нового пробного доступа.
+   */
+  @Column({ type: "timestamptz", nullable: true })
+  phoneVerifiedAt?: Date | null;
+
   @Column({ nullable: true })
   subject?: string;
 

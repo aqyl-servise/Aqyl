@@ -7,6 +7,7 @@ import { api, API_URL, type LpLesson, type LpToolsResponse, type LpStageInput, t
 import { useLang, LT, VALUE_MONTHS, type Lang } from "../../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../../components/lang-switcher";
 import { Icon } from "../../../../components/ui/icon";
+import { PhoneVerifyModal } from "../../../../components/phone-verify-modal";
 
 // Бренд-токены применяются через класс .aqyl-b2c на корне (см. globals.css).
 const BRAND = "var(--lavender)";
@@ -67,6 +68,10 @@ export default function LessonGeneratorPage() {
   // защита от параллельных запросов по одному уроку.
   const [regenId, setRegenId] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Подтверждение номера перед бесплатными уроками: модал и режим, который
+  // нужно повторить после успеха.
+  const [phoneModal, setPhoneModal] = useState(false);
+  const [pendingMode, setPendingMode] = useState<"quick" | "constructor" | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -212,7 +217,18 @@ export default function LessonGeneratorPage() {
       await api.lpGenerate(token, id, mode);
       setStep(4);
       startPolling(id);
-    } catch (e) { setError(t.errNoAiGen + msg(e)); setBusy(false); }
+    } catch (e) {
+      // Бесплатные уроки требуют подтверждённого номера (защита от
+      // мультиаккаунтов): показываем модал, а не ошибку генерации.
+      if (msg(e).includes("PHONE_VERIFICATION_REQUIRED")) {
+        setPendingMode(mode);
+        setPhoneModal(true);
+        setBusy(false);
+        return;
+      }
+      setError(t.errNoAiGen + msg(e));
+      setBusy(false);
+    }
   }
 
   function startPolling(id: string) {
@@ -252,6 +268,25 @@ export default function LessonGeneratorPage() {
 
   return (
     <div className="aqyl-b2c" style={{ minHeight: "100vh" }}>
+      {phoneModal && token && (
+        <PhoneVerifyModal
+          token={token}
+          onClose={() => { setPhoneModal(false); setPendingMode(null); }}
+          onDone={(trialAllowed) => {
+            setPhoneModal(false);
+            if (!trialAllowed) {
+              // Номер уже получал бесплатные уроки — генерация не пойдёт,
+              // говорим об этом прямо, а не отправляем в общий отказ.
+              setPendingMode(null);
+              setError("По этому номеру бесплатные уроки уже получали. Выберите пакет, чтобы продолжить.");
+              return;
+            }
+            const mode = pendingMode;
+            setPendingMode(null);
+            if (mode) void runGenerate(mode);
+          }}
+        />
+      )}
       <header style={{ background: "var(--ink-2)", color: "var(--white)", padding: "14px 24px", display: "flex", alignItems: "center", gap: 16, borderBottom: "1px solid var(--line)" }}>
         <button onClick={() => (step > 1 && step < 4 ? setStep(step - 1) : router.push("/dashboard/b2c"))} style={{ ...btnGhost, color: "var(--white)" }}>← {t.back}</button>
         <span style={{ fontWeight: 700 }}>{t.genTitle}</span>

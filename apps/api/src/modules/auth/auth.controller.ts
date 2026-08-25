@@ -2,6 +2,7 @@ import { Body, Controller, Get, HttpCode, Patch, Post, Req, UseGuards } from "@n
 import { Throttle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service";
 import { B2cAuthService } from "./b2c-auth.service";
+import { PhoneVerificationService } from "./phone-verification.service";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
@@ -25,6 +26,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly b2cAuthService: B2cAuthService,
+    private readonly phoneVerification: PhoneVerificationService,
     private readonly accountDeletion: AccountDeletionService,
     private readonly teachersService: TeachersService,
   ) {}
@@ -94,6 +96,27 @@ export class AuthController {
   @HttpCode(200)
   verifyCode(@Body() dto: VerifyCodeDto) {
     return this.b2cAuthService.verifyCode(dto.email, dto.code);
+  }
+
+  // ── Подтверждение телефона (защита бесплатного доступа) ────────────────
+  // Спрашивается не при регистрации, а при первой генерации: трение попадает
+  // туда, где начинается ценность, а не на вход.
+
+  @Post("b2c/phone/send-code")
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard)
+  // SMS стоят денег: не чаще трёх запросов за десять минут на клиента.
+  @Throttle({ short: { limit: 3, ttl: 600_000 }, medium: { limit: 3, ttl: 600_000 } })
+  sendPhoneCode(@Body() body: { phone: string }, @Req() req: { user: { id: string } }) {
+    return this.phoneVerification.requestCode(req.user.id, body?.phone ?? "");
+  }
+
+  @Post("b2c/phone/verify")
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ short: { limit: 10, ttl: 600_000 }, medium: { limit: 10, ttl: 600_000 } })
+  verifyPhone(@Body() body: { code: string }, @Req() req: { user: { id: string } }) {
+    return this.phoneVerification.verifyCode(req.user.id, body?.code ?? "");
   }
 
   @Post("b2c/register")
