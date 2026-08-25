@@ -1,4 +1,5 @@
 import type { DiagramContract } from "./json-to-mermaid";
+import { devicePrintHeader } from "./device-print";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
@@ -96,6 +97,15 @@ export type LessonPackage = { code: string; lessons: number; priceKzt: number; u
 /** Ответ на создание заявки: manual — начисление после подтверждения админом. */
 export type PackageSessionResponse = {
   orderId: string; paymentUrl: string; amount: number; lessons: number; manual: boolean;
+};
+
+export type SignalCluster = {
+  kind: "ip" | "device";
+  digestShort: string;
+  accounts: Array<{
+    id: string; email: string; fullName: string;
+    status: string; createdAt: string; phoneVerified: boolean;
+  }>;
 };
 
 export type PendingPayment = {
@@ -496,10 +506,12 @@ export const api = {
     request<{ success: boolean }>("/auth/b2c/send-code", { method: "POST", body: JSON.stringify({ email }) }),
   verifyCode: (email: string, code: string) =>
     request<{ verified: boolean }>("/auth/b2c/verify-code", { method: "POST", body: JSON.stringify({ email, code }) }),
+  // Отпечаток устройства уходит заголовком: мягкий признак связи аккаунтов
+  // для админки, блокировок по нему нет (см. lib/device-print.ts).
   registerB2C: (dto: RegisterB2CInput) =>
-    request<B2CAuthResponse>("/auth/b2c/register", { method: "POST", body: JSON.stringify(dto) }),
+    request<B2CAuthResponse>("/auth/b2c/register", { method: "POST", body: JSON.stringify(dto), headers: devicePrintHeader() }),
   loginB2C: (email: string, password: string) =>
-    request<B2CAuthResponse>("/auth/b2c/login", { method: "POST", body: JSON.stringify({ email, password }) }),
+    request<B2CAuthResponse>("/auth/b2c/login", { method: "POST", body: JSON.stringify({ email, password }), headers: devicePrintHeader() }),
   getB2CMe: (token: string) => request<B2CProfile>("/auth/b2c/me", undefined, token),
   updateB2CProfile: (token: string, data: UpdateB2CProfileInput) =>
     request<B2CProfile>("/auth/b2c/profile", { method: "PATCH", body: JSON.stringify(data) }, token),
@@ -523,6 +535,9 @@ export const api = {
   // Остаток бесплатного доступа в комплектах (оферта, п. 4.1).
   getTrial: (token: string) =>
     request<TrialQuota>("/billing/trial", undefined, token),
+  // Кластеры связанных аккаунтов: повод посмотреть, не приговор.
+  signalClusters: (token: string) =>
+    request<SignalCluster[]>("/admin/signals/clusters", undefined, token),
   // Подтверждение телефона: защита бесплатных уроков от мультиаккаунтов.
   sendPhoneCode: (token: string, phone: string) =>
     request<{ phoneMasked: string }>("/auth/b2c/phone/send-code", { method: "POST", body: JSON.stringify({ phone }) }, token),

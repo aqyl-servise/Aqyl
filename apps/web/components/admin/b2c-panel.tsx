@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { api, type B2cFunnel, type B2cUser, type PendingPayment } from "../../lib/api";
+import { api, type B2cFunnel, type B2cUser, type PendingPayment, type SignalCluster } from "../../lib/api";
 import { Icon } from "../ui/icon";
 
 /**
@@ -17,12 +17,14 @@ export function B2cPanel({ token }: { token: string }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<PendingPayment[]>([]);
+  const [clusters, setClusters] = useState<SignalCluster[]>([]);
 
   const load = useCallback(() => {
     setLoading(true);
     // Заявки на оплату грузим вместе с воронкой: у Kaspi нет API-интеграции
     // при нашем обороте, поэтому поступление подтверждает администратор.
     api.pendingPayments(token).then(setPending).catch(() => setPending([]));
+    api.signalClusters(token).then(setClusters).catch(() => setClusters([]));
     api.getB2cFunnel(token)
       .then((d) => { setData(d); setError(null); })
       .catch(() => setError("Не удалось загрузить воронку B2C"))
@@ -85,6 +87,40 @@ export function B2cPanel({ token }: { token: string }) {
       </div>
 
       {error && <div style={{ color: "#dc2626", marginBottom: 14 }}>{error}</div>}
+
+      {/* Связанные аккаунты: повод посмотреть, а не приговор. */}
+      {clusters.length > 0 && (
+        <details style={{ background: "var(--bg-card, #fff)", border: "1px solid #e5e7eb", borderRadius: 12, padding: 16, marginBottom: 22 }}>
+          <summary style={{ cursor: "pointer", fontSize: 16, fontWeight: 700 }}>
+            Связанные аккаунты — {clusters.length} {clusters.length === 1 ? "группа" : "групп(ы)"}
+          </summary>
+          <p style={{ margin: "10px 0 14px", fontSize: 13, color: "#6b7280" }}>
+            Общий адрес или устройство. Это <b>не доказательство</b>: в школе весь коллектив
+            выходит с одного адреса, а мобильные операторы раздают один адрес тысячам.
+            Смотрите глазами и решайте сами — блокировка кнопкой «Отключить» в списке ниже.
+          </p>
+          {clusters.map((c) => (
+            <div key={`${c.kind}-${c.digestShort}`} style={{ borderTop: "1px solid #f3f4f6", padding: "10px 0" }}>
+              <div style={{ fontSize: 13, color: "#374151", marginBottom: 6 }}>
+                <span style={{ ...badge, background: c.kind === "ip" ? "#6366f1" : "#0891b2" }}>
+                  {c.kind === "ip" ? "общий адрес" : "общее устройство"}
+                </span>
+                <span style={{ color: "#9ca3af", fontFamily: "monospace", fontSize: 12 }}> {c.digestShort}…</span>
+                <span style={{ marginLeft: 8 }}>аккаунтов: <b>{c.accounts.length}</b></span>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {c.accounts.map((a) => (
+                  <span key={a.id} style={{ fontSize: 13, background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 8, padding: "4px 10px" }}>
+                    {a.email}
+                    {!a.phoneVerified && <span style={{ color: "#d97706" }}> · без номера</span>}
+                    {a.status !== "active" && <span style={{ color: "#6b7280" }}> · {a.status}</span>}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </details>
+      )}
 
       {/* Заявки на оплату: сверьте поступление в Kaspi и подтвердите. */}
       {pending.length > 0 && (

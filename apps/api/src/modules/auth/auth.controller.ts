@@ -131,16 +131,30 @@ export class AuthController {
     const ipAddress =
       (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(",")[0]?.trim() || req.ip || null;
     const ua = req.headers["user-agent"];
+    // Отпечаток устройства считает клиент и шлёт заголовком: мягкий признак
+    // связи аккаунтов, блокировок по нему нет (см. AccountSignalsService).
+    const dev = req.headers["x-device-print"];
     return this.b2cAuthService.registerB2C(dto, {
       ipAddress,
       userAgent: (Array.isArray(ua) ? ua[0] : ua) ?? null,
+      device: (Array.isArray(dev) ? dev[0] : dev) ?? null,
     });
   }
 
   @Post("b2c/login")
   @Throttle({ short: { limit: 5, ttl: 60_000 } })
-  loginB2C(@Body() dto: LoginB2CDto) {
-    return this.b2cAuthService.loginB2C(dto.email, dto.password);
+  loginB2C(
+    @Body() dto: LoginB2CDto,
+    @Req() req: { ip?: string; headers: Record<string, string | string[] | undefined> },
+  ) {
+    const forwarded = req.headers["x-forwarded-for"];
+    const ipAddress =
+      (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(",")[0]?.trim() || req.ip || null;
+    const dev = req.headers["x-device-print"];
+    return this.b2cAuthService.loginB2C(dto.email, dto.password, {
+      ipAddress,
+      device: (Array.isArray(dev) ? dev[0] : dev) ?? null,
+    });
   }
 
   @UseGuards(JwtAuthGuard)

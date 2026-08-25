@@ -3,6 +3,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { BillingService } from "../billing/billing.service";
+import { AccountSignalsService } from "../trial-guard/account-signals.service";
 import { AdminService } from "./admin.service";
 import { SkipSchoolIsolation } from "../../common/decorators/skip-school-isolation.decorator";
 
@@ -16,6 +17,7 @@ export class AdminController {
   constructor(
     private readonly service: AdminService,
     private readonly billingService: BillingService,
+    private readonly signalsService: AccountSignalsService,
   ) {}
 
   @Get("overview")
@@ -109,6 +111,18 @@ export class AdminController {
   // приходит: учитель платит по ссылке, администратор сверяет поступление в
   // Kaspi и подтверждает здесь — уроки начисляются той же механикой, что и
   // при автоматической оплате.
+
+  /**
+   * Кластеры связанных аккаунтов (один адрес или устройство). Это повод
+   * посмотреть, а не приговор: в школе весь коллектив выходит с одного
+   * адреса. Блокировка — существующей кнопкой деактивации, решение за
+   * администратором.
+   */
+  @Get("signals/clusters")
+  @Roles("admin")
+  signalClusters() {
+    return this.signalsService.clusters();
+  }
 
   /** Заявки, ожидающие подтверждения оплаты. */
   @Get("payments/pending")

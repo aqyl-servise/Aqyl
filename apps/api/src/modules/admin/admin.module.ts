@@ -11,6 +11,7 @@ import { School } from "../schools/entities/school.entity";
 import { SecurityAuditLog } from "../schools/entities/security-audit-log.entity";
 import { Subscription } from "../billing/entities/subscription.entity";
 import { BillingModule } from "../billing/billing.module";
+import { TrialGuardModule } from "../trial-guard/trial-guard.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { AdminService } from "./admin.service";
 import { AdminController } from "./admin.controller";
@@ -20,6 +21,7 @@ import { AdminController } from "./admin.controller";
     TypeOrmModule.forFeature([Teacher, Classroom, Student, Submission, GeneratedDocument, OpenLesson, Protocol, School, SecurityAuditLog, Subscription]),
     NotificationsModule,
     BillingModule,
+    TrialGuardModule,
   ],
   providers: [AdminService],
   controllers: [AdminController],

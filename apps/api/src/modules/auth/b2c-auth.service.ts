@@ -8,6 +8,7 @@ import { MailService } from "../mail/mail.service";
 import { AuthService } from "./auth.service";
 import { RegisterB2CDto } from "./dto/register-b2c.dto";
 import { TrialGuardService } from "../trial-guard/trial-guard.service";
+import { AccountSignalsService } from "../trial-guard/account-signals.service";
 import { AccountDeletionService } from "./account-deletion.service";
 import { ConsentService } from "../consent/consent.service";
 
@@ -22,6 +23,7 @@ export class B2cAuthService {
     private readonly mailService: MailService,
     private readonly authService: AuthService,
     private readonly trialGuard: TrialGuardService,
+    private readonly signals: AccountSignalsService,
     private readonly accountDeletion: AccountDeletionService,
     private readonly consentService: ConsentService,
   ) {}
@@ -52,7 +54,10 @@ export class B2cAuthService {
     return { verified: true };
   }
 
-  async registerB2C(dto: RegisterB2CDto, ctx: { ipAddress?: string | null; userAgent?: string | null } = {}) {
+  async registerB2C(
+    dto: RegisterB2CDto,
+    ctx: { ipAddress?: string | null; userAgent?: string | null; device?: string | null } = {},
+  ) {
     const email = dto.email.toLowerCase().trim();
 
     const existing = await this.teacherRepo.findOne({ where: { email } });
@@ -90,17 +95,29 @@ export class B2cAuthService {
     // роняет регистрацию — пользователь уже создан.
     await this.consentService.recordRegistration(teacher.id, ctx);
 
+    // Мягкие признаки связи аккаунтов — только для показа администратору,
+    // блокировок по ним нет (см. AccountSignalsService).
+    void this.signals.record(teacher.id, { ip: ctx.ipAddress, device: ctx.device });
+
     const tokens = await this.authService.generateTokens(teacher.id, "teacher", "teacher");
     return { ...tokens, user: this.serialize(teacher) };
   }
 
-  async loginB2C(rawEmail: string, password: string) {
+  async loginB2C(
+    rawEmail: string,
+    password: string,
+    ctx: { ipAddress?: string | null; device?: string | null } = {},
+  ) {
     const email = rawEmail.toLowerCase().trim();
     const teacher = await this.teacherRepo.findOne({ where: { email, registrationSource: "b2c" } });
     if (!teacher) throw new UnauthorizedException("Invalid credentials");
 
     const matches = await bcrypt.compare(password, teacher.passwordHash);
     if (!matches) throw new UnauthorizedException("Invalid credentials");
+
+    // Признаки пишем после успешной проверки пароля: иначе перебором чужой
+    // почты можно было бы засорять кластеры чужого аккаунта.
+    void this.signals.record(teacher.id, { ip: ctx.ipAddress, device: ctx.device });
 
     // Аккаунт помечен на удаление, но срок восстановления ещё не истёк —
     // вход с прежними данными возвращает его целиком. Пробный период при
