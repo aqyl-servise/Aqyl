@@ -105,8 +105,13 @@ export class AuthController {
   @Post("b2c/phone/send-code")
   @HttpCode(200)
   @UseGuards(JwtAuthGuard)
-  // SMS стоят денег: не чаще трёх запросов за десять минут на клиента.
-  @Throttle({ short: { limit: 3, ttl: 600_000 }, medium: { limit: 3, ttl: 600_000 } })
+  // Настоящее правило — «не чаще одного SMS в минуту» — живёт в
+  // PhoneVerificationService: там оно считается по учителю и объясняется
+  // человеческим текстом. Здесь только грубый предохранитель, выставленный
+  // ровно под тот же темп: десять запросов за десять минут. Раньше стояло
+  // три за десять минут, и предохранитель срабатывал раньше самого правила —
+  // после третьего кода учитель ждал десять минут вместо одной.
+  @Throttle({ short: { limit: 10, ttl: 600_000 }, medium: { limit: 10, ttl: 600_000 } })
   sendPhoneCode(@Body() body: { phone: string }, @Req() req: { user: { id: string } }) {
     return this.phoneVerification.requestCode(req.user.id, body?.phone ?? "");
   }
