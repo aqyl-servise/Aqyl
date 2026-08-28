@@ -460,6 +460,38 @@ export interface LitCreateInput {
   questionCount?: number; pisaLevels?: number[]; questionTypes?: string[];
 }
 
+/**
+ * Человеческий текст ошибки вместо тела ответа как есть.
+ *
+ * Nest отдаёт ошибки объектом `{ statusCode, message }`, и раньше эта строка
+ * целиком попадала на экран: учитель видел
+ * `{"statusCode":429,"message":"ThrottlerException: Too Many Requests"}`.
+ * Берём поле message, а служебные формулировки заменяем понятными.
+ */
+async function errorMessage(res: Response): Promise<string> {
+  const text = await res.text().catch(() => "");
+
+  let message = text;
+  try {
+    const body = JSON.parse(text) as { message?: string | string[] };
+    if (Array.isArray(body?.message)) message = body.message.join(". ");
+    else if (typeof body?.message === "string") message = body.message;
+  } catch {
+    // Не JSON — оставляем как есть, ниже подставится текст по коду ответа.
+  }
+
+  // Технические сообщения бэкенда и пустой ответ показывать нельзя.
+  const technical = !message || /^[{[]/.test(message) || /Exception|Error:/i.test(message);
+  if (!technical) return message;
+
+  if (res.status === 429) return "Слишком много попыток подряд. Подождите пару минут и попробуйте снова.";
+  if (res.status === 401) return "Нужно войти заново.";
+  if (res.status === 403) return "Нет доступа к этому действию.";
+  if (res.status === 404) return "Не найдено.";
+  if (res.status >= 500) return "Сервис временно недоступен. Попробуйте через минуту.";
+  return "Не получилось. Попробуйте ещё раз.";
+}
+
 async function request<T>(path: string, init?: RequestInit, token?: string): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
@@ -471,8 +503,7 @@ async function request<T>(path: string, init?: RequestInit, token?: string): Pro
     },
   });
   if (!res.ok) {
-    const text = await res.text();
-    throw new ApiError(res.status, text || "Request failed");
+    throw new ApiError(res.status, await errorMessage(res));
   }
   const ct = res.headers.get("content-type") ?? "";
   if (ct.includes("application/pdf") || ct.includes("octet-stream")) return (await res.blob()) as T;

@@ -232,12 +232,20 @@ test('balanceSummary: истёкший баланс показывается н�
 // ── Защита бесплатного доступа от мультиаккаунтов ────────────────────────
 // Требование включается флагом REQUIRE_PHONE_VERIFICATION: пока SMS-провайдер
 // не настроен, оно превращает регистрацию в тупик. В тестах включаем явно.
-function withPhoneRequired<T>(fn: () => Promise<T>): Promise<T> {
-  const prev = process.env.REQUIRE_PHONE_VERIFICATION;
+// beforePhone — сколько уроков выдаётся до требования номера (LESSONS_BEFORE_PHONE).
+// По умолчанию 0: номер нужен сразу, так проверяется сам запрет.
+function withPhoneRequired<T>(fn: () => Promise<T>, beforePhone = 0): Promise<T> {
+  const prevRequire = process.env.REQUIRE_PHONE_VERIFICATION;
+  const prevBefore = process.env.LESSONS_BEFORE_PHONE;
   process.env.REQUIRE_PHONE_VERIFICATION = 'true';
+  process.env.LESSONS_BEFORE_PHONE = String(beforePhone);
+  const restore = (key: string, prev: string | undefined) => {
+    if (prev === undefined) delete process.env[key];
+    else process.env[key] = prev;
+  };
   return fn().finally(() => {
-    if (prev === undefined) delete process.env.REQUIRE_PHONE_VERIFICATION;
-    else process.env.REQUIRE_PHONE_VERIFICATION = prev;
+    restore('REQUIRE_PHONE_VERIFICATION', prevRequire);
+    restore('LESSONS_BEFORE_PHONE', prevBefore);
   });
 }
 
@@ -249,6 +257,53 @@ test('бесплатные уроки требуют подтверждённо�
     await assert.rejects(() => svc.chargeLessonStart(T, 'l1'), /PHONE_VERIFICATION_REQUIRED/);
     assert.equal(w.lessons.get('l1')!.trialCounted, false, 'урок не списан');
   });
+});
+
+// ── Первый урок без номера ───────────────────────────────────────────────
+// Номер, спрошенный до первого результата, — стена: человек ещё не видел,
+// что сервис делает. Сначала показываем ценность, потом просим телефон.
+
+test('первый урок выдаётся без номера', async () => {
+  await withPhoneRequired(async () => {
+    const w = world({ phoneVerifiedAt: null });
+    lesson(w, 'l1');
+    const svc = makeService(w);
+    assert.equal(await svc.chargeLessonStart(T, 'l1'), 'trial');
+    assert.equal(w.lessons.get('l1')!.trialCounted, true);
+  }, 1);
+});
+
+test('второй урок уже требует номер', async () => {
+  await withPhoneRequired(async () => {
+    const w = world({ phoneVerifiedAt: null });
+    lesson(w, 'first', { trialCounted: true });
+    lesson(w, 'l2');
+    const svc = makeService(w);
+    await assert.rejects(() => svc.chargeLessonStart(T, 'l2'), /PHONE_VERIFICATION_REQUIRED/);
+    assert.equal(w.lessons.get('l2')!.trialCounted, false, 'урок не списан');
+  }, 1);
+});
+
+test('после подтверждения номера бесплатные уроки идут дальше', async () => {
+  await withPhoneRequired(async () => {
+    const w = world({ phoneVerifiedAt: new Date() });
+    lesson(w, 'first', { trialCounted: true });
+    lesson(w, 'l2');
+    const svc = makeService(w);
+    assert.equal(await svc.chargeLessonStart(T, 'l2'), 'trial');
+  }, 1);
+});
+
+test('бесплатный лимит важнее поблажки по номеру', async () => {
+  // Поблажка выдаёт первый урок без номера, но не отменяет лимит триала:
+  // израсходовавший все бесплатные уроки получает отказ, а не подарок.
+  await withPhoneRequired(async () => {
+    const w = world({ phoneVerifiedAt: null });
+    for (let i = 0; i < 5; i++) lesson(w, `old${i}`, { trialCounted: true });
+    lesson(w, 'l1');
+    const svc = makeService(w);
+    await assert.rejects(() => svc.chargeLessonStart(T, 'l1'), /Уроки закончились/);
+  }, 10);
 });
 
 test('защита выключена — бесплатные уроки выдаются без номера', async () => {

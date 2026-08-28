@@ -40,6 +40,24 @@ export function trialLessonLimit(): number {
 }
 
 /**
+ * Сколько бесплатных уроков выдаётся ДО требования номера.
+ *
+ * Номер, спрошенный до первого результата, — стена: человек ещё не видел, что
+ * сервис делает, и не понимает, за что отдаёт телефон. Замеры 26 — 28 августа
+ * 2026: из 48 регистраций номер подтвердили трое, и ровно эти трое получили
+ * урок. Поэтому первый урок выдаётся без номера, а со второго подтверждение
+ * обязательно — фарм бесплатного пакета так всё равно не окупается, зато
+ * ценность видна до просьбы.
+ *
+ * 0 — требовать номер сразу (прежнее поведение). Меняется через .env без
+ * пересборки.
+ */
+export function lessonsBeforePhone(): number {
+  const n = Number(process.env.LESSONS_BEFORE_PHONE);
+  return Number.isInteger(n) && n >= 0 ? n : 1;
+}
+
+/**
  * SubscriptionGuard висит не только на маршрутах уроков (ещё generators, kmzh,
  * materials), поэтому параметр :id может оказаться чем угодно. Запрос
  * `where: { id }` по uuid-колонке с не-uuid значением роняет Postgres ошибкой
@@ -189,8 +207,12 @@ export class SubscriptionService {
     // уроки этого НЕ требуют, поэтому при неподтверждённом номере просто
     // проваливаемся к платному балансу, а не отказываем: у заплатившего
     // генерация обязана работать.
-    const trialLeft = (await this.trialLessonsUsed(teacherId)) < trialLessonLimit();
-    const phoneOk = !requirePhoneVerification() || !!teacher.phoneVerifiedAt;
+    const trialUsed = await this.trialLessonsUsed(teacherId);
+    const trialLeft = trialUsed < trialLessonLimit();
+    const phoneOk =
+      !requirePhoneVerification() ||
+      trialUsed < lessonsBeforePhone() || // первые уроки — без номера
+      !!teacher.phoneVerifiedAt;
     if (trialLeft && phoneOk) {
       // Триал первым: подарок дожигается раньше, платный баланс не тает.
       await this.lessonRepo.update({ id: lessonId, userId: teacherId }, { trialCounted: true });

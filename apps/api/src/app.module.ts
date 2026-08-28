@@ -2,7 +2,8 @@ import { join } from "path";
 import { Module } from "@nestjs/common";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { SchoolIsolationInterceptor } from "./common/interceptors/school-isolation.interceptor";
-import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
+import { ThrottlerModule } from "@nestjs/throttler";
+import { UserThrottlerGuard } from "./common/guards/user-throttler.guard";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AnalyticsModule } from "./modules/analytics/analytics.module";
@@ -255,7 +256,7 @@ import { TrialFingerprint } from "./modules/trial-guard/entities/trial-fingerpri
   ],
   providers: [
     SeedService,
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: UserThrottlerGuard },
     { provide: APP_INTERCEPTOR, useClass: SchoolIsolationInterceptor },
   ],
 })
