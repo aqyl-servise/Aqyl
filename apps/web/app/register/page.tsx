@@ -50,6 +50,8 @@ export default function RegisterPage() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [email, setEmail] = useState("");
+  /** Почтовый сервер вернул письмо — адрес не существует. */
+  const [deliveryFailed, setDeliveryFailed] = useState(false);
   const [code, setCode] = useState<string[]>(["", "", "", "", "", ""]);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -82,6 +84,26 @@ export default function RegisterPage() {
   // узнаём — SMTP принимает письмо молча, а отказ приходит к нам в ящик часами
   // позже. Человек всё это время смотрит на «код отправлен».
   const emailSuggestion = useMemo(() => suggestEmail(email), [email]);
+
+  // Почтовый провайдер сообщает об отказе через несколько секунд после
+  // отправки — вебхуком, который приходит на сервер. Пока человек ждёт код,
+  // спрашиваем: не вернулось ли письмо. Иначе он ждёт вечно.
+  useEffect(() => {
+    if (step !== 2) return;
+    setDeliveryFailed(false);
+    const address = email.trim().toLowerCase();
+    const started = Date.now();
+    const id = setInterval(async () => {
+      // Через полторы минуты перестаём: отказ приходит быстрее, а держать
+      // опрос открытым всё время, что человек ищет письмо, незачем.
+      if (Date.now() - started > 90_000) { clearInterval(id); return; }
+      try {
+        const r = await api.emailDeliveryStatus(address);
+        if (r.failed) { setDeliveryFailed(true); clearInterval(id); }
+      } catch { /* подсказка не критична: молчим и пробуем снова */ }
+    }, 5000);
+    return () => clearInterval(id);
+  }, [step, email]);
 
   async function handleSendCode() {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setError("Введите корректный email"); return; }
@@ -226,9 +248,22 @@ export default function RegisterPage() {
             {step === 2 && (
               <>
                 <p style={{ marginBottom: 6 }}>Код отправлен на <strong style={{ color: "var(--pub-text)" }}>{email}</strong></p>
-                <p style={{ marginBottom: 16, fontSize: "0.8125rem", color: "var(--pub-text-2)", lineHeight: 1.6 }}>
-                  Письма нет через минуту — проверьте папку «Спам». Если и там пусто, скорее всего в адресе опечатка.
-                </p>
+                {deliveryFailed ? (
+                  <div
+                    style={{
+                      marginBottom: 16, padding: "12px 14px", borderRadius: 10,
+                      border: "1px solid var(--pub-danger, #ef5350)",
+                      fontSize: "0.875rem", lineHeight: 1.6,
+                    }}
+                  >
+                    <strong>Письмо не дошло.</strong> Почтовый сервер вернул его — скорее всего,
+                    в адресе опечатка. Нажмите «Изменить адрес» и проверьте написание.
+                  </div>
+                ) : (
+                  <p style={{ marginBottom: 16, fontSize: "0.8125rem", color: "var(--pub-text-2)", lineHeight: 1.6 }}>
+                    Письма нет через минуту — проверьте папку «Спам». Если и там пусто, скорее всего в адресе опечатка.
+                  </p>
+                )}
                 <div style={{ display: "flex", gap: 8, justifyContent: "space-between", marginBottom: 18 }}>
                   {code.map((c, i) => (
                     <input

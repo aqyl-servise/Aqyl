@@ -537,6 +537,13 @@ export const api = {
     request<{ success: boolean }>("/auth/b2c/send-code", { method: "POST", body: JSON.stringify({ email }) }),
   verifyCode: (email: string, code: string) =>
     request<{ verified: boolean }>("/auth/b2c/verify-code", { method: "POST", body: JSON.stringify({ email, code }) }),
+  // Дошло ли письмо: почтовый провайдер сообщает об отказе через несколько
+  // секунд после отправки, и форма может сказать правду вместо бесконечного
+  // «код отправлен».
+  emailDeliveryStatus: (email: string) =>
+    request<{ failed: boolean; reason: string | null }>(
+      `/email-delivery/status?email=${encodeURIComponent(email)}`,
+    ),
   // Отпечаток устройства уходит заголовком: мягкий признак связи аккаунтов
   // для админки, блокировок по нему нет (см. lib/device-print.ts).
   registerB2C: (dto: RegisterB2CInput) =>
