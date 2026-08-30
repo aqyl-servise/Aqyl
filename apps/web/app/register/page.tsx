@@ -8,6 +8,7 @@ import { setTokens } from "../../lib/auth";
 import { ThemeToggle } from "../../components/theme-toggle";
 import { LogoIcon } from "../../components/public-header";
 import { TRIAL_LABEL } from "../../lib/product";
+import { suggestEmail } from "../../lib/email-hint";
 
 const RESEND_SECONDS = 600; // 10 minutes
 
@@ -76,6 +77,11 @@ export default function RegisterPage() {
     const s = secondsLeft % 60;
     return `${m}:${s.toString().padStart(2, "0")}`;
   }, [secondsLeft]);
+
+  // Опечатку в домене надо поймать здесь: после отправки мы об отказе не
+  // узнаём — SMTP принимает письмо молча, а отказ приходит к нам в ящик часами
+  // позже. Человек всё это время смотрит на «код отправлен».
+  const emailSuggestion = useMemo(() => suggestEmail(email), [email]);
 
   async function handleSendCode() {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setError("Введите корректный email"); return; }
@@ -198,6 +204,19 @@ export default function RegisterPage() {
                 <label className="pub-label">Email</label>
                 <input className="pub-input" type="email" value={email} placeholder="you@example.com"
                   onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSendCode()} />
+                {emailSuggestion && (
+                  <button
+                    type="button"
+                    onClick={() => setEmail(emailSuggestion)}
+                    style={{
+                      display: "block", marginTop: 8, padding: 0, border: 0, background: "none",
+                      color: "var(--pub-purple)", fontSize: "0.8125rem", fontFamily: "inherit",
+                      textAlign: "left", cursor: "pointer",
+                    }}
+                  >
+                    Возможно, вы имели в виду <strong>{emailSuggestion}</strong>? Нажмите, чтобы исправить.
+                  </button>
+                )}
                 <button className="pub-btn pub-btn-primary pub-btn-full pub-btn-lg" style={{ marginTop: 18 }} disabled={busy} onClick={handleSendCode}>
                   {busy ? "Отправка…" : "Получить код"}
                 </button>
@@ -206,7 +225,10 @@ export default function RegisterPage() {
 
             {step === 2 && (
               <>
-                <p style={{ marginBottom: 16 }}>Код отправлен на <strong style={{ color: "var(--pub-text)" }}>{email}</strong></p>
+                <p style={{ marginBottom: 6 }}>Код отправлен на <strong style={{ color: "var(--pub-text)" }}>{email}</strong></p>
+                <p style={{ marginBottom: 16, fontSize: "0.8125rem", color: "var(--pub-text-2)", lineHeight: 1.6 }}>
+                  Письма нет через минуту — проверьте папку «Спам». Если и там пусто, скорее всего в адресе опечатка.
+                </p>
                 <div style={{ display: "flex", gap: 8, justifyContent: "space-between", marginBottom: 18 }}>
                   {code.map((c, i) => (
                     <input
@@ -233,6 +255,18 @@ export default function RegisterPage() {
                   style={{ marginTop: 12, color: secondsLeft > 0 ? "var(--pub-text-3)" : "var(--pub-purple)" }}
                 >
                   {secondsLeft > 0 ? `Отправить повторно через ${timerLabel}` : "Отправить повторно"}
+                </button>
+                {/*
+                  Без этой кнопки ошибка в адресе была тупиком: вернуться к
+                  первому шагу можно было только перезагрузив страницу. Именно
+                  так 28 августа ушёл человек, набравший «icliud.com».
+                */}
+                <button
+                  onClick={() => { setStep(1); setCode(["", "", "", "", "", ""]); setError(null); }}
+                  className="pub-btn pub-btn-ghost pub-btn-full pub-btn-sm"
+                  style={{ marginTop: 4 }}
+                >
+                  Изменить адрес
                 </button>
               </>
             )}
