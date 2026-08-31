@@ -24,7 +24,7 @@ function RecipientTable({ items }: { items: DataRecipient[] }) {
               <th
                 key={h}
                 style={{
-                  textAlign: "left", padding: "10px 12px", borderBottom: "2px solid var(--pub-line)",
+                  textAlign: "left", padding: "10px 12px", borderBottom: "2px solid var(--pub-border)",
                   whiteSpace: "nowrap", fontWeight: 700,
                 }}
               >
@@ -36,10 +36,10 @@ function RecipientTable({ items }: { items: DataRecipient[] }) {
         <tbody>
           {items.map((r) => (
             <tr key={r.name}>
-              <td style={{ padding: "12px", borderBottom: "1px solid var(--pub-line)", fontWeight: 600 }}>{r.name}</td>
-              <td style={{ padding: "12px", borderBottom: "1px solid var(--pub-line)", whiteSpace: "nowrap" }}>{r.country}</td>
-              <td style={{ padding: "12px", borderBottom: "1px solid var(--pub-line)" }}>{r.purpose}</td>
-              <td style={{ padding: "12px", borderBottom: "1px solid var(--pub-line)", lineHeight: 1.6 }}>{r.data}</td>
+              <td style={{ padding: "12px", borderBottom: "1px solid var(--pub-border)", fontWeight: 600 }}>{r.name}</td>
+              <td style={{ padding: "12px", borderBottom: "1px solid var(--pub-border)", whiteSpace: "nowrap" }}>{r.country}</td>
+              <td style={{ padding: "12px", borderBottom: "1px solid var(--pub-border)" }}>{r.purpose}</td>
+              <td style={{ padding: "12px", borderBottom: "1px solid var(--pub-border)", lineHeight: 1.6 }}>{r.data}</td>
             </tr>
           ))}
         </tbody>

@@ -576,7 +576,7 @@ function AccessModal({ user, schools, token, onClose, onDone }: {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
         <h3 style={{ marginBottom: 4 }}><Icon name="lock" size={16} /> Доступ</h3>
-        <p style={{ color: "var(--muted-fg)", fontSize: 13, marginBottom: 16 }}>
+        <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: 16 }}>
           {user.fullName} — сейчас {isB2c ? "воронка B2C (личная подписка)" : "воронка B2G (через школу)"}
         </p>
 
@@ -586,7 +586,7 @@ function AccessModal({ user, schools, token, onClose, onDone }: {
           <strong style={{ fontSize: 14 }}>Сменить воронку</strong>
           {isB2c ? (
             <>
-              <p style={{ fontSize: 13, color: "var(--muted-fg)", margin: "6px 0 10px" }}>
+              <p style={{ fontSize: 13, color: "var(--muted)", margin: "6px 0 10px" }}>
                 Переводя в B2G, обязательно выберите школу — без неё учитель не сможет войти.
               </p>
               <select className="input" value={schoolId} onChange={(e) => setSchoolId(e.target.value)}>
@@ -604,7 +604,7 @@ function AccessModal({ user, schools, token, onClose, onDone }: {
             </>
           ) : (
             <>
-              <p style={{ fontSize: 13, color: "var(--muted-fg)", margin: "6px 0 10px" }}>
+              <p style={{ fontSize: 13, color: "var(--muted)", margin: "6px 0 10px" }}>
                 В B2C доступ даёт личная подписка. Пробный период при переводе не выдаётся — при
                 необходимости выдайте подписку ниже, иначе генерация будет закрыта.
               </p>
@@ -621,7 +621,7 @@ function AccessModal({ user, schools, token, onClose, onDone }: {
 
         <div style={{ border: "1px solid var(--border)", borderRadius: 10, padding: 14, opacity: isB2c ? 1 : 0.5 }}>
           <strong style={{ fontSize: 14 }}>Подписка вручную</strong>
-          <p style={{ fontSize: 13, color: "var(--muted-fg)", margin: "6px 0 10px" }}>
+          <p style={{ fontSize: 13, color: "var(--muted)", margin: "6px 0 10px" }}>
             {isB2c
               ? "Для оплат мимо Kaspi. Если подписка ещё действует, срок продлевается от её окончания."
               : "Недоступно: в B2G доступ даёт школа, а не подписка."}

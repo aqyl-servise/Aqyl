@@ -97,12 +97,12 @@ export function LegalBody({ body }: { body: string }) {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9375rem", minWidth: 480 }}>
             <thead>
               <tr>{head.map((h, j) => (
-                <th key={j} style={{ textAlign: "left", padding: "9px 12px", borderBottom: "2px solid var(--pub-line)", fontWeight: 700 }}>{renderInline(h, `th${key}-${j}`)}</th>
+                <th key={j} style={{ textAlign: "left", padding: "9px 12px", borderBottom: "2px solid var(--pub-border)", fontWeight: 700 }}>{renderInline(h, `th${key}-${j}`)}</th>
               ))}</tr>
             </thead>
             <tbody>{rows.map((r, ri) => (
               <tr key={ri}>{r.map((cVal, ci) => (
-                <td key={ci} style={{ padding: "9px 12px", borderBottom: "1px solid var(--pub-line)", verticalAlign: "top" }}>{renderInline(cVal, `td${key}-${ri}-${ci}`)}</td>
+                <td key={ci} style={{ padding: "9px 12px", borderBottom: "1px solid var(--pub-border)", verticalAlign: "top" }}>{renderInline(cVal, `td${key}-${ri}-${ci}`)}</td>
               ))}</tr>
             ))}</tbody>
           </table>

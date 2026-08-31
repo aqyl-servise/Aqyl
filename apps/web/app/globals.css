@@ -35,6 +35,21 @@
   --error: var(--warn);
   --bg-alt: var(--panel-alt);
   --fg: var(--text);
+
+  /* Вторая волна тех же сирот: компоненты звали токены, которых нет, и
+     подставляли запасной цвет прямо в коде — всегда светлый (#fff, #f8fafc,
+     серый текст). В тёмной теме это давало белые карточки на тёмном фоне.
+     Привязываем к бренд-системе: правка одна вместо пятнадцати файлов. */
+  --text-secondary: var(--muted);
+  --bg-card: var(--panel);
+  --card: var(--panel);
+  --card-bg: var(--panel);
+  --surface-alt: var(--panel-alt);
+  --surface-raised: var(--panel-alt);
+  --bg-secondary: var(--panel-alt);
+  --primary-alpha: var(--accent-light);
+  --success-bg: var(--success-light);
+  --teal: var(--success);
 }
 
 [data-theme="dark"] {
