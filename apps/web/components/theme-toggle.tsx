@@ -26,7 +26,11 @@ export function ThemeToggle({ onDark = false }: { onDark?: boolean }) {
         ...(onDark ? { color: 'rgba(244,240,255,0.85)' } : {}),
       }}
       aria-label="Переключить тему">
-      {dark ? '◑ Светлая' : '◐ Тёмная'}
+      {dark ? '◑' : '◐'}
+      {/* На телефоне остаётся только знак: подпись съедала место, из-за
+          которого главная кнопка шапки уходила за край экрана. Название темы
+          для читалок берётся из aria-label выше. */}
+      <span className="pub-word-optional">{dark ? 'Светлая' : 'Тёмная'}</span>
     </button>
   );
 }

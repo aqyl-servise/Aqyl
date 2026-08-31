@@ -35,10 +35,14 @@ export function PublicHeader() {
           <Link href="/#contacts" className="pub-btn pub-btn-ghost pub-btn-sm">Контакты</Link>
         </nav>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+        {/* minWidth: 0 — без него флекс-элемент не даёт себя ужать, и группа
+            выталкивала страницу за край экрана на телефоне. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto', minWidth: 0 }}>
           <ThemeToggle />
           <Link href="/login" className="pub-btn pub-btn-outline pub-btn-sm">Войти</Link>
-          <Link href="/register" className="pub-btn pub-btn-primary pub-btn-sm">Начать бесплатно</Link>
+          <Link href="/register" className="pub-btn pub-btn-primary pub-btn-sm">
+            Начать<span className="pub-word-optional">&nbsp;бесплатно</span>
+          </Link>
         </div>
       </div>
     </header>

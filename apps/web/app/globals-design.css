@@ -316,3 +316,14 @@
   .aqyl-pub .pub-auth-left { display: none; }
   .aqyl-pub .pub-nav { display: none !important; }
 }
+
+/* Телефон: шапка не помещалась в 375px и уводила страницу вбок — главная
+   кнопка «Начать бесплатно» уезжала за край экрана. Ужимаем поля, отступы и
+   подписи; смысл кнопок сохраняется, второе слово прячется только там, где
+   места действительно нет. */
+@media (max-width: 640px) {
+  .aqyl-pub .pub-container { padding: 0 16px; }
+  .aqyl-pub .pub-word-optional { display: none; }
+  .aqyl-pub .pub-btn-sm { padding: 6px 10px; }
+  .aqyl-pub .pub-section { padding: 44px 0; }
+}
