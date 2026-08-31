@@ -1509,8 +1509,10 @@ h1, h2, h3, h4 { line-height: 1.3; letter-spacing: -0.02em; margin: 0; }
   /* Открытое меню и кнопка, которая его открывает: раньше панель уезжала за
      край и вернуть её было нечем — на телефоне пропадала вся навигация. */
   .al-sidebar.is-open { left: 0; }
-  .al-content { padding-top: 56px; }
-  .al-content { padding: 16px; }
+  /* Верхний отступ задан здесь же, одной записью: отдельная строка
+     padding-top ниже сбрасывалась сокращённой `padding: 16px`, и кнопка
+     меню (10..50px) наезжала на первые строки текста. */
+  .al-content { padding: 56px 16px 16px; }
   .form-row { grid-template-columns: 1fr; }
   .login-card { padding: 28px 20px; }
   .stats-row { grid-template-columns: repeat(2, 1fr); }
