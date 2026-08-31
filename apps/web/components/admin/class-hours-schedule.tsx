@@ -202,9 +202,12 @@ export function ClassHoursSchedulePanel({ token, language, isAdmin }: Props) {
       </div>
 
       {/* Week grid */}
+      {/* auto-fit, а не жёсткие пять колонок: на широком экране дней всё
+          равно пять и вид не меняется, а на телефоне колонка по 68px
+          нечитаема — ряд складывается по ширине экрана. */}
       <div style={{
         display: "grid",
-        gridTemplateColumns: "repeat(5, 1fr)",
+        gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
         gap: 8,
         minWidth: 0,
       }}>

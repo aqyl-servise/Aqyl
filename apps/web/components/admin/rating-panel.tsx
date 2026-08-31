@@ -316,7 +316,10 @@ export function RatingAdminPanel({ token, language }: Props) {
             </div>
 
             {/* Stat cards */}
-            <div className="stats-row" style={{ gridTemplateColumns: "repeat(4, 1fr)", marginBottom: 0 }}>
+            {/* Колонки задаёт .stats-row: у него есть мобильные правила, а
+                инлайновый repeat(4, 1fr) их перебивал, и на телефоне
+                оставалось четыре колонки по 85px. */}
+            <div className="stats-row" style={{ marginBottom: 0 }}>
               <div className="stat-card stat-blue">
                 <div>
                   <p className="stat-label">{t.rating_total_score ?? "Итоговый балл"}</p>

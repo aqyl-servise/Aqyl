@@ -108,7 +108,9 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
       </div>
 
       {/* Top summary cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 28 }}>
+      {/* auto-fit вместо жёстких трёх колонок: на телефоне карточка шириной
+          114px нечитаема, здесь ряд сам складывается по ширине экрана. */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 16, marginBottom: 28 }}>
         <SummaryCard
           icon=""
           label={t.ai_requests_today}
