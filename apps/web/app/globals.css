@@ -1440,6 +1440,12 @@ h1, h2, h3, h4 { line-height: 1.3; letter-spacing: -0.02em; margin: 0; }
 .theme-btn {
   padding: 4px 7px;
   font-size: 13px;
+  /* Цвет не задавали, пока кнопки были пустыми: значок брал бы его по
+     наследству и в тёмной боковой панели оказался бы неразличим. Берём
+     основной цвет темы — он контрастен фону самой полоски в обеих. */
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
   border: none;
   border-radius: var(--radius-full);
   background: transparent;
@@ -1447,7 +1453,7 @@ h1, h2, h3, h4 { line-height: 1.3; letter-spacing: -0.02em; margin: 0; }
   transition: background 0.13s;
   line-height: 1;
 }
-.theme-btn.active { background: var(--panel); box-shadow: var(--shadow-sm); }
+.theme-btn.active { background: var(--panel); box-shadow: var(--shadow-sm); color: var(--accent); }
 .theme-btn:hover:not(.active) { background: var(--border-light); }
 
 /* ── Password eye toggle ─────────────────────────────── */
