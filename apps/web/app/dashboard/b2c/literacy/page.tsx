@@ -146,7 +146,7 @@ export default function LiteracyPage() {
           <div>
             <h2 style={{ color: DARK, marginTop: 0 }}>{t.litTitle}</h2>
             <div style={card}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="aq-grid-2">
                 <div><span style={label}>{t.litType}</span>
                   <select style={inp} value={type} onChange={(e) => setType(e.target.value as never)}>
                     <option value="reading">{t.litTypeReading}</option><option value="math">{t.litTypeMath}</option><option value="science">{t.litTypeScience}</option>

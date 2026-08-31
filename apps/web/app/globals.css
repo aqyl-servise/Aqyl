@@ -1499,10 +1499,18 @@ h1, h2, h3, h4 { line-height: 1.3; letter-spacing: -0.02em; margin: 0; }
 @media (max-width: 640px) {
   .al-sidebar {
     position: fixed;
+    top: 0;
+    bottom: 0;
     left: -240px;
+    width: 240px;
     z-index: 200;
     transition: left 0.2s;
   }
+  /* Открытое меню и кнопка, которая его открывает: раньше панель уезжала за
+     край и вернуть её было нечем — на телефоне пропадала вся навигация. */
+  .al-sidebar.is-open { left: 0; }
+  .al-burger { display: inline-flex; }
+  .al-content { padding-top: 56px; }
   .al-content { padding: 16px; }
   .form-row { grid-template-columns: 1fr; }
   .login-card { padding: 28px 20px; }
@@ -1843,3 +1851,37 @@ h1, h2, h3, h4 { line-height: 1.3; letter-spacing: -0.02em; margin: 0; }
 .al-sidebar .btn-ghost:hover { background: rgba(255,255,255,.08); color: #fff; }
 .al-sidebar .lang-btn { color: rgba(245,244,251,.70); border-color: rgba(255,255,255,.16); }
 .al-sidebar .lang-btn:hover:not(.active) { background: rgba(255,255,255,.08); color: #fff; }
+
+/* ── Телефон ──────────────────────────────────────────────────────────────
+   Двухколоночные формы кабинета складываются в одну колонку. На экране 375px
+   колонка выходила по 170px — в такое поле не ввести ни тему урока, ни
+   название раздела. Ширину задаёт класс, отступ остаётся за местом вызова. */
+.aq-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 640px) {
+  .aq-grid-2 { grid-template-columns: 1fr; }
+}
+
+/* Кнопка меню и затемнение под ним — только на телефоне. */
+.al-burger {
+  display: none;
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 220;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg-surface, #fff);
+  color: var(--text, #1a1533);
+  cursor: pointer;
+}
+.al-nav-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+  background: rgba(10, 9, 24, .5);
+}

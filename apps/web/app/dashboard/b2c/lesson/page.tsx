@@ -363,7 +363,7 @@ export default function LessonGeneratorPage() {
         {step === 2 && (
           <div>
             <h2 style={{ color: DARK }}>{t.chooseMode}</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
+            <div className="aq-grid-2" style={{ gap: 18 }}>
               <button onClick={() => chooseMode("quick")} disabled={busy} style={{ ...card, cursor: "pointer", textAlign: "left", border: "1px solid var(--line)" }}>
                 <div style={{ marginBottom: 6, color: "var(--amber)" }}><Icon name="bolt" size={32} strokeWidth={1.4} /></div><div style={{ fontWeight: 800, fontSize: 18, color: DARK }}>{t.quickMode}</div><div style={{ fontSize: 13, color: "var(--muted)" }}>{t.quickModeSub}</div>
               </button>
@@ -875,6 +875,6 @@ async function downloadExport(lesson: LpLesson, token: string) {
 }
 
 function Field({ l, children }: { l: string; children: React.ReactNode }) { return <div><span style={label}>{l}</span>{children}</div>; }
-function Grid({ children }: { children: React.ReactNode }) { return <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>{children}</div>; }
+function Grid({ children }: { children: React.ReactNode }) { return <div className="aq-grid-2">{children}</div>; }
 function Center({ children }: { children: React.ReactNode }) { return <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)" }}>{children}</div>; }
 function msg(e: unknown): string { return e instanceof Error ? e.message : String(e); }

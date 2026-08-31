@@ -81,6 +81,8 @@ function AppLayoutInner({
   const roleLabel = t[`role_${user.role}` as keyof typeof t] ?? user.role;
   const [aiOpen, setAiOpen] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
+  /** Боковое меню на телефоне: на широком экране оно всегда на месте. */
+  const [navOpen, setNavOpen] = useState(false);
   const { isLimited } = useAiUsage();
 
   const isLimitedRole = user.role === "teacher" || user.role === "class_teacher";
@@ -98,8 +100,31 @@ function AppLayoutInner({
       <AiWarningBanner />
       {showLimitModal && <AiLimitModal onClose={() => setShowLimitModal(false)} language={language} />}
 
+      {/*
+        Кнопка меню видна только на телефоне. До неё боковая панель на узком
+        экране уезжала за край (left: -240px) и вернуть её было нечем: учитель
+        с телефона оставался вообще без навигации — ни уроков, ни выхода.
+      */}
+      <button
+        className="al-burger"
+        onClick={() => setNavOpen((v) => !v)}
+        aria-label={navOpen ? "Закрыть меню" : "Открыть меню"}
+        aria-expanded={navOpen}
+      >
+        {navOpen
+          ? <Icon name="close" size={20} />
+          : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <path d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
+          )}
+      </button>
+
+      {navOpen && <div className="al-nav-backdrop" onClick={() => setNavOpen(false)} />}
+
       {/* Sidebar */}
-      <aside className="al-sidebar">
+      <aside className={`al-sidebar${navOpen ? " is-open" : ""}`}>
         <div className="al-sidebar-top">
           <div className="al-brand">
             <span className="al-brand-icon">
@@ -124,7 +149,7 @@ function AppLayoutInner({
               <button
                 key={item.key}
                 className={`al-nav-item${activeSection === item.key ? " active" : ""}`}
-                onClick={() => onNav(item.key)}
+                onClick={() => { onNav(item.key); setNavOpen(false); }}
               >
                 <span className="al-nav-icon"><Icon name={item.icon} size={17} /></span>
                 <span>{item.label}</span>
