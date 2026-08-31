@@ -540,8 +540,10 @@ export const api = {
   // Дошло ли письмо: почтовый провайдер сообщает об отказе через несколько
   // секунд после отправки, и форма может сказать правду вместо бесконечного
   // «код отправлен».
+  // permanent: адреса не существует — надо проверить написание. Иначе отказ
+  // временный (например, переполненный ящик) и адрес тут ни при чём.
   emailDeliveryStatus: (email: string) =>
-    request<{ failed: boolean; reason: string | null }>(
+    request<{ failed: boolean; permanent: boolean; reason: string | null }>(
       `/email-delivery/status?email=${encodeURIComponent(email)}`,
     ),
   // Отпечаток устройства уходит заголовком: мягкий признак связи аккаунтов

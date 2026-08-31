@@ -44,7 +44,7 @@ export class EmailDeliveryController {
   @Get("email-delivery/status")
   @Throttle({ short: { limit: 30, ttl: 60_000 } })
   async status(@Query("email") email?: string) {
-    if (!email) return { failed: false, reason: null };
+    if (!email) return { failed: false, permanent: false, reason: null };
     return this.delivery.lastDeliveryFailed(email);
   }
 }

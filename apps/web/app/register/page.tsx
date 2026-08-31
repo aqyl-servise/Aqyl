@@ -50,8 +50,12 @@ export default function RegisterPage() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [email, setEmail] = useState("");
-  /** Почтовый сервер вернул письмо — адрес не существует. */
-  const [deliveryFailed, setDeliveryFailed] = useState(false);
+  /**
+   * Письмо не дошло. «permanent» — адреса не существует, надо проверить
+   * написание; «temporary» — ящик получателя не принимает письмо (например,
+   * переполнен), и советовать проверять адрес было бы неверно.
+   */
+  const [deliveryFailed, setDeliveryFailed] = useState<false | "permanent" | "temporary">(false);
   const [code, setCode] = useState<string[]>(["", "", "", "", "", ""]);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -99,7 +103,7 @@ export default function RegisterPage() {
       if (Date.now() - started > 90_000) { clearInterval(id); return; }
       try {
         const r = await api.emailDeliveryStatus(address);
-        if (r.failed) { setDeliveryFailed(true); clearInterval(id); }
+        if (r.failed) { setDeliveryFailed(r.permanent ? "permanent" : "temporary"); clearInterval(id); }
       } catch { /* подсказка не критична: молчим и пробуем снова */ }
     }, 5000);
     return () => clearInterval(id);
@@ -256,8 +260,17 @@ export default function RegisterPage() {
                       fontSize: "0.875rem", lineHeight: 1.6,
                     }}
                   >
-                    <strong>Письмо не дошло.</strong> Почтовый сервер вернул его — скорее всего,
-                    в адресе опечатка. Нажмите «Изменить адрес» и проверьте написание.
+                    {deliveryFailed === "permanent" ? (
+                      <>
+                        <strong>Письмо не дошло.</strong> Почтовый сервер вернул его — скорее всего,
+                        в адресе опечатка. Нажмите «Изменить адрес» и проверьте написание.
+                      </>
+                    ) : (
+                      <>
+                        <strong>Письмо не доставлено.</strong> Ящик не принимает почту — обычно это
+                        значит, что он переполнен. Освободите в нём место или укажите другой адрес.
+                      </>
+                    )}
                   </div>
                 ) : (
                   <p style={{ marginBottom: 16, fontSize: "0.8125rem", color: "var(--pub-text-2)", lineHeight: 1.6 }}>

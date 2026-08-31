@@ -4,8 +4,16 @@ import { Repository } from "typeorm";
 import * as crypto from "crypto";
 import { EmailBounce } from "./entities/email-bounce.entity";
 
-/** События Resend, означающие «письмо до человека не дошло». */
-const FAILURE_EVENTS = new Set(["email.bounced", "email.complained"]);
+/**
+ * События Resend, означающие «письмо до человека не дошло».
+ *
+ * Разделены намеренно. Отскок — окончательный отказ: адреса не существует,
+ * и человеку надо проверить написание. Задержка — временный отказ (например,
+ * `452 4.2.2`, переполненный ящик): адрес верный, и совет «проверьте адрес»
+ * отправил бы искать опечатку, которой нет.
+ */
+const HARD_FAILURES = new Set(["email.bounced", "email.complained"]);
+const SOFT_FAILURES = new Set(["email.delivery_delayed"]);
 
 /** Разброс часов между нами и отправителем, при котором подпись ещё принимается. */
 const TIMESTAMP_TOLERANCE_MS = 5 * 60 * 1000;
@@ -78,7 +86,7 @@ export class EmailDeliveryService {
   /** Записать событие, если оно означает недоставку. */
   async handle(event: ResendEvent): Promise<void> {
     const type = event?.type ?? "";
-    if (!FAILURE_EVENTS.has(type)) return;
+    if (!HARD_FAILURES.has(type) && !SOFT_FAILURES.has(type)) return;
 
     const to = event.data?.to;
     const addresses = (Array.isArray(to) ? to : [to]).filter((a): a is string => !!a);
@@ -97,11 +105,13 @@ export class EmailDeliveryService {
    * Смотрим только на события ПОСЛЕ последнего запроса кода: старый отскок не
    * должен пугать человека, который уже исправил адрес и получил письмо.
    */
-  async lastDeliveryFailed(email: string): Promise<{ failed: boolean; reason: string | null }> {
+  async lastDeliveryFailed(
+    email: string,
+  ): Promise<{ failed: boolean; permanent: boolean; reason: string | null }> {
     const address = email.toLowerCase().trim();
 
-    const rows: { createdAt: Date; reason: string | null }[] = await this.repo.query(
-      `SELECT b."createdAt", b."reason"
+    const rows: { kind: string; reason: string | null }[] = await this.repo.query(
+      `SELECT b."kind", b."reason"
          FROM "email_bounces" b
         WHERE lower(b."email") = $1
           AND b."createdAt" > COALESCE(
@@ -112,8 +122,13 @@ export class EmailDeliveryService {
       [address],
     );
 
-    return rows.length
-      ? { failed: true, reason: rows[0].reason }
-      : { failed: false, reason: null };
+    if (!rows.length) return { failed: false, permanent: false, reason: null };
+    return {
+      failed: true,
+      // Окончательный отказ — повод проверить написание адреса. Временный
+      // (переполненный ящик) — повод взять другой ящик, адрес тут ни при чём.
+      permanent: HARD_FAILURES.has(rows[0].kind),
+      reason: rows[0].reason,
+    };
   }
 }
