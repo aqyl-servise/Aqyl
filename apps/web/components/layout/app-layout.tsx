@@ -35,7 +35,7 @@ function AiWarningBanner() {
   const { showWarning, warningMessage, dismissWarning } = useAiUsage();
   if (!showWarning || !warningMessage) return null;
   return (
-    <div style={{
+    <div className="al-ai-banner" style={{
       position: "fixed", top: 0, left: 0, right: 0, zIndex: 9999,
       background: "#ff9800", color: "#fff", padding: "10px 16px",
       display: "flex", alignItems: "center", justifyContent: "space-between",
