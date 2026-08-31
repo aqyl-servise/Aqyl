@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { api, TeacherRating, TeacherViolation } from "../../lib/api";
 import { translations, Language } from "../../lib/translations";
-import { Icon } from "../ui/icon";
+import { Icon, type IconName } from "../ui/icon";
 
 interface Props {
   token: string;
@@ -133,11 +133,13 @@ export function RatingAdminPanel({ token, language }: Props) {
     }
   };
 
-  const TABS: { key: Tab; label: string; icon: string }[] = [
-    { key: "leaderboard", label: t.rating_leaderboard ?? "Таблица лидеров", icon: "" },
-    { key: "overview",    label: t.rating_overview    ?? "Обзор учителя",   icon: "" },
-    { key: "violations",  label: t.rating_violations  ?? "Нарушения",       icon: "" },
-    { key: "history",     label: t.rating_history     ?? "История",         icon: "" },
+  // Значки — именами из общего набора: строкой они однажды уже потерялись,
+  // и на вкладках оставался висячий пробел перед подписью.
+  const TABS: { key: Tab; label: string; icon: IconName }[] = [
+    { key: "leaderboard", label: t.rating_leaderboard ?? "Таблица лидеров", icon: "trophy" },
+    { key: "overview",    label: t.rating_overview    ?? "Обзор учителя",   icon: "chart" },
+    { key: "violations",  label: t.rating_violations  ?? "Нарушения",       icon: "warning" },
+    { key: "history",     label: t.rating_history     ?? "История",         icon: "clock" },
   ];
 
   const subjects = [...new Set(ratings.map(r => r.subject).filter(Boolean) as string[])].sort();
@@ -211,7 +213,7 @@ export function RatingAdminPanel({ token, language }: Props) {
           <button key={tb.key}
             className={`sc-tab${tab === tb.key ? " sc-tab-active" : ""}`}
             onClick={() => setTab(tb.key)}>
-            {tb.icon} {tb.label}
+            <Icon name={tb.icon} size={15} /> {tb.label}
           </button>
         ))}
       </div>

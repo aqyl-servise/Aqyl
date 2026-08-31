@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { api, TeacherRating, TeacherViolation } from "../../lib/api";
 import { translations, Language } from "../../lib/translations";
-import { Icon } from "../ui/icon";
+import { Icon, type IconName } from "../ui/icon";
 
 interface Props {
   token: string;
@@ -74,10 +74,11 @@ export function MyRatingPanel({ token, language }: Props) {
     return () => { active = false; };
   }, [token, period, periodNumber, academicYear]);
 
-  const TABS = [
-    { key: "overview"   as const, label: t.rating_overview   ?? "Обзор",       icon: "" },
-    { key: "violations" as const, label: t.rating_violations ?? "Нарушения",   icon: "" },
-    { key: "history"    as const, label: t.rating_history    ?? "История",     icon: "" },
+  // Значки именами из набора: строкой они уже терялись (см. rating-panel).
+  const TABS: { key: "overview" | "violations" | "history"; label: string; icon: IconName }[] = [
+    { key: "overview",   label: t.rating_overview   ?? "Обзор",     icon: "chart" },
+    { key: "violations", label: t.rating_violations ?? "Нарушения", icon: "warning" },
+    { key: "history",    label: t.rating_history    ?? "История",   icon: "clock" },
   ];
 
   const scoreColor = rating ? scoreAccentColor(rating.totalScore) : "var(--accent)";
@@ -120,7 +121,7 @@ export function MyRatingPanel({ token, language }: Props) {
           <button key={tb.key}
             className={`sc-tab${tab === tb.key ? " sc-tab-active" : ""}`}
             onClick={() => setTab(tb.key)}>
-            {tb.icon} {tb.label}
+            <Icon name={tb.icon} size={15} /> {tb.label}
           </button>
         ))}
       </div>
