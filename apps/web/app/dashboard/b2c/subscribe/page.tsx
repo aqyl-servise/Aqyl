@@ -6,7 +6,7 @@ import { api, type BalanceInfo, type LessonPackage, type PackageSessionResponse 
 import { getValidAccessToken } from "../../../../lib/auth";
 import { useLang, LT } from "../../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../../components/lang-switcher";
-import { useIsIosApp } from "../../../../lib/platform";
+import { useIsMobileApp } from "../../../../lib/platform";
 
 // Бренд-токены применяются через класс .aqyl-b2c на корне (см. globals.css).
 const GREEN = "var(--mint)";
@@ -37,7 +37,7 @@ export default function SubscribePage() {
   const [loadingCode, setLoadingCode] = useState<string | null>(null);
   const [order, setOrder] = useState<PackageSessionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const iosApp = useIsIosApp();
+  const mobileApp = useIsMobileApp();
 
   useEffect(() => {
     let active = true;
@@ -72,7 +72,7 @@ export default function SubscribePage() {
   }
 
   // В iOS-обёртке страница не показывает ни цен, ни кнопок оплаты (App Store).
-  if (iosApp === true) {
+  if (mobileApp === true) {
     return (
       <div className="aqyl-b2c" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
         <div style={{ maxWidth: 420, textAlign: "center" }}>

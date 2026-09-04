@@ -55,8 +55,3 @@ function useUaFlag(test: (ua: string) => boolean): boolean | null {
 export function useIsMobileApp(): boolean | null {
   return useUaFlag(isMobileAppUA);
 }
-
-/** @deprecated используйте useIsMobileApp — правило одинаково для iOS и Android. */
-export function useIsIosApp(): boolean | null {
-  return useUaFlag(isMobileAppUA);
-}
