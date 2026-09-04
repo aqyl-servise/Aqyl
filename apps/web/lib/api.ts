@@ -368,6 +368,17 @@ export type TeacherViolation = {
 let _selectedSchoolId: string | null = null;
 export function setApiSchoolId(id: string | null) { _selectedSchoolId = id; }
 
+
+// ── Живой квиз (ТЗ 3.0) ────────────────────────────────────────────────
+export interface QuizQuestion { id: string; order: number; text: string; options: string[]; correctIndex: number }
+export interface QuizItem {
+  id: string; title: string; subject?: string | null; grade?: string | null;
+  language: string; createdAt: string; questions?: QuizQuestion[];
+}
+export interface QuizSession {
+  code: string; mode: "sync" | "async"; hostKey: string; joinUrl: string; questions: number;
+}
+
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) {
     super(message);
@@ -531,6 +542,25 @@ export const api = {
     request<TokenPair>("/auth/refresh", { method: "POST", body: JSON.stringify({ refreshToken }) }),
   logout: (token: string, refreshToken: string) =>
     request<{ success: boolean }>("/auth/logout", { method: "POST", body: JSON.stringify({ refreshToken }) }, token),
+
+
+  // ── Квизы ────────────────────────────────────────────────────────────
+  quizList: (token: string) => request<QuizItem[]>("/quiz", undefined, token),
+  quizGet: (token: string, id: string) => request<QuizItem>(`/quiz/${id}`, undefined, token),
+  quizCreate: (token: string, body: { topic: string; subject?: string; grade?: string; language: string; count: number }) =>
+    request<QuizItem>("/quiz", { method: "POST", body: JSON.stringify(body) }, token),
+  quizRename: (token: string, id: string, title: string) =>
+    request<QuizItem>(`/quiz/${id}`, { method: "PATCH", body: JSON.stringify({ title }) }, token),
+  quizAddQuestions: (token: string, id: string, count: number) =>
+    request<QuizItem>(`/quiz/${id}/questions`, { method: "POST", body: JSON.stringify({ count }) }, token),
+  quizUpdateQuestion: (token: string, id: string, qid: string, patch: { text?: string; options?: string[]; correctIndex?: number }) =>
+    request<QuizItem>(`/quiz/${id}/questions/${qid}`, { method: "PATCH", body: JSON.stringify(patch) }, token),
+  quizDeleteQuestion: (token: string, id: string, qid: string) =>
+    request<QuizItem>(`/quiz/${id}/questions/${qid}`, { method: "DELETE" }, token),
+  quizRemove: (token: string, id: string) =>
+    request<{ ok: true }>(`/quiz/${id}`, { method: "DELETE" }, token),
+  quizStartSession: (token: string, id: string, mode: "sync" | "async") =>
+    request<QuizSession>(`/quiz/${id}/session`, { method: "POST", body: JSON.stringify({ mode }) }, token),
 
   // B2C (individual teacher)
   sendVerificationCode: (email: string) =>

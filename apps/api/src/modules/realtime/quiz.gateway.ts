@@ -11,6 +11,17 @@ interface SocketState { code?: string; playerId?: string; isHost?: boolean }
 
 const ORIGIN = process.env.PLAY_ORIGIN ?? "https://play.aqyl-service.kz";
 
+/**
+ * Кто вправе открыть соединение. Учеников пускаем с поддомена, а экран
+ * ведущего живёт в кабинете на основном домене — без него учитель не смог бы
+ * подключиться к собственной сессии.
+ */
+const ALLOWED_ORIGINS = [
+  ORIGIN,
+  process.env.APP_ORIGIN ?? "https://aqyl-service.kz",
+  "http://localhost:3000",
+];
+
 /** Сколько секунд на вопрос по умолчанию. */
 const DEFAULT_LIMIT_MS = 20000;
 
@@ -22,7 +33,7 @@ const DEFAULT_LIMIT_MS = 20000;
  * сервера: и то и другое иначе позволяет набрать полный балл не думая.
  */
 @WebSocketGateway({
-  cors: { origin: [ORIGIN, "http://localhost:3000"], credentials: true },
+  cors: { origin: ALLOWED_ORIGINS, credentials: true },
   // Путь фиксируем: nginx проксирует именно /socket.io/ на этот процесс.
   path: "/socket.io/",
 })
