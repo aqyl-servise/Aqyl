@@ -90,7 +90,7 @@ jobs:
         run: |
           chmod +x gradlew
           set +e
-          ./gradlew bundleRelease --no-daemon --stacktrace > /tmp/build.log 2>&1
+          ./gradlew bundleRelease --no-daemon > /tmp/build.log 2>&1
           code=$?
           cat /tmp/build.log
           exit $code
@@ -104,11 +104,17 @@ jobs:
         with:
           script: |
             const fs = require('fs');
+            const NL = String.fromCharCode(10);
             const parts = [];
             for (const f of ['/tmp/sync.log', '/tmp/build.log']) {
-              if (fs.existsSync(f)) parts.push('== ' + f + ' ==' + String.fromCharCode(10) + fs.readFileSync(f, 'utf8').slice(-5000));
+              if (!fs.existsSync(f)) continue;
+              const text = fs.readFileSync(f, 'utf8');
+              // Причина у Gradle идёт после «What went wrong»; без неё берём хвост.
+              const i = text.indexOf('What went wrong');
+              const cut = i >= 0 ? text.slice(Math.max(0, i - 300), i + 3500) : text.slice(-3500);
+              parts.push('== ' + f + ' ==' + NL + cut);
             }
-            const log = parts.length ? parts.join(String.fromCharCode(10)) : '(журналов нет)';
+            const log = parts.length ? parts.join(NL) : '(журналов нет)';
             await github.rest.issues.create({
               owner: context.repo.owner, repo: context.repo.repo,
               title: `Android CI: сбой сборки, запуск #${context.runNumber}`,
