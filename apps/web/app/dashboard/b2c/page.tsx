@@ -105,6 +105,9 @@ export default function B2CDashboardPage() {
   const tools: { key: string; icon: IconName; label: string; href: string }[] = [
     { key: "materials", icon: "books", label: t.materials, href: "/dashboard/b2c/materials" },
     { key: "fl", icon: "chart", label: t.fl, href: "/dashboard/b2c/literacy" },
+    // Живой квиз (ТЗ 3.0). Страница существовала без входа из кабинета —
+    // учитель не мог до неё добраться иначе как по прямому адресу.
+    { key: "quiz", icon: "bolt", label: t.liveQuiz, href: "/dashboard/b2c/quiz" },
     ...(mobileApp === false
       ? [{ key: "subscribe", icon: "card" as IconName, label: t.subscription, href: "/dashboard/b2c/subscribe" }]
       : []),
