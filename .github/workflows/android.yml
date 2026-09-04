@@ -48,11 +48,22 @@ jobs:
         working-directory: apps/mobile
         run: npm install --no-audit --no-fund
 
+      # Вывод дублируется в сводку задания: журнал сборки закрыт авторизацией,
+      # а сводка отдаётся открытым интерфейсом — так причину сбоя видно снаружи.
       - name: Синхронизация Capacitor
         working-directory: apps/mobile
         run: |
           chmod +x android/gradlew
-          npx cap sync android --verbose
+          set +e
+          npx cap sync android --verbose > /tmp/sync.log 2>&1
+          code=$?
+          {
+            echo "### Синхронизация Capacitor (код $code)"
+            echo '```'
+            tail -n 60 /tmp/sync.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $code
 
       # Ключ подписи хранится секретом в кодированном виде и живёт только на
       # время сборки: в репозиторий он не попадает никогда.
