@@ -56,6 +56,13 @@ export class QuizService {
     const session = await this.sessions.create({
       quizId: quiz.id, teacherId: ctx.userId, mode: mode === "async" ? "async" : "sync",
     });
+
+    // Снимок вопросов в Redis: процесс реального времени к базе не
+    // подключается. Заодно правка квиза посреди урока не ломает идущую игру —
+    // класс доиграет тем набором, с которым начал.
+    await this.sessions.saveQuestions(session.code, quiz.questions.map((q) => ({
+      text: q.text, options: q.options, correctIndex: q.correctIndex,
+    })));
     return {
       code: session.code, mode: session.mode, hostKey: session.hostKey,
       joinUrl: `https://play.aqyl-service.kz/?code=${session.code}`,

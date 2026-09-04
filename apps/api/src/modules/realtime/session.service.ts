@@ -5,6 +5,7 @@ import {
   generateSessionCode, normalizeSessionCode, isValidSessionCode,
   cleanPlayerName, isNameTaken, MAX_NAME_LENGTH,
 } from "./session-code";
+import { answerScore, leaderboard, type Standing } from "./scoring";
 
 export type SessionMode = "sync" | "async";
 export type SessionStatus = "lobby" | "running" | "finished";
@@ -27,6 +28,19 @@ export interface SessionState {
  */
 export interface SessionWithHostKey extends SessionState {
   hostKey: string;
+}
+
+/**
+ * Снимок вопроса на момент запуска сессии. Вопросы кладутся в Redis из
+ * основного API: процесс реального времени к базе не подключается и остаётся
+ * лёгким. Побочная польза — правка квиза учителем посреди урока не может
+ * сломать идущую игру.
+ */
+export interface SessionQuestion {
+  text: string;
+  options: string[];
+  /** Наружу не уходит никогда: ученик получает только текст и варианты. */
+  correctIndex: number;
 }
 
 export interface Player {
@@ -53,6 +67,8 @@ export class SessionService {
   constructor(private readonly redis: RedisService) {}
 
   private key(code: string) { return `qs:${code}`; }
+  private questionsKey(code: string) { return `qs:${code}:questions`; }
+  private answersKey(code: string, index: number) { return `qs:${code}:answers:${index}`; }
   private playersKey(code: string) { return `qs:${code}:players`; }
 
   /**
@@ -208,6 +224,98 @@ export class SessionService {
   async close(code: string): Promise<void> {
     await this.redis.client.del(this.key(code), this.playersKey(code));
     this.logger.log(`Сессия ${code} закрыта, данные участников удалены`);
+  }
+
+  // ── ход игры ────────────────────────────────────────────────────────────
+
+  /** Снимок вопросов при запуске сессии. */
+  async saveQuestions(code: string, questions: SessionQuestion[]): Promise<void> {
+    await this.redis.client
+      .multi()
+      .set(this.questionsKey(code), JSON.stringify(questions))
+      .expire(this.questionsKey(code), TTL_SECONDS)
+      .exec();
+  }
+
+  async questions(code: string): Promise<SessionQuestion[]> {
+    const raw = await this.redis.client.get(this.questionsKey(code));
+    if (!raw) return [];
+    try { return JSON.parse(raw) as SessionQuestion[]; } catch { return []; }
+  }
+
+  /**
+   * Открыть вопрос. Время старта пишем на сервере: по нему считается, сколько
+   * думал ученик. Присланному клиентом времени доверять нельзя — подкрутив
+   * часы, можно было бы всегда получать полный балл.
+   */
+  async startQuestion(code: string, index: number, limitMs: number): Promise<{ startedAt: number; endsAt: number }> {
+    const startedAt = Date.now();
+    const endsAt = startedAt + limitMs;
+    await this.redis.client.hset(this.key(code), {
+      status: "running", currentIndex: index,
+      questionStartedAt: startedAt, questionEndsAt: endsAt, questionLimitMs: limitMs,
+    });
+    // Чистый лист: если вопрос почему-то открывают повторно, старые
+    // ответы не должны зачесться заново.
+    await this.redis.client.del(this.answersKey(code, index));
+    return { startedAt, endsAt };
+  }
+
+  async currentTiming(code: string): Promise<{ startedAt: number; endsAt: number; limitMs: number } | null> {
+    const raw = await this.redis.client.hmget(
+      this.key(code), "questionStartedAt", "questionEndsAt", "questionLimitMs",
+    );
+    if (!raw[0]) return null;
+    return { startedAt: Number(raw[0]), endsAt: Number(raw[1]), limitMs: Number(raw[2]) };
+  }
+
+  /**
+   * Принять ответ. Возвращает null, если ученик уже отвечал на этот вопрос:
+   * второй ответ не заменяет первый, иначе можно было бы перебрать варианты.
+   */
+  async submitAnswer(
+    code: string, playerId: string, index: number, optionIndex: number, speedBonus: boolean,
+  ): Promise<{ correct: boolean; gained: number; total: number } | null> {
+    const timing = await this.currentTiming(code);
+    if (!timing) return null;
+    // Опоздание считаем на сервере, а не по слову клиента.
+    if (Date.now() > timing.endsAt + 1500) return null;
+
+    const first = await this.redis.client.hsetnx(
+      this.answersKey(code, index), playerId, String(optionIndex),
+    );
+    if (first !== 1) return null;
+    await this.redis.client.expire(this.answersKey(code, index), TTL_SECONDS);
+
+    const questions = await this.questions(code);
+    const question = questions[index];
+    if (!question) return null;
+
+    const correct = optionIndex === question.correctIndex;
+    const gained = answerScore({
+      correct, msTaken: Date.now() - timing.startedAt, limitMs: timing.limitMs, speedBonus,
+    });
+
+    const players = await this.players(code);
+    const player = players.find((p) => p.id === playerId);
+    if (!player) return null;
+    player.score += gained;
+    await this.savePlayer(code, player);
+
+    return { correct, gained, total: player.score };
+  }
+
+  async answers(code: string, index: number): Promise<Record<string, number>> {
+    const raw = await this.redis.client.hgetall(this.answersKey(code, index));
+    const out: Record<string, number> = {};
+    for (const [k, v] of Object.entries(raw ?? {})) out[k] = Number(v);
+    return out;
+  }
+
+  /** Лидерборд по текущим счетам. */
+  async standings(code: string): Promise<(Standing & { place: number })[]> {
+    const players = await this.players(code);
+    return leaderboard(players.map((p) => ({ id: p.id, name: p.name, score: p.score })));
   }
 
   private async savePlayer(code: string, player: Player): Promise<void> {
