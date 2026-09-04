@@ -1,0 +1,110 @@
+name: Android
+
+# Сборка мобильной обёртки на машинах GitHub. На рабочем компьютере не хватает
+# места под Android Studio с SDK (нужно 10–15 ГБ), да и держать сборочный
+# инструмент локально незачем: здесь каждая сборка привязана к коммиту и
+# повторяема.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/mobile/**"
+      - ".github/workflows/android.yml"
+  # Ручной запуск: релиз собирают тогда, когда он нужен, а не на каждый коммит.
+  workflow_dispatch:
+    inputs:
+      versionName:
+        description: "Версия для магазина, например 1.0.1"
+        required: true
+        default: "1.0.0"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Кэш Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('apps/mobile/android/**/*.gradle*') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Зависимости обёртки
+        working-directory: apps/mobile
+        run: npm install --no-audit --no-fund
+
+      - name: Синхронизация Capacitor
+        working-directory: apps/mobile
+        run: npx cap sync android
+
+      # Ключ подписи хранится секретом в кодированном виде и живёт только на
+      # время сборки: в репозиторий он не попадает никогда.
+      - name: Разложить ключ подписи
+        id: keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        # Условие проверяет переменную, а не секрет напрямую: в условиях шага
+        # секреты не разворачиваются, и проверка была бы всегда ложной.
+        if: env.KEYSTORE_B64 != ''
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/aqyl.keystore"
+          echo "path=$RUNNER_TEMP/aqyl.keystore" >> "$GITHUB_OUTPUT"
+
+      - name: Сборка пакета для Play
+        working-directory: apps/mobile/android
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ steps.keystore.outputs.path }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          # Номер сборки — номер запуска: он монотонно растёт, а Play не
+          # принимает повторный.
+          ANDROID_VERSION_CODE: ${{ github.run_number }}
+          ANDROID_VERSION_NAME: ${{ inputs.versionName || '1.0.0' }}
+        run: |
+          chmod +x gradlew
+          ./gradlew bundleRelease --no-daemon --stacktrace
+
+      - name: Забрать пакет
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqyl-aab-${{ github.run_number }}
+          path: apps/mobile/android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+          retention-days: 30
+
+      # APK нужен для проверки на живом телефоне: пакет для Play на устройство
+      # не поставить.
+      - name: Сборка APK для проверки
+        working-directory: apps/mobile/android
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ steps.keystore.outputs.path }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_VERSION_CODE: ${{ github.run_number }}
+          ANDROID_VERSION_NAME: ${{ inputs.versionName || '1.0.0' }}
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Забрать APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqyl-apk-${{ github.run_number }}
+          path: apps/mobile/android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 30

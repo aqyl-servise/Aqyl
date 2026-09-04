@@ -11,5 +11,12 @@ apps/api/.env
 apps/web/.env.local
 __pycache__/
 *.tsbuildinfo
-apps/mobile/android
+# Нативный проект Android держим в репозитории: его собирает GitHub Actions,
+# и в нём лежат наши правки — подпись из окружения и номер сборки из CI.
+# Сборочный мусор исключён списком внутри самого каталога.
+apps/mobile/android/local.properties
+apps/mobile/android/.gradle/
+apps/mobile/android/build/
+apps/mobile/android/app/build/
+apps/mobile/android/capacitor-cordova-android-plugins/
 apps/mobile/ios

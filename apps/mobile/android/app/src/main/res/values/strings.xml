@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Aqyl</string>
+    <string name="title_activity_main">Aqyl</string>
+    <string name="package_name">kz.aqyl.app</string>
+    <string name="custom_url_scheme">kz.aqyl.app</string>
+</resources>
