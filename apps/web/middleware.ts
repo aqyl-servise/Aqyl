@@ -15,6 +15,10 @@ const PUBLIC_PATHS = [
   '/terms',
   '/consent',
   '/delete-account',
+  // Живой квиз для учеников (play.aqyl-service.kz). Вход по коду сессии и
+  // временному имени: аккаунта у ребёнка нет и быть не должно, поэтому
+  // проверка входа здесь отправила бы весь класс на страницу логина.
+  '/play',
   '/api/auth/set-cookie',
   '/api/auth/clear-cookie',
   '/api/auth',        // все /api/auth/* публичные (login, register, b2c/*)
