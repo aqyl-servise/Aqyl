@@ -50,7 +50,9 @@ jobs:
 
       - name: Синхронизация Capacitor
         working-directory: apps/mobile
-        run: npx cap sync android
+        run: |
+          chmod +x android/gradlew
+          npx cap sync android --verbose
 
       # Ключ подписи хранится секретом в кодированном виде и живёт только на
       # время сборки: в репозиторий он не попадает никогда.
