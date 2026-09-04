@@ -18,6 +18,10 @@ on:
         required: true
         default: "1.0.0"
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -48,22 +52,32 @@ jobs:
         working-directory: apps/mobile
         run: npm install --no-audit --no-fund
 
-      # Вывод дублируется в сводку задания: журнал сборки закрыт авторизацией,
-      # а сводка отдаётся открытым интерфейсом — так причину сбоя видно снаружи.
       - name: Синхронизация Capacitor
+        id: sync
         working-directory: apps/mobile
         run: |
           chmod +x android/gradlew
           set +e
-          npx cap sync android --verbose > /tmp/sync.log 2>&1
+          npx cap sync android > /tmp/sync.log 2>&1
           code=$?
-          {
-            echo "### Синхронизация Capacitor (код $code)"
-            echo '```'
-            tail -n 60 /tmp/sync.log
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          cat /tmp/sync.log
           exit $code
+
+      # Журнал сборки закрыт авторизацией, поэтому при сбое его хвост уходит
+      # в задачу репозитория — её видно открытым интерфейсом. Временная
+      # диагностика, убрать после починки.
+      - name: Опубликовать журнал сбоя
+        if: failure() && steps.sync.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const log = fs.existsSync('/tmp/sync.log') ? fs.readFileSync('/tmp/sync.log', 'utf8') : '(журнала нет)';
+            await github.rest.issues.create({
+              owner: context.repo.owner, repo: context.repo.repo,
+              title: `Android CI: сбой синхронизации, запуск #${context.runNumber}`,
+              body: '```\n' + log.slice(-6000) + '\n```',
+            });
 
       # Ключ подписи хранится секретом в кодированном виде и живёт только на
       # время сборки: в репозиторий он не попадает никогда.
