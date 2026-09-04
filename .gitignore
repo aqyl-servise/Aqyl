@@ -20,3 +20,8 @@ apps/mobile/android/build/
 apps/mobile/android/app/build/
 apps/mobile/android/capacitor-cordova-android-plugins/
 apps/mobile/ios
+
+# Ключи подписи Android никогда не попадают в историю: попав туда, ключ
+# утекает навсегда. Создавать их вообще лучше вне репозитория.
+*.keystore
+*.jks
