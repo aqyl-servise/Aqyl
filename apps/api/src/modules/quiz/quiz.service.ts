@@ -5,6 +5,7 @@ import { Quiz } from "./entities/quiz.entity";
 import { QuizQuestion } from "./entities/quiz-question.entity";
 import { QuizGeneratorService, MAX_QUESTIONS, type GenerateInput } from "./quiz-generator.service";
 import { questionProblem } from "./quiz-validation";
+import { SessionService, type SessionMode } from "../realtime/session.service";
 
 export interface Ctx { userId: string; schoolId?: string | null }
 
@@ -14,6 +15,7 @@ export class QuizService {
     @InjectRepository(Quiz) private readonly quizRepo: Repository<Quiz>,
     @InjectRepository(QuizQuestion) private readonly questionRepo: Repository<QuizQuestion>,
     private readonly generator: QuizGeneratorService,
+    private readonly sessions: SessionService,
   ) {}
 
   /** Создать квиз по теме: генерация, проверка, сохранение. */
@@ -39,6 +41,26 @@ export class QuizService {
     })));
 
     return this.getOne(quiz.id, ctx);
+  }
+
+  /**
+   * Запустить живую сессию. Ключ ведущего возвращается ровно здесь и больше
+   * нигде: код сессии знает весь класс, и без отдельного ключа любой ученик
+   * мог бы переключать вопросы.
+   */
+  async startSession(id: string, ctx: Ctx, mode: SessionMode) {
+    const quiz = await this.getOne(id, ctx);
+    if (!quiz.questions.length) {
+      throw new BadRequestException("В квизе нет вопросов");
+    }
+    const session = await this.sessions.create({
+      quizId: quiz.id, teacherId: ctx.userId, mode: mode === "async" ? "async" : "sync",
+    });
+    return {
+      code: session.code, mode: session.mode, hostKey: session.hostKey,
+      joinUrl: `https://play.aqyl-service.kz/?code=${session.code}`,
+      questions: quiz.questions.length,
+    };
   }
 
   async list(ctx: Ctx): Promise<Quiz[]> {

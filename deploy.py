@@ -85,7 +85,17 @@ def main() -> int:
             client.close()
             return 1
 
-    run(client, "pm2 restart aqyl-api && pm2 restart aqyl-web && pm2 save", timeout=120, label="pm2 restart")
+    # aqyl-realtime — живой квиз, отдельным процессом. Перезапуск не рвёт урок:
+    # состояние сессии лежит в Redis, клиент Socket.IO переподключается сам.
+    # Первая выкладка процесс заводит, дальнейшие перезапускают.
+    realtime = (
+        f"(pm2 restart aqyl-realtime || "
+        f"pm2 start {APP_DIR}/apps/api/dist/realtime-main.js --name aqyl-realtime)"
+    )
+    run(client,
+        f"cd {APP_DIR}/apps/api && pm2 restart aqyl-api && pm2 restart aqyl-web "
+        f"&& {realtime} && pm2 save",
+        timeout=120, label="pm2 restart")
 
     print("\nЖду 8с и проверяю…")
     time.sleep(8)

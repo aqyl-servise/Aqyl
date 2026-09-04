@@ -26,6 +26,15 @@ export class QuizController {
     return this.service.create(this.ctx(req), body);
   }
 
+  @Post(":id/session")
+  startSession(
+    @Param("id") id: string,
+    @Req() req: AuthRequest,
+    @Body() body: { mode?: "sync" | "async" },
+  ) {
+    return this.service.startSession(id, this.ctx(req), body?.mode ?? "sync");
+  }
+
   @Get()
   list(@Req() req: AuthRequest) {
     return this.service.list(this.ctx(req));
