@@ -14,7 +14,7 @@
     "migration:show": "typeorm-ts-node-commonjs migration:show -d src/data-source.ts",
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/data-source.ts",
     "migration:create": "typeorm-ts-node-commonjs migration:create",
-    "test": "ts-node --transpile-only src/modules/lesson-plans/engine/scoring-validator.spec.ts && ts-node --transpile-only src/modules/billing/subscription.service.spec.ts && ts-node --transpile-only src/modules/lesson-plans/engine/language-gate.spec.ts && ts-node --transpile-only src/modules/lesson-plans/engine/lesson-core.spec.ts && ts-node --transpile-only src/modules/lesson-plans/engine/package-consistency.spec.ts"
+    "test": "ts-node --transpile-only src/modules/lesson-plans/engine/scoring-validator.spec.ts && ts-node --transpile-only src/modules/billing/subscription.service.spec.ts && ts-node --transpile-only src/modules/lesson-plans/engine/language-gate.spec.ts && ts-node --transpile-only src/modules/lesson-plans/engine/lesson-core.spec.ts && ts-node --transpile-only src/modules/lesson-plans/engine/package-consistency.spec.ts && ts-node --transpile-only src/modules/quiz/quiz-validation.spec.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",

@@ -122,6 +122,7 @@ import { HandoutPackage } from "./modules/lesson-plans/entities/handout-package.
 import { GenerationCostLog } from "./modules/lesson-plans/entities/generation-cost-log.entity";
 import { Presentation } from "./modules/lesson-plans/entities/presentation.entity";
 import { LiteracyModule } from "./modules/literacy/literacy.module";
+import { QuizModule } from "./modules/quiz/quiz.module";
 import { ConsentRecord } from "./modules/consent/entities/consent-record.entity";
 import { TrialGuardModule } from "./modules/trial-guard/trial-guard.module";
 import { LiteracySet } from "./modules/literacy/entities/literacy-set.entity";
@@ -251,6 +252,7 @@ import { TrialFingerprint } from "./modules/trial-guard/entities/trial-fingerpri
     TextAdapterModule,
     LessonPlansModule,
     LiteracyModule,
+    QuizModule,
     TrialGuardModule,
     ConsentModule,
   ],

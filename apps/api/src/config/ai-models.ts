@@ -17,6 +17,8 @@ export const ACTION_MODEL_MAP: Record<string, keyof typeof AI_MODELS> = {
   visualizer_generate: 'SONNET',
   text_adapter_generate: 'SONNET',
   text_adapter_translate: 'SONNET',
+  // Квиз (ТЗ 3.0): вопросы с вариантами — Sonnet, Haiku путает правильный ответ.
+  quiz_generate: 'SONNET',
   // Паспорт урока (ТЗ 1.6): формулировки целей программы — Sonnet, точность важнее цены.
   lesson_core: 'SONNET',
   // Лист фактов (ТЗ 1.6): даты и трактовки — только Sonnet, Haiku их выдумывает.
@@ -57,6 +59,8 @@ export const MAX_TOKENS_MAP: Record<string, number> = {
   visualizer_generate: 2000,
   text_adapter_generate: 2000,
   text_adapter_translate: 2000,
+  // Квиз: до 15 вопросов по 4 варианта. Потолок с запасом, платим за факт.
+  quiz_generate: 2500,
   // Лимиты выставлены с запасом к ограничениям объёма в самих промптах
   // («teacherActions — до 30 слов» и т.п.). Это потолок, а не плата: платим за
   // фактический выход. Потолок нужен, чтобы одна аномальная генерация не
