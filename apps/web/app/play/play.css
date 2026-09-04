@@ -1,0 +1,260 @@
+/* ============================================================================
+   Ученическая часть живого квиза (ТЗ 3.0, раздел 6).
+
+   Отдельный мир: это единственный экран для детей, и он не должен выглядеть
+   как учительский кабинет. Всё крупное, контрастное, с запасом под палец.
+
+   Тему здесь не переключаем: страницу смотрят с телефона в классе, часто при
+   ярком свете, и тёмный вариант читался бы хуже. Цвета заданы явно, чтобы
+   системная тёмная тема телефона их не перекрасила.
+   ============================================================================ */
+
+.pl {
+  --pl-indigo: #2E2780;
+  --pl-violet: #8B84E8;
+  --pl-green:  #4C9E81;
+  --pl-orange: #E8A33D;
+
+  /* Цвета вариантов: контрастные и различимые, в том числе при дальтонизме —
+     поэтому у каждого ещё и своя форма, а не только цвет. */
+  --pl-a: #E23B3B;
+  --pl-b: #2E6FD9;
+  --pl-c: #E8A33D;
+  --pl-d: #2FA36B;
+
+  color-scheme: light;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  color: #fff;
+  background: linear-gradient(160deg, #2E2780 0%, #4B3FA8 45%, #3F7F6B 100%);
+  font-family: var(--font-manrope), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+}
+
+.pl * { box-sizing: border-box; }
+
+.pl-shell {
+  flex: 1;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 20px 16px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ── шапка ─────────────────────────────────────────────────────────────── */
+.pl-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, .78);
+}
+.pl-brand { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; letter-spacing: .01em; }
+
+/* ── карточка входа ────────────────────────────────────────────────────── */
+.pl-card {
+  background: rgba(255, 255, 255, .10);
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 20px;
+  padding: 24px 20px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.pl-title {
+  margin: 0 0 6px;
+  font-size: clamp(1.6rem, 7vw, 2.1rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -.02em;
+  text-wrap: balance;
+}
+.pl-sub { margin: 0 0 18px; font-size: .95rem; line-height: 1.55; color: rgba(255, 255, 255, .8); }
+
+.pl-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: .8125rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: rgba(255, 255, 255, .8);
+}
+
+.pl-input {
+  width: 100%;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  font-size: 1.0625rem;
+  font-family: inherit;
+  color: #1A1533;
+  background: #fff;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  outline: none;
+}
+.pl-input:focus-visible { border-color: var(--pl-orange); }
+.pl-input::placeholder { color: #9B98B8; }
+
+/* Код набирают с проектора: крупно, вразрядку, чтобы не сбиться. */
+.pl-input-code {
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  padding-left: 24px; /* компенсация разрядки последнего знака */
+}
+
+.pl-btn {
+  width: 100%;
+  padding: 16px;
+  font-size: 1.0625rem;
+  font-weight: 800;
+  font-family: inherit;
+  color: #2A1C00;
+  background: var(--pl-orange);
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: transform .12s ease, opacity .12s ease;
+}
+.pl-btn:active:not(:disabled) { transform: scale(.98); }
+.pl-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+.pl-error {
+  margin: 0 0 14px;
+  padding: 11px 14px;
+  font-size: .9rem;
+  line-height: 1.5;
+  color: #fff;
+  background: rgba(226, 59, 59, .92);
+  border-radius: 12px;
+}
+
+/* ── лобби ─────────────────────────────────────────────────────────────── */
+.pl-center { text-align: center; }
+.pl-you {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 8px 18px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  background: rgba(255, 255, 255, .16);
+  border-radius: 999px;
+}
+.pl-players { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 6px; }
+.pl-chip {
+  padding: 6px 13px;
+  font-size: .875rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, .14);
+  border-radius: 999px;
+}
+.pl-chip-off { opacity: .45; }
+
+/* ── вопрос ────────────────────────────────────────────────────────────── */
+.pl-qmeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: .875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, .82);
+}
+.pl-timer {
+  min-width: 46px;
+  padding: 4px 12px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  background: rgba(255, 255, 255, .16);
+  border-radius: 999px;
+}
+.pl-timer-low { background: var(--pl-a); }
+
+.pl-question {
+  margin: 0;
+  padding: 20px 18px;
+  font-size: clamp(1.15rem, 5vw, 1.5rem);
+  font-weight: 700;
+  line-height: 1.35;
+  text-wrap: balance;
+  background: rgba(255, 255, 255, .12);
+  border-radius: 18px;
+}
+
+/* Варианты — крупные блоки: по ним попадают пальцем на ходу. */
+.pl-options { display: grid; gap: 12px; }
+.pl-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 76px;
+  padding: 16px 18px;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  font-family: inherit;
+  line-height: 1.3;
+  text-align: left;
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: transform .12s ease, opacity .12s ease;
+}
+.pl-option:active:not(:disabled) { transform: scale(.985); }
+.pl-option:disabled { cursor: default; }
+.pl-option-0 { background: var(--pl-a); }
+.pl-option-1 { background: var(--pl-b); }
+.pl-option-2 { background: var(--pl-c); color: #2A1C00; }
+.pl-option-3 { background: var(--pl-d); }
+
+/* Форма рядом с цветом: без неё вариант не различить при дальтонизме. */
+.pl-shape { flex: none; width: 26px; height: 26px; }
+
+.pl-dim { opacity: .35; }
+.pl-picked { outline: 4px solid #fff; outline-offset: -4px; }
+
+/* ── итог вопроса и финал ──────────────────────────────────────────────── */
+.pl-verdict {
+  padding: 26px 20px;
+  text-align: center;
+  border-radius: 20px;
+}
+.pl-verdict-ok { background: rgba(47, 163, 107, .95); }
+.pl-verdict-no { background: rgba(226, 59, 59, .92); }
+.pl-verdict-title { margin: 0 0 6px; font-size: 1.55rem; font-weight: 800; }
+.pl-gain { font-size: 2.4rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+.pl-board { display: flex; flex-direction: column; gap: 8px; }
+.pl-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, .12);
+  border-radius: 14px;
+}
+.pl-row-me { background: rgba(232, 163, 61, .28); border: 1px solid var(--pl-orange); }
+.pl-place { min-width: 26px; font-variant-numeric: tabular-nums; opacity: .8; }
+.pl-row-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pl-row-score { font-variant-numeric: tabular-nums; }
+
+.pl-medal-1 { background: rgba(232, 163, 61, .34); }
+.pl-medal-2 { background: rgba(255, 255, 255, .22); }
+.pl-medal-3 { background: rgba(180, 120, 60, .30); }
+
+.pl-muted { font-size: .9rem; color: rgba(255, 255, 255, .72); line-height: 1.55; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pl * { transition: none !important; animation: none !important; }
+}
