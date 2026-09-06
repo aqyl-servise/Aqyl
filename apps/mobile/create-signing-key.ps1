@@ -1,4 +1,4 @@
-# Создание ключа подписи Android и подготовка секретов для GitHub.
+﻿# Создание ключа подписи Android и подготовка секретов для GitHub.
 #
 # Запуск: правой кнопкой по файлу → «Выполнить с помощью PowerShell»,
 # или в PowerShell:  & "C:\Users\MI\aqyl-teacher\apps\mobile\create-signing-key.ps1"
