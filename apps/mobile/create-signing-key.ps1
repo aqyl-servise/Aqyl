@@ -65,7 +65,7 @@ $steps = @(
     @{ name = "ANDROID_KEYSTORE_BASE64";   hint = "значение УЖЕ в буфере — просто Ctrl+V в поле Secret" },
     @{ name = "ANDROID_KEYSTORE_PASSWORD"; hint = "пароль, который вы только что придумали" },
     @{ name = "ANDROID_KEY_ALIAS";         hint = "слово  aqyl  (уже в буфере)" },
-    @{ name = "ANDROID_KEY_PASSWORD";      hint = "тот же пароль, что и выше" }
+    @{ name = "ANDROID_KEY_PASSWORD";      hint = "тот же пароль, что в секрете 2 (он один на хранилище и ключ)" }
 )
 $i = 0
 foreach ($s in $steps) {
