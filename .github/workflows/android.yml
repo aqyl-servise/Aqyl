@@ -106,17 +106,29 @@ jobs:
         working-directory: apps/mobile/android/app/build/outputs
         run: |
           set +e
+          AAB=$(ls bundle/release/*.aab | head -1); APK=$(ls apk/release/*.apk | head -1)
+          TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+
+          # Судим по кодам возврата, а не по английским фразам: они меняются
+          # между версиями JDK. У jarsigner код 0 даже для неподписанного архива,
+          # поэтому для AAB дополнительно смотрим на фразу «jar is unsigned» —
+          # она стабильна.
+          jarsigner -verify "$AAB" > /tmp/aab.txt 2>&1; AAB_RC=$?
+          "$TOOLS/apksigner" verify --print-certs "$APK" > /tmp/apk.txt 2>&1; APK_RC=$?
+          AAB_UNSIGNED=$(grep -c "jar is unsigned" /tmp/aab.txt)
+
           {
-            echo "== файлы =="; ls -la bundle/release apk/release
-            AAB=$(ls bundle/release/*.aab | head -1); APK=$(ls apk/release/*.apk | head -1)
-            echo "== jarsigner -verify $AAB =="; jarsigner -verify -verbose:summary "$AAB"; echo "код jarsigner: $?"
-            TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1); echo "build-tools: $TOOLS"
-            echo "== apksigner verify $APK =="; "$TOOLS/apksigner" verify --print-certs "$APK"; echo "код apksigner: $?"
-          } 2>&1 | tee /tmp/verify.log
-          if grep -q "jar verified" /tmp/verify.log && grep -q "Signer #1 certificate" /tmp/verify.log; then
+            echo "AAB: $AAB | jarsigner rc=$AAB_RC | 'jar is unsigned' найдено: $AAB_UNSIGNED"
+            echo "APK: $APK | apksigner rc=$APK_RC"
+            echo "сертификат: $(grep -m1 'certificate DN' /tmp/apk.txt || echo 'не найден')"
+            echo "файлы:"; ls -la bundle/release apk/release
+          } | tee /tmp/verify-summary.txt
+          { echo "== jarsigner =="; head -c 1500 /tmp/aab.txt; echo; echo "== apksigner =="; head -c 1500 /tmp/apk.txt; } > /tmp/verify.log
+
+          if [ "$AAB_RC" -eq 0 ] && [ "$AAB_UNSIGNED" -eq 0 ] && [ "$APK_RC" -eq 0 ]; then
             echo "Подпись на месте: AAB и APK подписаны."
           else
-            echo "ПОДПИСЬ НЕ ПОДТВЕРЖДЕНА — см. вывод выше"; exit 1
+            echo "ПОДПИСЬ НЕ ПОДТВЕРЖДЕНА"; exit 1
           fi
 
       # Журнал сборки закрыт авторизацией, поэтому при сбое его хвост уходит
@@ -130,7 +142,9 @@ jobs:
             const fs = require('fs');
             const NL = String.fromCharCode(10);
             const parts = [];
-            for (const f of ['/tmp/sync.log', '/tmp/build.log', '/tmp/verify.log']) {
+            // Сводка проверки подписи идёт первой: она короткая и не должна
+            // вылетать за лимит тела задачи.
+            for (const f of ['/tmp/verify-summary.txt', '/tmp/verify.log', '/tmp/sync.log', '/tmp/build.log']) {
               if (!fs.existsSync(f)) continue;
               const text = fs.readFileSync(f, 'utf8');
               // Причина у Gradle идёт после «What went wrong»; без неё берём хвост.
