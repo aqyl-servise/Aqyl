@@ -97,9 +97,31 @@ jobs:
           cat /tmp/build.log
           exit $code
 
+      # Зелёная сборка ещё не значит подписанная: без секретов Gradle молча
+      # собирает неподписанный пакет. Этот шаг делает подпись обязательной,
+      # когда ключ был выдан, и падает, если её нет.
+      - name: Проверка подписи
+        id: verify
+        if: steps.keystore.outputs.path != ''
+        working-directory: apps/mobile/android/app/build/outputs
+        run: |
+          set +e
+          {
+            echo "== файлы =="; ls -la bundle/release apk/release
+            AAB=$(ls bundle/release/*.aab | head -1); APK=$(ls apk/release/*.apk | head -1)
+            echo "== jarsigner -verify $AAB =="; jarsigner -verify -verbose:summary "$AAB"; echo "код jarsigner: $?"
+            TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1); echo "build-tools: $TOOLS"
+            echo "== apksigner verify $APK =="; "$TOOLS/apksigner" verify --print-certs "$APK"; echo "код apksigner: $?"
+          } 2>&1 | tee /tmp/verify.log
+          if grep -q "jar verified" /tmp/verify.log && grep -q "Signer #1 certificate" /tmp/verify.log; then
+            echo "Подпись на месте: AAB и APK подписаны."
+          else
+            echo "ПОДПИСЬ НЕ ПОДТВЕРЖДЕНА — см. вывод выше"; exit 1
+          fi
+
       # Журнал сборки закрыт авторизацией, поэтому при сбое его хвост уходит
-      # в задачу репозитория — её видно открытым интерфейсом. Временная
-      # диагностика, убрать после починки.
+      # в задачу репозитория — её видно открытым интерфейсом. Стоит после
+      # проверки подписи, чтобы захватывать и её вывод.
       - name: Опубликовать журнал сбоя
         if: failure()
         uses: actions/github-script@v7
@@ -108,7 +130,7 @@ jobs:
             const fs = require('fs');
             const NL = String.fromCharCode(10);
             const parts = [];
-            for (const f of ['/tmp/sync.log', '/tmp/build.log']) {
+            for (const f of ['/tmp/sync.log', '/tmp/build.log', '/tmp/verify.log']) {
               if (!fs.existsSync(f)) continue;
               const text = fs.readFileSync(f, 'utf8');
               // Причина у Gradle идёт после «What went wrong»; без неё берём хвост.
@@ -122,23 +144,6 @@ jobs:
               title: `Android CI: сбой сборки, запуск #${context.runNumber}`,
               body: '```\n' + log.slice(-6000) + '\n```',
             });
-
-      # Зелёная сборка ещё не значит подписанная: без секретов Gradle молча
-      # собирает неподписанный пакет. Этот шаг делает подпись обязательной,
-      # когда ключ был выдан, и падает, если её нет.
-      - name: Проверка подписи
-        if: steps.keystore.outputs.path != ''
-        working-directory: apps/mobile/android/app/build/outputs
-        run: |
-          set -e
-          AAB=$(ls bundle/release/*.aab | head -1)
-          APK=$(ls apk/release/*.apk | head -1)
-          echo "AAB: $AAB"; jarsigner -verify "$AAB" | tee /tmp/aab.txt
-          grep -q "jar verified" /tmp/aab.txt || { echo "AAB НЕ ПОДПИСАН"; exit 1; }
-          TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
-          echo "APK: $APK"; "$TOOLS/apksigner" verify --print-certs "$APK" | tee /tmp/apk.txt
-          grep -q "Signer #1 certificate" /tmp/apk.txt || { echo "APK НЕ ПОДПИСАН"; exit 1; }
-          echo "Подпись на месте: AAB и APK подписаны одним ключом."
 
       - name: Забрать пакет
         uses: actions/upload-artifact@v4
