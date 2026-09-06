@@ -78,7 +78,7 @@ jobs:
           echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/aqyl.keystore"
           echo "path=$RUNNER_TEMP/aqyl.keystore" >> "$GITHUB_OUTPUT"
 
-      - name: Сборка пакета для Play
+      - name: Сборка AAB и APK
         working-directory: apps/mobile/android
         env:
           ANDROID_KEYSTORE_PATH: ${{ steps.keystore.outputs.path }}
@@ -92,7 +92,7 @@ jobs:
         run: |
           chmod +x gradlew
           set +e
-          ./gradlew bundleRelease --no-daemon > /tmp/build.log 2>&1
+          ./gradlew bundleRelease assembleRelease --no-daemon > /tmp/build.log 2>&1
           code=$?
           cat /tmp/build.log
           exit $code
@@ -123,6 +123,23 @@ jobs:
               body: '```\n' + log.slice(-6000) + '\n```',
             });
 
+      # Зелёная сборка ещё не значит подписанная: без секретов Gradle молча
+      # собирает неподписанный пакет. Этот шаг делает подпись обязательной,
+      # когда ключ был выдан, и падает, если её нет.
+      - name: Проверка подписи
+        if: steps.keystore.outputs.path != ''
+        working-directory: apps/mobile/android/app/build/outputs
+        run: |
+          set -e
+          AAB=$(ls bundle/release/*.aab | head -1)
+          APK=$(ls apk/release/*.apk | head -1)
+          echo "AAB: $AAB"; jarsigner -verify "$AAB" | tee /tmp/aab.txt
+          grep -q "jar verified" /tmp/aab.txt || { echo "AAB НЕ ПОДПИСАН"; exit 1; }
+          TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          echo "APK: $APK"; "$TOOLS/apksigner" verify --print-certs "$APK" | tee /tmp/apk.txt
+          grep -q "Signer #1 certificate" /tmp/apk.txt || { echo "APK НЕ ПОДПИСАН"; exit 1; }
+          echo "Подпись на месте: AAB и APK подписаны одним ключом."
+
       - name: Забрать пакет
         uses: actions/upload-artifact@v4
         with:
@@ -130,19 +147,6 @@ jobs:
           path: apps/mobile/android/app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 30
-
-      # APK нужен для проверки на живом телефоне: пакет для Play на устройство
-      # не поставить.
-      - name: Сборка APK для проверки
-        working-directory: apps/mobile/android
-        env:
-          ANDROID_KEYSTORE_PATH: ${{ steps.keystore.outputs.path }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          ANDROID_VERSION_CODE: ${{ github.run_number }}
-          ANDROID_VERSION_NAME: ${{ inputs.versionName || '1.0.0' }}
-        run: ./gradlew assembleRelease --no-daemon
 
       - name: Забрать APK
         uses: actions/upload-artifact@v4
