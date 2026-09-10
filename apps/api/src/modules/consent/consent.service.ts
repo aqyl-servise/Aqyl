@@ -10,7 +10,7 @@ import { ConsentAction, ConsentRecord, ConsentType } from './entities/consent-re
  * соглашения или формулировок отметок на экране регистрации. По этому номеру
  * видно, под какой именно версией человек поставил отметку.
  */
-export const CONSENT_DOCUMENT_VERSION = '1.0';
+export const CONSENT_DOCUMENT_VERSION = '1.1';
 
 /** Откуда пришло согласие. */
 export type ConsentMethod = 'registration' | 'profile';
