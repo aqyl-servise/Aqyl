@@ -21,6 +21,7 @@ export function LegalPage({ doc, children }: { doc: LegalDoc; children?: React.R
           {doc.updatedAt && (
             <p style={{ color: "var(--pub-text-3)", fontSize: "0.875rem", marginBottom: 28 }}>
               Редакция от {doc.updatedAt}
+              {doc.effectiveFrom && <> · вступает в силу {doc.effectiveFrom}, до этой даты действует предыдущая редакция</>}
             </p>
           )}
 

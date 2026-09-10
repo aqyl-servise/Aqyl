@@ -7,6 +7,7 @@ import { AiChat, AiChatButton } from "../ai/ai-chat";
 import { ThemeToggle } from "../ui/theme-toggle";
 import { AiUsageProvider, useAiUsage } from "../../contexts/ai-usage-context";
 import { Icon, type IconName } from "../ui/icon";
+import { LegalUpdateBanner } from "../legal-update-banner";
 
 export type NavItem = { key: string; label: string; icon: IconName };
 
@@ -178,7 +179,7 @@ function AppLayoutInner({
 
       {/* Main content */}
       <main className="al-main">
-        <div className="al-content">{children}</div>
+        <div className="al-content"><LegalUpdateBanner />{children}</div>
       </main>
 
       {/* AI floating button */}
