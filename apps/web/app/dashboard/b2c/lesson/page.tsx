@@ -649,7 +649,7 @@ function PresentationButton({ token, lessonId, t }: { token: string; lessonId: s
   }
   return (
     <>
-      <button onClick={generate} style={btnGhost}>🖥 {t.presCreate}</button>
+      <button onClick={generate} style={btnGhost}><Icon name="laptop" size={15} /> {t.presCreate}</button>
       {error && <span style={{ color: "var(--danger)", fontSize: 12, alignSelf: "center" }}>{error}</span>}
     </>
   );
