@@ -38,7 +38,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" className={`${inter.variable} ${manrope.variable} ${fraunces.variable}`}>
+    // suppressHydrationWarning — ровно для этого случая: скрипт ниже ставит
+    // data-theme до гидратации, в разметке сервера атрибута нет, и React на
+    // каждой странице писал в консоль расхождение. Подавляется только атрибут
+    // самого <html>, на содержимое страницы это не распространяется.
+    <html
+      lang="ru"
+      className={`${inter.variable} ${manrope.variable} ${fraunces.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: ANTI_FOUC }} />
       </head>

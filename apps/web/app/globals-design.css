@@ -246,8 +246,8 @@
 .aqyl-pub .pub-section { padding: 64px 0; }
 .aqyl-pub .pub-section-subtle { background: var(--pub-bg-subtle); }
 .aqyl-pub .pub-grid { display: grid; gap: 16px; }
-.aqyl-pub .pub-grid-2 { grid-template-columns: repeat(2, 1fr); }
-.aqyl-pub .pub-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.aqyl-pub .pub-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.aqyl-pub .pub-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
 /* ===== ДВУХКОЛОНОЧНЫЙ МАКЕТ АВТОРИЗАЦИИ ===== */
 .aqyl-pub .pub-auth { display: flex; min-height: 100vh; }
@@ -312,7 +312,7 @@
 
 /* ===== АДАПТИВ ===== */
 @media (max-width: 768px) {
-  .aqyl-pub .pub-grid-2, .aqyl-pub .pub-grid-3 { grid-template-columns: 1fr; }
+  .aqyl-pub .pub-grid-2, .aqyl-pub .pub-grid-3 { grid-template-columns: minmax(0, 1fr); }
   .aqyl-pub .pub-auth { flex-direction: column; }
   .aqyl-pub .pub-auth-right { width: 100%; padding: 36px 24px; }
   .aqyl-pub .pub-auth-left { display: none; }

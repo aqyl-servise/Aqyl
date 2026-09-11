@@ -118,7 +118,7 @@ export function TeacherProfile({ token, user, language, t }: { token: string; us
       {isClassTeacher && (
         <div className="card" style={{ maxWidth: 640, marginTop: 16 }}>
           <h3 className="card-title">
-            <Icon name="user" size={16} /> ‍<Icon name="graduation" size={16} /> Мои ученики
+            <Icon name="graduation" size={16} /> Мои ученики
             {user.managedClassroomName && (
               <span className="muted" style={{ fontWeight: 400, fontSize: 14, marginLeft: 8 }}>
                 {user.managedClassroomName}

@@ -76,7 +76,7 @@ function TeacherAnalyticsDocsCard({ token, labels, tl }: { token: string; labels
 
   return (
     <div className="card">
-      <h3 style={{ fontWeight: 600, marginBottom: 16, fontSize: 14 }}><Icon name="user" size={16} /> ‍<Icon name="school" size={16} /> {tl.nav_teachers} — {tl.nav_analytics}</h3>
+      <h3 style={{ fontWeight: 600, marginBottom: 16, fontSize: 14 }}><Icon name="school" size={16} /> {tl.nav_teachers} — {tl.nav_analytics}</h3>
       {!selected ? (
         !loaded ? (
           <p className="fm-empty">{tl.loading}</p>
@@ -316,7 +316,7 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
                     {sum && (
                       <div className="stats-row" style={{ marginBottom: 12 }}>
                         <div className="stat-card stat-blue"><span className="stat-icon"><Icon name="chart" size={16} /> </span><div><p className="stat-label">{t.averageScore}</p><p className="stat-value">{String(sum.averageScore)}%</p></div></div>
-                        <div className="stat-card stat-green"><span className="stat-icon"><Icon name="user" size={16} /> ‍<Icon name="graduation" size={16} /> </span><div><p className="stat-label">{t.students}</p><p className="stat-value">{String(sum.uniqueStudents)}</p></div></div>
+                        <div className="stat-card stat-green"><span className="stat-icon"><Icon name="graduation" size={16} /> </span><div><p className="stat-label">{t.students}</p><p className="stat-value">{String(sum.uniqueStudents)}</p></div></div>
                         <div className="stat-card stat-purple"><span className="stat-icon"><Icon name="school" size={16} /> </span><div><p className="stat-label">{t.classes}</p><p className="stat-value">{String(sum.uniqueClasses)}</p></div></div>
                       </div>
                     )}
@@ -349,7 +349,7 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
                   </div>
                 </div>
                 <div className="stat-card stat-green">
-                  <span className="stat-icon"><Icon name="user" size={16} /> ‍<Icon name="graduation" size={16} /> </span>
+                  <span className="stat-icon"><Icon name="graduation" size={16} /> </span>
                   <div><p className="stat-label">{t.students}</p><p className="stat-value">{stats.totalStudents}</p></div>
                 </div>
                 <div className="stat-card stat-purple">
@@ -369,7 +369,7 @@ export function SchoolAnalyticsPanel({ token, language, t }: Props) {
                 {liveSummary && (
                   <>
                     <div className="stat-card stat-blue">
-                      <span className="stat-icon"><Icon name="user" size={16} /> ‍<Icon name="school" size={16} /> </span>
+                      <span className="stat-icon"><Icon name="school" size={16} /> </span>
                       <div><p className="stat-label">{tl.analytics_teachers ?? "Учителей"}</p><p className="stat-value">{liveSummary.totalTeachers}</p></div>
                     </div>
                     <div className="stat-card stat-green">

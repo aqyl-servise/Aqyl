@@ -13,7 +13,7 @@ function statusBadge(status: string, t: Record<string, string>) {
     submitted: { label: t.fl_status_submitted ?? "Отправлено", color: "#8b5cf6" },
     graded: { label: t.fl_status_graded ?? "Оценено", color: "#10b981" },
   };
-  const d = map[status] ?? { label: status, color: "#6b7280" };
+  const d = map[status] ?? { label: status, color: "var(--muted)" };
   return <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 12, background: d.color + "20", color: d.color, fontWeight: 600 }}>{d.label}</span>;
 }
 

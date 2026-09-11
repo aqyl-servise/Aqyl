@@ -94,26 +94,26 @@ export function B2cPanel({ token }: { token: string }) {
           <summary style={{ cursor: "pointer", fontSize: 16, fontWeight: 700 }}>
             Связанные аккаунты — {clusters.length} {clusters.length === 1 ? "группа" : "групп(ы)"}
           </summary>
-          <p style={{ margin: "10px 0 14px", fontSize: 13, color: "#6b7280" }}>
+          <p style={{ margin: "10px 0 14px", fontSize: 13, color: "var(--muted)" }}>
             Общий адрес или устройство. Это <b>не доказательство</b>: в школе весь коллектив
             выходит с одного адреса, а мобильные операторы раздают один адрес тысячам.
             Смотрите глазами и решайте сами — блокировка кнопкой «Отключить» в списке ниже.
           </p>
           {clusters.map((c) => (
-            <div key={`${c.kind}-${c.digestShort}`} style={{ borderTop: "1px solid #f3f4f6", padding: "10px 0" }}>
-              <div style={{ fontSize: 13, color: "#374151", marginBottom: 6 }}>
+            <div key={`${c.kind}-${c.digestShort}`} style={{ borderTop: "1px solid var(--border)", padding: "10px 0" }}>
+              <div style={{ fontSize: 13, color: "var(--text)", marginBottom: 6 }}>
                 <span style={{ ...badge, background: c.kind === "ip" ? "#6366f1" : "#0891b2" }}>
                   {c.kind === "ip" ? "общий адрес" : "общее устройство"}
                 </span>
-                <span style={{ color: "#9ca3af", fontFamily: "monospace", fontSize: 12 }}> {c.digestShort}…</span>
+                <span style={{ color: "var(--muted)", fontFamily: "monospace", fontSize: 12 }}> {c.digestShort}…</span>
                 <span style={{ marginLeft: 8 }}>аккаунтов: <b>{c.accounts.length}</b></span>
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {c.accounts.map((a) => (
-                  <span key={a.id} style={{ fontSize: 13, background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 8, padding: "4px 10px" }}>
+                  <span key={a.id} style={{ fontSize: 13, background: "var(--panel-alt)", border: "1px solid var(--border)", borderRadius: 8, padding: "4px 10px" }}>
                     {a.email}
-                    {!a.phoneVerified && <span style={{ color: "#d97706" }}> · без номера</span>}
-                    {a.status !== "active" && <span style={{ color: "#6b7280" }}> · {a.status}</span>}
+                    {!a.phoneVerified && <span style={{ color: "var(--warn-amber)" }}> · без номера</span>}
+                    {a.status !== "active" && <span style={{ color: "var(--muted)" }}> · {a.status}</span>}
                   </span>
                 ))}
               </div>
@@ -124,15 +124,15 @@ export function B2cPanel({ token }: { token: string }) {
 
       {/* Заявки на оплату: сверьте поступление в Kaspi и подтвердите. */}
       {pending.length > 0 && (
-        <div style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 12, padding: 16, marginBottom: 22 }}>
+        <div style={{ background: "var(--warn-amber-light)", border: "1px solid var(--warn-amber)", borderRadius: 12, padding: 16, marginBottom: 22 }}>
           <h3 style={{ margin: "0 0 4px", fontSize: 16 }}>Ожидают подтверждения оплаты — {pending.length}</h3>
-          <p style={{ margin: "0 0 12px", fontSize: 13, color: "#78350f" }}>
+          <p style={{ margin: "0 0 12px", fontSize: 13, color: "var(--muted)" }}>
             Найдите поступление в Kaspi по номеру заказа и подтвердите — уроки начислятся автоматически.
           </p>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, minWidth: 680 }}>
               <thead>
-                <tr style={{ textAlign: "left", color: "#78350f" }}>
+                <tr style={{ textAlign: "left", color: "var(--muted)" }}>
                   <th style={{ padding: "6px 10px" }}>Учитель</th>
                   <th style={{ padding: "6px 10px" }}>Номер заказа</th>
                   <th style={{ padding: "6px 10px", textAlign: "right" }}>Сумма</th>
@@ -148,14 +148,14 @@ export function B2cPanel({ token }: { token: string }) {
                     <td style={{ padding: "8px 10px", fontFamily: "monospace", fontSize: 12.5 }}>{p.orderId}</td>
                     <td style={{ padding: "8px 10px", textAlign: "right" }}>{p.amount.toLocaleString("ru-RU")} ₸</td>
                     <td style={{ padding: "8px 10px", textAlign: "right" }}>{p.lessons}</td>
-                    <td style={{ padding: "8px 10px", color: "#6b7280" }}>{new Date(p.createdAt).toLocaleString("ru-RU")}</td>
+                    <td style={{ padding: "8px 10px", color: "var(--muted)" }}>{new Date(p.createdAt).toLocaleString("ru-RU")}</td>
                     <td style={{ padding: "8px 10px", whiteSpace: "nowrap" }}>
                       <button onClick={() => confirmPay(p)} disabled={busyId === p.id}
                         style={{ ...ghostBtn, borderColor: "#16a34a", color: "#16a34a", marginRight: 8 }}>
                         Оплачено
                       </button>
                       <button onClick={() => rejectPay(p)} disabled={busyId === p.id}
-                        style={{ ...ghostBtn, borderColor: "#9ca3af", color: "#6b7280" }}>
+                        style={{ ...ghostBtn, borderColor: "#9ca3af", color: "var(--muted)" }}>
                         Отклонить
                       </button>
                     </td>
@@ -172,7 +172,7 @@ export function B2cPanel({ token }: { token: string }) {
           <Card label="Учителей" value={String(data.summary.users)} />
           <Card label="С подпиской" value={String(data.summary.active)} accent="#16a34a" />
           <Card label="В пробном" value={String(data.summary.trial)} accent="#d97706" />
-          <Card label="Истекло" value={String(data.summary.expired)} accent="#6b7280" />
+          <Card label="Истекло" value={String(data.summary.expired)} accent="var(--muted)" />
           <Card label="MRR" value={`${data.summary.mrrKzt.toLocaleString("ru-RU")} ₸`} />
           <Card label="Оплачено всего" value={`${data.summary.paidTotalKzt.toLocaleString("ru-RU")} ₸`}
             hint={`${data.summary.payments} платежей`} />
@@ -207,12 +207,12 @@ export function B2cPanel({ token }: { token: string }) {
               <tr key={u.id} style={{ borderBottom: "1px solid var(--border, #f5f5f5)" }}>
                 <td style={td}>
                   <div style={{ fontWeight: 600 }}>{u.fullName || "—"}</div>
-                  <div style={{ color: "var(--text-secondary, #888)", fontSize: 12 }}>{u.email}</div>
+                  <div style={{ color: "var(--text-secondary)", fontSize: 12 }}>{u.email}</div>
                   {u.status !== "active" && (
                     <span style={{ ...badge, background: "#6b7280" }}>{u.status}</span>
                   )}
                 </td>
-                <td style={{ ...td, color: "var(--text-secondary, #888)" }}>{u.subject || "—"}</td>
+                <td style={{ ...td, color: "var(--text-secondary)" }}>{u.subject || "—"}</td>
                 <td style={{ ...td, textAlign: "center" }}><Access u={u} /></td>
                 <td style={{ ...td, textAlign: "right" }}>
                   {u.lessons}
@@ -239,7 +239,7 @@ export function B2cPanel({ token }: { token: string }) {
               </tr>
             ))}
             {!data?.users.length && (
-              <tr><td colSpan={7} style={{ ...td, textAlign: "center", color: "var(--text-secondary, #888)" }}>
+              <tr><td colSpan={7} style={{ ...td, textAlign: "center", color: "var(--text-secondary)" }}>
                 B2C-учителей пока нет
               </td></tr>
             )}
@@ -280,9 +280,9 @@ function Access({ u }: { u: B2cUser }) {
 function Card({ label, value, accent, hint: h }: { label: string; value: string; accent?: string; hint?: string }) {
   return (
     <div style={{ background: "var(--bg-card, #fff)", borderRadius: 10, padding: "16px 18px", boxShadow: "0 1px 4px rgba(0,0,0,0.07)" }}>
-      <div style={{ fontSize: 12, color: "var(--text-secondary, #888)", marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 6 }}>{label}</div>
       <div style={{ fontSize: 20, fontWeight: 700, color: accent ?? "inherit" }}>{value}</div>
-      {h && <div style={{ fontSize: 11, color: "var(--text-secondary, #999)", marginTop: 4 }}>{h}</div>}
+      {h && <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 4 }}>{h}</div>}
     </div>
   );
 }
@@ -293,7 +293,7 @@ const badge: React.CSSProperties = {
   display: "inline-block", padding: "2px 8px", borderRadius: 20,
   fontSize: 11, fontWeight: 700, color: "#fff",
 };
-const hint: React.CSSProperties = { fontSize: 11, color: "var(--text-secondary, #999)", marginTop: 3 };
+const hint: React.CSSProperties = { fontSize: 11, color: "var(--text-secondary)", marginTop: 3 };
 const ghostBtn: React.CSSProperties = {
   padding: "5px 10px", fontSize: 12, borderRadius: 6, cursor: "pointer",
   border: "1px solid var(--border, #ddd)", background: "transparent", color: "inherit",

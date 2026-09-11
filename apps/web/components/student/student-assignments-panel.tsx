@@ -174,7 +174,7 @@ export function StudentAssignmentsPanel({ token, t }: { token: string; t: Record
                       <span><Icon name="trophy" size={16} /> {t.maxScore}: {a.maxScore}</span>
                     </div>
                     {a.description && (
-                      <p style={{ marginTop: 8, fontSize: 13, color: "var(--text-secondary, #555)" }}>
+                      <p style={{ marginTop: 8, fontSize: 13, color: "var(--text-secondary)" }}>
                         {a.description}
                       </p>
                     )}
@@ -270,13 +270,13 @@ export function StudentAssignmentsPanel({ token, t }: { token: string; t: Record
 
 function StatusChip({ status, t }: { status: string; t: Record<string, string> }) {
   const map: Record<string, { label: string; color: string }> = {
-    new: { label: t.status_new, color: "var(--text-muted, #888)" },
+    new: { label: t.status_new, color: "var(--text-muted)" },
     in_progress: { label: t.status_in_progress, color: "var(--primary)" },
     submitted: { label: t.status_submitted, color: "var(--primary)" },
     graded: { label: t.status_graded, color: "var(--success, #28a745)" },
     overdue: { label: t.status_overdue, color: "var(--danger)" },
   };
-  const cfg = map[status] ?? { label: status, color: "#888" };
+  const cfg = map[status] ?? { label: status, color: "var(--muted)" };
   return (
     <span style={{ fontSize: 11, fontWeight: 600, color: cfg.color, padding: "2px 8px", border: `1px solid ${cfg.color}`, borderRadius: 10 }}>
       {cfg.label}

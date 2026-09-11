@@ -587,7 +587,7 @@ export function MalimetPanel({ token, language, teacher }: {
                 }}></span>
                 {state.teacherFullName}
               </p>
-              <p style={{ fontSize: 10, color: "#555", marginLeft: 150, marginTop: 2 }}>
+              <p style={{ fontSize: 10, color: "var(--muted)", marginLeft: 150, marginTop: 2 }}>
                 {L.signLabel} &nbsp;&nbsp;&nbsp;&nbsp; {L.nameLabel}
               </p>
             </div>

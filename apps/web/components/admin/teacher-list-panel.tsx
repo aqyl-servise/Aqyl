@@ -33,7 +33,7 @@ export function TeacherListPanel({ token, language, t }: { token: string; langua
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title"><Icon name="user" size={16} /> ‍<Icon name="school" size={16} /> {t.nav_teachers}</h1>
+        <h1 className="page-title"><Icon name="school" size={16} /> {t.nav_teachers}</h1>
         <input className="input" style={{ maxWidth: 260 }} placeholder={`${t.search}...`} value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
       <div className="card">

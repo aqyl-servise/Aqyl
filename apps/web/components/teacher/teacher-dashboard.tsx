@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import { Language } from "../../lib/translations";
 import { handleError } from "../../lib/handle-error";
-import { Icon } from "../ui/icon";
+import { Icon, type IconName } from "../ui/icon";
 
 type DashData = Awaited<ReturnType<typeof api.getDashboard>>;
 
@@ -20,10 +20,10 @@ export function TeacherDashboard({ token, language, t }: { token: string; langua
     <div className="page">
       <h1 className="page-title">{t.nav_dashboard}</h1>
       <div className="stats-row">
-        <StatCard icon="" label={t.classes} value={data.summary.totalClasses} color="blue" />
-        <StatCard icon="‍" label={t.students} value={data.summary.totalStudents} color="purple" />
-        <StatCard icon="" label={t.averageScore} value={`${data.summary.averageScore}%`} color="green" />
-        <StatCard icon="" label={t.documents} value={data.summary.generatedDocuments} color="orange" />
+        <StatCard icon="school" label={t.classes} value={data.summary.totalClasses} color="blue" />
+        <StatCard icon="graduation" label={t.students} value={data.summary.totalStudents} color="purple" />
+        <StatCard icon="chart" label={t.averageScore} value={`${data.summary.averageScore}%`} color="green" />
+        <StatCard icon="files" label={t.documents} value={data.summary.generatedDocuments} color="orange" />
       </div>
 
       <div className="main-grid">
@@ -87,10 +87,10 @@ export function TeacherDashboard({ token, language, t }: { token: string; langua
   );
 }
 
-function StatCard({ icon, label, value, color }: { icon: string; label: string; value: string | number; color: string }) {
+function StatCard({ icon, label, value, color }: { icon: IconName; label: string; value: string | number; color: string }) {
   return (
     <div className={`stat-card stat-${color}`}>
-      <span className="stat-icon">{icon}</span>
+      <span className="stat-icon"><Icon name={icon} size={22} /></span>
       <div>
         <p className="stat-label">{label}</p>
         <p className="stat-value">{value}</p>

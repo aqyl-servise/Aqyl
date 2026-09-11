@@ -31,7 +31,7 @@ export default function Error({
       }}
     >
       <h2 style={{ fontSize: 22, fontWeight: 700 }}>Что-то пошло не так</h2>
-      <p style={{ color: "#6b7280", maxWidth: 420 }}>
+      <p style={{ color: "var(--muted)", maxWidth: 420 }}>
         Произошла непредвиденная ошибка. Попробуйте обновить страницу или повторить действие.
       </p>
       <button

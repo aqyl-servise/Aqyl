@@ -250,14 +250,14 @@ export function UsersPanel({ token, language, t, currentUserId }: {
             {confirmModal.kind === "deactivate" ? (
               <>
                 <h3 style={{ marginBottom: 12, color: "#92400e" }}>⏸ {t.users_deactivate_title}</h3>
-                <p style={{ color: "#64748b", marginBottom: 20, lineHeight: 1.5 }}>
+                <p style={{ color: "var(--muted)", marginBottom: 20, lineHeight: 1.5 }}>
                   <strong>{confirmModal.user.fullName}</strong>
                 </p>
               </>
             ) : (
               <>
                 <h3 style={{ marginBottom: 12, color: "#991b1b" }}><Icon name="trash" size={16} /> {t.users_delete_title}</h3>
-                <p style={{ color: "#64748b", marginBottom: 20, lineHeight: 1.5 }}>
+                <p style={{ color: "var(--muted)", marginBottom: 20, lineHeight: 1.5 }}>
                   {t.users_delete_body}<br />
                   <strong>{confirmModal.user.fullName}</strong>
                 </p>
@@ -515,7 +515,7 @@ function PasswordModal({ user, token, t, onClose, onSuccess }: {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" style={{ maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
         <h3 style={{ marginBottom: 4 }}><Icon name="key" size={16} /> {t.users_password_title}</h3>
-        <p style={{ color: "#64748b", fontSize: 13, marginBottom: 20 }}>{user.fullName}</p>
+        <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: 20 }}>{user.fullName}</p>
         <form onSubmit={handleSubmit} className="form-stack">
           <div className="field">
             <label className="field-label">{t.users_new_password}</label>

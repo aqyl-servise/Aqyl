@@ -53,11 +53,11 @@ function diffBadge(diff?: string) {
 
 function statusBadge(status: string) {
   const map: Record<string, { label: string; color: string }> = {
-    draft: { label: "Черновик", color: "#6b7280" },
+    draft: { label: "Черновик", color: "var(--muted)" },
     published: { label: "Опубликовано", color: "#10b981" },
     closed: { label: "Закрыто", color: "#ef4444" },
   };
-  const d = map[status] ?? { label: status, color: "#6b7280" };
+  const d = map[status] ?? { label: status, color: "var(--muted)" };
   return <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 12, background: d.color + "20", color: d.color, fontWeight: 600 }}>{d.label}</span>;
 }
 
@@ -67,7 +67,7 @@ function subStatusBadge(status: string) {
     submitted: { label: "Отправлено", color: "#8B7FE8" },
     graded: { label: "Оценено", color: "#10b981" },
   };
-  const d = map[status] ?? { label: status, color: "#6b7280" };
+  const d = map[status] ?? { label: status, color: "var(--muted)" };
   return <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 12, background: d.color + "20", color: d.color, fontWeight: 600 }}>{d.label}</span>;
 }
 

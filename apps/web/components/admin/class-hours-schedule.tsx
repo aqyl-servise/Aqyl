@@ -236,7 +236,7 @@ export function ClassHoursSchedulePanel({ token, language, isAdmin }: Props) {
               background: "var(--card-bg, #fff)",
             }}>
               {g[day].length === 0 && (
-                <p style={{ fontSize: 11, color: "var(--muted, #9ca3af)", textAlign: "center", margin: "12px 0" }}>—</p>
+                <p style={{ fontSize: 11, color: "var(--muted)", textAlign: "center", margin: "12px 0" }}>—</p>
               )}
               {g[day].map((h) => (
                 <ClassHourCard

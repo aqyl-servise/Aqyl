@@ -174,7 +174,7 @@ export function StudentsPanel({ token, language, t, userRole }: {
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title"><Icon name="user" size={16} /> ‍<Icon name="graduation" size={16} /> {t.nav_students}</h1>
+        <h1 className="page-title"><Icon name="graduation" size={16} /> {t.nav_students}</h1>
         <button className="btn btn-primary btn-sm" onClick={() => { setAdding(true); setFormError(null); }}>
           + {t.addStudentTitle}
         </button>

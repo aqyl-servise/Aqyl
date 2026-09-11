@@ -88,7 +88,7 @@ export function TeacherGiftedSection({ token, userId, language, t, user }: {
           className={`btn ${active === "my-students" ? "btn-primary" : "btn-outline"}`}
           onClick={() => setActive(p => p === "my-students" ? null : "my-students")}
         >
-          <Icon name="user" size={16} /> ‍<Icon name="graduation" size={16} /> Мои ученики
+          <Icon name="graduation" size={16} /> Мои ученики
         </button>
       </div>
 

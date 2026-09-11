@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { api, type GenerationCost } from "../../lib/api";
 import { Language, translations } from "../../lib/translations";
-import { Icon } from "../ui/icon";
+import { Icon, type IconName } from "../ui/icon";
 
 type Summary = { totalCount: number; totalCostKzt: number; activeTeachers: number; period: string };
 type TeacherRow = { userId: string; teacherName: string; subject: string; todayCount: number; weekCount: number; monthCount: number; costKzt: number };
@@ -69,26 +69,26 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
       <h2 style={{ margin: "0 0 20px", fontSize: 22 }}><Icon name="ai" size={16} /> {t.nav_ai_usage}</h2>
 
       {/* Token package status card */}
-      <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "16px 20px", marginBottom: 24 }}>
+      <div style={{ background: "var(--panel-alt)", border: "1px solid var(--border)", borderRadius: 10, padding: "16px 20px", marginBottom: 24 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
           <span style={{ fontWeight: 600, fontSize: 15 }}><Icon name="target" size={16} /> Токены школы</span>
           {loading ? (
-            <span style={{ color: "#94a3b8" }}>Загрузка...</span>
+            <span style={{ color: "var(--muted)" }}>Загрузка...</span>
           ) : isPilot ? (
-            <span style={{ color: "#16a34a", fontWeight: 600 }}>Неограниченно (пилот)</span>
+            <span style={{ color: "var(--success)", fontWeight: 600 }}>Неограниченно (пилот)</span>
           ) : tokenStatus ? (
             <span style={{ color: tokenColor, fontWeight: 600 }}>{tokenStatus.usedPercent}% использовано</span>
           ) : null}
         </div>
         {!loading && tokenStatus && !isPilot && (
           <>
-            <div style={{ background: "#e2e8f0", borderRadius: 6, height: 8, overflow: "hidden", marginBottom: 6 }}>
+            <div style={{ background: "var(--border)", borderRadius: 6, height: 8, overflow: "hidden", marginBottom: 6 }}>
               <div style={{ width: `${Math.min(tokenStatus.usedPercent, 100)}%`, height: "100%", background: tokenColor, borderRadius: 6, transition: "width 0.3s" }} />
             </div>
-            <div style={{ color: "#64748b", fontSize: 13 }}>
+            <div style={{ color: "var(--muted)", fontSize: 13 }}>
               Использовано {(tokenStatus.total - tokenStatus.remaining).toLocaleString()} / {tokenStatus.total.toLocaleString()} токенов
               &nbsp;·&nbsp;
-              {!tokenStatus.hasTokens ? <span style={{ color: "#dc2626", fontWeight: 600 }}>Токены исчерпаны!</span> : `Осталось ${tokenStatus.remaining.toLocaleString()}`}
+              {!tokenStatus.hasTokens ? <span style={{ color: "var(--warn)", fontWeight: 600 }}>Токены исчерпаны!</span> : `Осталось ${tokenStatus.remaining.toLocaleString()}`}
             </div>
           </>
         )}
@@ -112,17 +112,17 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
           114px нечитаема, здесь ряд сам складывается по ширине экрана. */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 16, marginBottom: 28 }}>
         <SummaryCard
-          icon=""
+          icon="ai"
           label={t.ai_requests_today}
           value={loading ? "..." : String(summary?.totalCount ?? 0)}
         />
         <SummaryCard
-          icon=""
+          icon="wallet"
           label={t.ai_cost_month}
           value={loading ? "..." : `${(summary?.totalCostKzt ?? 0).toFixed(2)} ₸`}
         />
         <SummaryCard
-          icon=""
+          icon="bolt"
           label={t.ai_most_active}
           value={loading ? "..." : (mostActive ? `${mostActive.teacherName} (${mostActive.count})` : "—")}
         />
@@ -132,9 +132,9 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
       <div style={{ background: "var(--bg-card, #fff)", borderRadius: 10, padding: 20, marginBottom: 24, boxShadow: "0 1px 4px rgba(0,0,0,0.07)" }}>
         <h3 style={{ margin: "0 0 14px", fontSize: 16 }}><Icon name="clipboard" size={16} /> {t.nav_teachers}</h3>
         {loading ? (
-          <p style={{ color: "var(--text-secondary, #888)" }}>{t.loading}</p>
+          <p style={{ color: "var(--text-secondary)" }}>{t.loading}</p>
         ) : teachers.length === 0 ? (
-          <p style={{ color: "var(--text-secondary, #888)" }}>{t.ai_no_data}</p>
+          <p style={{ color: "var(--text-secondary)" }}>{t.ai_no_data}</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
@@ -152,7 +152,7 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
                 {teachers.map((row) => (
                   <tr key={row.userId} style={{ borderBottom: "1px solid var(--border, #eee)" }}>
                     <td style={{ padding: "8px 12px", fontWeight: 500 }}>{row.teacherName}</td>
-                    <td style={{ padding: "8px 12px", color: "var(--text-secondary, #666)" }}>{row.subject}</td>
+                    <td style={{ padding: "8px 12px", color: "var(--text-secondary)" }}>{row.subject}</td>
                     <td style={{ padding: "8px 12px", textAlign: "right" }}>
                       <UsageBadge count={row.todayCount} limit={20} />
                     </td>
@@ -185,12 +185,12 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 16 }}>
-            <SummaryCard icon="₸" label="Всего за период" value={`${Math.round(genCost.totalKzt)} ₸`} />
-            <SummaryCard icon="◆" label="Уроков" value={String(genCost.lessons)} />
-            <SummaryCard icon="≈" label="На один урок" value={`${genCost.avgPerLessonKzt.toFixed(1)} ₸`} />
+            <SummaryCard icon="wallet" label="Всего за период" value={`${Math.round(genCost.totalKzt)} ₸`} />
+            <SummaryCard icon="book" label="Уроков" value={String(genCost.lessons)} />
+            <SummaryCard icon="chart" label="На один урок" value={`${genCost.avgPerLessonKzt.toFixed(1)} ₸`} />
           </div>
           {genCost.byOperation.length === 0 ? (
-            <p style={{ color: "var(--text-secondary, #888)" }}>{t.ai_no_data}</p>
+            <p style={{ color: "var(--text-secondary)" }}>{t.ai_no_data}</p>
           ) : (
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
@@ -208,13 +208,13 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
                   {genCost.byOperation.map((r) => (
                     <tr key={`${r.operation}-${r.model}`} style={{ borderBottom: "1px solid var(--border, #f5f5f5)" }}>
                       <td style={{ padding: "8px 12px" }}>{r.operation}</td>
-                      <td style={{ padding: "8px 12px", color: "var(--text-secondary, #888)" }}>
+                      <td style={{ padding: "8px 12px", color: "var(--text-secondary)" }}>
                         {r.model.replace(/^claude-/, "").replace(/-\d{8}$/, "")}
                       </td>
                       <td style={{ padding: "8px 12px", textAlign: "right" }}>{r.count}</td>
                       <td style={{ padding: "8px 12px", textAlign: "right" }}>{r.avgOutTokens}</td>
                       <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600 }}>{Math.round(r.kzt)} ₸</td>
-                      <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--text-secondary, #888)" }}>
+                      <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--text-secondary)" }}>
                         {genCost.totalKzt > 0 ? Math.round((100 * r.kzt) / genCost.totalKzt) : 0}%
                       </td>
                     </tr>
@@ -230,7 +230,7 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
       <div style={{ background: "var(--bg-card, #fff)", borderRadius: 10, padding: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.07)", marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 16px", fontSize: 16 }}><Icon name="chart-line" size={16} /> {t.ai_chart_title}</h3>
         {chart.length === 0 ? (
-          <p style={{ color: "var(--text-secondary, #888)" }}>{t.ai_no_data}</p>
+          <p style={{ color: "var(--text-secondary)" }}>{t.ai_no_data}</p>
         ) : (
           <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 120, overflowX: "auto", padding: "0 4px" }}>
             {chart.map((pt) => {
@@ -244,7 +244,7 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
                     transition: "height 0.3s",
                   }} />
                   {chart.length <= 15 && (
-                    <span style={{ fontSize: 9, color: "var(--text-secondary, #999)", marginTop: 2 }}>{dayLabel}</span>
+                    <span style={{ fontSize: 9, color: "var(--text-secondary)", marginTop: 2 }}>{dayLabel}</span>
                   )}
                 </div>
               );
@@ -269,30 +269,30 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
           )}
         </div>
         {loading || !cacheStats ? (
-          <p style={{ color: "var(--text-secondary, #888)" }}>{t.loading ?? "..."}</p>
+          <p style={{ color: "var(--text-secondary)" }}>{t.loading ?? "..."}</p>
         ) : (
           <>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
               <div style={{ textAlign: "center", padding: "12px 8px", background: "var(--bg, #f9f9f9)", borderRadius: 8 }}>
                 <div style={{ fontSize: 22, fontWeight: 700 }}>{cacheStats.totalEntries}</div>
-                <div style={{ fontSize: 12, color: "var(--text-secondary, #888)", marginTop: 4 }}>{t.kmzh_cache_entries}</div>
+                <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>{t.kmzh_cache_entries}</div>
               </div>
               <div style={{ textAlign: "center", padding: "12px 8px", background: "var(--bg, #f9f9f9)", borderRadius: 8 }}>
                 <div style={{ fontSize: 22, fontWeight: 700, color: cacheStats.hitRate >= 50 ? "#2e7d32" : "#888" }}>
                   {cacheStats.hitRate}%
                 </div>
-                <div style={{ fontSize: 12, color: "var(--text-secondary, #888)", marginTop: 4 }}>{t.kmzh_hit_rate}</div>
+                <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>{t.kmzh_hit_rate}</div>
               </div>
               <div style={{ textAlign: "center", padding: "12px 8px", background: "var(--bg, #f9f9f9)", borderRadius: 8 }}>
                 <div style={{ fontSize: 22, fontWeight: 700 }}>~{(cacheStats.tokensSaved / 1000).toFixed(0)}K</div>
-                <div style={{ fontSize: 12, color: "var(--text-secondary, #888)", marginTop: 4 }}>{t.kmzh_tokens_saved}</div>
+                <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>{t.kmzh_tokens_saved}</div>
               </div>
             </div>
             {cacheStats.mostUsed.length > 0 && (
               <div style={{ fontSize: 13 }}>
                 {cacheStats.mostUsed.map((entry, i) => (
                   <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--border, #eee)" }}>
-                    <span style={{ color: "var(--text-secondary, #666)" }}>
+                    <span style={{ color: "var(--text-secondary)" }}>
                       {entry.subject} · {entry.classNumber} кл. · {entry.topic.slice(0, 40)}{entry.topic.length > 40 ? "…" : ""}
                     </span>
                     <span style={{ fontWeight: 600, marginLeft: 8 }}>×{entry.useCount}</span>
@@ -304,24 +304,24 @@ export function AiUsagePanelAdmin({ token, language, role }: { token: string; la
         )}
       </div>
       {/* Isolation status indicator */}
-      <div style={{ marginTop: 28, padding: "10px 16px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ color: "#16a34a", fontSize: 16 }}><Icon name="lock" size={16} /> </span>
-        <span style={{ fontSize: 13, color: "#15803d", fontWeight: 500 }}>
-          Изоляция школьных данных: Активна <Icon name="check" size={15} /> 
+      <div style={{ marginTop: 28, padding: "10px 16px", background: "var(--success-light)", border: "1px solid var(--success)", borderRadius: 8, display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ color: "var(--success)", display: "flex" }}><Icon name="lock" size={16} /></span>
+        <span style={{ fontSize: 13, color: "var(--success)", fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
+          Изоляция школьных данных: активна <Icon name="check" size={15} />
         </span>
       </div>
     </div>
   );
 }
 
-function SummaryCard({ icon, label, value }: { icon: string; label: string; value: string }) {
+function SummaryCard({ icon, label, value }: { icon: IconName; label: string; value: string }) {
   return (
     <div style={{
       background: "var(--bg-card, #fff)", borderRadius: 10, padding: "18px 20px",
       boxShadow: "0 1px 4px rgba(0,0,0,0.07)",
     }}>
-      <div style={{ fontSize: 24, marginBottom: 8 }}>{icon}</div>
-      <div style={{ fontSize: 12, color: "var(--text-secondary, #888)", marginBottom: 4 }}>{label}</div>
+      <div style={{ marginBottom: 8, color: "var(--accent)" }}><Icon name={icon} size={22} /></div>
+      <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4 }}>{label}</div>
       <div style={{ fontSize: 20, fontWeight: 700 }}>{value}</div>
     </div>
   );

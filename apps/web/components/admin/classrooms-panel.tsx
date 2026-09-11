@@ -157,7 +157,7 @@ export function ClassroomsPanel({ token, language, t, userRole }: {
                       </button>
                       <button className="btn btn-ghost btn-sm" title={tFull.cr_subject_teachers ?? "Учителя-предметники"}
                         onClick={() => setSubjectClassroom(c)}>
-                        <Icon name="user" size={16} /> ‍<Icon name="school" size={16} /> 
+                        <Icon name="school" size={16} /> 
                       </button>
                       <button className="btn btn-ghost btn-sm" title="Список класса"
                         onClick={() => setClassListClassroom(c)}>

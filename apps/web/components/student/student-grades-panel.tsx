@@ -51,7 +51,7 @@ export function StudentGradesPanel({ token, t }: { token: string; t: Record<stri
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
           {subjectAverages.map((s) => (
             <div key={s.subject} className="card" style={{ minWidth: 140, textAlign: "center", padding: "12px 16px" }}>
-              <div style={{ fontSize: 12, color: "var(--text-secondary, #666)", marginBottom: 4 }}>{s.subject}</div>
+              <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4 }}>{s.subject}</div>
               <div style={{ fontSize: 22, fontWeight: 700, color: "var(--primary)" }}>{s.avg}</div>
               <div className="muted" style={{ fontSize: 11 }}>{t.avg_score} / {s.maxAvg}</div>
               <div className="muted" style={{ fontSize: 10 }}>{s.count} заданий</div>

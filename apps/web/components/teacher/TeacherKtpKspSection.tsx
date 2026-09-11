@@ -9,7 +9,7 @@ import { Icon } from "../ui/icon";
 type KtpReviewRow = { fileId: string; fileName: string; section: string | null; status: string; comment: string | null; reviewedAt: string | null };
 
 const STATUS_STYLE: Record<string, { bg: string; color: string; label: (t: Record<string, string>) => string }> = {
-  unchecked: { bg: "#f0f0f0", color: "#666", label: (t) => t.ktp_status_unchecked ?? "Не проверено" },
+  unchecked: { bg: "var(--panel-alt)", color: "var(--muted)", label: (t) => t.ktp_status_unchecked ?? "Не проверено" },
   reviewing:  { bg: "var(--accent-light)", color: "var(--accent)", label: (t) => t.ktp_status_reviewing ?? "На проверке" },
   approved:   { bg: "#dcfce7", color: "#15803d", label: (t) => t.ktp_status_approved ?? "Одобрено" },
   revision:   { bg: "#fee2e2", color: "#b91c1c", label: (t) => t.ktp_status_revision ?? "Требует доработки" },
