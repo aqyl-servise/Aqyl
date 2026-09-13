@@ -237,6 +237,45 @@ export class SubscriptionService {
   }
 
   /**
+   * Возврат комплекта при сбое генерации.
+   *
+   * Списание происходит до запуска генерации, и до 14.09.2026 сбой на нашей
+   * стороне забирал попытку навсегда. За пять дней с недействительным ключом
+   * так сгорело десять бесплатных уроков у девяти учителей: семеро из них не
+   * увидели ни одного результата вообще. Платит учитель за результат, а не за
+   * попытку обратиться к серверу.
+   *
+   * Возврат идемпотентен: флаги уже сняты — выходим, не начисляя лишнего.
+   * Платный баланс возвращается на счёт, срок действия при этом не трогаем:
+   * возврат восстанавливает положение до списания, а не продлевает пакет.
+   */
+  async refundLessonStart(teacherId: string, lessonId: string): Promise<ChargeSource> {
+    const lesson = await this.lessonRepo.findOne({ where: { id: lessonId, userId: teacherId } });
+    if (!lesson) return "none";
+
+    if (lesson.trialCounted) {
+      await this.lessonRepo.update({ id: lessonId, userId: teacherId }, { trialCounted: false });
+      return "trial";
+    }
+
+    if (lesson.paidCounted) {
+      // Сначала снимаем флаг и только потом возвращаем урок на баланс: если
+      // второй запрос упадёт, учитель недосчитается урока, но повторный
+      // возврат не начислит его дважды. Обратный порядок допускал накрутку.
+      await this.lessonRepo.update({ id: lessonId, userId: teacherId }, { paidCounted: false });
+      await this.teacherRepo
+        .createQueryBuilder()
+        .update(Teacher)
+        .set({ paidLessonsBalance: () => `"paidLessonsBalance" + 1` })
+        .where("id = :id", { id: teacherId })
+        .execute();
+      return "paid";
+    }
+
+    return "none";
+  }
+
+  /**
    * Начисление пакета — реализация в BillingService (там же вебхук Kaspi);
    * здесь делегат для админки и тестов, чтобы модульная зависимость осталась
    * односторонней (Subscription → Billing).

@@ -316,6 +316,16 @@ export class LessonPlansService {
     void this.runGeneration(id).catch(async (err) => {
       this.logger.error(`Lesson ${id} generation failed: ${(err as Error).message}`);
       await this.lessonRepo.update(id, { status: 'error', generationError: (err as Error).message?.slice(0, 500) });
+      // Сбой на нашей стороне не должен забирать комплект: списали до старта,
+      // результата нет — возвращаем. Возврат отдельным try: если и он упадёт,
+      // урок обязан остаться со статусом error, иначе учитель увидит вечное
+      // «генерируется».
+      try {
+        const src = await this.subscription.refundLessonStart(ctx.userId, id);
+        if (src !== 'none') this.logger.log(`Урок ${id}: комплект возвращён (${src})`);
+      } catch (refundErr) {
+        this.logger.error(`Урок ${id}: возврат комплекта не удался: ${(refundErr as Error).message}`);
+      }
     });
     return { status: 'generating' };
   }

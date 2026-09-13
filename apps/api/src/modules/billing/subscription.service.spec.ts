@@ -32,11 +32,18 @@ function makeService(w: World): SubscriptionService {
         set: (s: any) => ((qb._set = s), qb),
         where: (_c: string, _p: any) => qb,
         execute: async () => {
-          // Начисление: expiresAt в set — безусловный UPDATE.
+          // Начисление пакета: expiresAt в set — безусловный UPDATE.
           if (qb._set?.balanceExpiresAt) {
             const add = Number(String(qb._set.paidLessonsBalance()).match(/\+ (\d+)/)?.[1] ?? 0);
             w.teacher.paidLessonsBalance += add;
             w.teacher.balanceExpiresAt = qb._set.balanceExpiresAt;
+            return { affected: 1 };
+          }
+          // Возврат при сбое генерации: срок не трогаем, условий на баланс
+          // нет — отличаем по знаку выражения, как и делает настоящий UPDATE.
+          const plus = String(qb._set?.paidLessonsBalance?.() ?? '').match(/\+ (\d+)/);
+          if (plus) {
+            w.teacher.paidLessonsBalance += Number(plus[1]);
             return { affected: 1 };
           }
           // Списание: контракт WHERE — баланс > 0 и срок живой.
@@ -330,4 +337,62 @@ test('подписка не требует подтверждения номер
   lesson(w, 'l1');
   const svc = makeService(w);
   assert.equal(await svc.chargeLessonStart(T, 'l1'), 'none');
+});
+
+// ── возврат комплекта при сбое генерации ──────────────────────────────────
+// Повод: 9–11.09.2026 ключ модели был недействителен, и десять бесплатных
+// уроков сгорели на попытках, не давших результата.
+test('сбой генерации возвращает бесплатный урок', async () => {
+  const w = world();
+  lesson(w, 'l1');
+  const svc = makeService(w);
+  assert.equal(await svc.chargeLessonStart(T, 'l1'), 'trial');
+  assert.equal(w.lessons.get('l1')!.trialCounted, true);
+
+  assert.equal(await svc.refundLessonStart(T, 'l1'), 'trial');
+  assert.equal(w.lessons.get('l1')!.trialCounted, false, 'урок возвращён');
+});
+
+test('после возврата бесплатный урок можно потратить снова', async () => {
+  const w = world();
+  lesson(w, 'l1');
+  const svc = makeService(w);
+  await svc.chargeLessonStart(T, 'l1');
+  await svc.refundLessonStart(T, 'l1');
+  assert.equal(await svc.chargeLessonStart(T, 'l1'), 'trial', 'повтор списывает заново');
+  assert.equal(w.lessons.get('l1')!.trialCounted, true);
+});
+
+test('сбой генерации возвращает урок на платный баланс', async () => {
+  // Триал исчерпан — списание уходит в платный баланс.
+  const w = world({ paidLessonsBalance: 3, balanceExpiresAt: future() });
+  for (let i = 0; i < 5; i++) lesson(w, `old${i}`, { trialCounted: true });
+  lesson(w, 'l1');
+  const svc = makeService(w);
+  assert.equal(await svc.chargeLessonStart(T, 'l1'), 'paid');
+  assert.equal(w.teacher.paidLessonsBalance, 2);
+
+  assert.equal(await svc.refundLessonStart(T, 'l1'), 'paid');
+  assert.equal(w.teacher.paidLessonsBalance, 3, 'урок вернулся на баланс');
+  assert.equal(w.lessons.get('l1')!.paidCounted, false);
+});
+
+test('повторный возврат ничего не начисляет', async () => {
+  // Гарантия против накрутки баланса повторными вызовами.
+  const w = world({ paidLessonsBalance: 3, balanceExpiresAt: future() });
+  for (let i = 0; i < 5; i++) lesson(w, `old${i}`, { trialCounted: true });
+  lesson(w, 'l1');
+  const svc = makeService(w);
+  await svc.chargeLessonStart(T, 'l1');
+  await svc.refundLessonStart(T, 'l1');
+  assert.equal(await svc.refundLessonStart(T, 'l1'), 'none');
+  assert.equal(w.teacher.paidLessonsBalance, 3, 'баланс не раздут');
+});
+
+test('возврат по уроку, за который не списывали, безвреден', async () => {
+  const w = world();
+  lesson(w, 'l1');
+  const svc = makeService(w);
+  assert.equal(await svc.refundLessonStart(T, 'l1'), 'none');
+  assert.equal(w.teacher.paidLessonsBalance, 0);
 });
