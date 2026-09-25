@@ -69,6 +69,8 @@ export type RegisterB2CInput = {
   // кнопки на фронте недостаточно, её обходят прямым запросом к API.
   consentPersonalData: boolean;
   consentCrossBorder: boolean;
+  /** Источник первого касания, см. lib/attribution.ts. */
+  attribution?: Record<string, string>;
 };
 export type B2CProfile = AuthUser & {
   registrationSource: string;

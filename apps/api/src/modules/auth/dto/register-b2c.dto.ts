@@ -1,4 +1,4 @@
-import { Equals, IsBoolean, IsEmail, IsOptional, IsString, MinLength } from "class-validator";
+import { Equals, IsBoolean, IsEmail, IsOptional, IsString, MinLength, IsObject } from "class-validator";
 
 export class RegisterB2CDto {
   @IsEmail()
@@ -38,4 +38,16 @@ export class RegisterB2CDto {
   @IsBoolean()
   @Equals(true, { message: "CONSENT_CROSS_BORDER_REQUIRED" })
   consentCrossBorder!: boolean;
+
+  /**
+   * Источник первого касания (utm-метки, внешний реферер, страница входа).
+   *
+   * Принимается в свободной форме и чистится в сервисе, а не строгим вложенным
+   * DTO: при глобальном forbidNonWhitelisted любой неожиданный ключ дал бы 400,
+   * и сбой учёта источника сорвал бы регистрацию. Учёт — вспомогательный,
+   * регистрация — основная задача.
+   */
+  @IsOptional()
+  @IsObject()
+  attribution?: Record<string, unknown>;
 }

@@ -48,6 +48,13 @@ export class Teacher {
   @Column({ default: "b2g" })
   registrationSource!: string; // 'b2g' | 'b2c'
 
+  /**
+   * Источник первого касания при регистрации: utm-метки, внешний реферер,
+   * страница входа, платформа (web/android/ios). См. apps/web/lib/attribution.ts.
+   */
+  @Column({ type: "jsonb", nullable: true })
+  acquisition?: Record<string, string> | null;
+
   @Column({ default: "active" })
   subscriptionStatus!: string; // 'trial' | 'active' | 'expired' | 'none'
 

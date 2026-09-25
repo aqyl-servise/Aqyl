@@ -9,6 +9,7 @@ import { ThemeToggle } from "../../components/theme-toggle";
 import { LogoIcon } from "../../components/public-header";
 import { TRIAL_LABEL } from "../../lib/product";
 import { suggestEmail } from "../../lib/email-hint";
+import { readAttribution } from "../../lib/attribution";
 
 const RESEND_SECONDS = 600; // 10 minutes
 
@@ -164,6 +165,7 @@ export default function RegisterPage() {
         region: region.trim() || undefined,
         consentPersonalData,
         consentCrossBorder,
+        attribution: readAttribution(),
       });
       await setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken });
       router.replace("/dashboard/b2c");

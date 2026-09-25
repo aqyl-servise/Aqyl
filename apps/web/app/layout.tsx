@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Manrope, Fraunces } from "next/font/google";
 import { Toaster } from "sonner";
+import { AttributionCapture } from "../components/attribution-capture";
 import "./globals.css";
 import "./globals-design.css";
 
@@ -24,10 +25,40 @@ const fraunces = Fraunces({
   display: "swap",
 });
 
+/**
+ * Метаданные по умолчанию для всех страниц.
+ *
+ * Превью (openGraph/twitter) критично для роста: основной трафик приходит по
+ * ссылкам из Threads, Instagram и учительских чатов. Без этих тегов ссылка в
+ * ленте и в мессенджере выглядела голой строкой — без картинки и заголовка.
+ *
+ * Канонический адрес (alternates.canonical) здесь намеренно НЕ задаётся: в
+ * общем шаблоне он унаследовался бы каждой странице, и все они объявили бы
+ * себя копией главной. Канонические адреса ставятся постранично.
+ */
 export const metadata: Metadata = {
-  title: "Aqyl — планы уроков",
+  metadataBase: new URL("https://aqyl-service.kz"),
+  title: "Aqyl — план урока за 30 секунд по приказу № 130",
   description:
-    "Планы уроков, задания и раздаточные материалы по стандартам Министерства просвещения РК.",
+    "Краткосрочный план урока (КСП, ҚМЖ) по форме приказа № 130 за 30 секунд: этапы, " +
+    "критерии и дескрипторы, раздатки трёх уровней и презентация. На русском и казахском. " +
+    "5 уроков бесплатно.",
+  applicationName: "Aqyl",
+  openGraph: {
+    type: "website",
+    siteName: "Aqyl",
+    locale: "ru_RU",
+    title: "Aqyl — план урока за 30 секунд",
+    description:
+      "По форме приказа № 130: этапы, критерии, раздатки трёх уровней и презентация — в Word. 5 уроков бесплатно.",
+    images: [{ url: "/og-ru.png", width: 1200, height: 630, alt: "Aqyl — план урока за 30 секунд" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Aqyl — план урока за 30 секунд",
+    description: "По форме приказа № 130. 5 уроков бесплатно.",
+    images: ["/og-ru.png"],
+  },
 };
 
 const ANTI_FOUC = `(function(){try{var t=localStorage.getItem('aqyl-theme')||'system';var dark=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme:dark)').matches);document.documentElement.setAttribute('data-theme',dark?'dark':'light');}catch(e){}})();`;
@@ -52,6 +83,7 @@ export default function RootLayout({
       </head>
       <body>
         {children}
+        <AttributionCapture />
         <Toaster position="top-right" richColors />
       </body>
     </html>

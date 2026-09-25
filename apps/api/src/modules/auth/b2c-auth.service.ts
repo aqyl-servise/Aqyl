@@ -85,6 +85,7 @@ export class B2cAuthService {
         subject: dto.subject?.trim() || undefined,
         isEmailVerified: true,
         registrationSource: "b2c",
+        acquisition: sanitizeAttribution(dto.attribution),
         subscriptionStatus: grantTrial ? "trial" : "expired",
         trialEndsAt: grantTrial ? new Date(Date.now() + TRIAL_MS) : null,
       }),
@@ -188,4 +189,19 @@ export class B2cAuthService {
       language: teacher.language ?? null,
     };
   }
+}
+
+/**
+ * Оставляет только известные ключи, приводит к строке и обрезает. Клиент
+ * присылает то, что сохранил на устройстве, — верить форме нельзя.
+ */
+const ATTR_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "ref", "referrer", "landing", "app", "at"];
+function sanitizeAttribution(raw?: Record<string, unknown>): Record<string, string> | null {
+  if (!raw || typeof raw !== "object") return null;
+  const out: Record<string, string> = {};
+  for (const k of ATTR_KEYS) {
+    const v = raw[k];
+    if (typeof v === "string" && v.trim()) out[k] = v.trim().slice(0, 200);
+  }
+  return Object.keys(out).length ? out : null;
 }
