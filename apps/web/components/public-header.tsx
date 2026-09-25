@@ -14,7 +14,25 @@ export const LogoIcon = ({ size = 28 }: { size?: number }) => (
   </svg>
 );
 
-export function PublicHeader() {
+export interface PublicHeaderLabels {
+  features: string; faq: string; login: string; start: string; startTail: string;
+  /** Подпись переключателя языка и адрес другой языковой версии витрины. */
+  switchLabel: string; switchHref: string;
+  /** Адрес главной на текущем языке — туда ведут якоря разделов. */
+  home: string;
+}
+
+const DEFAULT_LABELS: PublicHeaderLabels = {
+  features: "Возможности", faq: "Вопросы", login: "Войти", start: "Начать", startTail: " бесплатно",
+  switchLabel: "Қаз", switchHref: "/kz", home: "/",
+};
+
+/**
+ * Шапка публичных страниц. Без labels — русская, как на документах и входе.
+ * С labels — витрина на нужном языке и переключатель на другую версию.
+ */
+export function PublicHeader({ labels }: { labels?: PublicHeaderLabels } = {}) {
+  const l = labels ?? DEFAULT_LABELS;
   return (
     <header style={{
       height: '52px',
@@ -25,23 +43,28 @@ export function PublicHeader() {
       position: 'sticky', top: 0, zIndex: 100,
     }}>
       <div className="pub-container" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '9px' }}>
+        <Link href={l.home} style={{ display: 'inline-flex', alignItems: 'center', gap: '9px' }}>
           <LogoIcon size={26} />
           <span style={{ fontFamily: 'var(--pub-font-display)', fontWeight: 600, fontSize: '1.1875rem', letterSpacing: '0.02em', color: 'var(--pub-text)' }}>aqy<span style={{ color: 'var(--pub-amber)' }}>l</span></span>
         </Link>
 
         <nav className="pub-nav" style={{ display: 'flex', gap: '2px', marginLeft: '12px', flex: 1 }}>
-          <Link href="/#features" className="pub-btn pub-btn-ghost pub-btn-sm">Функции</Link>
-          <Link href="/#contacts" className="pub-btn pub-btn-ghost pub-btn-sm">Контакты</Link>
+          <Link href={`${l.home}#features`} className="pub-btn pub-btn-ghost pub-btn-sm">{l.features}</Link>
+          <Link href={`${l.home}#faq`} className="pub-btn pub-btn-ghost pub-btn-sm">{l.faq}</Link>
         </nav>
 
         {/* minWidth: 0 — без него флекс-элемент не даёт себя ужать, и группа
             выталкивала страницу за край экрана на телефоне. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto', minWidth: 0 }}>
+          {/* Переключатель языка: казахскоязычных школ большинство, а витрина
+              до этого существовала только на русском. */}
+          <Link href={l.switchHref} className="pub-btn pub-btn-ghost pub-btn-sm" hrefLang={l.switchHref === '/kz' ? 'kk' : 'ru'}>
+            {l.switchLabel}
+          </Link>
           <ThemeToggle />
-          <Link href="/login" className="pub-btn pub-btn-outline pub-btn-sm">Войти</Link>
+          <Link href="/login" className="pub-btn pub-btn-outline pub-btn-sm">{l.login}</Link>
           <Link href="/register" className="pub-btn pub-btn-primary pub-btn-sm">
-            Начать<span className="pub-word-optional">&nbsp;бесплатно</span>
+            {l.start}<span className="pub-word-optional">{l.startTail}</span>
           </Link>
         </div>
       </div>
