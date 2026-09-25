@@ -22,13 +22,13 @@ export const metadata: Metadata = {
     url: "/kz",
     title: "Aqyl — сабақ жоспары 30 секундта",
     description: "№ 130 бұйрық нысаны бойынша: кезеңдер, критерийлер, үш деңгейлі таратпа және презентация — Word-та. 5 сабақ тегін.",
-    images: [{ url: "/og-kz.png", width: 1200, height: 630, alt: "Aqyl — сабақ жоспары 30 секундта" }],
+    images: [{ url: "/og-kz.png?v=2", width: 1200, height: 630, alt: "Aqyl — сабақ жоспары 30 секундта" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Aqyl — сабақ жоспары 30 секундта",
     description: "№ 130 бұйрық нысаны бойынша. 5 сабақ тегін.",
-    images: ["/og-kz.png"],
+    images: ["/og-kz.png?v=2"],
   },
 };
 
