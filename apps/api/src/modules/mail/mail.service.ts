@@ -330,6 +330,34 @@ export class MailService {
    * списания не будет, поэтому смысл обратный: без действия учителя доступ
    * закроется. Формулировка это прямо проговаривает.
    */
+  /**
+   * Письмо-подсказка (активация, конец бесплатных уроков). Заголовки
+   * List-Unsubscribe обязательны для массовой рассылки у Gmail: без них письма
+   * уходят в спам, а кнопка «Отписаться» в интерфейсе почты не появляется.
+   * Ответ уходит на рабочую почту, а не на no-reply.
+   */
+  async sendNudge(params: {
+    email: string; subject: string; html: string; text: string; unsubscribeUrl: string; tag: string;
+  }): Promise<void> {
+    const { email, subject, html, text, unsubscribeUrl, tag } = params;
+    const masked = email.replace(/(.{2}).+(@.+)/, "$1***$2");
+    await this.transporter.sendMail({
+      from: this.from, to: email, subject, html, text,
+      replyTo: this.config.get<string>("SUPPORT_EMAIL") ?? "aqylservise@gmail.com",
+      headers: {
+        "List-Unsubscribe": `<${unsubscribeUrl}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
+    });
+    this.logger.log(`Nudge "${tag}" sent to ${masked}`);
+  }
+
+  /** Служебное оповещение команде (сбои генерации). Только текст. */
+  async sendOpsAlert(to: string[], subject: string, text: string): Promise<void> {
+    await this.transporter.sendMail({ from: this.from, to: to.join(", "), subject, text });
+    this.logger.warn(`Ops alert sent: ${subject}`);
+  }
+
   async sendSubscriptionExpiring(email: string, endsAt: Date, daysLeft: number): Promise<void> {
     const until = endsAt.toLocaleDateString("ru-RU");
     const site = process.env.FRONTEND_URL ?? "https://aqyl-service.kz";

@@ -434,6 +434,29 @@ export interface B2cUser {
   pricePerMonth: number | null; cancelAtPeriodEnd: boolean;
   lessons: number; paidKzt: number;
   paidLessonsBalance: number; balanceExpiresAt: string | null;
+  /** Канал первого касания: utm_source, домен реферера, «прямой заход» или «не записан». */
+  source: string;
+}
+
+/** Источники регистраций за период (админка, раздел «Рост»). */
+export interface GrowthSources {
+  days: number;
+  total: number;
+  rows: Array<{
+    source: string; registered: number; activated: number; paid: number;
+    campaigns: Array<{ campaign: string; n: number }>;
+  }>;
+}
+
+export interface GrowthNudgeStats {
+  pending: { activationAuto: number; activationBacklog: number; trialEnd: number };
+  sent: { activation: number; trialEnd: number; unsubscribed: number };
+}
+
+export interface ShortLinkRow {
+  code: string; lang: "ru" | "kz";
+  utmSource: string; utmMedium: string | null; utmCampaign: string | null;
+  note: string | null; clicks: number; createdAt: string;
 }
 
 export interface B2cFunnel {
@@ -781,6 +804,22 @@ export const api = {
       `/admin/users/${id}/lessons`, { method: "POST", body: JSON.stringify({ lessons }) }, token),
   // Воронка B2C (только admin): список учителей и сводка по подпискам.
   getB2cFunnel: (token: string) => request<B2cFunnel>("/admin/b2c", undefined, token),
+  // Рост (только admin): источники, письма-подсказки, короткие ссылки.
+  growthSources: (token: string, days: number) =>
+    request<GrowthSources>(`/admin/growth/sources?days=${days}`, undefined, token),
+  growthNudges: (token: string) => request<GrowthNudgeStats>("/admin/growth/nudges", undefined, token),
+  growthNudgePreview: (token: string, kind: "activation" | "trialEnd", lang: "ru" | "kz") =>
+    request<{ subject: string; html: string; text: string }>(
+      `/admin/growth/nudges/preview?kind=${kind}&lang=${lang}`, undefined, token),
+  growthSendActivation: (token: string) =>
+    request<{ total: number; sent: number; failed: number }>(
+      "/admin/growth/nudges/activation", { method: "POST" }, token),
+  shortLinks: (token: string) => request<ShortLinkRow[]>("/admin/growth/short-links", undefined, token),
+  createShortLink: (token: string, data: {
+    code: string; lang: "ru" | "kz"; utmSource: string; utmMedium?: string; utmCampaign?: string; note?: string;
+  }) => request<ShortLinkRow>("/admin/growth/short-links", { method: "POST", body: JSON.stringify(data) }, token),
+  deleteShortLink: (token: string, code: string) =>
+    request<{ ok: boolean }>(`/admin/growth/short-links/${encodeURIComponent(code)}`, { method: "DELETE" }, token),
 
   // Students
   getStudents: (token: string, classroomId?: string) =>

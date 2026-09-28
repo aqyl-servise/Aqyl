@@ -14,6 +14,7 @@ import { SecurityAuditLog } from "../schools/entities/security-audit-log.entity"
 import { Subscription } from "../billing/entities/subscription.entity";
 import { BillingService } from "../billing/billing.service";
 import { SmsService } from "../notifications/sms.service";
+import { acquisitionSource } from "../growth/growth-utils";
 
 /** Цена, проставляемая при ручной выдаче. Совпадает с PRICE_PER_MONTH в billing.service. */
 const ADMIN_GRANT_PRICE = 5990;
@@ -431,6 +432,7 @@ export class AdminService {
       pricePerMonth: number | null; cancelAtPeriodEnd: boolean;
       lessons: number; paidKzt: number;
       paidLessonsBalance: number; balanceExpiresAt: Date | null;
+      source: string;
     }>;
   }> {
     const teachers = await this.teacherRepo.find({
@@ -482,6 +484,8 @@ export class AdminService {
         // Пакеты уроков (ТЗ №3): баланс и срок — прямо с учителя.
         paidLessonsBalance: t.paidLessonsBalance ?? 0,
         balanceExpiresAt: t.balanceExpiresAt ?? null,
+        // Канал первого касания (см. growth-utils).
+        source: acquisitionSource(t.acquisition),
       };
     });
 

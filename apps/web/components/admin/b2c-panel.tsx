@@ -208,6 +208,9 @@ export function B2cPanel({ token }: { token: string }) {
                 <td style={td}>
                   <div style={{ fontWeight: 600 }}>{u.fullName || "—"}</div>
                   <div style={{ color: "var(--text-secondary)", fontSize: 12 }}>{u.email}</div>
+                  {u.source !== "не записан" && (
+                    <div style={{ color: "var(--text-secondary)", fontSize: 11 }}>источник: {u.source}</div>
+                  )}
                   {u.status !== "active" && (
                     <span style={{ ...badge, background: "#6b7280" }}>{u.status}</span>
                   )}

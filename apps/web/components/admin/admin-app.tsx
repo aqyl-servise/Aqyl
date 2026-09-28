@@ -6,6 +6,7 @@ import { AppLayout, type NavItem } from "../layout/app-layout";
 import { SchoolProvider } from "../../contexts/school-context";
 import { SchoolSwitcher } from "./school-switcher";
 import { B2cPanel } from "./b2c-panel";
+import { GrowthPanel } from "./growth-panel";
 import { AdminDashboard } from "./admin-dashboard";
 import { TeacherListPanel } from "./teacher-list-panel";
 import { SchoolAnalyticsPanel } from "./school-analytics-panel";
@@ -81,6 +82,7 @@ function AdminAppContent({ token, user, language, setLanguage, onLogout }: {
       {section === "registrations" && (user.role === "admin" || user.role === "principal") && <RegistrationsPanel token={token} language={language} t={t} />}
       {section === "schools" && user.role === "admin" && <SchoolsPanel token={token} language={language} t={t} />}
       {section === "b2c" && user.role === "admin" && <B2cPanel token={token} />}
+      {section === "growth" && user.role === "admin" && <GrowthPanel token={token} />}
       {section === "sor-soch" && <SorSochPanel token={token} language={language} t={t} isAdmin={true} userRole={user.role} />}
       {section === "fl" && <FLAdminPanel token={token} language={language} userRole={user.role} />}
       {section === "rating" && <RatingAdminPanel token={token} language={language} userRole={user.role} />}
@@ -153,6 +155,8 @@ function getNavItemsForRole(role: string, t: Record<string, string>, isGlobalAdm
       // Воронка B2C. Только у глобального админа: у B2C-учителей нет школы,
       // и школьным ролям эта воронка не подчинена.
       { key: "b2c", label: "B2C", icon: "users" },
+      // Рост: источники регистраций, письма-подсказки, короткие ссылки.
+      { key: "growth", label: "Рост", icon: "chart-line" },
     ];
   }
   return baseNav;

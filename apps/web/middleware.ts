@@ -28,6 +28,8 @@ const PUBLIC_PATHS = [
   '/og-',
   '/robots.txt',
   '/sitemap.xml',
+  // Короткие ссылки с листовок и QR-кодов: по ним приходят люди без аккаунта.
+  '/r/',
   '/api/auth/set-cookie',
   '/api/auth/clear-cookie',
   '/api/auth',        // все /api/auth/* публичные (login, register, b2c/*)

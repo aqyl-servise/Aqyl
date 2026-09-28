@@ -55,6 +55,14 @@ export class Teacher {
   @Column({ type: "jsonb", nullable: true })
   acquisition?: Record<string, string> | null;
 
+  /** Какие письма-подсказки уже ушли: {"activation": ISO, "trialEnd": ISO}. Каждое — один раз. */
+  @Column({ type: "jsonb", default: () => "'{}'" })
+  nudges!: Record<string, string>;
+
+  /** Отписка от писем-подсказок. Квитанции и письма о доступе не затрагивает. */
+  @Column({ default: false })
+  emailNudgesOff!: boolean;
+
   @Column({ default: "active" })
   subscriptionStatus!: string; // 'trial' | 'active' | 'expired' | 'none'
 

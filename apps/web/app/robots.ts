@@ -10,7 +10,8 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/dashboard", "/api", "/play", "/reset-password", "/forgot-password"],
+        // /r/ — короткие ссылки: робот накрутил бы счётчик переходов.
+        disallow: ["/dashboard", "/api", "/play", "/r/", "/reset-password", "/forgot-password"],
       },
     ],
     sitemap: "https://aqyl-service.kz/sitemap.xml",
