@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useLang, LT } from "../../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../../components/lang-switcher";
 import { Icon } from "../../../../components/ui/icon";
+import { COMPANY } from "../../../../lib/company";
 
 export default function HelpPage() {
   const router = useRouter();
@@ -23,7 +24,8 @@ export default function HelpPage() {
           <p><b>{t.materials}</b> — {t.help2}</p>
           <p><b>{t.subscription}</b> — {t.help3}</p>
           <h3>{t.helpSupport}</h3>
-          <p>{t.helpContact} <a href="mailto:support@aqyl-service.kz" style={{ color: "var(--lavender)" }}>support@aqyl-service.kz</a></p>
+          <p>{t.helpContact} {/* Рабочая почта из реквизитов: у aqyl-service.kz нет приёма почты (MX), адрес support@ был мёртвым. */}
+            <a href={`mailto:${COMPANY.email}`} style={{ color: "var(--lavender)" }}>{COMPANY.email}</a> · <a href={`tel:${COMPANY.phone.replace(/\s/g, "")}`} style={{ color: "var(--lavender)" }}>{COMPANY.phone}</a></p>
         </div>
       </main>
     </div>
