@@ -451,6 +451,11 @@ export interface GrowthSources {
 export interface GrowthNudgeStats {
   pending: { activationAuto: number; activationBacklog: number; trialEnd: number };
   sent: { activation: number; trialEnd: number; unsubscribed: number };
+  /** Ход рассылки по кнопке: письма уходят в фоне, админка опрашивает. */
+  progress: {
+    running: boolean;
+    last: { kind: string; total: number; sent: number; failed: number; startedAt: string; finishedAt: string | null };
+  };
 }
 
 export interface ShortLinkRow {
@@ -826,8 +831,7 @@ export const api = {
     request<{ subject: string; html: string; text: string }>(
       `/admin/growth/nudges/preview?kind=${kind}&lang=${lang}`, undefined, token),
   growthSendActivation: (token: string) =>
-    request<{ total: number; sent: number; failed: number }>(
-      "/admin/growth/nudges/activation", { method: "POST" }, token),
+    request<{ started: boolean }>("/admin/growth/nudges/activation", { method: "POST" }, token),
   myReferral: (token: string) => request<MyReferral>("/referral/me", undefined, token),
   referralOverview: (token: string) => request<ReferralOverview>("/admin/growth/referrals", undefined, token),
   approveReferral: (token: string, inviteeId: string) =>

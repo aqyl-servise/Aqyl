@@ -133,27 +133,68 @@ export class NudgeService {
     // Кнопка в админке и утренний запуск не должны слать параллельно одному и тому же учителю.
     if (this.running) throw new Error('Рассылка уже идёт');
     this.running = true;
-    let sent = 0, failed = 0;
     try {
-      for (const c of list.slice(0, BATCH_LIMIT)) {
-        const m = this.compose(kind, c);
-        try {
-          await this.mail.sendNudge({ email: c.email, subject: m.subject, html: m.html, text: m.text, unsubscribeUrl: m.unsubscribeUrl, tag: kind });
-          await this.db.query(
-            `UPDATE teacher SET nudges = nudges || jsonb_build_object($2::text, now()::text) WHERE id = $1`,
-            [c.id, kind],
-          );
-          sent++;
-        } catch (err) {
-          failed++;
-          this.logger.error(`Подсказка ${kind} учителю ${c.id} не ушла: ${(err as Error).message}`);
-        }
-        await new Promise((r) => setTimeout(r, SEND_GAP_MS));
-      }
+      return await this.deliver(kind, list);
     } finally {
       this.running = false;
     }
-    return { total: list.length, sent, failed };
+  }
+
+  /**
+   * Запуск рассылки из админки — в фоне. Письмо уходит за 3–4 секунды, партия
+   * из 80 — за несколько минут, а nginx рвёт ответ через 60 секунд: 29.09 админ
+   * увидел 504, хотя письма уходили. Теперь запрос возвращается сразу, а
+   * админка опрашивает ход рассылки (getProgress).
+   */
+  startBacklog(): { started: boolean } {
+    // Флаг — до первой асинхронной операции: двойное нажатие не запустит две рассылки.
+    if (this.running) throw new Error('Рассылка уже идёт');
+    this.running = true;
+    this.progress = { kind: 'activation', total: 0, sent: 0, failed: 0, startedAt: new Date().toISOString(), finishedAt: null };
+    void (async () => {
+      try {
+        const list = await this.candidates('activation', { maxAgeDays: null });
+        await this.deliver('activation', list);
+      } catch (err) {
+        this.logger.error(`Рассылка по кнопке упала: ${(err as Error).message}`);
+      } finally {
+        this.running = false;
+        this.progress.finishedAt = new Date().toISOString();
+      }
+    })();
+    return { started: true };
+  }
+
+  /** Ход последней рассылки — для админки. */
+  getProgress() {
+    return { running: this.running, last: this.progress };
+  }
+
+  private progress: {
+    kind: NudgeKind; total: number; sent: number; failed: number; startedAt: string; finishedAt: string | null;
+  } = { kind: 'activation', total: 0, sent: 0, failed: 0, startedAt: '', finishedAt: null };
+
+  /** Сама отправка партии. Флаг running выставляет вызывающий. */
+  private async deliver(kind: NudgeKind, list: Candidate[]): Promise<{ total: number; sent: number; failed: number }> {
+    const batch = list.slice(0, BATCH_LIMIT);
+    this.progress = { kind, total: batch.length, sent: 0, failed: 0, startedAt: new Date().toISOString(), finishedAt: null };
+    for (const c of batch) {
+      const m = this.compose(kind, c);
+      try {
+        await this.mail.sendNudge({ email: c.email, subject: m.subject, html: m.html, text: m.text, unsubscribeUrl: m.unsubscribeUrl, tag: kind });
+        await this.db.query(
+          `UPDATE teacher SET nudges = nudges || jsonb_build_object($2::text, now()::text) WHERE id = $1`,
+          [c.id, kind],
+        );
+        this.progress.sent++;
+      } catch (err) {
+        this.progress.failed++;
+        this.logger.error(`Подсказка ${kind} учителю ${c.id} не ушла: ${(err as Error).message}`);
+      }
+      await new Promise((r) => setTimeout(r, SEND_GAP_MS));
+    }
+    this.progress.finishedAt = new Date().toISOString();
+    return { total: list.length, sent: this.progress.sent, failed: this.progress.failed };
   }
 
   /** Предпросмотр письма для админки: как увидит его учитель. */

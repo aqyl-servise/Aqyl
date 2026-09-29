@@ -112,6 +112,8 @@ export class GrowthAdminController {
         trialEnd: trialEnd.length,
       },
       sent,
+      // Ход рассылки по кнопке: админка опрашивает, пока running.
+      progress: this.nudges.getProgress(),
     };
   }
 
@@ -126,9 +128,9 @@ export class GrowthAdminController {
    * регистрации. Не больше одной партии за вызов — см. BATCH_LIMIT.
    */
   @Post('nudges/activation')
-  async sendActivation() {
+  sendActivation() {
     try {
-      return await this.nudges.send('activation', { maxAgeDays: null });
+      return this.nudges.startBacklog();
     } catch (err) {
       throw new ConflictException((err as Error).message);
     }

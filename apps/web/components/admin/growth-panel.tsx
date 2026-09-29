@@ -98,7 +98,6 @@ function Sources({ token }: { token: string }) {
 function Nudges({ token }: { token: string }) {
   const [stats, setStats] = useState<GrowthNudgeStats | null>(null);
   const [preview, setPreview] = useState<{ subject: string; html: string } | null>(null);
-  const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   const load = useCallback(() => {
@@ -118,15 +117,25 @@ function Nudges({ token }: { token: string }) {
       `Отправить письмо «Сделайте первый урок» учителям, которые не сделали ни одного урока: ${n}?\n\n` +
       `Каждый получит его один раз. За одно нажатие уходит не больше 80 писем — остальным можно отправить завтра.`,
     )) return;
-    setBusy(true); setMsg(null);
+    setMsg(null);
     try {
-      const r = await api.growthSendActivation(token);
-      setMsg(`Отправлено: ${r.sent}${r.failed ? `, не ушло: ${r.failed}` : ""}${r.total > r.sent + r.failed ? `. Осталось: ${r.total - r.sent - r.failed}` : ""}`);
+      await api.growthSendActivation(token);
       load();
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Не удалось отправить");
-    } finally { setBusy(false); }
+      // Ответ-страница nginx (504 и т. п.) — не показываем HTML как текст.
+      const text = e instanceof Error ? e.message : "";
+      setMsg(text && !text.includes("<") ? text : "Не удалось запустить рассылку. Обновите страницу: возможно, она уже идёт.");
+    }
   }
+
+  // Письма уходят в фоне по 3–4 секунды: пока рассылка идёт, обновляем счётчики.
+  const running = stats?.progress.running ?? false;
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(load, 3000);
+    return () => clearInterval(id);
+  }, [running, load]);
+  const last = stats?.progress.last;
 
   return (
     <section style={card}>
@@ -150,8 +159,8 @@ function Nudges({ token }: { token: string }) {
                 Зарегистрировались раньше и не начали: <b>{stats.pending.activationBacklog}</b>.
                 Им письмо само не уйдёт — только по кнопке.
               </div>
-              <button onClick={sendBacklog} disabled={busy} style={primaryBtn}>
-                {busy ? "Отправляем…" : "Отправить всем, кто не начал"}
+              <button onClick={sendBacklog} disabled={running} style={{ ...primaryBtn, opacity: running ? 0.6 : 1 }}>
+                {running ? "Отправляем…" : "Отправить всем, кто не начал"}
               </button>
             </div>
           )}
@@ -167,6 +176,13 @@ function Nudges({ token }: { token: string }) {
         </div>
       </div>
       {stats && <div style={{ ...hint, marginTop: 10 }}>Отписались от подсказок: {stats.sent.unsubscribed}</div>}
+      {last && last.startedAt && (last.total > 0 || running) && (
+        <div style={{ marginTop: 10, fontSize: 14 }}>
+          {running ? "Идёт рассылка" : "Последняя рассылка"}: отправлено <b>{last.sent}</b> из {last.total}
+          {last.failed ? `, не ушло: ${last.failed}` : ""}
+          {!running && last.finishedAt ? ` · ${new Date(last.finishedAt).toLocaleString("ru-RU")}` : ""}
+        </div>
+      )}
       {msg && <div style={{ marginTop: 10, fontSize: 14 }}>{msg}</div>}
 
       {preview && (
