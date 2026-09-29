@@ -1,10 +1,12 @@
-import { Controller, Get, NotFoundException, Param, Post, Query, Res } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Param, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { Response } from 'express';
 import { Repository } from 'typeorm';
 import { Teacher } from '../teachers/entities/teacher.entity';
 import { ShortLink } from './short-link.entity';
 import { readUnsubscribeToken, SHORT_CODE_RE } from './growth-utils';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ReferralService } from './referral.service';
 
 /**
  * Публичные адреса воронки: раскрытие короткой ссылки и отписка от писем.
@@ -15,7 +17,15 @@ export class GrowthController {
   constructor(
     @InjectRepository(ShortLink) private readonly links: Repository<ShortLink>,
     @InjectRepository(Teacher) private readonly teachers: Repository<Teacher>,
+    private readonly referrals: ReferralService,
   ) {}
+
+  /** Страница «Пригласить коллегу»: код, условия и сколько уже получено. */
+  @Get('referral/me')
+  @UseGuards(JwtAuthGuard)
+  myReferral(@Req() req: { user: { id: string } }) {
+    return this.referrals.mine(req.user.id);
+  }
 
   /**
    * Короткая ссылка → куда вести и с какими метками. Редирект делает веб

@@ -22,8 +22,19 @@ const clip = (v: string) => v.slice(0, 200);
 /** Вызывается при каждом открытии страницы; пишет только при первом касании. */
 export function captureAttribution(): void {
   try {
-    if (localStorage.getItem(KEY)) return;
     const url = new URL(window.location.href);
+    const stored = localStorage.getItem(KEY);
+    if (stored) {
+      // Исключение из первого касания — код приглашения коллеги. Учитель мог
+      // когда-то зайти из Threads, а зарегистрироваться по ссылке коллеги:
+      // награду за приглашение должен получить коллега.
+      const ref = url.searchParams.get("ref");
+      if (ref) {
+        const a = JSON.parse(stored) as Attribution;
+        if (a.ref !== ref) localStorage.setItem(KEY, JSON.stringify({ ...a, ref: clip(ref) }));
+      }
+      return;
+    }
     const a: Attribution = {};
     for (const p of PARAMS) {
       const v = url.searchParams.get(p);

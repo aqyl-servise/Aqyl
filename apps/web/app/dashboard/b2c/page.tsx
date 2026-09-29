@@ -108,8 +108,13 @@ export default function B2CDashboardPage() {
     // Живой квиз (ТЗ 3.0). Страница существовала без входа из кабинета —
     // учитель не мог до неё добраться иначе как по прямому адресу.
     { key: "quiz", icon: "bolt", label: t.liveQuiz, href: "/dashboard/b2c/quiz" },
+    // Приглашение коллег скрыто в обёртке приложения вместе с подпиской: уроки —
+    // цифровой товар, и награды за действия магазины приложений проверяют строго.
     ...(mobileApp === false
-      ? [{ key: "subscribe", icon: "card" as IconName, label: t.subscription, href: "/dashboard/b2c/subscribe" }]
+      ? [
+          { key: "subscribe", icon: "card" as IconName, label: t.subscription, href: "/dashboard/b2c/subscribe" },
+          { key: "invite", icon: "users" as IconName, label: `${t.invite} +5`, href: "/dashboard/b2c/invite" },
+        ]
       : []),
     { key: "help", icon: "help", label: t.help, href: "/dashboard/b2c/help" },
   ];
@@ -182,6 +187,12 @@ export default function B2CDashboardPage() {
                   </button>
                 )}
               </div>
+            )}
+            {/* Уроки кончились — второй путь, кроме покупки: пригласить коллегу. */}
+            {mobileApp === false && (
+              <button onClick={() => router.push("/dashboard/b2c/invite")} style={{ ...linkBtn, fontSize: 14, marginTop: 18 }}>
+                {t.inviteHint.replace("{n}", "5")} →
+              </button>
             )}
           </section>
         ) : (

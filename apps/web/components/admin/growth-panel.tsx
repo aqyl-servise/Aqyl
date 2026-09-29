@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { api, type GrowthNudgeStats, type GrowthSources, type ShortLinkRow } from "../../lib/api";
+import { api, type GrowthNudgeStats, type GrowthSources, type ReferralOverview, type ShortLinkRow } from "../../lib/api";
 import { Icon } from "../ui/icon";
 
 /**
@@ -16,6 +16,7 @@ export function GrowthPanel({ token }: { token: string }) {
       <h2 style={{ margin: "0 0 20px", fontSize: 22 }}><Icon name="chart-line" size={16} /> Рост</h2>
       <Sources token={token} />
       <Nudges token={token} />
+      <Referrals token={token} />
       <ShortLinks token={token} />
     </div>
   );
@@ -190,6 +191,73 @@ function PreviewButtons({ onShow }: { onShow: (lang: "ru" | "kz") => void }) {
       <button onClick={() => onShow("ru")} style={ghostBtn}>Письмо на русском</button>
       <button onClick={() => onShow("kz")} style={ghostBtn}>На казахском</button>
     </div>
+  );
+}
+
+// ── Приглашения коллег ─────────────────────────────────────────────────────
+
+function Referrals({ token }: { token: string }) {
+  const [data, setData] = useState<ReferralOverview | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    api.referralOverview(token).then(setData).catch(() => setError("Не удалось загрузить приглашения"));
+  }, [token]);
+  useEffect(load, [load]);
+
+  async function act(id: string, approve: boolean) {
+    setBusy(id); setError(null);
+    try { await (approve ? api.approveReferral(token, id) : api.declineReferral(token, id)); load(); }
+    catch (e) { setError(e instanceof Error ? e.message : "Не удалось"); }
+    finally { setBusy(null); }
+  }
+
+  return (
+    <section style={card}>
+      <h3 style={h3}>Приглашения коллег</h3>
+      <p style={muted}>
+        За каждого приглашённого, кто сделал первый готовый урок, пригласившему начисляется {data?.bonus ?? 5} уроков
+        (не больше {data?.cap ?? 10} наград на учителя). Если у обоих аккаунтов общее устройство — похоже на
+        приглашение самого себя, — начисление ждёт вашего решения ниже.
+      </p>
+      {data && (
+        <div style={{ display: "flex", gap: 18, flexWrap: "wrap", fontSize: 14, marginBottom: 12 }}>
+          <span>Приглашено: <b>{data.totals.invited}</b></span>
+          <span>Ждут первого урока: <b>{data.totals.pending}</b></span>
+          <span>Награждено: <b>{data.totals.rewarded}</b></span>
+          <span>Начислено уроков: <b>{data.totals.lessons}</b></span>
+        </div>
+      )}
+      {error && <div style={{ color: "#dc2626", marginBottom: 10 }}>{error}</div>}
+      {data && data.review.length > 0 && (
+        <div style={{ overflowX: "auto", marginBottom: 12 }}>
+          <table style={table}>
+            <thead>
+              <tr style={{ textAlign: "left", color: "var(--muted)" }}>
+                <th style={th}>Пригласил</th><th style={th}>Приглашённый</th><th style={th}>Почему на проверке</th><th style={th} />
+              </tr>
+            </thead>
+            <tbody>
+              {data.review.map((r) => (
+                <tr key={r.inviteeId} style={{ borderTop: "1px solid var(--border, #eee)" }}>
+                  <td style={td}>{r.inviterEmail}</td>
+                  <td style={td}>{r.inviteeEmail}</td>
+                  <td style={{ ...td, color: "var(--text-secondary)", fontSize: 12 }}>{r.note ?? r.status}</td>
+                  <td style={{ ...td, whiteSpace: "nowrap", textAlign: "right" }}>
+                    <button onClick={() => act(r.inviteeId, true)} disabled={busy === r.inviteeId} style={{ ...ghostBtn, color: "#16a34a", borderColor: "#16a34a" }}>Начислить</button>
+                    <button onClick={() => act(r.inviteeId, false)} disabled={busy === r.inviteeId} style={{ ...ghostBtn, marginLeft: 6 }}>Отклонить</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {data && data.top.length > 0 && (
+        <div style={hint}>Самые активные: {data.top.map((x) => `${x.email} — ${x.invited} (награждено ${x.rewarded})`).join("; ")}</div>
+      )}
+    </section>
   );
 }
 

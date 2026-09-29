@@ -63,6 +63,10 @@ export class Teacher {
   @Column({ default: false })
   emailNudgesOff!: boolean;
 
+  /** Код в ссылке приглашения коллег (?ref=КОД). Выдаётся при первом открытии страницы приглашения. */
+  @Column({ type: "varchar", length: 12, nullable: true, unique: true })
+  referralCode?: string | null;
+
   @Column({ default: "active" })
   subscriptionStatus!: string; // 'trial' | 'active' | 'expired' | 'none'
 

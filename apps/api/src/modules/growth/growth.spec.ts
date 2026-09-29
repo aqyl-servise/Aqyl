@@ -2,7 +2,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { acquisitionSource, mailLang, makeUnsubscribeToken, readUnsubscribeToken } from './growth-utils';
-import { activationMail, trialEndMail } from './nudge-mail';
+import { activationMail, referralRewardMail, trialEndMail } from './nudge-mail';
+import { newReferralCode, REFERRAL_CODE_RE } from './referral.service';
 
 process.env.JWT_SECRET = 'test-secret';
 
@@ -100,4 +101,22 @@ test('прайс — из каталога, без апселл-пакета', (
   const m = trialEndMail({ lang: 'ru', lessonsMade: 5, unsubscribeUrl: unsub });
   assert.ok(m.html.includes('3 990 ₸'));
   assert.ok(!m.html.includes('1 490 ₸'));
+});
+
+// ── приглашения ───────────────────────────────────────────────────────────
+test('код приглашения — 6 знаков без путаницы 0/O и 1/I/L', () => {
+  for (let i = 0; i < 300; i++) {
+    const c = newReferralCode();
+    assert.ok(REFERRAL_CODE_RE.test(c), `негодный код: ${c}`);
+    assert.ok(!/[01OIL]/.test(c));
+  }
+});
+
+test('письмо о награде: число уроков, баланс и срок', () => {
+  const m = referralRewardMail({ lang: 'ru', lessons: 5, balance: 12, expiresAt: new Date('2026-12-29T12:00:00Z'), unsubscribeUrl: unsub });
+  assert.ok(m.subject.includes('+5 уроков'));
+  assert.ok(m.html.includes('<b>12</b> уроков'));
+  assert.ok(m.html.includes('29.12.2026'));
+  const kz = referralRewardMail({ lang: 'kz', lessons: 5, balance: 12, expiresAt: new Date('2026-12-29T12:00:00Z'), unsubscribeUrl: unsub });
+  assert.ok(kz.subject.includes('+5 сабақ'));
 });

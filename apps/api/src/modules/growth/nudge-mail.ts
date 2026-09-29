@@ -150,3 +150,34 @@ ${button(url, 'Выбрать пакет')}`;
       `\n\nУроки из пакета действуют 3 месяца. Платёж разовый.\n\nВыбрать пакет: ${url}\n\nОтписаться от таких писем: ${p.unsubscribeUrl}`,
   };
 }
+
+/**
+ * Пригласившему: коллега сделал первый урок, начислены уроки. Уведомление об
+ * изменении баланса, а не подсказка — отписка от подсказок его не отключает.
+ */
+export function referralRewardMail(p: {
+  lang: MailLang; lessons: number; balance: number; expiresAt: Date; unsubscribeUrl: string;
+}): NudgeMail {
+  const until = p.expiresAt.toLocaleDateString('ru-RU');
+  const url = `${site()}/dashboard/b2c/invite?utm_source=email&utm_medium=notice&utm_campaign=referral_reward`;
+  if (p.lang === 'kz') {
+    const body = `<h2 style="margin:0 0 14px;font-size:20px">Сізге +${p.lessons} сабақ</h2>
+<p style="margin:0 0 12px">Сіз шақырған әріптесіңіз Aqyl-да алғашқы сабағын жасады. Рахмет! Балансыңызға <b>${p.lessons} сабақ</b> қосылды.</p>
+<p style="margin:0 0 12px">Қазір балансыңызда: <b>${p.balance}</b> сабақ, ${until} дейін жарамды.</p>
+${button(url, 'Тағы шақыру')}`;
+    return {
+      subject: `Aqyl: әріптесіңіз үшін +${p.lessons} сабақ`,
+      html: layout('kz', body, p.unsubscribeUrl),
+      text: `Сіз шақырған әріптесіңіз Aqyl-да алғашқы сабағын жасады. Балансыңызға ${p.lessons} сабақ қосылды. Балансыңызда: ${p.balance} сабақ, ${until} дейін.\n\n${url}`,
+    };
+  }
+  const body = `<h2 style="margin:0 0 14px;font-size:20px">Вам +${p.lessons} ${lessonsRu(p.lessons)}</h2>
+<p style="margin:0 0 12px">Коллега, которого вы пригласили, сделал в Aqyl первый урок. Спасибо! На ваш баланс начислено <b>${p.lessons} ${lessonsRu(p.lessons)}</b>.</p>
+<p style="margin:0 0 12px">Сейчас на балансе: <b>${p.balance}</b> ${lessonsRu(p.balance)}, действуют до ${until}.</p>
+${button(url, 'Пригласить ещё')}`;
+  return {
+    subject: `Aqyl: +${p.lessons} ${lessonsRu(p.lessons)} за приглашённого коллегу`,
+    html: layout('ru', body, p.unsubscribeUrl),
+    text: `Коллега, которого вы пригласили, сделал в Aqyl первый урок. На ваш баланс начислено ${p.lessons} ${lessonsRu(p.lessons)}. Сейчас на балансе: ${p.balance}, действуют до ${until}.\n\n${url}`,
+  };
+}

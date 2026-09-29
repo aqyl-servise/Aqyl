@@ -459,6 +459,20 @@ export interface ShortLinkRow {
   note: string | null; clicks: number; createdAt: string;
 }
 
+/** Приглашение коллег — для страницы учителя. */
+export interface MyReferral {
+  code: string; bonus: number; cap: number;
+  invited: number; waiting: number; rewarded: number; lessonsEarned: number;
+}
+
+/** Приглашения в админке. */
+export interface ReferralOverview {
+  totals: { invited: number; pending: number; rewarded: number; review: number; lessons: number };
+  review: Array<{ inviteeId: string; status: "held" | "capped"; note: string | null; createdAt: string; inviterEmail: string; inviteeEmail: string }>;
+  top: Array<{ email: string; invited: number; rewarded: number }>;
+  bonus: number; cap: number;
+}
+
 export interface B2cFunnel {
   summary: {
     users: number; active: number; trial: number; expired: number;
@@ -814,6 +828,12 @@ export const api = {
   growthSendActivation: (token: string) =>
     request<{ total: number; sent: number; failed: number }>(
       "/admin/growth/nudges/activation", { method: "POST" }, token),
+  myReferral: (token: string) => request<MyReferral>("/referral/me", undefined, token),
+  referralOverview: (token: string) => request<ReferralOverview>("/admin/growth/referrals", undefined, token),
+  approveReferral: (token: string, inviteeId: string) =>
+    request<{ ok: boolean }>(`/admin/growth/referrals/${inviteeId}/approve`, { method: "POST" }, token),
+  declineReferral: (token: string, inviteeId: string) =>
+    request<{ ok: boolean }>(`/admin/growth/referrals/${inviteeId}/decline`, { method: "POST" }, token),
   shortLinks: (token: string) => request<ShortLinkRow[]>("/admin/growth/short-links", undefined, token),
   createShortLink: (token: string, data: {
     code: string; lang: "ru" | "kz"; utmSource: string; utmMedium?: string; utmCampaign?: string; note?: string;

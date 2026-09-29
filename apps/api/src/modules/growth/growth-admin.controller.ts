@@ -1,5 +1,5 @@
 import {
-  BadRequestException, Body, ConflictException, Controller, Delete, Get, Param, Post, Query, UseGuards,
+  BadRequestException, Body, ConflictException, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Query, UseGuards,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsIn, IsOptional, IsString, Length, Matches } from 'class-validator';
@@ -10,6 +10,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { SkipSchoolIsolation } from '../../common/decorators/skip-school-isolation.decorator';
 import { ShortLink } from './short-link.entity';
 import { NudgeService } from './nudge.service';
+import { ReferralService } from './referral.service';
 import { acquisitionSource } from './growth-utils';
 
 class CreateShortLinkDto {
@@ -44,6 +45,7 @@ export class GrowthAdminController {
   constructor(
     private readonly db: DataSource,
     private readonly nudges: NudgeService,
+    private readonly referrals: ReferralService,
     @InjectRepository(ShortLink) private readonly links: Repository<ShortLink>,
   ) {}
 
@@ -130,6 +132,22 @@ export class GrowthAdminController {
     } catch (err) {
       throw new ConflictException((err as Error).message);
     }
+  }
+
+  /** Приглашения: итоги, спорные случаи на проверку, самые активные. */
+  @Get('referrals')
+  referralsOverview() {
+    return this.referrals.adminOverview();
+  }
+
+  @Post('referrals/:inviteeId/approve')
+  approveReferral(@Param('inviteeId', new ParseUUIDPipe()) inviteeId: string) {
+    return this.referrals.adminApprove(inviteeId);
+  }
+
+  @Post('referrals/:inviteeId/decline')
+  declineReferral(@Param('inviteeId', new ParseUUIDPipe()) inviteeId: string) {
+    return this.referrals.adminDecline(inviteeId);
   }
 
   @Get('short-links')
