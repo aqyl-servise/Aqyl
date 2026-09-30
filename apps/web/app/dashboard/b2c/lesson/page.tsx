@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getValidAccessToken } from "../../../../lib/auth";
-import { api, API_URL, type LpLesson, type LpToolsResponse, type LpStageInput, type LpHeader, type LpHandout, type LpHandoutPackage } from "../../../../lib/api";
-import { useLang, LT, VALUE_MONTHS, type Lang } from "../../../../lib/lesson-translations";
+import { api, API_URL, ApiError, type LpLesson, type LpToolsResponse, type LpStageInput, type LpHeader, type LpHandout, type LpHandoutPackage } from "../../../../lib/api";
+import { useLang, LT, VALUE_MONTHS, SUBJECT_OPTIONS, type Lang } from "../../../../lib/lesson-translations";
+import { useIsMobileApp } from "../../../../lib/platform";
 import { LangSwitcher } from "../../../../components/lang-switcher";
 import { Icon } from "../../../../components/ui/icon";
 import { PhoneVerifyModal } from "../../../../components/phone-verify-modal";
@@ -72,6 +73,10 @@ export default function LessonGeneratorPage() {
   // нужно повторить после успеха.
   const [phoneModal, setPhoneModal] = useState(false);
   const [pendingMode, setPendingMode] = useState<"quick" | "constructor" | null>(null);
+  // Ошибка «уроки закончились» — рядом кнопка покупки (кроме обёртки приложения).
+  const [showBuy, setShowBuy] = useState(false);
+  const [slow, setSlow] = useState(false);
+  const mobileApp = useIsMobileApp();
 
   useEffect(() => {
     (async () => {
@@ -83,6 +88,17 @@ export default function LessonGeneratorPage() {
       try {
         const me = await api.getB2CMe(tk);
         if (me?.fullName) setForm((f) => (f.teacherName ? f : { ...f, teacherName: me.fullName }));
+        // Предмет и язык преподавания учитель уже выбрал в онбординге — не
+        // заставляем вводить их заново (до 01.10.2026 форма их игнорировала).
+        if (!new URLSearchParams(window.location.search).get("id")) {
+          const teachLang = me?.language === "kz" || me?.language === "ru" ? me.language : null;
+          const opt = SUBJECT_OPTIONS.find((s) => s.value === me?.subject && s.value !== "Другое");
+          setForm((f) => {
+            const language = teachLang ?? f.language;
+            const subject = f.subject || (opt ? opt.label[language as Lang] ?? opt.value : "");
+            return { ...f, language, subject };
+          });
+        }
       } catch { /* профиль не критичен для формы */ }
       // Воронка: открыл форму НОВОГО урока (не просмотр готового по ?id=).
       // Повторы в пределах получаса сервер не пишет.
@@ -216,7 +232,7 @@ export default function LessonGeneratorPage() {
 
   async function runGenerate(mode: "quick" | "constructor") {
     if (!token) return;
-    setError(null); setBusy(true);
+    setError(null); setShowBuy(false); setBusy(true);
     try {
       const id = lessonId ?? (await ensureLesson());
       await api.lpGenerate(token, id, mode);
@@ -231,19 +247,27 @@ export default function LessonGeneratorPage() {
         setBusy(false);
         return;
       }
-      setError(t.errNoAiGen + msg(e));
+      // 403 — кончились уроки: сервер уже объясняет это словами, приставка
+      // «не удалось запустить генерацию» тут только пугает. Даём кнопку покупки.
+      const noLessons = e instanceof ApiError && e.status === 403;
+      setError(noLessons ? msg(e) : t.errNoAiGen + msg(e));
+      setShowBuy(noLessons);
       setBusy(false);
     }
   }
 
   function startPolling(id: string) {
     if (pollRef.current) clearInterval(pollRef.current);
+    // Обычно 20–40 секунд; дольше двух минут — говорим, что урок не пропадёт.
+    setSlow(false);
+    const slowTimer = setTimeout(() => setSlow(true), 120_000);
     pollRef.current = setInterval(async () => {
       if (!token) return;
       try {
         const l = await api.lpGet(token, id);
         if (l.status === "ready" || l.status === "error") {
           if (pollRef.current) clearInterval(pollRef.current);
+          clearTimeout(slowTimer); setSlow(false);
           setLesson(l); setBusy(false); setStep(5);
         }
       } catch { /* keep polling */ }
@@ -276,6 +300,7 @@ export default function LessonGeneratorPage() {
       {phoneModal && token && (
         <PhoneVerifyModal
           token={token}
+          lang={lang}
           onClose={() => { setPhoneModal(false); setPendingMode(null); }}
           onDone={(trialAllowed) => {
             setPhoneModal(false);
@@ -283,7 +308,8 @@ export default function LessonGeneratorPage() {
               // Номер уже получал бесплатные уроки — генерация не пойдёт,
               // говорим об этом прямо, а не отправляем в общий отказ.
               setPendingMode(null);
-              setError("По этому номеру бесплатные уроки уже получали. Выберите пакет, чтобы продолжить.");
+              setError(t.phoneUsed);
+              setShowBuy(true);
               return;
             }
             const mode = pendingMode;
@@ -300,7 +326,14 @@ export default function LessonGeneratorPage() {
       </header>
 
       <main style={{ maxWidth: 900, margin: "0 auto", padding: "24px" }}>
-        {error && <div style={{ background: "var(--ink-2)", border: "1px solid var(--danger)", color: "var(--white)", padding: "12px 16px", borderRadius: 10, marginBottom: 16, fontSize: 14 }}>{error}</div>}
+        {error && (
+          <div style={{ background: "var(--ink-2)", border: "1px solid var(--danger)", color: "var(--white)", padding: "12px 16px", borderRadius: 10, marginBottom: 16, fontSize: 14, display: "flex", gap: 12, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+            <span>{error}</span>
+            {showBuy && mobileApp === false && (
+              <button onClick={() => router.push("/dashboard/b2c/subscribe")} style={btnPrimary}>{t.buyPackage}</button>
+            )}
+          </div>
+        )}
 
         {step === 1 && (
           <div>
@@ -361,6 +394,9 @@ export default function LessonGeneratorPage() {
               )) : <div style={{ color: "var(--muted)", fontSize: 13 }}>{t.objHint}</div>}
             </div>
 
+            {/* Ошибка у кнопки: баннер наверху страницы с длинной формой не виден,
+                и «Далее» выглядело так, будто ничего не произошло. */}
+            {error && <div style={{ color: "var(--danger)", fontSize: 14, textAlign: "right", marginBottom: 10 }}>{error}</div>}
             <div style={{ textAlign: "right" }}><button onClick={toStep2} disabled={busy} style={btnPrimary}>{t.next}</button></div>
           </div>
         )}
@@ -507,13 +543,26 @@ export default function LessonGeneratorPage() {
               <div style={{ fontSize: 40, marginBottom: 12 }}>⏳</div>
               <div style={{ fontWeight: 700, color: DARK, fontSize: 18 }}>{t.genProgress}</div>
               <div style={{ color: "var(--muted)", fontSize: 14, marginTop: 6 }}>{t.genProgressSub}</div>
+              {slow && <div style={{ color: "var(--muted)", fontSize: 14, marginTop: 14, maxWidth: 440 }}>{t.genSlow}</div>}
             </div>
           </Center>
         )}
 
         {step === 5 && lesson && (
           <>
-            <LessonView lesson={lesson} onRegen={regenStage} regenId={regenId} onExport={() => token && downloadExport(lesson, token)} presentation={<PresentationButton token={token} lessonId={lesson.id} t={t} />} t={t} lang={lang} />
+            <LessonView
+              lesson={lesson} onRegen={regenStage} regenId={regenId}
+              onExport={async () => {
+                if (token && !(await downloadExport(lesson, token))) {
+                  setError(t.exportFailed);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }
+              }}
+              // Сбой генерации — урок уже возвращён на баланс; даём запустить заново тут же.
+              onRetry={() => { setLessonId(lesson.id); void runGenerate(lesson.mode === "constructor" ? "constructor" : "quick"); }}
+              retryBusy={busy}
+              presentation={<PresentationButton token={token} lessonId={lesson.id} t={t} />} t={t} lang={lang}
+            />
             {lesson.status === "ready" && <HandoutsPanel token={token} lessonId={lesson.id} t={t} />}
           </>
         )}
@@ -522,11 +571,17 @@ export default function LessonGeneratorPage() {
   );
 }
 
-function LessonView({ lesson, onRegen, regenId, onExport, presentation, t, lang }: { lesson: LpLesson; onRegen: (sid: string) => void; regenId: string | null; onExport: () => void; presentation: React.ReactNode; t: T; lang: Lang }) {
+function LessonView({ lesson, onRegen, regenId, onExport, onRetry, retryBusy, presentation, t, lang }: { lesson: LpLesson; onRegen: (sid: string) => void; regenId: string | null; onExport: () => void; onRetry: () => void; retryBusy: boolean; presentation: React.ReactNode; t: T; lang: Lang }) {
   const th: React.CSSProperties = { textAlign: "left", padding: "8px 10px", background: "var(--ink)", fontSize: 12, color: "var(--muted)", border: "1px solid var(--line)" };
   const td: React.CSSProperties = { padding: "8px 10px", fontSize: 13, color: DARK, border: "1px solid var(--line)", verticalAlign: "top" };
   if (lesson.status === "error") {
-    return <div style={card}><strong>{t.genError}</strong><div style={{ color: "var(--muted)", marginTop: 6 }}>{lesson.generationError ?? t.genErrorHint}</div></div>;
+    return (
+      <div style={card}>
+        <strong>{t.genError}</strong>
+        <div style={{ color: "var(--muted)", marginTop: 6 }}>{lesson.generationError ?? t.genErrorHint}</div>
+        <button onClick={onRetry} disabled={retryBusy} style={{ ...btnPrimary, marginTop: 14, opacity: retryBusy ? 0.6 : 1 }}>{t.retryGen}</button>
+      </div>
+    );
   }
   return (
     <div>
@@ -869,14 +924,16 @@ function ValueToggle({ checked, disabled, label, onChange }: { checked: boolean;
   );
 }
 
-async function downloadExport(lesson: LpLesson, token: string) {
-  const res = await fetch(`${API_URL}/lesson-plans/${lesson.id}/export`, { headers: { Authorization: `Bearer ${token}` } });
-  if (!res.ok) return;
+/** false — файл не получен: вызывающий показывает ошибку, а не молчит. */
+async function downloadExport(lesson: LpLesson, token: string): Promise<boolean> {
+  const res = await fetch(`${API_URL}/lesson-plans/${lesson.id}/export`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+  if (!res || !res.ok) return false;
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url; a.download = `ksp-${lesson.id}.docx`; a.click();
   URL.revokeObjectURL(url);
+  return true;
 }
 
 function Field({ l, children }: { l: string; children: React.ReactNode }) { return <div><span style={label}>{l}</span>{children}</div>; }

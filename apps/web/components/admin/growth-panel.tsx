@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { api, type FunnelReport, type FunnelWeek, type GrowthNudgeStats, type GrowthSources, type ReferralOverview, type ShortLinkRow } from "../../lib/api";
+import { api, type NudgeKind, type FunnelReport, type FunnelWeek, type GrowthNudgeStats, type GrowthSources, type ReferralOverview, type ShortLinkRow } from "../../lib/api";
 import { Icon } from "../ui/icon";
 
 /**
@@ -198,7 +198,7 @@ function Nudges({ token }: { token: string }) {
   }, [token]);
   useEffect(load, [load]);
 
-  async function show(kind: "activation" | "trialEnd", lang: "ru" | "kz") {
+  async function show(kind: NudgeKind, lang: "ru" | "kz") {
     try { setPreview(await api.growthNudgePreview(token, kind, lang)); }
     catch { setMsg("Не удалось загрузить письмо"); }
   }
@@ -216,6 +216,21 @@ function Nudges({ token }: { token: string }) {
       load();
     } catch (e) {
       // Ответ-страница nginx (504 и т. п.) — не показываем HTML как текст.
+      const text = e instanceof Error ? e.message : "";
+      setMsg(text && !text.includes("<") ? text : "Не удалось запустить рассылку. Обновите страницу: возможно, она уже идёт.");
+    }
+  }
+
+  async function sendPhoneBacklog() {
+    if (!stats) return;
+    const n = stats.pending.phoneAuto + stats.pending.phoneBacklog;
+    if (!window.confirm(
+      `Отправить письмо «Подтвердите номер — бесплатные уроки ждут» учителям, которые сделали первый урок и остановились перед подтверждением номера: ${n}?\n\n` +
+      `Каждый получит его один раз.`,
+    )) return;
+    setMsg(null);
+    try { await api.growthSendPhoneGate(token); load(); }
+    catch (e) {
       const text = e instanceof Error ? e.message : "";
       setMsg(text && !text.includes("<") ? text : "Не удалось запустить рассылку. Обновите страницу: возможно, она уже идёт.");
     }
@@ -254,6 +269,25 @@ function Nudges({ token }: { token: string }) {
               </div>
               <button onClick={sendBacklog} disabled={running} style={{ ...primaryBtn, opacity: running ? 0.6 : 1 }}>
                 {running ? "Отправляем…" : "Отправить всем, кто не начал"}
+              </button>
+            </div>
+          )}
+        </div>
+        <div style={sub}>
+          <b>«Подтвердите номер — бесплатные ждут»</b>
+          <div style={hint}>Первый урок готов, дальше бесплатные требуют подтверждённого номера, а номера нет. Сами — если урок был от суток до 14 дней назад.</div>
+          <div style={{ margin: "10px 0", fontSize: 14 }}>
+            В очереди на утро: <b>{stats?.pending.phoneAuto ?? "…"}</b><br />
+            Отправлено всего: <b>{stats?.sent.phoneGate ?? "…"}</b>
+          </div>
+          <PreviewButtons onShow={(lang) => show("phoneGate", lang)} />
+          {stats && stats.pending.phoneBacklog > 0 && (
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border, #eee)" }}>
+              <div style={{ fontSize: 14, marginBottom: 8 }}>
+                Остановились раньше: <b>{stats.pending.phoneBacklog}</b>. Им письмо само не уйдёт — только по кнопке.
+              </div>
+              <button onClick={sendPhoneBacklog} disabled={running} style={{ ...primaryBtn, opacity: running ? 0.6 : 1 }}>
+                {running ? "Отправляем…" : "Отправить им"}
               </button>
             </div>
           )}
@@ -301,7 +335,7 @@ function Nudges({ token }: { token: string }) {
  */
 function TestSend({ token }: { token: string }) {
   const [email, setEmail] = useState("");
-  const [kind, setKind] = useState<"activation" | "trialEnd">("activation");
+  const [kind, setKind] = useState<NudgeKind>("activation");
   const [lang, setLang] = useState<"ru" | "kz">("ru");
   const [state, setState] = useState<string | null>(null);
 
@@ -322,9 +356,10 @@ function TestSend({ token }: { token: string }) {
       <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Тестовое письмо себе</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <input type="email" required placeholder="ваша почта" value={email} onChange={(e) => setEmail(e.target.value)} style={{ ...input, flex: "1 1 220px" }} />
-        <select value={kind} onChange={(e) => setKind(e.target.value as "activation" | "trialEnd")} style={input}>
+        <select value={kind} onChange={(e) => setKind(e.target.value as NudgeKind)} style={input}>
           <option value="activation">«Сделайте первый урок»</option>
           <option value="trialEnd">«Бесплатные закончились»</option>
+          <option value="phoneGate">«Подтвердите номер»</option>
         </select>
         <select value={lang} onChange={(e) => setLang(e.target.value as "ru" | "kz")} style={input}>
           <option value="ru">рус.</option>

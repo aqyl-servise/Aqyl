@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { acquisitionSource, mailLang, makeUnsubscribeToken, readUnsubscribeToken } from './growth-utils';
-import { activationMail, referralRewardMail, trialEndMail } from './nudge-mail';
+import { activationMail, phoneGateMail, referralRewardMail, trialEndMail } from './nudge-mail';
 import { newReferralCode, REFERRAL_CODE_RE } from './referral.service';
 
 process.env.JWT_SECRET = 'test-secret';
@@ -119,4 +119,15 @@ test('письмо о награде: число уроков, баланс и �
   assert.ok(m.html.includes('29.12.2026'));
   const kz = referralRewardMail({ lang: 'kz', lessons: 5, balance: 12, expiresAt: new Date('2026-12-29T12:00:00Z'), unsubscribeUrl: unsub });
   assert.ok(kz.subject.includes('+5 сабақ'));
+});
+test('письмо «подтвердите номер»: число бесплатных, отписка, оба языка', () => {
+  const ru = phoneGateMail({ lang: 'ru', freeLessons: 4, unsubscribeUrl: unsub });
+  assert.ok(ru.subject.includes('Ещё 4 бесплатных урока'));
+  assert.ok(ru.html.includes(unsub) && ru.text.includes(unsub));
+  assert.ok(ru.html.includes('utm_campaign=phone_gate'));
+  const one = phoneGateMail({ lang: 'ru', freeLessons: 1, unsubscribeUrl: unsub });
+  assert.ok(one.subject.includes('Ещё 1 бесплатный урок'));
+  const kz = phoneGateMail({ lang: 'kz', freeLessons: 4, unsubscribeUrl: unsub });
+  assert.ok(kz.subject.includes('4 тегін сабақ'));
+  assert.ok(kz.html.includes(unsub));
 });

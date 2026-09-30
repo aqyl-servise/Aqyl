@@ -35,8 +35,8 @@ class CreateShortLinkDto {
 }
 
 class TestNudgeDto {
-  @IsIn(['activation', 'trialEnd'])
-  kind!: 'activation' | 'trialEnd';
+  @IsIn(['activation', 'trialEnd', 'phoneGate'])
+  kind!: 'activation' | 'trialEnd' | 'phoneGate';
 
   @IsIn(['ru', 'kz'])
   lang!: 'ru' | 'kz';
@@ -117,14 +117,17 @@ export class GrowthAdminController {
   /** Сколько писем ждут отправки и сколько уже ушло. */
   @Get('nudges')
   async nudgeStats() {
-    const [activationAuto, activationBacklog, trialEnd] = await Promise.all([
+    const [activationAuto, activationBacklog, trialEnd, phoneAuto, phoneAll] = await Promise.all([
       this.nudges.candidates('activation', { maxAgeDays: 7 }),
       this.nudges.candidates('activation', { maxAgeDays: null }),
       this.nudges.candidates('trialEnd', {}),
+      this.nudges.candidates('phoneGate', { maxAgeDays: 14 }),
+      this.nudges.candidates('phoneGate', { maxAgeDays: null }),
     ]);
     const [sent] = await this.db.query(
       `SELECT count(*) FILTER (WHERE nudges ? 'activation')::int AS activation,
               count(*) FILTER (WHERE nudges ? 'trialEnd')::int AS "trialEnd",
+              count(*) FILTER (WHERE nudges ? 'phoneGate')::int AS "phoneGate",
               count(*) FILTER (WHERE "emailNudgesOff")::int AS unsubscribed
        FROM teacher WHERE "registrationSource" = 'b2c'`,
     );
@@ -134,6 +137,8 @@ export class GrowthAdminController {
         // Старые регистрации — те, кого утренняя рассылка не тронет.
         activationBacklog: activationBacklog.length - activationAuto.length,
         trialEnd: trialEnd.length,
+        phoneAuto: phoneAuto.length,
+        phoneBacklog: phoneAll.length - phoneAuto.length,
       },
       sent,
       // Ход рассылки по кнопке: админка опрашивает, пока running.
@@ -154,7 +159,7 @@ export class GrowthAdminController {
 
   @Get('nudges/preview')
   preview(@Query('kind') kind: string, @Query('lang') lang: string) {
-    if (kind !== 'activation' && kind !== 'trialEnd') throw new BadRequestException('kind');
+    if (kind !== 'activation' && kind !== 'trialEnd' && kind !== 'phoneGate') throw new BadRequestException('kind');
     return this.nudges.preview(kind, lang === 'kz' ? 'kz' : 'ru');
   }
 
@@ -165,7 +170,17 @@ export class GrowthAdminController {
   @Post('nudges/activation')
   sendActivation() {
     try {
-      return this.nudges.startBacklog();
+      return this.nudges.startBacklog('activation');
+    } catch (err) {
+      throw new ConflictException((err as Error).message);
+    }
+  }
+
+  /** «Подтвердите номер — бесплатные ждут»: тем, кто упёрся в подтверждение давно. */
+  @Post('nudges/phone-gate')
+  sendPhoneGate() {
+    try {
+      return this.nudges.startBacklog('phoneGate');
     } catch (err) {
       throw new ConflictException((err as Error).message);
     }

@@ -453,8 +453,8 @@ export interface GrowthSources {
 }
 
 export interface GrowthNudgeStats {
-  pending: { activationAuto: number; activationBacklog: number; trialEnd: number };
-  sent: { activation: number; trialEnd: number; unsubscribed: number };
+  pending: { activationAuto: number; activationBacklog: number; trialEnd: number; phoneAuto: number; phoneBacklog: number };
+  sent: { activation: number; trialEnd: number; phoneGate: number; unsubscribed: number };
   /** Ход рассылки по кнопке: письма уходят в фоне, админка опрашивает. */
   progress: {
     running: boolean;
@@ -467,6 +467,9 @@ export interface ShortLinkRow {
   utmSource: string; utmMedium: string | null; utmCampaign: string | null;
   note: string | null; clicks: number; createdAt: string;
 }
+
+/** Типы писем-подсказок: «сделайте первый урок», «бесплатные закончились», «подтвердите номер». */
+export type NudgeKind = "activation" | "trialEnd" | "phoneGate";
 
 /** Воронка активации по неделям регистрации (админка, «Рост»). */
 export interface FunnelWeek {
@@ -850,11 +853,13 @@ export const api = {
   growthSources: (token: string, days: number) =>
     request<GrowthSources>(`/admin/growth/sources?days=${days}`, undefined, token),
   growthNudges: (token: string) => request<GrowthNudgeStats>("/admin/growth/nudges", undefined, token),
-  growthNudgePreview: (token: string, kind: "activation" | "trialEnd", lang: "ru" | "kz") =>
+  growthNudgePreview: (token: string, kind: NudgeKind, lang: "ru" | "kz") =>
     request<{ subject: string; html: string; text: string }>(
       `/admin/growth/nudges/preview?kind=${kind}&lang=${lang}`, undefined, token),
-  growthSendTest: (token: string, kind: "activation" | "trialEnd", lang: "ru" | "kz", email: string) =>
+  growthSendTest: (token: string, kind: NudgeKind, lang: "ru" | "kz", email: string) =>
     request<{ ok: boolean }>("/admin/growth/nudges/test", { method: "POST", body: JSON.stringify({ kind, lang, email }) }, token),
+  growthSendPhoneGate: (token: string) =>
+    request<{ started: boolean }>("/admin/growth/nudges/phone-gate", { method: "POST" }, token),
   growthSendActivation: (token: string) =>
     request<{ started: boolean }>("/admin/growth/nudges/activation", { method: "POST" }, token),
   // Воронка активации: событие с клиента (только из белого списка сервера) и отчёт.

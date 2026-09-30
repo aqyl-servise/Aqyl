@@ -2,11 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { DataSource } from 'typeorm';
 import { MailService } from '../mail/mail.service';
-import { trialLessonLimit } from '../billing/subscription.service';
-import { activationMail, trialEndMail, NudgeMail } from './nudge-mail';
+import { requirePhoneVerification, trialLessonLimit } from '../billing/subscription.service';
+import { activationMail, phoneGateMail, trialEndMail, NudgeMail } from './nudge-mail';
 import { makeUnsubscribeToken, mailLang } from './growth-utils';
 
-export type NudgeKind = 'activation' | 'trialEnd';
+export type NudgeKind = 'activation' | 'trialEnd' | 'phoneGate';
 
 interface Candidate {
   id: string;
@@ -14,7 +14,7 @@ interface Candidate {
   fullName: string | null;
   preferredLanguage: string | null;
   acquisition: Record<string, string> | null;
-  /** activation — сколько бесплатных осталось; trialEnd — сколько уроков сделано. */
+  /** activation/phoneGate — сколько бесплатных осталось; trialEnd — сколько уроков сделано. */
   n: number;
 }
 
@@ -41,6 +41,9 @@ const SEND_GAP_MS = 700;
  *   побочный эффект деплоя.
  * - trialEnd: бесплатные уроки израсходованы (от суток до 14 дней назад),
  *   покупок и платного баланса нет.
+ * - phoneGate: первый урок готов, дальше бесплатные требуют подтверждённого
+ *   номера, а номера нет (01.10.2026 таких 18). Сами — если готовый урок
+ *   был от суток до 14 дней назад; раньше — по кнопке.
  *
  * Не пишем: отписавшимся, удаляющим аккаунт, неактивным и адресам, с которых
  * почта возвращалась (email_bounces) — повторная отправка на такой адрес
@@ -62,7 +65,8 @@ export class NudgeService {
     try {
       const a = await this.send('activation', { maxAgeDays: 7 });
       const t = await this.send('trialEnd', {});
-      if (a.sent || t.sent) this.logger.log(`Подсказки: активация ${a.sent}, конец бесплатных ${t.sent}`);
+      const g = await this.send('phoneGate', { maxAgeDays: 14 });
+      if (a.sent || t.sent || g.sent) this.logger.log(`Подсказки: активация ${a.sent}, конец бесплатных ${t.sent}, номер ${g.sent}`);
     } catch (err) {
       this.logger.error(`Рассылка подсказок упала: ${(err as Error).message}`);
     }
@@ -98,6 +102,33 @@ export class NudgeService {
         params,
       );
     }
+    if (kind === 'phoneGate') {
+      // Защита выключена — ворот нет, и письмо было бы неправдой.
+      if (!requirePhoneVerification()) return [];
+      const params: unknown[] = [limit];
+      let age = '';
+      if (opts.maxAgeDays) {
+        params.push(opts.maxAgeDays);
+        age = `AND x.last_ready > now() - make_interval(days => $2)`;
+      }
+      return this.db.query(
+        `SELECT ${cols}, $1::int - x.used AS n FROM teacher t
+         CROSS JOIN LATERAL (
+           SELECT count(*) FILTER (WHERE l."trialCounted")::int AS used,
+                  count(*) FILTER (WHERE l.status = 'ready')::int AS made,
+                  max(l."updatedAt") FILTER (WHERE l.status = 'ready') AS last_ready
+           FROM lessons l WHERE l."userId" = t.id::text
+         ) x
+         WHERE ${this.baseFilter(kind)}
+           AND t."phoneVerifiedAt" IS NULL
+           AND x.made > 0 AND x.used < $1
+           AND x.last_ready < now() - interval '24 hours' ${age}
+           AND COALESCE(t."paidLessonsBalance", 0) = 0
+           AND NOT EXISTS (SELECT 1 FROM payments p WHERE p."teacherId"::text = t.id::text AND p.status = 'paid')
+         ORDER BY x.last_ready DESC`,
+        params,
+      );
+    }
     return this.db.query(
       `SELECT ${cols}, x.made AS n FROM teacher t
        CROSS JOIN LATERAL (
@@ -121,10 +152,7 @@ export class NudgeService {
   private compose(kind: NudgeKind, c: Candidate): NudgeMail & { unsubscribeUrl: string } {
     const site = (process.env.FRONTEND_URL ?? 'https://aqyl-service.kz').split(',')[0].trim();
     const unsubscribeUrl = `${site}/api/mail/unsubscribe?t=${makeUnsubscribeToken(c.id)}`;
-    const lang = mailLang(c);
-    const m = kind === 'activation'
-      ? activationMail({ lang, fullName: c.fullName, freeLessons: c.n, unsubscribeUrl })
-      : trialEndMail({ lang, fullName: c.fullName, lessonsMade: c.n, unsubscribeUrl });
+    const m = mailFor(kind, mailLang(c), c.fullName, c.n, unsubscribeUrl);
     return { ...m, unsubscribeUrl };
   }
 
@@ -148,15 +176,15 @@ export class NudgeService {
    * увидел 504, хотя письма уходили. Теперь запрос возвращается сразу, а
    * админка опрашивает ход рассылки (getProgress).
    */
-  startBacklog(): { started: boolean } {
+  startBacklog(kind: 'activation' | 'phoneGate' = 'activation'): { started: boolean } {
     // Флаг — до первой асинхронной операции: двойное нажатие не запустит две рассылки.
     if (this.running) throw new Error('Рассылка уже идёт');
     this.running = true;
-    this.progress = { kind: 'activation', total: 0, sent: 0, failed: 0, startedAt: new Date().toISOString(), finishedAt: null };
+    this.progress = { kind, total: 0, sent: 0, failed: 0, startedAt: new Date().toISOString(), finishedAt: null };
     void (async () => {
       try {
-        const list = await this.candidates('activation', { maxAgeDays: null });
-        await this.deliver('activation', list);
+        const list = await this.candidates(kind, { maxAgeDays: null });
+        await this.deliver(kind, list);
       } catch (err) {
         this.logger.error(`Рассылка по кнопке упала: ${(err as Error).message}`);
       } finally {
@@ -207,17 +235,24 @@ export class NudgeService {
   async sendTest(kind: NudgeKind, lang: 'ru' | 'kz', email: string): Promise<void> {
     const site = (process.env.FRONTEND_URL ?? 'https://aqyl-service.kz').split(',')[0].trim();
     const unsubscribeUrl = `${site}/api/mail/unsubscribe?t=test`;
-    const m = kind === 'activation'
-      ? activationMail({ lang, fullName: null, freeLessons: trialLessonLimit(), unsubscribeUrl })
-      : trialEndMail({ lang, fullName: null, lessonsMade: trialLessonLimit(), unsubscribeUrl });
+    const m = mailFor(kind, lang, null, sampleN(kind), unsubscribeUrl);
     await this.mail.sendNudge({ email, subject: m.subject, html: m.html, text: m.text, unsubscribeUrl, tag: `test:${kind}` });
   }
 
   /** Предпросмотр письма для админки: как увидит его учитель. */
   preview(kind: NudgeKind, lang: 'ru' | 'kz'): NudgeMail {
-    const unsubscribeUrl = '#';
-    return kind === 'activation'
-      ? activationMail({ lang, fullName: null, freeLessons: trialLessonLimit(), unsubscribeUrl })
-      : trialEndMail({ lang, fullName: null, lessonsMade: trialLessonLimit(), unsubscribeUrl });
+    return mailFor(kind, lang, null, sampleN(kind), '#');
   }
+}
+
+/** Одно место, где вид письма выбирается по его типу. */
+function mailFor(kind: NudgeKind, lang: 'ru' | 'kz', fullName: string | null, n: number, unsubscribeUrl: string): NudgeMail {
+  if (kind === 'activation') return activationMail({ lang, fullName, freeLessons: n, unsubscribeUrl });
+  if (kind === 'phoneGate') return phoneGateMail({ lang, fullName, freeLessons: n, unsubscribeUrl });
+  return trialEndMail({ lang, fullName, lessonsMade: n, unsubscribeUrl });
+}
+
+/** Число для предпросмотра: как у типичного адресата этого письма. */
+function sampleN(kind: NudgeKind): number {
+  return kind === 'phoneGate' ? Math.max(1, trialLessonLimit() - 1) : trialLessonLimit();
 }

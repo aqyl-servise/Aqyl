@@ -136,7 +136,11 @@ export default function OnboardingPage() {
     try {
       await persist({ onboardingCompleted: true });
       localStorage.removeItem(STORAGE_KEY);
-      router.replace(action === "create-kmzh" ? "/dashboard/b2c?action=create-kmzh" : "/dashboard/b2c");
+      // «Создать первый КСП» — сразу в форму урока с темой из демо. Раньше путь
+      // шёл через дашборд (?action=create-kmzh), и тема по дороге терялась:
+      // учитель вводил её второй раз.
+      const q = topic.trim() ? `?topic=${encodeURIComponent(topic.trim())}` : "";
+      router.replace(action === "create-kmzh" ? `/dashboard/b2c/lesson${q}` : "/dashboard/b2c");
     } catch {
       setSaving(false);
     }
