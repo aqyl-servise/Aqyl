@@ -9,7 +9,7 @@ type Lang = "ru" | "kz" | "en";
 const TXT = {
   ru: {
     title: "Подтвердите номер — и продолжайте бесплатно",
-    lead: "Первый урок готов. Остальные бесплатные уроки выдаются после подтверждения номера телефона: так они достаются одному учителю один раз, а не повторным регистрациям.",
+    lead: "Чтобы получить оставшиеся бесплатные уроки, подтвердите номер телефона: так они достаются одному учителю один раз, а не повторным регистрациям.",
     leadSent: "Мы отправили шестизначный код по SMS на {phone}. Введите его ниже.",
     getCode: "Получить код", sending: "Отправляем…", verify: "Подтвердить", checking: "Проверяем…",
     change: "Изменить номер", resend: "Отправить код ещё раз", resendIn: "Отправить снова через {s} с",
@@ -18,7 +18,7 @@ const TXT = {
   },
   kz: {
     title: "Нөміріңізді растаңыз — тегін жалғастырыңыз",
-    lead: "Алғашқы сабақ дайын. Қалған тегін сабақтар телефон нөмірі расталғаннан кейін беріледі: осылайша олар қайта тіркелулерге емес, бір мұғалімге бір рет беріледі.",
+    lead: "Қалған тегін сабақтарды алу үшін телефон нөміріңізді растаңыз: осылайша олар қайта тіркелулерге емес, бір мұғалімге бір рет беріледі.",
     leadSent: "{phone} нөміріне SMS арқылы алты таңбалы код жібердік. Оны төменге енгізіңіз.",
     getCode: "Код алу", sending: "Жіберілуде…", verify: "Растау", checking: "Тексерілуде…",
     change: "Нөмірді өзгерту", resend: "Кодты қайта жіберу", resendIn: "{s} сек кейін қайта жіберуге болады",
@@ -27,7 +27,7 @@ const TXT = {
   },
   en: {
     title: "Confirm your phone to continue for free",
-    lead: "Your first lesson is ready. The remaining free lessons are unlocked after phone confirmation, so they go to one teacher once rather than to repeat sign-ups.",
+    lead: "To get the remaining free lessons, confirm your phone number, so they go to one teacher once rather than to repeat sign-ups.",
     leadSent: "We sent a six-digit code by SMS to {phone}. Enter it below.",
     getCode: "Get code", sending: "Sending…", verify: "Confirm", checking: "Checking…",
     change: "Change number", resend: "Send the code again", resendIn: "Resend in {s} s",
@@ -42,8 +42,8 @@ const RESEND_SECONDS = 60;
 /**
  * Подтверждение номера телефона перед выдачей бесплатных уроков.
  *
- * Появляется при втором уроке, а не при регистрации: трение попадает туда,
- * где ценность уже получена. Почтовый ящик заводится за минуту, номер — нет,
+ * Появляется не при регистрации, а после нескольких бесплатных уроков
+ * (LESSONS_BEFORE_PHONE): трение попадает туда, где ценность уже получена.
  * поэтому именно он защищает бесплатный доступ от мультиаккаунтов.
  *
  * 01.10.2026: 18 учителей сделали первый урок и остановились перед этим

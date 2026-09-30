@@ -182,37 +182,38 @@ ${button(url, 'Пригласить ещё')}`;
   };
 }
 /**
- * Сделал первый урок и остановился перед подтверждением номера. На
- * 01.10.2026 таких 18 — самые тёплые учителя: результат уже видели.
+ * Израсходовал бесплатные уроки, доступные без номера, и остановился перед
+ * подтверждением. Самые тёплые учителя: результат уже видели.
  */
 export function phoneGateMail(p: {
-  lang: MailLang; fullName?: string | null; freeLessons: number; unsubscribeUrl: string;
+  lang: MailLang; fullName?: string | null; freeLessons: number; lessonsMade: number; unsubscribeUrl: string;
 }): NudgeMail {
   const name = firstName(p.fullName);
+  const made = p.lessonsMade;
   const url = `${site()}/dashboard/b2c/lesson?utm_source=email&utm_medium=nudge&utm_campaign=phone_gate`;
   const n = p.freeLessons;
 
   if (p.lang === 'kz') {
     const hello = name ? `Сәлеметсіз бе, ${esc(name)}!` : 'Сәлеметсіз бе!';
     const body = `<h2 style="margin:0 0 14px;font-size:20px">Тағы ${n} тегін сабақ сізді күтіп тұр</h2>
-<p style="margin:0 0 12px">${hello} Сіз Aqyl-да алғашқы сабағыңызды жасадыңыз — рахмет! Қалған <b>${n} тегін сабақты</b> алу үшін телефон нөміріңізді растаңыз: бір минут қана, код SMS арқылы келеді.</p>
+<p style="margin:0 0 12px">${hello} Сіз Aqyl-да ${made} сабақ жасадыңыз — рахмет! Қалған <b>${n} тегін сабақты</b> алу үшін телефон нөміріңізді растаңыз: бір минут қана, код SMS арқылы келеді.</p>
 <p style="margin:0 0 12px;color:#475569;font-size:14px">Нөмірді тегін сабақтар қайта тіркелулерге емес, бір мұғалімге бір рет берілуі үшін сұраймыз.</p>
 ${button(url, 'Жалғастыру')}`;
     return {
       subject: `Aqyl-да тағы ${n} тегін сабақ сізді күтіп тұр`,
       html: layout('kz', body, p.unsubscribeUrl),
-      text: `${hello} Сіз Aqyl-да алғашқы сабағыңызды жасадыңыз. Қалған ${n} тегін сабақты алу үшін телефон нөміріңізді растаңыз.\n\nЖалғастыру: ${url}\n\nМұндай хаттардан бас тарту: ${p.unsubscribeUrl}`,
+      text: `${hello} Сіз Aqyl-да ${made} сабақ жасадыңыз. Қалған ${n} тегін сабақты алу үшін телефон нөміріңізді растаңыз.\n\nЖалғастыру: ${url}\n\nМұндай хаттардан бас тарту: ${p.unsubscribeUrl}`,
     };
   }
 
   const hello = name ? `Здравствуйте, ${esc(name)}!` : 'Здравствуйте!';
   const body = `<h2 style="margin:0 0 14px;font-size:20px">Ещё ${n} ${freeRu(n)} ${lessonsRu(n)} ждут вас</h2>
-<p style="margin:0 0 12px">${hello} Вы сделали в Aqyl первый урок — спасибо! Чтобы получить оставшиеся <b>${n} ${freeRu(n)} ${lessonsRu(n)}</b>, подтвердите номер телефона: это минута, код придёт по SMS.</p>
+<p style="margin:0 0 12px">${hello} Вы сделали в Aqyl ${made} ${lessonsRu(made)} — спасибо! Чтобы получить оставшиеся <b>${n} ${freeRu(n)} ${lessonsRu(n)}</b>, подтвердите номер телефона: это минута, код придёт по SMS.</p>
 <p style="margin:0 0 12px;color:#475569;font-size:14px">Номер мы просим, чтобы бесплатные уроки доставались одному учителю один раз, а не повторным регистрациям.</p>
 ${button(url, 'Продолжить')}`;
   return {
     subject: `Ещё ${n} ${freeRu(n)} ${lessonsRu(n)} ждут вас в Aqyl`,
     html: layout('ru', body, p.unsubscribeUrl),
-    text: `${hello} Вы сделали в Aqyl первый урок. Чтобы получить оставшиеся ${n} ${freeRu(n)} ${lessonsRu(n)}, подтвердите номер телефона.\n\nПродолжить: ${url}\n\nОтписаться от таких писем: ${p.unsubscribeUrl}`,
+    text: `${hello} Вы сделали в Aqyl ${made} ${lessonsRu(made)}. Чтобы получить оставшиеся ${n} ${freeRu(n)} ${lessonsRu(n)}, подтвердите номер телефона.\n\nПродолжить: ${url}\n\nОтписаться от таких писем: ${p.unsubscribeUrl}`,
   };
 }

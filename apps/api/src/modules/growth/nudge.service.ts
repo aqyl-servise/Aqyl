@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { DataSource } from 'typeorm';
 import { MailService } from '../mail/mail.service';
-import { requirePhoneVerification, trialLessonLimit } from '../billing/subscription.service';
+import { lessonsBeforePhone, requirePhoneVerification, trialLessonLimit } from '../billing/subscription.service';
 import { activationMail, phoneGateMail, trialEndMail, NudgeMail } from './nudge-mail';
 import { makeUnsubscribeToken, mailLang } from './growth-utils';
 
@@ -16,6 +16,8 @@ interface Candidate {
   acquisition: Record<string, string> | null;
   /** activation/phoneGate — сколько бесплатных осталось; trialEnd — сколько уроков сделано. */
   n: number;
+  /** phoneGate — сколько готовых уроков уже сделано. */
+  made?: number;
 }
 
 /**
@@ -105,14 +107,16 @@ export class NudgeService {
     if (kind === 'phoneGate') {
       // Защита выключена — ворот нет, и письмо было бы неправдой.
       if (!requirePhoneVerification()) return [];
-      const params: unknown[] = [limit];
+      // Упёрся в номер только тот, кто израсходовал уроки, доступные без него
+      // (LESSONS_BEFORE_PHONE). Кому номер ещё не нужен, письмо было бы неправдой.
+      const params: unknown[] = [limit, lessonsBeforePhone()];
       let age = '';
       if (opts.maxAgeDays) {
         params.push(opts.maxAgeDays);
-        age = `AND x.last_ready > now() - make_interval(days => $2)`;
+        age = `AND x.last_ready > now() - make_interval(days => $3)`;
       }
       return this.db.query(
-        `SELECT ${cols}, $1::int - x.used AS n FROM teacher t
+        `SELECT ${cols}, $1::int - x.used AS n, x.made FROM teacher t
          CROSS JOIN LATERAL (
            SELECT count(*) FILTER (WHERE l."trialCounted")::int AS used,
                   count(*) FILTER (WHERE l.status = 'ready')::int AS made,
@@ -121,7 +125,7 @@ export class NudgeService {
          ) x
          WHERE ${this.baseFilter(kind)}
            AND t."phoneVerifiedAt" IS NULL
-           AND x.made > 0 AND x.used < $1
+           AND x.made > 0 AND x.used < $1 AND x.used >= $2
            AND x.last_ready < now() - interval '24 hours' ${age}
            AND COALESCE(t."paidLessonsBalance", 0) = 0
            AND NOT EXISTS (SELECT 1 FROM payments p WHERE p."teacherId"::text = t.id::text AND p.status = 'paid')
@@ -152,7 +156,7 @@ export class NudgeService {
   private compose(kind: NudgeKind, c: Candidate): NudgeMail & { unsubscribeUrl: string } {
     const site = (process.env.FRONTEND_URL ?? 'https://aqyl-service.kz').split(',')[0].trim();
     const unsubscribeUrl = `${site}/api/mail/unsubscribe?t=${makeUnsubscribeToken(c.id)}`;
-    const m = mailFor(kind, mailLang(c), c.fullName, c.n, unsubscribeUrl);
+    const m = mailFor(kind, mailLang(c), c.fullName, c.n, unsubscribeUrl, c.made);
     return { ...m, unsubscribeUrl };
   }
 
@@ -246,13 +250,15 @@ export class NudgeService {
 }
 
 /** Одно место, где вид письма выбирается по его типу. */
-function mailFor(kind: NudgeKind, lang: 'ru' | 'kz', fullName: string | null, n: number, unsubscribeUrl: string): NudgeMail {
+function mailFor(kind: NudgeKind, lang: 'ru' | 'kz', fullName: string | null, n: number, unsubscribeUrl: string, made?: number): NudgeMail {
   if (kind === 'activation') return activationMail({ lang, fullName, freeLessons: n, unsubscribeUrl });
-  if (kind === 'phoneGate') return phoneGateMail({ lang, fullName, freeLessons: n, unsubscribeUrl });
+  if (kind === 'phoneGate') {
+    return phoneGateMail({ lang, fullName, freeLessons: n, lessonsMade: made ?? lessonsBeforePhone(), unsubscribeUrl });
+  }
   return trialEndMail({ lang, fullName, lessonsMade: n, unsubscribeUrl });
 }
 
 /** Число для предпросмотра: как у типичного адресата этого письма. */
 function sampleN(kind: NudgeKind): number {
-  return kind === 'phoneGate' ? Math.max(1, trialLessonLimit() - 1) : trialLessonLimit();
+  return kind === 'phoneGate' ? Math.max(1, trialLessonLimit() - lessonsBeforePhone()) : trialLessonLimit();
 }

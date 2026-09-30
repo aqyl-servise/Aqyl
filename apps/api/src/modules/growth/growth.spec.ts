@@ -121,13 +121,14 @@ test('письмо о награде: число уроков, баланс и �
   assert.ok(kz.subject.includes('+5 сабақ'));
 });
 test('письмо «подтвердите номер»: число бесплатных, отписка, оба языка', () => {
-  const ru = phoneGateMail({ lang: 'ru', freeLessons: 4, unsubscribeUrl: unsub });
+  const ru = phoneGateMail({ lang: 'ru', freeLessons: 4, lessonsMade: 1, unsubscribeUrl: unsub });
   assert.ok(ru.subject.includes('Ещё 4 бесплатных урока'));
   assert.ok(ru.html.includes(unsub) && ru.text.includes(unsub));
   assert.ok(ru.html.includes('utm_campaign=phone_gate'));
-  const one = phoneGateMail({ lang: 'ru', freeLessons: 1, unsubscribeUrl: unsub });
+  const one = phoneGateMail({ lang: 'ru', freeLessons: 1, lessonsMade: 3, unsubscribeUrl: unsub });
   assert.ok(one.subject.includes('Ещё 1 бесплатный урок'));
-  const kz = phoneGateMail({ lang: 'kz', freeLessons: 4, unsubscribeUrl: unsub });
+  assert.ok(one.html.includes('Вы сделали в Aqyl 3 урока'));
+  const kz = phoneGateMail({ lang: 'kz', freeLessons: 4, lessonsMade: 1, unsubscribeUrl: unsub });
   assert.ok(kz.subject.includes('4 тегін сабақ'));
   assert.ok(kz.html.includes(unsub));
 });
