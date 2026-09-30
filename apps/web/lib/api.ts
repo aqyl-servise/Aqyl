@@ -834,6 +834,8 @@ export const api = {
   growthNudgePreview: (token: string, kind: "activation" | "trialEnd", lang: "ru" | "kz") =>
     request<{ subject: string; html: string; text: string }>(
       `/admin/growth/nudges/preview?kind=${kind}&lang=${lang}`, undefined, token),
+  growthSendTest: (token: string, kind: "activation" | "trialEnd", lang: "ru" | "kz", email: string) =>
+    request<{ ok: boolean }>("/admin/growth/nudges/test", { method: "POST", body: JSON.stringify({ kind, lang, email }) }, token),
   growthSendActivation: (token: string) =>
     request<{ started: boolean }>("/admin/growth/nudges/activation", { method: "POST" }, token),
   myReferral: (token: string) => request<MyReferral>("/referral/me", undefined, token),

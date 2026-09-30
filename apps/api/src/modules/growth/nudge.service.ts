@@ -199,6 +199,20 @@ export class NudgeService {
     return { total: list.length, sent: this.progress.sent, failed: this.progress.failed };
   }
 
+  /**
+   * Тестовое письмо на произвольный адрес — тем же путём и с теми же
+   * заголовками, что настоящее, чтобы проверка попадания во «Входящие» была
+   * честной. Ссылка отписки — нерабочая заглушка: адрес не учительский.
+   */
+  async sendTest(kind: NudgeKind, lang: 'ru' | 'kz', email: string): Promise<void> {
+    const site = (process.env.FRONTEND_URL ?? 'https://aqyl-service.kz').split(',')[0].trim();
+    const unsubscribeUrl = `${site}/api/mail/unsubscribe?t=test`;
+    const m = kind === 'activation'
+      ? activationMail({ lang, fullName: null, freeLessons: trialLessonLimit(), unsubscribeUrl })
+      : trialEndMail({ lang, fullName: null, lessonsMade: trialLessonLimit(), unsubscribeUrl });
+    await this.mail.sendNudge({ email, subject: m.subject, html: m.html, text: m.text, unsubscribeUrl, tag: `test:${kind}` });
+  }
+
   /** Предпросмотр письма для админки: как увидит его учитель. */
   preview(kind: NudgeKind, lang: 'ru' | 'kz'): NudgeMail {
     const unsubscribeUrl = '#';

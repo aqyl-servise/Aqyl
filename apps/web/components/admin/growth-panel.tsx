@@ -176,6 +176,7 @@ function Nudges({ token }: { token: string }) {
         </div>
       </div>
       {stats && <div style={{ ...hint, marginTop: 10 }}>Отписались от подсказок: {stats.sent.unsubscribed}</div>}
+      <TestSend token={token} />
       {last && last.startedAt && (last.total > 0 || running) && (
         <div style={{ marginTop: 10, fontSize: 14 }}>
           {running ? "Идёт рассылка" : "Последняя рассылка"}: отправлено <b>{last.sent}</b> из {last.total}
@@ -198,6 +199,48 @@ function Nudges({ token }: { token: string }) {
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * Тестовое письмо себе: проверить, куда оно ложится — «Входящие», «Промоакции»
+ * или спам. Смотреть стоит в Gmail и в Mail.ru: у учителей в основном они.
+ */
+function TestSend({ token }: { token: string }) {
+  const [email, setEmail] = useState("");
+  const [kind, setKind] = useState<"activation" | "trialEnd">("activation");
+  const [lang, setLang] = useState<"ru" | "kz">("ru");
+  const [state, setState] = useState<string | null>(null);
+
+  async function send(e: React.FormEvent) {
+    e.preventDefault();
+    setState("Отправляем…");
+    try {
+      await api.growthSendTest(token, kind, lang, email.trim());
+      setState(`Отправлено на ${email.trim()}. Проверьте «Входящие», «Промоакции» и «Спам».`);
+    } catch (err) {
+      const text = err instanceof Error ? err.message : "";
+      setState(text && !text.includes("<") ? text : "Не удалось отправить");
+    }
+  }
+
+  return (
+    <form onSubmit={send} style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--border, #eee)" }}>
+      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Тестовое письмо себе</div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <input type="email" required placeholder="ваша почта" value={email} onChange={(e) => setEmail(e.target.value)} style={{ ...input, flex: "1 1 220px" }} />
+        <select value={kind} onChange={(e) => setKind(e.target.value as "activation" | "trialEnd")} style={input}>
+          <option value="activation">«Сделайте первый урок»</option>
+          <option value="trialEnd">«Бесплатные закончились»</option>
+        </select>
+        <select value={lang} onChange={(e) => setLang(e.target.value as "ru" | "kz")} style={input}>
+          <option value="ru">рус.</option>
+          <option value="kz">каз.</option>
+        </select>
+        <button type="submit" style={ghostBtn}>Отправить</button>
+      </div>
+      {state && <div style={{ ...hint, marginTop: 6 }}>{state}</div>}
+    </form>
   );
 }
 

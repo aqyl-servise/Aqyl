@@ -2,7 +2,7 @@ import {
   BadRequestException, Body, ConflictException, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Query, UseGuards,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsIn, IsOptional, IsString, Length, Matches } from 'class-validator';
+import { IsEmail, IsIn, IsOptional, IsString, Length, Matches } from 'class-validator';
 import { DataSource, Repository } from 'typeorm';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -31,6 +31,17 @@ class CreateShortLinkDto {
 
   @IsOptional() @IsString() @Length(0, 200)
   note?: string;
+}
+
+class TestNudgeDto {
+  @IsIn(['activation', 'trialEnd'])
+  kind!: 'activation' | 'trialEnd';
+
+  @IsIn(['ru', 'kz'])
+  lang!: 'ru' | 'kz';
+
+  @IsEmail({}, { message: 'Укажите адрес почты' })
+  email!: string;
 }
 
 /**
@@ -115,6 +126,17 @@ export class GrowthAdminController {
       // Ход рассылки по кнопке: админка опрашивает, пока running.
       progress: this.nudges.getProgress(),
     };
+  }
+
+  /**
+   * Тестовое письмо на указанный адрес — проверить, куда оно попадает
+   * (входящие, «Промоакции», спам) в Gmail и Mail.ru. 29.09 из 88 писем
+   * за сутки не было ни одного перехода, хотя SPF/DKIM/DMARC настроены.
+   */
+  @Post('nudges/test')
+  async sendTest(@Body() dto: TestNudgeDto) {
+    await this.nudges.sendTest(dto.kind, dto.lang, dto.email);
+    return { ok: true };
   }
 
   @Get('nudges/preview')
