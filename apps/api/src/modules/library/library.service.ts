@@ -110,9 +110,16 @@ export class LibraryService implements OnModuleInit {
          WHERE l.id = e."lessonId" AND l.status = 'error' AND l."generationError" LIKE 'Генерация прервалась%'
            AND e.status = 'draft'`,
       );
-      // Идёт генерация — ждём её, одна за раз.
-      const busy = await this.lessons.findOne({ where: { userId: ctx.userId, status: 'generating' } });
-      if (busy && Date.now() - new Date(busy.updatedAt).getTime() < STUCK_MS) return;
+      // Идёт генерация — ждём её, одна за раз. Возраст считаем в SQL: колонки
+      // timestamp без пояса, база пишет UTC, а процесс живёт в Asia/Almaty —
+      // в JS такая дата «стареет» на 5 часов, и 30.09 очередь сочла свежую
+      // генерацию зависшей и запустила вторую параллельно.
+      const [busy] = await this.db.query(
+        `SELECT 1 FROM lessons WHERE "userId" = $1 AND status = 'generating'
+           AND "updatedAt" > now() - make_interval(mins => $2) LIMIT 1`,
+        [ctx.userId, STUCK_MS / 60_000],
+      );
+      if (busy) return;
 
       const next = await this.examples.findOne({ where: { lessonId: IsNull() }, order: { createdAt: 'ASC' } });
       if (!next) return;
