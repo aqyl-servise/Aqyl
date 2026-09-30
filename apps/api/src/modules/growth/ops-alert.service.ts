@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { DataSource } from 'typeorm';
 import { MailService } from '../mail/mail.service';
@@ -38,7 +38,7 @@ const REPEAT_HOURS = 2;
  * см. RetentionService.
  */
 @Injectable()
-export class OpsAlertService {
+export class OpsAlertService implements OnApplicationBootstrap {
   private readonly logger = new Logger(OpsAlertService.name);
   private lastAlertAt = 0;
 
@@ -47,6 +47,21 @@ export class OpsAlertService {
     private readonly mail: MailService,
     private readonly subscription: SubscriptionService,
   ) {}
+
+  /**
+   * При старте процесса любая генерация в статусе generating заведомо оборвана:
+   * процесс один (pm2 fork), а фоновая работа жила в памяти упавшего. Закрываем
+   * сразу, не дожидаясь 20 минут: иначе после каждого деплоя учитель, у которого
+   * шла генерация, 20 минут смотрит на «генерируется», а очередь библиотеки стоит.
+   */
+  async onApplicationBootstrap(): Promise<void> {
+    try {
+      const n = await this.closeStuck(0);
+      if (n) this.logger.warn(`После перезапуска закрыто оборванных генераций: ${n}`);
+    } catch (err) {
+      this.logger.error(`Не удалось закрыть оборванные генерации при старте: ${(err as Error).message}`);
+    }
+  }
 
   /** Кому слать. OPS_ALERT_EMAILS — через запятую; по умолчанию рабочая почта. */
   private recipients(): string[] {
@@ -69,7 +84,7 @@ export class OpsAlertService {
   }
 
   /** Прерванные генерации → error; для планов уроков — возврат списанного урока. */
-  async closeStuck(): Promise<number> {
+  async closeStuck(minAgeMin: number = STUCK_MIN): Promise<number> {
     let closed = 0;
     for (const { table } of GEN_TABLES) {
       const msg = table === 'lessons'
@@ -77,9 +92,9 @@ export class OpsAlertService {
         : 'Генерация прервалась на сервере. Запустите её ещё раз.';
       const rows: Array<{ id: string; userId?: string }> = await this.db.query(
         `UPDATE "${table}" SET status = 'error', "generationError" = $1
-         WHERE status = 'generating' AND "updatedAt" < now() - make_interval(mins => $2)
+         WHERE status = 'generating' AND "updatedAt" <= now() - make_interval(mins => $2)
          RETURNING id${table === 'lessons' ? ', "userId"' : ''}`,
-        [msg, STUCK_MIN],
+        [msg, minAgeMin],
       ).then((r: unknown) => (Array.isArray(r) && Array.isArray(r[0]) ? r[0] : r) as Array<{ id: string; userId?: string }>);
       closed += rows.length;
       if (table !== 'lessons') continue;

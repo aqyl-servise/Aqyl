@@ -101,6 +101,15 @@ export class LibraryService implements OnModuleInit {
     this.ticking = true;
     try {
       const ctx = await this.systemCtx();
+      // Генерация, оборванная перезапуском (деплоем), — не вина темы: ставим
+      // её в очередь заново сами. Настоящие сбои модели остаются «сбоем» и
+      // ждут решения человека.
+      await this.db.query(
+        `UPDATE lesson_examples e SET "lessonId" = NULL
+         FROM lessons l
+         WHERE l.id = e."lessonId" AND l.status = 'error' AND l."generationError" LIKE 'Генерация прервалась%'
+           AND e.status = 'draft'`,
+      );
       // Идёт генерация — ждём её, одна за раз.
       const busy = await this.lessons.findOne({ where: { userId: ctx.userId, status: 'generating' } });
       if (busy && Date.now() - new Date(busy.updatedAt).getTime() < STUCK_MS) return;
