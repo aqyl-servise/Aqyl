@@ -45,27 +45,37 @@ function freeRu(n: number): string {
 // Разделитель разрядов в ru-RU — неразрывный пробел (в разных ICU разный); в почте нужен обычный.
 const money = (n: number) => n.toLocaleString('ru-RU').replace(/[\u00a0\u202f]/g, ' ');
 
+/**
+ * Письмо в виде обычного письма от человека, а не рассылки.
+ *
+ * 30.09.2026 тестовое письмо в Gmail попало в «Промоакции», и из 88 писем
+ * «Сделайте первый урок» за сутки не было ни одного перехода. Gmail относит
+ * в «Промоакции» по виду: карточка на цветном фоне, крупная кнопка, шапка с
+ * логотипом. Поэтому здесь — простой текст без фона и таблиц, заголовок
+ * убран (его роль играет тема письма), вместо кнопки — ссылка, подпись
+ * команды. Ссылка отписки внизу остаётся.
+ */
 function layout(lang: MailLang, body: string, unsubscribeUrl: string): string {
   const footer = lang === 'kz'
-    ? `Бұл хат сіз Aqyl-ға тіркелгендіктен жіберілді. <a href="${unsubscribeUrl}" style="color:#94a3b8">Мұндай хаттардан бас тарту</a> — төлем түбіртектері мен қолжетімділік туралы хаттар келе береді.`
-    : `Вы получили это письмо, потому что зарегистрировались в Aqyl. <a href="${unsubscribeUrl}" style="color:#94a3b8">Отписаться от таких писем</a> — квитанции и письма о доступе продолжат приходить.`;
+    ? `Бұл хат сіз Aqyl-ға тіркелгендіктен жіберілді. <a href="${unsubscribeUrl}" style="color:#888">Мұндай хаттардан бас тарту</a>.`
+    : `Вы получили это письмо, потому что зарегистрировались в Aqyl. <a href="${unsubscribeUrl}" style="color:#888">Отписаться от таких писем</a>.`;
+  const sign = lang === 'kz' ? 'Құрметпен,<br>Aqyl командасы' : 'С уважением,<br>команда Aqyl';
+  const plain = body.replace(/<h2[^>]*>[\s\S]*?<\/h2>\s*/g, '');
   return `<!DOCTYPE html>
 <html lang="${lang === 'kz' ? 'kk' : 'ru'}">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f4f6f9;font-family:Arial,sans-serif">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;padding:32px 12px"><tr><td align="center">
-<table width="100%" cellpadding="0" cellspacing="0" style="max-width:540px;background:#ffffff;border-radius:12px;overflow:hidden">
-<tr><td style="padding:28px 32px 8px;font-size:22px;font-weight:700;color:#3B2E7E">Aqyl</td></tr>
-<tr><td style="padding:8px 32px 28px;color:#1e293b;font-size:15px;line-height:1.6">${body}</td></tr>
-<tr><td style="padding:16px 32px;border-top:1px solid #f1f5f9;color:#94a3b8;font-size:12px;line-height:1.5">${footer}</td></tr>
-</table></td></tr></table>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:16px;font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#222">
+<div style="max-width:560px">
+${plain}
+<p style="margin:18px 0 0">${sign}</p>
+<p style="margin:28px 0 0;color:#888;font-size:12px;line-height:1.5">${footer}</p>
+</div>
 </body></html>`;
 }
 
+/** Ссылка текстом: крупная цветная кнопка — один из признаков рассылки для Gmail. */
 function button(href: string, label: string): string {
-  return `<table cellpadding="0" cellspacing="0" style="margin:22px 0"><tr><td style="background:#6f61d6;border-radius:8px">
-<a href="${href}" style="display:inline-block;padding:13px 28px;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none">${label}</a>
-</td></tr></table>`;
+  return `<p style="margin:14px 0"><a href="${href}" style="color:#4a3fb5;font-weight:bold">${label} →</a></p>`;
 }
 
 /** Зарегистрировался, но ни одного готового урока. */

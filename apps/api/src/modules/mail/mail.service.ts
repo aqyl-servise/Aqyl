@@ -342,12 +342,15 @@ export class MailService {
     const { email, subject, html, text, unsubscribeUrl, tag } = params;
     const masked = email.replace(/(.{2}).+(@.+)/, "$1***$2");
     await this.transporter.sendMail({
-      from: this.from, to: email, subject, html, text,
+      // Живой адрес вместо no-reply: «не отвечайте» — ещё один признак
+      // рассылки для Gmail, а ответ учителя уходит на рабочую почту (replyTo).
+      from: this.config.get<string>("NUDGE_FROM") ?? "Aqyl <hello@aqyl-service.kz>",
+      to: email, subject, html, text,
       replyTo: this.config.get<string>("SUPPORT_EMAIL") ?? "aqylservise@gmail.com",
-      headers: {
-        "List-Unsubscribe": `<${unsubscribeUrl}>`,
-        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-      },
+      // Заголовок List-Unsubscribe оставлен (кнопка «Отписаться» в Gmail),
+      // а List-Unsubscribe-Post — нет: вместе они маркируют массовую рассылку,
+      // которой при нашем объёме (десятки писем) мы не являемся.
+      headers: { "List-Unsubscribe": `<${unsubscribeUrl}>` },
     });
     this.logger.log(`Nudge "${tag}" sent to ${masked}`);
   }
