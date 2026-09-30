@@ -13,6 +13,7 @@ import { HandoutsService, ExportMode } from './handouts/handouts.service';
 import { PresentationService } from './presentation/presentation.service';
 import { LessonHeaderDto } from './dto/lesson-header.dto';
 import { SetStagesDto, GenerateLessonDto, SwapToolDto } from './dto/lesson-actions.dto';
+import { FunnelService } from '../funnel/funnel.service';
 
 type AuthRequest = { user: { id: string; sub?: string; schoolId: string | null; role: string } };
 
@@ -27,6 +28,7 @@ export class LessonPlansController {
     private readonly service: LessonPlansService,
     private readonly handouts: HandoutsService,
     private readonly presentation: PresentationService,
+    private readonly funnel: FunnelService,
   ) {}
 
   private ctx(req: AuthRequest) {
@@ -138,6 +140,8 @@ export class LessonPlansController {
   @Get(':id/presentation/export')
   async exportPresentation(@Param('id') id: string, @Req() req: AuthRequest, @Res() res: Response) {
     const buf = await this.presentation.exportPdf(id, this.ctx(req));
+    // Воронка: скачал результат. Пишется после успешной сборки файла.
+    void this.funnel.record(this.ctx(req).userId, 'export_presentation', id);
     this.sendPdf(res, `presentation-${id}.pdf`, buf);
   }
 
@@ -146,6 +150,7 @@ export class LessonPlansController {
   async exportHandouts(@Param('id') id: string, @Query('mode') mode: string, @Req() req: AuthRequest, @Res() res: Response) {
     const m: ExportMode = mode === 'teacher' ? 'teacher' : 'student';
     const buf = await this.handouts.exportPackage(id, this.ctx(req), m);
+    void this.funnel.record(this.ctx(req).userId, 'export_handouts', id);
     this.sendPdf(res, `handouts-${id}-${m}.pdf`, buf);
   }
 
@@ -157,6 +162,7 @@ export class LessonPlansController {
   ) {
     const m: ExportMode = mode === 'teacher' ? 'teacher' : 'student';
     const buf = await this.handouts.exportSingle(id, hid, this.ctx(req), m);
+    void this.funnel.record(this.ctx(req).userId, 'export_handouts', id);
     this.sendPdf(res, `handout-${hid}-${m}.pdf`, buf);
   }
 
@@ -172,6 +178,7 @@ export class LessonPlansController {
   @Get(':id/export')
   async export(@Param('id') id: string, @Req() req: AuthRequest, @Res() res: Response) {
     const buf = await this.service.exportDocx(id, this.ctx(req));
+    void this.funnel.record(this.ctx(req).userId, 'export_plan', id);
     res.set({
       'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'Content-Disposition': `attachment; filename="ksp-${id}.docx"`,

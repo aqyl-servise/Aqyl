@@ -468,6 +468,16 @@ export interface ShortLinkRow {
   note: string | null; clicks: number; createdAt: string;
 }
 
+/** Воронка активации по неделям регистрации (админка, «Рост»). */
+export interface FunnelWeek {
+  week: string; tracked: boolean;
+  registered: number; onboarded: number; opened: number; drafted: number;
+  started: number; ready: number; exported: number; second: number; paid: number;
+}
+export interface FunnelReport {
+  since: string; weeks: FunnelWeek[]; total: FunnelWeek; exports: Record<string, number>;
+}
+
 /** Строка библиотеки примеров в админке. generation: queued → generating → ready | error. */
 export interface LibraryAdminRow {
   id: string; slug: string; lang: "ru" | "kz"; subject: string; grade: number; topic: string;
@@ -847,6 +857,11 @@ export const api = {
     request<{ ok: boolean }>("/admin/growth/nudges/test", { method: "POST", body: JSON.stringify({ kind, lang, email }) }, token),
   growthSendActivation: (token: string) =>
     request<{ started: boolean }>("/admin/growth/nudges/activation", { method: "POST" }, token),
+  // Воронка активации: событие с клиента (только из белого списка сервера) и отчёт.
+  trackEvent: (token: string, event: "generator_opened") =>
+    request<{ ok: boolean }>("/events", { method: "POST", body: JSON.stringify({ event }) }, token),
+  growthFunnel: (token: string, weeks: number) =>
+    request<FunnelReport>(`/admin/growth/funnel?weeks=${weeks}`, undefined, token),
   // Библиотека примеров (только admin): очередь генерации, вычитка, публикация.
   libraryList: (token: string) => request<LibraryAdminRow[]>("/admin/library/examples", undefined, token),
   libraryCreate: (token: string, data: { lang: "ru" | "kz"; subject: string; grade: number; topic: string; objectives?: string[] }) =>

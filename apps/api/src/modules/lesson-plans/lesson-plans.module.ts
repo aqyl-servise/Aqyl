@@ -19,6 +19,7 @@ import { LanguageGateService } from './language-gate.service';
 import { PresentationService } from './presentation/presentation.service';
 import { AiClientModule } from '../../services/ai-client.module';
 import { BillingModule } from '../billing/billing.module';
+import { FunnelModule } from '../funnel/funnel.module';
 
 // КСП (short-term lesson plan) generator — Срез 1 + раздаточные материалы (Срез 2).
 // Named `lesson-plans` to avoid the existing `lessons` module (open-lesson analysis).
@@ -37,6 +38,7 @@ import { BillingModule } from '../billing/billing.module';
     ]),
     AiClientModule,
     BillingModule,
+    FunnelModule,
   ],
   controllers: [LessonPlansController],
   providers: [LessonsSeedService, LessonPlansService, HandoutsService, CostLoggerService, PdfService, PresentationService, LanguageGateService],

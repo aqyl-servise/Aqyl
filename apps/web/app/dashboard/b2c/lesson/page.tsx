@@ -84,6 +84,11 @@ export default function LessonGeneratorPage() {
         const me = await api.getB2CMe(tk);
         if (me?.fullName) setForm((f) => (f.teacherName ? f : { ...f, teacherName: me.fullName }));
       } catch { /* профиль не критичен для формы */ }
+      // Воронка: открыл форму НОВОГО урока (не просмотр готового по ?id=).
+      // Повторы в пределах получаса сервер не пишет.
+      if (!new URLSearchParams(window.location.search).get("id")) {
+        void api.trackEvent(tk, "generator_opened").catch(() => {});
+      }
     })();
     // Тема, переданная с дашборда (/dashboard/b2c/lesson?topic=…), сразу подставляется в «Тему урока».
     setForm((f) => ({ ...f, language: lang }));

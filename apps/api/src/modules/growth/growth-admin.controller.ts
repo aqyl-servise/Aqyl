@@ -11,6 +11,7 @@ import { SkipSchoolIsolation } from '../../common/decorators/skip-school-isolati
 import { ShortLink } from './short-link.entity';
 import { NudgeService } from './nudge.service';
 import { ReferralService } from './referral.service';
+import { FunnelService } from '../funnel/funnel.service';
 import { acquisitionSource } from './growth-utils';
 
 class CreateShortLinkDto {
@@ -57,6 +58,7 @@ export class GrowthAdminController {
     private readonly db: DataSource,
     private readonly nudges: NudgeService,
     private readonly referrals: ReferralService,
+    private readonly funnel: FunnelService,
     @InjectRepository(ShortLink) private readonly links: Repository<ShortLink>,
   ) {}
 
@@ -99,6 +101,17 @@ export class GrowthAdminController {
         }))
         .sort((a, b) => b.registered - a.registered),
     };
+  }
+
+  /**
+   * Воронка активации по неделям регистрации: регистрация → онбординг →
+   * открыл форму → черновик → запустил генерацию → готовый урок → скачал →
+   * второй урок → оплата. Шаги «открыл форму» и «скачал» пишутся с
+   * 01.10.2026, остальные считаются за всё время.
+   */
+  @Get('funnel')
+  funnelReport(@Query('weeks') weeksRaw?: string) {
+    return this.funnel.weekly(Number(weeksRaw ?? 12) || 0);
   }
 
   /** Сколько писем ждут отправки и сколько уже ушло. */

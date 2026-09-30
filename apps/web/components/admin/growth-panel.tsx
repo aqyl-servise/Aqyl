@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { api, type GrowthNudgeStats, type GrowthSources, type ReferralOverview, type ShortLinkRow } from "../../lib/api";
+import { api, type FunnelReport, type FunnelWeek, type GrowthNudgeStats, type GrowthSources, type ReferralOverview, type ShortLinkRow } from "../../lib/api";
 import { Icon } from "../ui/icon";
 
 /**
@@ -14,11 +14,104 @@ export function GrowthPanel({ token }: { token: string }) {
   return (
     <div style={{ padding: 24, maxWidth: 1100 }}>
       <h2 style={{ margin: "0 0 20px", fontSize: 22 }}><Icon name="chart-line" size={16} /> Рост</h2>
+      <Funnel token={token} />
       <Sources token={token} />
       <Nudges token={token} />
       <Referrals token={token} />
       <ShortLinks token={token} />
     </div>
+  );
+}
+
+// ── Воронка активации ──────────────────────────────────────────────────────
+
+const STEPS: Array<{ key: keyof FunnelWeek; label: string; tracked?: boolean }> = [
+  { key: "registered", label: "Регистрация" },
+  { key: "onboarded", label: "Онбординг" },
+  { key: "opened", label: "Открыл форму", tracked: true },
+  { key: "drafted", label: "Черновик" },
+  { key: "started", label: "Запустил генерацию" },
+  { key: "ready", label: "Готовый урок" },
+  { key: "exported", label: "Скачал", tracked: true },
+  { key: "second", label: "Второй урок" },
+  { key: "paid", label: "Оплатил" },
+];
+
+/**
+ * Где отваливаются учителя: по неделям регистрации, сколько дошли до
+ * каждого шага (процент — от зарегистрированных). «Открыл форму» и «Скачал»
+ * пишутся с 01.10.2026: у недель до этого там прочерк — прошлое не восстановить.
+ */
+function Funnel({ token }: { token: string }) {
+  const [data, setData] = useState<FunnelReport | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.growthFunnel(token, 12).then(setData).catch(() => setError("Не удалось загрузить воронку"));
+  }, [token]);
+
+  const cell = (w: FunnelWeek, s: (typeof STEPS)[number]) => {
+    if (s.tracked && !w.tracked) return <span style={hint}>—</span>;
+    const n = w[s.key] as number;
+    const pct = w.registered ? Math.round((n / w.registered) * 100) : 0;
+    return <>{n} <span style={hint}>{s.key === "registered" ? "" : `${pct}%`}</span></>;
+  };
+
+  // Самый большой провал между соседними шагами за всё время (без неполных шагов).
+  const worst = (() => {
+    if (!data) return null;
+    const steps = STEPS.filter((s) => !s.tracked);
+    let best: { from: string; to: string; lost: number } | null = null;
+    for (let i = 1; i < steps.length; i++) {
+      const a = data.total[steps[i - 1].key] as number, b = data.total[steps[i].key] as number;
+      if (a > 0 && (!best || a - b > best.lost)) best = { from: steps[i - 1].label, to: steps[i].label, lost: a - b };
+    }
+    return best;
+  })();
+
+  return (
+    <section style={card}>
+      <h3 style={h3}>Воронка активации</h3>
+      <p style={muted}>
+        По неделям регистрации: сколько учителей дошли до шага (процент — от зарегистрированных в эту неделю).
+        «Открыл форму» и «Скачал» записываются с {data ? new Date(data.since).toLocaleDateString("ru-RU") : "01.10.2026"} —
+        у более ранних недель там прочерк.
+      </p>
+      {error && <div style={{ color: "#dc2626" }}>{error}</div>}
+      {data && (
+        <>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ ...table, minWidth: 880 }}>
+              <thead>
+                <tr style={{ textAlign: "left", color: "var(--muted)" }}>
+                  <th style={th}>Неделя</th>
+                  {STEPS.map((s) => <th key={s.key} style={{ ...th, textAlign: "right" }}>{s.label}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {[...data.weeks, data.total].map((w) => (
+                  <tr key={w.week} style={{ borderTop: "1px solid var(--border, #eee)", fontWeight: w.week === "всего" ? 700 : 400 }}>
+                    <td style={td}>{w.week === "всего" ? "Всего" : `с ${new Date(w.week).toLocaleDateString("ru-RU")}`}</td>
+                    {STEPS.map((s) => <td key={s.key} style={{ ...td, textAlign: "right", whiteSpace: "nowrap" }}>{cell(w, s)}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {worst && (
+            <div style={{ marginTop: 10, fontSize: 14 }}>
+              Больше всего теряем между «{worst.from}» и «{worst.to}»: <b>{worst.lost}</b> учителей за всё время.
+            </div>
+          )}
+          {Object.keys(data.exports).length > 0 && (
+            <div style={{ ...hint, marginTop: 6 }}>
+              Что скачивают (учителей): план в Word — {data.exports.export_plan ?? 0}, раздатка — {data.exports.export_handouts ?? 0},
+              презентация — {data.exports.export_presentation ?? 0}.
+            </div>
+          )}
+        </>
+      )}
+    </section>
   );
 }
 
