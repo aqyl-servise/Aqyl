@@ -30,6 +30,8 @@ const PUBLIC_PATHS = [
   '/sitemap.xml',
   // Короткие ссылки с листовок и QR-кодов: по ним приходят люди без аккаунта.
   '/r/',
+  // Библиотека примеров планов — вход из поиска, без аккаунта.
+  '/plans',
   '/api/auth/set-cookie',
   '/api/auth/clear-cookie',
   '/api/auth',        // все /api/auth/* публичные (login, register, b2c/*)

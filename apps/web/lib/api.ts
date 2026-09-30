@@ -468,6 +468,15 @@ export interface ShortLinkRow {
   note: string | null; clicks: number; createdAt: string;
 }
 
+/** Строка библиотеки примеров в админке. generation: queued → generating → ready | error. */
+export interface LibraryAdminRow {
+  id: string; slug: string; lang: "ru" | "kz"; subject: string; grade: number; topic: string;
+  objectives: string[]; status: "draft" | "published"; views: number;
+  publishedAt: string | null; createdAt: string;
+  generation: "queued" | "draft" | "generating" | "ready" | "error" | "missing";
+  generationError: string | null;
+}
+
 /** Приглашение коллег — для страницы учителя. */
 export interface MyReferral {
   code: string; bonus: number; cap: number;
@@ -838,6 +847,17 @@ export const api = {
     request<{ ok: boolean }>("/admin/growth/nudges/test", { method: "POST", body: JSON.stringify({ kind, lang, email }) }, token),
   growthSendActivation: (token: string) =>
     request<{ started: boolean }>("/admin/growth/nudges/activation", { method: "POST" }, token),
+  // Библиотека примеров (только admin): очередь генерации, вычитка, публикация.
+  libraryList: (token: string) => request<LibraryAdminRow[]>("/admin/library/examples", undefined, token),
+  libraryCreate: (token: string, data: { lang: "ru" | "kz"; subject: string; grade: number; topic: string; objectives?: string[] }) =>
+    request<{ id: string }>("/admin/library/examples", { method: "POST", body: JSON.stringify(data) }, token),
+  librarySeed: (token: string) => request<{ added: number }>("/admin/library/presets", { method: "POST" }, token),
+  libraryContent: (token: string, id: string) =>
+    request<import("./library").ExamplePage>(`/admin/library/examples/${id}`, undefined, token),
+  libraryAction: (token: string, id: string, action: "publish" | "unpublish" | "retry") =>
+    request<{ ok: boolean }>(`/admin/library/examples/${id}/${action}`, { method: "POST" }, token),
+  libraryDelete: (token: string, id: string) =>
+    request<{ ok: boolean }>(`/admin/library/examples/${id}`, { method: "DELETE" }, token),
   myReferral: (token: string) => request<MyReferral>("/referral/me", undefined, token),
   referralOverview: (token: string) => request<ReferralOverview>("/admin/growth/referrals", undefined, token),
   approveReferral: (token: string, inviteeId: string) =>

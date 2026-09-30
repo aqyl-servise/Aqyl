@@ -7,6 +7,7 @@ import { SchoolProvider } from "../../contexts/school-context";
 import { SchoolSwitcher } from "./school-switcher";
 import { B2cPanel } from "./b2c-panel";
 import { GrowthPanel } from "./growth-panel";
+import { LibraryPanel } from "./library-panel";
 import { AdminDashboard } from "./admin-dashboard";
 import { TeacherListPanel } from "./teacher-list-panel";
 import { SchoolAnalyticsPanel } from "./school-analytics-panel";
@@ -83,6 +84,7 @@ function AdminAppContent({ token, user, language, setLanguage, onLogout }: {
       {section === "schools" && user.role === "admin" && <SchoolsPanel token={token} language={language} t={t} />}
       {section === "b2c" && user.role === "admin" && <B2cPanel token={token} />}
       {section === "growth" && user.role === "admin" && <GrowthPanel token={token} />}
+      {section === "library" && user.role === "admin" && <LibraryPanel token={token} />}
       {section === "sor-soch" && <SorSochPanel token={token} language={language} t={t} isAdmin={true} userRole={user.role} />}
       {section === "fl" && <FLAdminPanel token={token} language={language} userRole={user.role} />}
       {section === "rating" && <RatingAdminPanel token={token} language={language} userRole={user.role} />}
@@ -157,6 +159,8 @@ function getNavItemsForRole(role: string, t: Record<string, string>, isGlobalAdm
       { key: "b2c", label: "B2C", icon: "users" },
       // Рост: источники регистраций, письма-подсказки, короткие ссылки.
       { key: "growth", label: "Рост", icon: "chart-line" },
+      // Библиотека примеров для поиска: вычитка и публикация страниц /plans.
+      { key: "library", label: "Библиотека", icon: "books" },
     ];
   }
   return baseNav;

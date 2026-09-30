@@ -34,6 +34,7 @@ import { ScheduleModule } from "./modules/schedule/schedule.module";
 import { ScheduleModule as CronModule } from "@nestjs/schedule";
 import { RetentionModule } from "./modules/retention/retention.module";
 import { GrowthModule } from "./modules/growth/growth.module";
+import { LibraryModule } from "./modules/library/library.module";
 import { AssignmentsModule } from "./modules/assignments/assignments.module";
 import { LessonsModule } from "./modules/lessons/lessons.module";
 import { ProtocolsModule } from "./modules/protocols/protocols.module";
@@ -219,6 +220,7 @@ import { TrialFingerprint } from "./modules/trial-guard/entities/trial-fingerpri
     CronModule.forRoot(),
     RetentionModule,
     GrowthModule,
+    LibraryModule,
     AssignmentsModule,
     LessonsModule,
     ProtocolsModule,

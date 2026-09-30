@@ -8,6 +8,8 @@ import { COMPANY, hasRequisites } from "../lib/company";
  * платёжный оператор.
  */
 const DOC_LINKS: { href: string; label: string }[] = [
+  // Библиотека примеров: ссылка со всех публичных страниц помогает поиску её найти.
+  { href: "/plans", label: "Примеры КСП и ҚМЖ" },
   { href: "/privacy", label: "Политика конфиденциальности" },
   { href: "/terms", label: "Пользовательское соглашение" },
   { href: "/consent", label: "Согласие на обработку персональных данных" },
