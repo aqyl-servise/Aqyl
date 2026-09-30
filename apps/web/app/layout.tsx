@@ -44,6 +44,12 @@ export const metadata: Metadata = {
     "критерии и дескрипторы, раздатки трёх уровней и презентация. На русском и казахском. " +
     "5 уроков бесплатно.",
   applicationName: "Aqyl",
+  // Подтверждение прав на сайт в Google Search Console и Яндекс Вебмастере
+  // (01.10.2026). Удалять нельзя: без тега права слетают, а с ними отчёты.
+  verification: {
+    google: "bOYGbjF2vZMubHkkBqp3WKHfF0-ncagzwk9kGimVCeA",
+    yandex: "bcfad3e088fcb19e",
+  },
   openGraph: {
     type: "website",
     siteName: "Aqyl",
