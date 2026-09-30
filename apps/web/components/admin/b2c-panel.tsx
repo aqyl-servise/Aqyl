@@ -171,7 +171,7 @@ export function B2cPanel({ token }: { token: string }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginBottom: 24 }}>
           <Card label="Учителей" value={String(data.summary.users)} />
           <Card label="С подпиской" value={String(data.summary.active)} accent="#16a34a" />
-          <Card label="В пробном" value={String(data.summary.trial)} accent="#d97706" />
+          <Card label="С бесплатными уроками" value={String(data.summary.trial)} accent="#d97706" />
           <Card label="Истекло" value={String(data.summary.expired)} accent="var(--muted)" />
           <Card label="MRR" value={`${data.summary.mrrKzt.toLocaleString("ru-RU")} ₸`} />
           <Card label="Оплачено всего" value={`${data.summary.paidTotalKzt.toLocaleString("ru-RU")} ₸`}
@@ -264,18 +264,28 @@ function Access({ u }: { u: B2cUser }) {
       </span>
     );
   }
-  if (u.trialActive) {
+  // Бесплатный доступ — уроки без срока (оферта, п. 4.1); дата «пробного
+  // периода» осталась от модели «14 дней» и здесь больше не показывается.
+  if (u.paidLessonsBalance > 0 && (!u.balanceExpiresAt || new Date(u.balanceExpiresAt) > new Date())) {
     return (
       <span>
-        <span style={{ ...badge, background: "#d97706" }}>пробный</span>
-        <div style={hint}>до {d(u.trialEndsAt)}</div>
+        <span style={{ ...badge, background: "#059669" }}>пакет</span>
+        {u.freeLeft > 0 && <div style={hint}>+ бесплатных {u.freeLeft}</div>}
+      </span>
+    );
+  }
+  if (u.freeLeft > 0) {
+    return (
+      <span>
+        <span style={{ ...badge, background: "#d97706" }}>бесплатные</span>
+        <div style={hint}>осталось {u.freeLeft}</div>
       </span>
     );
   }
   return (
     <span>
-      <span style={{ ...badge, background: "#9ca3af" }}>{u.subscriptionStatus ?? "нет доступа"}</span>
-      {u.trialEndsAt && <div style={hint}>пробный истёк {d(u.trialEndsAt)}</div>}
+      <span style={{ ...badge, background: "#9ca3af" }}>нет уроков</span>
+      {u.trialDenied && <div style={hint}>бесплатные уже получены ранее (п. 4.2)</div>}
     </span>
   );
 }

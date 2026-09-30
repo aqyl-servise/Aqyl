@@ -15,6 +15,7 @@ import { Subscription } from "../billing/entities/subscription.entity";
 import { BillingService } from "../billing/billing.service";
 import { SmsService } from "../notifications/sms.service";
 import { acquisitionSource } from "../growth/growth-utils";
+import { trialLessonLimit } from "../billing/subscription.service";
 
 /** Цена, проставляемая при ручной выдаче. Совпадает с PRICE_PER_MONTH в billing.service. */
 const ADMIN_GRANT_PRICE = 5990;
@@ -428,6 +429,7 @@ export class AdminService {
       id: string; email: string; fullName: string; phone: string | null; subject: string | null;
       status: string; createdAt: Date; onboardingCompleted: boolean;
       trialEndsAt: Date | null; trialActive: boolean;
+      freeLeft: number; trialDenied: boolean;
       subscriptionStatus: string | null; currentPeriodEnd: Date | null;
       pricePerMonth: number | null; cancelAtPeriodEnd: boolean;
       lessons: number; paidKzt: number;
@@ -451,9 +453,12 @@ export class AdminService {
     const em = this.teacherRepo.manager;
     const lessonRows = await em.createQueryBuilder()
       .select('l."userId"', 'userId').addSelect('COUNT(*)', 'n')
+      .addSelect('COUNT(*) FILTER (WHERE l."trialCounted")', 'trial')
       .from('lessons', 'l').where('l."userId" IN (:...ids)', { ids })
-      .groupBy('l."userId"').getRawMany<{ userId: string; n: string }>();
+      .groupBy('l."userId"').getRawMany<{ userId: string; n: string; trial: string }>();
     const lessonsBy = new Map(lessonRows.map((r) => [r.userId, Number(r.n)]));
+    const trialUsedBy = new Map(lessonRows.map((r) => [r.userId, Number(r.trial)]));
+    const limit = trialLessonLimit();
 
     const payRows = await em.createQueryBuilder()
       .select('p."teacherId"', 'teacherId')
@@ -467,14 +472,18 @@ export class AdminService {
     const users = teachers.map((t) => {
       const s = subByTeacher.get(t.id) ?? null;
       const pay = paidBy.get(t.id) ?? { sum: 0, n: 0 };
-      // Пробный период: без подписки действует Teacher.trialEndsAt, с подпиской
-      // в статусе trial — её собственный срок (см. subscription.service).
       const trialEnds = s?.status === 'trial' ? s.trialEndsAt ?? t.trialEndsAt ?? null : t.trialEndsAt ?? null;
+      // Бесплатный доступ — 5 уроков без срока (оферта, п. 4.1). Дата пробного
+      // периода осталась от модели «14 дней» и доступ не ограничивает: до
+      // 29.09.2026 админка по ней писала «пробный истёк» учителям, у которых
+      // бесплатные уроки на деле оставались.
+      const freeLeft = t.trialDenied ? 0 : Math.max(0, limit - (trialUsedBy.get(t.id) ?? 0));
       return {
         id: t.id, email: t.email, fullName: t.fullName,
         phone: t.phone ?? null, subject: t.subject ?? null,
         status: t.status, createdAt: t.createdAt, onboardingCompleted: t.onboardingCompleted,
-        trialEndsAt: trialEnds, trialActive: !!trialEnds && trialEnds > now,
+        trialEndsAt: trialEnds, trialActive: freeLeft > 0,
+        freeLeft, trialDenied: t.trialDenied,
         subscriptionStatus: s?.status ?? null,
         currentPeriodEnd: s?.currentPeriodEnd ?? null,
         pricePerMonth: s?.pricePerMonth ?? null,

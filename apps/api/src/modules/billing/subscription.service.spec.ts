@@ -16,6 +16,7 @@ interface World {
     id: string; registrationSource: string;
     paidLessonsBalance: number; balanceExpiresAt: Date | null;
     phoneVerifiedAt: Date | null;
+    trialDenied?: boolean;
   };
   lessons: Map<string, { userId: string; trialCounted: boolean; paidCounted: boolean }>;
   subscriptionActive: boolean;
@@ -395,4 +396,39 @@ test('возврат по уроку, за который не списывал�
   const svc = makeService(w);
   assert.equal(await svc.refundLessonStart(T, 'l1'), 'none');
   assert.equal(w.teacher.paidLessonsBalance, 0);
+});
+
+// ── отказ в бесплатном доступе (оферта, п. 4.2) ───────────────────────────
+test('отказано в бесплатных: урок не списывается как бесплатный, без баланса — 403 с причиной', async () => {
+  const w = world({ trialDenied: true });
+  lesson(w, 'l1');
+  const svc = makeService(w);
+  await assert.rejects(() => svc.chargeLessonStart(T, 'l1'), /уже были получены/);
+  assert.equal(w.lessons.get('l1')!.trialCounted, false);
+});
+
+test('отказано в бесплатных, но есть купленные — списывается платный', async () => {
+  const w = world({ trialDenied: true, paidLessonsBalance: 3, balanceExpiresAt: future() });
+  lesson(w, 'l1');
+  const svc = makeService(w);
+  assert.equal(await svc.chargeLessonStart(T, 'l1'), 'paid');
+  assert.equal(w.teacher.paidLessonsBalance, 2);
+});
+
+test('отказано в бесплатных: сводка показывает ноль бесплатных, доступа нет', async () => {
+  const w = world({ trialDenied: true });
+  const svc = makeService(w);
+  const s = await svc.balanceSummary(T);
+  assert.equal(s.trialLeft, 0);
+  assert.equal(s.total, 0);
+  assert.equal(await svc.checkSubscriptionAccess(T), false);
+  assert.equal(await svc.trialLessonsLeft(T), 0);
+});
+
+test('без отказа бесплатные доступны независимо от устаревшей даты пробного периода', async () => {
+  const w = world();
+  lesson(w, 'l1');
+  const svc = makeService(w);
+  assert.equal(await svc.checkSubscriptionAccess(T), true);
+  assert.equal(await svc.chargeLessonStart(T, 'l1'), 'trial');
 });

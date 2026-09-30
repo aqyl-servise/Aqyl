@@ -83,6 +83,17 @@ export class TrialGuardService implements OnModuleInit {
   }
 
   /**
+   * Номер ещё не давал бесплатных уроков. Только по номеру, без почты: при
+   * подтверждении номера почта этого же учителя уже может быть в таблице
+   * (её записывает первое подтверждение), и это не повод отказывать.
+   */
+  async isPhoneFresh(phone: string): Promise<boolean> {
+    const digest = this.digest('phone', TrialGuardService.normalizePhone(phone));
+    if (!digest) return true; // ключ не настроен — не блокируем
+    return (await this.repo.count({ where: { digest } })) === 0;
+  }
+
+  /**
    * Записать отпечатки при удалении аккаунта. Вызывается ПОСЛЕ того, как
    * персональные данные уничтожены: сюда попадает только необратимое значение.
    */

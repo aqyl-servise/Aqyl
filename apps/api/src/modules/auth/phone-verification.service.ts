@@ -113,13 +113,22 @@ export class PhoneVerificationService {
     if (!teacher) throw new BadRequestException('Пользователь не найден');
 
     // Выдавать ли бесплатные уроки: если по этому номеру их уже получали
-    // (в том числе на удалённом аккаунте) — нет.
-    const trialAllowed = await this.trialGuard.shouldGrantTrial(teacher.email, record.phone);
+    // (в том числе на удалённом аккаунте) — нет. Проверяем ТОЛЬКО номер:
+    // отпечаток почты этого же учителя записан при его первом подтверждении,
+    // и проверка по почте отняла бы уроки у того, кто просто подтверждает
+    // номер повторно. Повторное подтверждение того же номера — не повод.
+    const sameNumber = !!teacher.phoneVerifiedAt &&
+      TrialGuardService.normalizePhone(teacher.phone ?? '') === TrialGuardService.normalizePhone(record.phone);
+    const trialAllowed = teacher.trialDenied
+      ? false
+      : sameNumber || (await this.trialGuard.isPhoneFresh(record.phone));
 
     await this.repo.update({ id: record.id }, { isUsed: true });
     await this.teacherRepo.update({ id: teacherId }, {
       phone: record.phone,
       phoneVerifiedAt: new Date(),
+      // Оферта, п. 4.2: с ранее подтверждённым номером бесплатный доступ не открывается.
+      ...(trialAllowed ? {} : { trialDenied: true }),
     });
     // Номер «сгорает» сразу при подтверждении, а не при удалении аккаунта:
     // иначе второй аккаунт на тот же номер получил бы свой пробный доступ.

@@ -88,6 +88,9 @@ export class B2cAuthService {
         acquisition: sanitizeAttribution(dto.attribution),
         subscriptionStatus: grantTrial ? "trial" : "expired",
         trialEndsAt: grantTrial ? new Date(Date.now() + TRIAL_MS) : null,
+        // Именно этот флаг видит списание (SubscriptionService); статус и дата
+        // выше остались от модели «14 дней» и доступ не ограничивают.
+        trialDenied: !grantTrial,
       }),
     );
 

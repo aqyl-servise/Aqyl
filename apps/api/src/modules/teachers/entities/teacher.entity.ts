@@ -70,8 +70,19 @@ export class Teacher {
   @Column({ default: "active" })
   subscriptionStatus!: string; // 'trial' | 'active' | 'expired' | 'none'
 
+  /**
+   * Устарело с 24.08.2026: бесплатный доступ — 5 уроков без срока (оферта,
+   * п. 4.1), дата ни на что не влияет. Осталось от модели «14 дней».
+   */
   @Column({ type: "timestamp", nullable: true })
-  trialEndsAt?: Date | null; // 14 days from B2C registration
+  trialEndsAt?: Date | null;
+
+  /**
+   * Бесплатные уроки уже были получены по этой почте или номеру (оферта,
+   * п. 4.2) — выставляется при регистрации и при подтверждении номера.
+   */
+  @Column({ default: false })
+  trialDenied!: boolean;
 
   // ── Пакеты уроков (ТЗ №3) ─────────────────────────────────────────────────
   // Один баланс, одна дата: покупка любого пакета делает balance += N и

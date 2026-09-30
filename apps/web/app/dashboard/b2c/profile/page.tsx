@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getValidAccessToken, logout } from "../../../../lib/auth";
-import { api, type B2CProfile } from "../../../../lib/api";
+import { api, type B2CProfile, type BalanceInfo } from "../../../../lib/api";
 import { useLang, LT } from "../../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../../components/lang-switcher";
 import { Icon } from "../../../../components/ui/icon";
@@ -23,6 +23,7 @@ export default function ProfilePage() {
   const [lang, setLang] = useLang();
   const t = LT[lang];
   const [profile, setProfile] = useState<B2CProfile | null>(null);
+  const [balance, setBalance] = useState<BalanceInfo | null>(null);
   const [delStep, setDelStep] = useState<DelStep>("idle");
   const [password, setPassword] = useState("");
   const [delError, setDelError] = useState<string | null>(null);
@@ -33,7 +34,8 @@ export default function ProfilePage() {
     (async () => {
       const tk = await getValidAccessToken();
       if (!tk) { router.replace("/login"); return; }
-      try { setProfile(await api.getB2CMe(tk)); } catch { router.replace("/login"); }
+      try { setProfile(await api.getB2CMe(tk)); } catch { router.replace("/login"); return; }
+      setBalance(await api.getBalance(tk).catch(() => null));
     })();
   }, [router]);
 
@@ -76,10 +78,22 @@ export default function ProfilePage() {
             {row(t.pName, profile.fullName)}
             {row(t.pEmail, profile.email)}
             {row(t.pSubject, profile.subject ?? "")}
-            {row("Подписка", subLabel(profile))}
-            <p style={{ color: "var(--muted)", fontSize: 13, lineHeight: 1.6, marginTop: 10 }}>
-              Продление ручное: автоматических списаний нет. Напомним за 3 дня до окончания.
-            </p>
+            {/* Доступ — уроки на балансе: бесплатные (без срока, оферта п. 4.1) и
+                купленные пакеты. Строка «пробный период до …» показывала дату
+                модели «14 дней», которая ничего не ограничивает, — у большинства
+                она давно прошла, хотя бесплатные уроки оставались. */}
+            {balance && (
+              <div style={{ padding: "12px 0 0", fontSize: 15, lineHeight: 1.7, color: "var(--white)" }}>
+                <div>{t.trialLeft.replace("{n}", String(balance.trialLeft))}</div>
+                {balance.paidBalance > 0 && (
+                  <div>
+                    {t.balLeft.replace("{n}", String(balance.paidBalance))}
+                    {balance.expiresAt ? ` · ${t.balUntil.replace("{d}", new Date(balance.expiresAt).toLocaleDateString("ru-RU"))}` : ""}
+                  </div>
+                )}
+              </div>
+            )}
+            {profile.subscriptionStatus === "active" && row(t.subscription, subLabel(profile))}
             <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
               {mobileApp === false && <button onClick={() => router.push("/dashboard/b2c/subscribe")} style={{ background: BRAND, color: "var(--on-amber)", border: "none", borderRadius: 10, padding: "10px 18px", cursor: "pointer", fontWeight: 700, fontFamily: "inherit" }}>{t.subscription}</button>}
               <button onClick={async () => { await logout(); router.replace("/login"); }} style={{ background: "transparent", border: "1.5px solid var(--lavender)", color: "var(--white)", borderRadius: 10, padding: "10px 18px", cursor: "pointer", fontWeight: 700, fontFamily: "inherit" }}>{t.logout}</button>

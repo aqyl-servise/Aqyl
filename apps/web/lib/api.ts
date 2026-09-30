@@ -430,6 +430,10 @@ export interface B2cUser {
   phone: string | null; subject: string | null;
   status: string; createdAt: string; onboardingCompleted: boolean;
   trialEndsAt: string | null; trialActive: boolean;
+  /** Сколько бесплатных уроков осталось (5 без срока, оферта п. 4.1). */
+  freeLeft: number;
+  /** Бесплатные уже получены по этой почте или номеру (п. 4.2). */
+  trialDenied: boolean;
   subscriptionStatus: string | null; currentPeriodEnd: string | null;
   pricePerMonth: number | null; cancelAtPeriodEnd: boolean;
   lessons: number; paidKzt: number;

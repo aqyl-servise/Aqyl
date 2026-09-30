@@ -71,6 +71,8 @@ export class NudgeService {
   private baseFilter(kind: NudgeKind): string {
     return `t."registrationSource" = 'b2c' AND t.status = 'active'
       AND t."emailNudgesOff" = false AND t."deletionRequestedAt" IS NULL
+      -- Отказано в бесплатных уроках (п. 4.2) — письмо «у вас 5 бесплатных» было бы неправдой.
+      AND t."trialDenied" = false
       AND NOT (t.nudges ? '${kind}')
       AND NOT EXISTS (SELECT 1 FROM email_bounces b WHERE lower(b.email) = lower(t.email))`;
   }

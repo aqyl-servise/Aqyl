@@ -108,8 +108,10 @@ export class SubscriptionService {
     });
   }
 
-  /** Сколько бесплатных комплектов осталось (0, если лимит исчерпан). */
+  /** Сколько бесплатных комплектов осталось (0, если лимит исчерпан или в бесплатном доступе отказано). */
   async trialLessonsLeft(teacherId: string): Promise<number> {
+    const teacher = await this.teacherRepo.findOne({ where: { id: teacherId } });
+    if (teacher?.trialDenied) return 0;
     const used = await this.trialLessonsUsed(teacherId);
     return Math.max(0, trialLessonLimit() - used);
   }
@@ -127,7 +129,8 @@ export class SubscriptionService {
     const teacher = await this.teacherRepo.findOne({ where: { id: teacherId } });
     const trialUsed = await this.trialLessonsUsed(teacherId);
     const limit = trialLessonLimit();
-    const trialLeft = Math.max(0, limit - trialUsed);
+    // Отказ в бесплатном доступе (оферта, п. 4.2) — остаток ноль, а не лимит.
+    const trialLeft = teacher?.trialDenied ? 0 : Math.max(0, limit - trialUsed);
     const now = new Date();
     const expired = !!teacher?.balanceExpiresAt && teacher.balanceExpiresAt <= now;
     const paidBalance = expired ? 0 : teacher?.paidLessonsBalance ?? 0;
@@ -162,10 +165,10 @@ export class SubscriptionService {
       if (counted > 0) return true;
     }
 
-    if ((await this.trialLessonsUsed(teacherId)) < trialLessonLimit()) return true;
-
     const teacher = await this.teacherRepo.findOne({ where: { id: teacherId } });
-    return !!teacher && this.paidBalanceActive(teacher);
+    if (!teacher) return false;
+    if (!teacher.trialDenied && (await this.trialLessonsUsed(teacherId)) < trialLessonLimit()) return true;
+    return this.paidBalanceActive(teacher);
   }
 
   /** Текст отказа — различает «не покупал» и «срок истёк» (ТЗ №3, п. 3.4). */
@@ -180,6 +183,9 @@ export class SubscriptionService {
       const d = teacher.balanceExpiresAt;
       const dd = `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}`;
       return `Срок пакета истёк ${dd}. Любая покупка на aqyl-service.kz вернёт уроки на 3 месяца`;
+    }
+    if (teacher?.trialDenied) {
+      return "Бесплатные уроки уже были получены по этому адресу почты или номеру телефона. Выберите пакет на aqyl-service.kz";
     }
     return "Уроки закончились. Выберите пакет на aqyl-service.kz";
   }
@@ -208,7 +214,11 @@ export class SubscriptionService {
     // проваливаемся к платному балансу, а не отказываем: у заплатившего
     // генерация обязана работать.
     const trialUsed = await this.trialLessonsUsed(teacherId);
-    const trialLeft = trialUsed < trialLessonLimit();
+    // trialDenied — бесплатные уроки уже получены по этой почте или номеру
+    // (оферта, п. 4.2). До 29.09.2026 решение принималось при регистрации и
+    // подтверждении номера, но здесь не учитывалось: повторная регистрация
+    // после удаления аккаунта снова давала бесплатные уроки.
+    const trialLeft = !teacher.trialDenied && trialUsed < trialLessonLimit();
     const phoneOk =
       !requirePhoneVerification() ||
       trialUsed < lessonsBeforePhone() || // первые уроки — без номера
