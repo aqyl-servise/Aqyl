@@ -244,26 +244,35 @@ export class LibraryService implements OnModuleInit {
       return { ...base, plan: null };
     }
     if (l.status !== 'ready') return { ...base, plan: null };
-    const given = new Set((ex.objectives ?? []).map((c) => c.trim()));
-    const curriculum = given.size
-      ? (l.core?.objectives?.curriculum ?? []).filter((c) => given.has(String(c.code).trim()))
-      : [];
-    return {
-      ...base,
-      plan: {
-        durationMinutes: l.durationMinutes ?? null,
-        curriculum,
-        lessonObjectives: l.core?.objectives?.lesson?.length ? l.core.objectives.lesson : (l.lessonObjectives ?? []),
-        valueLink: l.valueLink ?? null,
-        homework: l.homework ?? null,
-        stages: (l.stages ?? []).map((s) => ({
-          stageName: s.stageName ?? '', timeMinutes: s.timeMinutes ?? 0,
-          teacherActions: s.teacherActions ?? '', studentActions: s.studentActions ?? '',
-          assessmentCriteria: s.assessmentCriteria ?? '', method: s.method ?? '', resources: s.resources ?? '',
-          points: s.isAssessed ? (s.points ?? null) : null,
-          descriptors: (s.descriptors ?? []).map((d) => ({ text: d.text, points: d.points })),
-        })),
-      },
-    };
+    return { ...base, plan: planOf(l, ex.objectives ?? []) };
   }
+}
+
+/**
+ * План урока для публичной страницы: только содержание. Шапка с именем
+ * учителя, датой, номером урока и числом учеников сюда не попадает.
+ *
+ * Цели обучения по кодам — только с кодами, которые указал человек (в
+ * библиотеке — методист, в общей ссылке — сам учитель): код, восстановленный
+ * моделью, может оказаться выдуманным.
+ */
+export function planOf(l: Lesson, givenCodes: string[]): NonNullable<PublicPlan['plan']> {
+  const given = new Set(givenCodes.map((c) => c.trim()).filter(Boolean));
+  const curriculum = given.size
+    ? (l.core?.objectives?.curriculum ?? []).filter((c) => given.has(String(c.code).trim()))
+    : [];
+  return {
+    durationMinutes: l.durationMinutes ?? null,
+    curriculum,
+    lessonObjectives: l.core?.objectives?.lesson?.length ? l.core.objectives.lesson : (l.lessonObjectives ?? []),
+    valueLink: l.valueLink ?? null,
+    homework: l.homework ?? null,
+    stages: (l.stages ?? []).map((s) => ({
+      stageName: s.stageName ?? '', timeMinutes: s.timeMinutes ?? 0,
+      teacherActions: s.teacherActions ?? '', studentActions: s.studentActions ?? '',
+      assessmentCriteria: s.assessmentCriteria ?? '', method: s.method ?? '', resources: s.resources ?? '',
+      points: s.isAssessed ? (s.points ?? null) : null,
+      descriptors: (s.descriptors ?? []).map((d) => ({ text: d.text, points: d.points })),
+    })),
+  };
 }

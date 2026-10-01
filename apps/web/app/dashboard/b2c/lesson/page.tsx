@@ -562,6 +562,7 @@ export default function LessonGeneratorPage() {
               onRetry={() => { setLessonId(lesson.id); void runGenerate(lesson.mode === "constructor" ? "constructor" : "quick"); }}
               retryBusy={busy}
               presentation={<PresentationButton token={token} lessonId={lesson.id} t={t} />} t={t} lang={lang}
+              share={lesson.status === "ready" && token ? <ShareButton token={token} lessonId={lesson.id} t={t} /> : null}
             />
             {lesson.status === "ready" && <HandoutsPanel token={token} lessonId={lesson.id} t={t} />}
           </>
@@ -571,7 +572,7 @@ export default function LessonGeneratorPage() {
   );
 }
 
-function LessonView({ lesson, onRegen, regenId, onExport, onRetry, retryBusy, presentation, t, lang }: { lesson: LpLesson; onRegen: (sid: string) => void; regenId: string | null; onExport: () => void; onRetry: () => void; retryBusy: boolean; presentation: React.ReactNode; t: T; lang: Lang }) {
+function LessonView({ lesson, onRegen, regenId, onExport, onRetry, retryBusy, presentation, share, t, lang }: { lesson: LpLesson; onRegen: (sid: string) => void; regenId: string | null; onExport: () => void; onRetry: () => void; retryBusy: boolean; presentation: React.ReactNode; share: React.ReactNode; t: T; lang: Lang }) {
   const th: React.CSSProperties = { textAlign: "left", padding: "8px 10px", background: "var(--ink)", fontSize: 12, color: "var(--muted)", border: "1px solid var(--line)" };
   const td: React.CSSProperties = { padding: "8px 10px", fontSize: 13, color: DARK, border: "1px solid var(--line)", verticalAlign: "top" };
   if (lesson.status === "error") {
@@ -639,9 +640,10 @@ function LessonView({ lesson, onRegen, regenId, onExport, onRetry, retryBusy, pr
         </table>
       </div>
 
-      <div style={{ marginTop: 16, display: "flex", gap: 12 }}>
+      <div style={{ marginTop: 16, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
         <button onClick={onExport} style={btnPrimary}>{t.downloadPlan}</button>
         {presentation}
+        {share}
       </div>
     </div>
   );
@@ -940,3 +942,53 @@ function Field({ l, children }: { l: string; children: React.ReactNode }) { retu
 function Grid({ children }: { children: React.ReactNode }) { return <div className="aq-grid-2">{children}</div>; }
 function Center({ children }: { children: React.ReactNode }) { return <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)" }}>{children}</div>; }
 function msg(e: unknown): string { return e instanceof Error ? e.message : String(e); }
+
+/**
+ * «Поделиться с коллегой»: ссылка /s/<token> на этот урок. Коллега видит
+ * план и кнопку «Сделать свой» с кодом приглашения автора — зарегистрируется
+ * и сделает урок, автору +5 уроков.
+ */
+function ShareButton({ token, lessonId, t }: { token: string; lessonId: string; t: T }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [err, setErr] = useState(false);
+
+  async function create() {
+    setBusy(true); setErr(false);
+    try {
+      const r = await api.shareLesson(token, lessonId);
+      setUrl(`${window.location.origin}/s/${r.token}`);
+    } catch { setErr(true); }
+    finally { setBusy(false); }
+  }
+
+  async function copy() {
+    if (!url) return;
+    try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 1600); }
+    catch { window.prompt(t.shareTitle, url); }
+  }
+
+  if (!url) {
+    return (
+      <span style={{ display: "inline-flex", flexDirection: "column", gap: 4 }}>
+        <button onClick={create} disabled={busy} style={{ ...btnGhost, opacity: busy ? 0.6 : 1 }}>
+          <Icon name="users" size={15} /> {busy ? "…" : t.share}
+        </button>
+        {err && <span style={{ color: "var(--danger)", fontSize: 12 }}>{t.shareFailed}</span>}
+      </span>
+    );
+  }
+  const text = `${t.shareText} ${url}`;
+  return (
+    <div style={{ ...card, marginBottom: 0, padding: "14px 16px", flex: "1 1 320px" }}>
+      <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 8 }}>{t.shareHint}</div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <input readOnly value={url} onFocus={(e) => e.currentTarget.select()} aria-label={t.shareTitle} style={{ ...inp, flex: "1 1 200px", width: "auto" }} />
+        <button onClick={copy} style={btnGhost}>{copied ? t.shareCopied : t.shareCopy}</button>
+        <a href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer" style={{ ...btnGhost, textDecoration: "none" }}>WhatsApp</a>
+        <a href={`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(t.shareText)}`} target="_blank" rel="noopener noreferrer" style={{ ...btnGhost, textDecoration: "none" }}>Telegram</a>
+      </div>
+    </div>
+  );
+}

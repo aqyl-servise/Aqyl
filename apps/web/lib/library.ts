@@ -84,3 +84,24 @@ export function labels(lang: "ru" | "kz") {
         back: "Все примеры",
       };
 }
+
+/** Урок по ссылке «Поделиться» (/s/<token>). */
+export interface SharedPage {
+  lang: "ru" | "kz";
+  subject: string;
+  grade: number | null;
+  topic: string;
+  /** Код приглашения автора: регистрация по кнопке засчитывается ему. */
+  ref: string | null;
+  plan: ExamplePlan;
+}
+
+export async function fetchShared(token: string): Promise<SharedPage | null> {
+  try {
+    // Без кэша: ссылку могут отозвать, а счётчик просмотров должен считать каждый.
+    const res = await fetch(`${apiBase()}/share/${encodeURIComponent(token)}`, { cache: "no-store" });
+    return res.ok ? ((await res.json()) as SharedPage) : null;
+  } catch {
+    return null;
+  }
+}

@@ -878,6 +878,9 @@ export const api = {
     request<{ ok: boolean }>(`/admin/library/examples/${id}/${action}`, { method: "POST" }, token),
   libraryDelete: (token: string, id: string) =>
     request<{ ok: boolean }>(`/admin/library/examples/${id}`, { method: "DELETE" }, token),
+  // «Поделиться уроком»: ссылка /s/<token> на свой готовый урок.
+  shareLesson: (token: string, lessonId: string) =>
+    request<{ token: string }>(`/share/lessons/${lessonId}`, { method: "POST" }, token),
   myReferral: (token: string) => request<MyReferral>("/referral/me", undefined, token),
   referralOverview: (token: string) => request<ReferralOverview>("/admin/growth/referrals", undefined, token),
   approveReferral: (token: string, inviteeId: string) =>

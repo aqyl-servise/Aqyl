@@ -17,5 +17,7 @@ import { OpsAlertService } from './ops-alert.service';
   imports: [TypeOrmModule.forFeature([Teacher, ShortLink, Referral]), MailModule, BillingModule, FunnelModule],
   controllers: [GrowthController, GrowthAdminController],
   providers: [NudgeService, OpsAlertService, ReferralService],
+  // ReferralService — для библиотеки: ссылка «Поделиться уроком» несёт код приглашения автора.
+  exports: [ReferralService],
 })
 export class GrowthModule {}

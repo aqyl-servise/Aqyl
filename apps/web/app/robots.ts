@@ -11,6 +11,9 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
         allow: "/",
         // /r/ — короткие ссылки: робот накрутил бы счётчик переходов.
+        // /s/ (личные ссылки на уроки) здесь намеренно НЕ закрыт: превью в
+        // WhatsApp строит робот, который слушается robots.txt, — ссылка ушла
+        // бы в чат голой. От поиска её закрывает meta robots noindex на самой странице.
         disallow: ["/dashboard", "/api", "/play", "/r/", "/reset-password", "/forgot-password"],
       },
     ],

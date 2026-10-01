@@ -1,10 +1,11 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Req, UseGuards } from '@nestjs/common';
 import { ArrayMaxSize, IsArray, IsIn, IsInt, IsOptional, IsString, Length, Max, Min } from 'class-validator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { SkipSchoolIsolation } from '../../common/decorators/skip-school-isolation.decorator';
 import { LibraryService } from './library.service';
+import { ShareService } from './share.service';
 
 class CreateExampleDto {
   @IsIn(['ru', 'kz'])
@@ -36,6 +37,33 @@ export class LibraryPublicController {
   @Get('examples/:slug')
   get(@Param('slug') slug: string) {
     return this.library.publicGet(String(slug).slice(0, 160));
+  }
+}
+
+/**
+ * «Поделиться уроком». Создать и отозвать ссылку — владелец урока; открыть —
+ * кто угодно по ссылке (страница /s/<token>, не индексируется).
+ */
+@Controller('share')
+@SkipSchoolIsolation()
+export class ShareController {
+  constructor(private readonly shares: ShareService) {}
+
+  @Post('lessons/:id')
+  @UseGuards(JwtAuthGuard)
+  create(@Param('id', new ParseUUIDPipe()) id: string, @Req() req: { user: { id: string } }) {
+    return this.shares.share(id, req.user.id);
+  }
+
+  @Delete('lessons/:id')
+  @UseGuards(JwtAuthGuard)
+  revoke(@Param('id', new ParseUUIDPipe()) id: string, @Req() req: { user: { id: string } }) {
+    return this.shares.revoke(id, req.user.id);
+  }
+
+  @Get(':token')
+  open(@Param('token') token: string) {
+    return this.shares.open(String(token).slice(0, 16));
   }
 }
 

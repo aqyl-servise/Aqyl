@@ -10,7 +10,8 @@ export type FunnelEvent =
   | 'generator_opened'        // открыл форму нового урока (клиент)
   | 'export_plan'             // скачал план в Word (сервер)
   | 'export_handouts'         // скачал раздатку PDF (сервер)
-  | 'export_presentation';    // скачал презентацию PDF (сервер)
+  | 'export_presentation'     // скачал презентацию PDF (сервер)
+  | 'lesson_shared';          // поделился уроком ссылкой (сервер)
 
 /** Что разрешено присылать с клиента. Скачивания пишет только сервер. */
 export const CLIENT_EVENTS: readonly FunnelEvent[] = ['generator_opened'];

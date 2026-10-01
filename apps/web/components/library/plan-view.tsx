@@ -14,7 +14,7 @@ export function PlanView({ plan, lang, subject, grade, topic }: {
   const total = plan.stages.reduce((a, s) => a + (s.points ?? 0), 0);
   const header: [string, string][] = [
     [L.subject, subject],
-    [L.gradeLabel, String(grade)],
+    ...(grade ? [[L.gradeLabel, String(grade)] as [string, string]] : []),
     [L.topic, topic],
     ...(plan.durationMinutes ? [[L.duration, `${plan.durationMinutes} ${L.minutes}`] as [string, string]] : []),
   ];
