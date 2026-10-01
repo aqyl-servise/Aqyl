@@ -129,12 +129,33 @@ export class BillingService {
     this.logger.log(
       `Package session ${orderId}: ${pkg.code} (+${pkg.lessons}) for teacher ${teacherId}, ${pkg.priceKzt} KZT, paymentId=${payment.id}`,
     );
+    // Ручная схема: без письма заявка лежала в админке, пока туда не заглянут,
+    // а учителю обещано «несколько часов». Первый настоящий покупатель не
+    // должен ждать полдня и думать, что деньги пропали.
+    if (payLink) void this.notifyManualOrder(teacherId, orderId, pkg).catch(() => undefined);
     return {
       orderId, paymentUrl, amount: pkg.priceKzt,
       lessons: pkg.lessons,
       /** true — оплата по ссылке, начисление после подтверждения администратором. */
       manual: !!payLink,
     };
+  }
+
+  /** Письмо команде: учитель выбрал пакет и сейчас платит через Kaspi. */
+  private async notifyManualOrder(teacherId: string, orderId: string, pkg: { code: string; lessons: number; priceKzt: number }) {
+    const t = await this.teacherRepo.findOne({ where: { id: teacherId } });
+    const to = (process.env.OPS_ALERT_EMAILS ?? process.env.SUPPORT_EMAIL ?? 'aqylservise@gmail.com')
+      .split(',').map((s) => s.trim()).filter(Boolean);
+    const sum = pkg.priceKzt.toLocaleString('ru-RU').replace(/[  ]/g, ' ');
+    const text =
+      `Учитель выбрал пакет и переходит к оплате через Kaspi.\n\n` +
+      `Учитель: ${t?.fullName ?? '—'} <${t?.email ?? teacherId}>\n` +
+      `Пакет: ${pkg.lessons} уроков, ${sum} ₸\n` +
+      `Номер заказа: ${orderId} (учитель укажет его в комментарии к платежу)\n\n` +
+      `Когда поступление появится в Kaspi — подтвердите оплату в админке: ${this.frontendUrl}/dashboard → B2C → «Ожидают подтверждения оплаты». ` +
+      `Уроки начислятся, учителю уйдёт квитанция.\n\n` +
+      `Если оплата не придёт, заявку можно отклонить там же.`;
+    await this.mail.sendOpsAlert(to, `Aqyl: заявка на оплату ${sum} ₸ — заказ ${orderId}`, text);
   }
 
   /** Платежи, ожидающие подтверждения (ручная схема) — для админки. */
