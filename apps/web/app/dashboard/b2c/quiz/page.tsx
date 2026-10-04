@@ -7,6 +7,8 @@ import { io, type Socket } from "socket.io-client";
 import { getValidAccessToken } from "../../../../lib/auth";
 import { api, type QuizItem, type QuizSession } from "../../../../lib/api";
 import { Icon } from "../../../../components/ui/icon";
+import { useLang, LT } from "../../../../lib/lesson-translations";
+import { LangSwitcher } from "../../../../components/lang-switcher";
 
 /**
  * Квизы учителя и экран ведущего (ТЗ 3.0, раздел 5).
@@ -48,6 +50,8 @@ const OPTION_SHAPES = ["▲", "◆", "●", "■"];
 
 export default function QuizPage() {
   const router = useRouter();
+  const [lang, setLang] = useLang();
+  const t = LT[lang];
   const [token, setToken] = useState<string | null>(null);
   const [view, setView] = useState<View>("list");
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +99,7 @@ export default function QuizPage() {
 
   useEffect(() => () => { socketRef.current?.disconnect(); socketRef.current = null; }, []);
 
-  const fail = (e: unknown) => setError(e instanceof Error ? e.message : "Не получилось");
+  const fail = (e: unknown) => setError(e instanceof Error ? e.message : t.qz_failed);
 
   async function create() {
     if (!token || !topic.trim()) return;
@@ -141,12 +145,12 @@ export default function QuizPage() {
 
       sock.on("connect", () => {
         sock.emit("host-join", { code: s.code, hostKey: s.hostKey }, (res: { ok: boolean; players?: LobbyPlayer[]; error?: string }) => {
-          if (!res?.ok) setError(res?.error ?? "Не удалось открыть экран ведущего");
+          if (!res?.ok) setError(res?.error ?? t.qz_hostFailed);
           else setPlayers(res.players ?? []);
         });
       });
     } catch (e) { fail(e); } finally { setBusy(false); }
-  }, [token, quiz]);
+  }, [token, quiz, t]);
 
   const emitHost = (event: string, extra: Record<string, unknown> = {}) => {
     if (!session) return;
@@ -158,15 +162,16 @@ export default function QuizPage() {
   return (
     <div className="aqyl-b2c" style={{ minHeight: "100vh" }}>
       <header style={{ background: "var(--ink-2)", color: "var(--white)", padding: "14px 24px", display: "flex", alignItems: "center", gap: 16, borderBottom: "1px solid var(--line)" }}>
-        <button onClick={() => (view === "list" ? router.push("/dashboard/b2c") : setView("list"))} style={btnGhost}>← Назад</button>
+        <button onClick={() => (view === "list" ? router.push("/dashboard/b2c") : setView("list"))} style={btnGhost}>← {t.back}</button>
         <span style={{ fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 8 }}>
-          <Icon name="bolt" size={18} /> Квизы
+          <Icon name="bolt" size={18} /> {t.qz_title}
         </span>
         {view === "list" && (
           <button style={{ ...btnPrimary, marginLeft: "auto", padding: "8px 16px", fontSize: 13 }} onClick={() => setView("create")}>
-            + Создать квиз
+            {t.qz_create}
           </button>
         )}
+        <div style={{ marginLeft: view === "list" ? undefined : "auto" }}><LangSwitcher lang={lang} setLang={setLang} dark /></div>
       </header>
 
       <main style={{ maxWidth: 900, margin: "0 auto", padding: 24 }}>
@@ -178,8 +183,8 @@ export default function QuizPage() {
           list.length === 0 ? (
             <div style={{ ...card, textAlign: "center", padding: "40px 24px" }}>
               <div style={{ marginBottom: 8, color: "var(--lavender)" }}><Icon name="inbox" size={34} strokeWidth={1.4} /></div>
-              <div style={{ color: "var(--white)", fontWeight: 700, marginBottom: 10 }}>Квизов пока нет</div>
-              <button style={btnPrimary} onClick={() => setView("create")}>Создать первый</button>
+              <div style={{ color: "var(--white)", fontWeight: 700, marginBottom: 10 }}>{t.qz_empty}</div>
+              <button style={btnPrimary} onClick={() => setView("create")}>{t.qz_createFirst}</button>
             </div>
           ) : (
             list.map((q) => (
@@ -187,7 +192,7 @@ export default function QuizPage() {
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700, color: "var(--white)" }}>{q.title}</div>
                   <div style={{ fontSize: 13, color: "var(--muted)" }}>
-                    {[q.subject, q.grade && `${q.grade} класс`, q.language.toUpperCase()].filter(Boolean).join(" · ")}
+                    {[q.subject, q.grade && t.qz_gradeN.replace("{n}", String(q.grade)), q.language.toUpperCase()].filter(Boolean).join(" · ")}
                   </div>
                 </div>
                 <Icon name="chevron-right" size={18} />
@@ -198,22 +203,22 @@ export default function QuizPage() {
 
         {view === "create" && (
           <div style={card}>
-            <h2 style={{ color: "var(--white)", marginTop: 0 }}>Новый квиз</h2>
-            <label style={label}>Тема</label>
-            <input style={inp} value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Природные зоны Казахстана" />
+            <h2 style={{ color: "var(--white)", marginTop: 0 }}>{t.qz_new}</h2>
+            <label style={label}>{t.pipeTopic}</label>
+            <input style={inp} value={topic} onChange={(e) => setTopic(e.target.value)} placeholder={t.qz_topicPh} />
             <div className="aq-grid-2" style={{ marginTop: 12 }}>
               <div>
-                <label style={label}>Предмет</label>
-                <input style={inp} value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="География" />
+                <label style={label}>{t.vSubject}</label>
+                <input style={inp} value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={t.qz_subjectPh} />
               </div>
               <div>
-                <label style={label}>Класс</label>
+                <label style={label}>{t.vGrade}</label>
                 <input style={inp} value={grade} onChange={(e) => setGrade(e.target.value)} placeholder="7" />
               </div>
             </div>
             <div className="aq-grid-2" style={{ marginTop: 12 }}>
               <div>
-                <label style={label}>Язык</label>
+                <label style={label}>{t.qz_language}</label>
                 <select style={inp} value={language} onChange={(e) => setLanguage(e.target.value)}>
                   <option value="ru">Русский</option>
                   <option value="kz">Қазақша</option>
@@ -221,12 +226,12 @@ export default function QuizPage() {
                 </select>
               </div>
               <div>
-                <label style={label}>Вопросов</label>
+                <label style={label}>{t.qz_count}</label>
                 <input style={inp} type="number" min={3} max={15} value={count} onChange={(e) => setCount(Number(e.target.value))} />
               </div>
             </div>
             <button style={{ ...btnPrimary, marginTop: 18 }} onClick={create} disabled={busy || !topic.trim()}>
-              {busy ? "Составляем вопросы…" : "Создать"}
+              {busy ? t.qz_generating : t.qz_createBtn}
             </button>
           </div>
         )}
@@ -236,15 +241,15 @@ export default function QuizPage() {
             <div style={{ ...card, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <div style={{ flex: 1, minWidth: 180 }}>
                 <div style={{ fontWeight: 700, color: "var(--white)", fontSize: 17 }}>{quiz.title}</div>
-                <div style={{ fontSize: 13, color: "var(--muted)" }}>{quiz.questions?.length ?? 0} вопросов</div>
+                <div style={{ fontSize: 13, color: "var(--muted)" }}>{t.qz_questionsN.replace("{n}", String(quiz.questions?.length ?? 0))}</div>
               </div>
-              <button style={btnGhost} onClick={() => startSession("async")} disabled={busy}>Свой темп</button>
-              <button style={btnPrimary} onClick={() => startSession("sync")} disabled={busy}>Запустить на класс</button>
+              <button style={btnGhost} onClick={() => startSession("async")} disabled={busy}>{t.qz_selfPaced}</button>
+              <button style={btnPrimary} onClick={() => startSession("sync")} disabled={busy}>{t.qz_runClass}</button>
             </div>
 
             {(quiz.questions ?? []).map((q, i) => (
               <div key={q.id} style={card}>
-                <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 6 }}>Вопрос {i + 1}</div>
+                <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 6 }}>{t.qz_questionN.replace("{n}", String(i + 1))}</div>
                 <div style={{ fontWeight: 700, color: "var(--white)", marginBottom: 12 }}>{q.text}</div>
                 <div style={{ display: "grid", gap: 8 }}>
                   {q.options.map((o, oi) => (
@@ -256,7 +261,7 @@ export default function QuizPage() {
                     }}>
                       <span style={{ color: OPTION_COLORS[oi % 4], fontSize: 15 }}>{OPTION_SHAPES[oi % 4]}</span>
                       <span style={{ flex: 1 }}>{o}</span>
-                      {oi === q.correctIndex && <span style={{ fontSize: 12, color: "#2FA36B", fontWeight: 700 }}>верный</span>}
+                      {oi === q.correctIndex && <span style={{ fontSize: 12, color: "#2FA36B", fontWeight: 700 }}>{t.qz_correct}</span>}
                     </div>
                   ))}
                 </div>
@@ -269,15 +274,15 @@ export default function QuizPage() {
           <>
             {!current && !finished && (
               <div style={{ ...card, textAlign: "center" }}>
-                <div style={{ fontSize: 13, color: "var(--muted)", letterSpacing: ".08em", textTransform: "uppercase" }}>Код сессии</div>
+                <div style={{ fontSize: 13, color: "var(--muted)", letterSpacing: ".08em", textTransform: "uppercase" }}>{t.qz_code}</div>
                 <div style={{ fontSize: "clamp(2.6rem, 12vw, 4.5rem)", fontWeight: 800, letterSpacing: ".14em", color: "var(--white)", fontVariantNumeric: "tabular-nums" }}>
                   {session.code}
                 </div>
                 <div style={{ fontSize: 14, color: "var(--muted)", marginBottom: 14 }}>play.aqyl-service.kz</div>
-                {qr && <img src={qr} alt="QR-код для входа" style={{ width: 200, height: 200, borderRadius: 12, background: "#fff", padding: 8 }} />}
+                {qr && <img src={qr} alt={t.qz_qrAlt} style={{ width: 200, height: 200, borderRadius: 12, background: "#fff", padding: 8 }} />}
 
                 <div style={{ marginTop: 18, fontWeight: 700, color: "var(--white)" }}>
-                  Подключились: {players.length}
+                  {t.qz_joined.replace("{n}", String(players.length))}
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 10 }}>
                   {players.map((p) => (
@@ -289,7 +294,7 @@ export default function QuizPage() {
                 </div>
 
                 <button style={{ ...btnPrimary, marginTop: 20 }} onClick={() => emitHost("start-quiz")} disabled={!players.length}>
-                  {players.length ? "Начать квиз" : "Ждём учеников"}
+                  {players.length ? t.qz_start : t.qz_waiting}
                 </button>
               </div>
             )}
@@ -297,9 +302,9 @@ export default function QuizPage() {
             {current && (
               <div style={card}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, color: "var(--muted)", fontSize: 14, fontWeight: 600 }}>
-                  <span>Вопрос {current.index + 1} из {current.total}</span>
+                  <span>{t.qz_questionOf.replace("{n}", String(current.index + 1)).replace("{total}", String(current.total))}</span>
                   <span style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                    <span>Ответили: {progress.answered}/{progress.total}</span>
+                    <span>{t.qz_answered.replace("{n}", String(progress.answered)).replace("{total}", String(progress.total))}</span>
                     <span style={{
                       padding: "4px 14px", borderRadius: 999, fontWeight: 800, fontVariantNumeric: "tabular-nums",
                       background: left <= 5 ? "#E23B3B" : "rgba(255,255,255,.14)", color: "var(--white)",
@@ -325,7 +330,7 @@ export default function QuizPage() {
                 </div>
                 {revealed !== null && (
                   <button style={{ ...btnPrimary, marginTop: 18 }} onClick={() => emitHost("next-question")}>
-                    {current.index + 1 >= current.total ? "Показать итоги" : "Следующий вопрос"}
+                    {current.index + 1 >= current.total ? t.qz_showResults : t.qz_next}
                   </button>
                 )}
               </div>
@@ -333,7 +338,7 @@ export default function QuizPage() {
 
             {(board.length > 0 || finished) && (
               <div style={card}>
-                <h3 style={{ color: "var(--white)", marginTop: 0 }}>{finished ? "Итоги" : "Рейтинг"}</h3>
+                <h3 style={{ color: "var(--white)", marginTop: 0 }}>{finished ? t.qz_results : t.qz_ranking}</h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {board.map((p) => (
                     <div key={p.id} style={{
@@ -348,7 +353,7 @@ export default function QuizPage() {
                   ))}
                 </div>
                 {!finished && (
-                  <button style={{ ...btnGhost, marginTop: 14 }} onClick={() => emitHost("end-quiz")}>Завершить квиз</button>
+                  <button style={{ ...btnGhost, marginTop: 14 }} onClick={() => emitHost("end-quiz")}>{t.qz_end}</button>
                 )}
               </div>
             )}
