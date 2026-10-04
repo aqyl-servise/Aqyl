@@ -55,3 +55,13 @@ function useUaFlag(test: (ua: string) => boolean): boolean | null {
 export function useIsMobileApp(): boolean | null {
   return useUaFlag(isMobileAppUA);
 }
+
+/**
+ * Только iOS-обёртка. Приглашение коллег (+5 уроков) не продаёт ничего, но
+ * App Store строже всех смотрит на награды за действия — там его прячем, а в
+ * браузере и в Android-приложении показываем: 04.10.2026 методист в
+ * Android-приложении не нашёл «Пригласить коллегу» вообще.
+ */
+export function useIsIosApp(): boolean | null {
+  return useUaFlag(isIosAppUA);
+}

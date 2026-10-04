@@ -35,6 +35,8 @@ import { LanguageGateService } from './language-gate.service';
 import { hardViolations } from './engine/language-gate';
 import { LessonCoreData, CoreFact, CoreFactSheet, CoreWorkInterpretation, canonicalSubject, coreObjectivesProblems, normalizeStageMinutes, valueLexemes, containsValueLexeme, checkFactYears, checkWorkTheme, factsForPrompt } from './engine/lesson-core';
 import { planChildren } from './export/docx-kit';
+import { cleanCurriculum, finalCurriculum, givenForPrompt, parseGivenObjectives } from './engine/objectives-input';
+import { fixedStageName } from './engine/stage-names';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Document, Packer } = require('docx') as typeof import('docx');
 
@@ -81,6 +83,26 @@ export class LessonPlansService {
 
   async getValueForMonth(month: string): Promise<ValueLinkReference | null> {
     return this.valueRepo.findOne({ where: { month } });
+  }
+
+  /**
+   * Ценность месяца обязательна (программа «Адал Азамат: біртұтас тәрбие»;
+   * методист, 04.10.2026): если учитель месяц не выбрал — берём текущий по
+   * Алматы. До этого урок без выбранного месяца собирался вовсе без
+   * ценности — так было у 59 из 148 готовых уроков и у всех примеров
+   * библиотеки. Летом (июнь–август) ценностей в программе нет — берём
+   * сентябрь, первый месяц учебного года.
+   */
+  private async ensureValueMonth(lesson: Lesson): Promise<void> {
+    if (lesson.valueMonth) return;
+    let month = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Almaty', month: '2-digit' }).format(new Date());
+    if (['06', '07', '08'].includes(month)) month = '09';
+    const ref = await this.getValueForMonth(month);
+    if (!ref) return;
+    const valueLink = this.valueName(ref, lesson.language);
+    await this.lessonRepo.update({ id: lesson.id }, { valueMonth: month, valueLink });
+    lesson.valueMonth = month;
+    lesson.valueLink = valueLink;
   }
 
   // ── CRUD ────────────────────────────────────────────────────────
@@ -291,6 +313,8 @@ export class LessonPlansService {
   async startGeneration(id: string, ctx: UserCtx, mode: 'quick' | 'constructor'): Promise<{ status: string }> {
     const lesson = await this.own(id, ctx);
     if (mode === 'quick') await this.buildDefaultStages(id);
+    // Ценность месяца обязательна — без выбора берётся текущий месяц.
+    await this.ensureValueMonth(lesson);
     const stageCount = await this.stageRepo.count({ where: { lessonId: id } });
     if (!stageCount) throw new HttpException('Не выбраны этапы урока', HttpStatus.BAD_REQUEST);
     // Оцениваемых должно быть минимум два — иначе делить 10 баллов не на что.
@@ -340,14 +364,21 @@ export class LessonPlansService {
     const valueName = valueRef ? this.valueName(valueRef, lesson.language) : null;
     const ctx = this.ctxOf(lesson);
 
+    // Цели учителя: код из начала строки, перенос строки — продолжение цели
+    // (objectives-input.ts). По ним считается и число целей урока (1 к 1).
+    const title = `${lesson.lessonTitle ?? ''}`.trim();
+    const given = parseGivenObjectives(lesson.learningObjectives);
+
     let parsed: { curriculum?: { code: string; text: string }[]; lessonObjectives?: string[]; valueRationale?: string } = {};
+    let problems: string[] = [];
     for (let attempt = 1; attempt <= 2; attempt++) {
-      const p = lessonCorePrompt(ctx, valueName);
+      const p = lessonCorePrompt(ctx, valueName, problems);
       const res = await this.safeRequest('lesson_core', p.system, p.user, lesson);
       await this.cost.log(lesson.id, 'plan', res);
       const cand = this.parseJson<typeof parsed>(res.content) ?? {};
-      const problems = coreObjectivesProblems({
-        curriculum: Array.isArray(cand.curriculum) ? cand.curriculum : [],
+      const candCurriculum = finalCurriculum(given, cleanCurriculum(Array.isArray(cand.curriculum) ? cand.curriculum : [], title), title);
+      problems = coreObjectivesProblems({
+        curriculum: candCurriculum,
         lesson: Array.isArray(cand.lessonObjectives) ? cand.lessonObjectives : [],
       });
       if (!problems.length || attempt === 2) {
@@ -358,30 +389,33 @@ export class LessonPlansService {
       this.logger.warn(`Урок ${lesson.id}: паспорт неполон (C7): ${problems.join('; ')}, повтор`);
     }
 
-    // Фолбэки: пустая формулировка хуже всего (1.8) — хотя бы код с темой.
-    const curriculum = (Array.isArray(parsed.curriculum) ? parsed.curriculum : [])
-      .filter((c) => c?.code)
-      .map((c) => ({ code: String(c.code), text: String(c.text ?? '').trim() || `${lesson.lessonTitle ?? ''}`.trim() }));
-    for (const code of lesson.learningObjectives ?? []) {
-      if (!curriculum.some((c) => c.code === code)) {
-        curriculum.push({ code, text: `${lesson.lessonTitle ?? ''}`.trim() || code });
-      }
-    }
-    const lessonGoals = (Array.isArray(parsed.lessonObjectives) ? parsed.lessonObjectives : [])
+    // Цели обучения: ровно коды учителя (если указаны), без повторов и без
+    // кода внутри формулировки; пустая формулировка хуже всего (1.8) — хотя
+    // бы тема.
+    const curriculum = finalCurriculum(
+      given, cleanCurriculum(Array.isArray(parsed.curriculum) ? parsed.curriculum : [], title), title,
+    );
+    let lessonGoals = (Array.isArray(parsed.lessonObjectives) ? parsed.lessonObjectives : [])
       .map((x) => stripObjectivePrefix(String(x))).filter(Boolean);
+    // 1 к 1: лишние цели урока, оставшиеся после ретрая, отрезаются — в
+    // документе их число обязано совпадать с числом целей обучения.
+    if (curriculum.length && lessonGoals.length > curriculum.length) lessonGoals = lessonGoals.slice(0, curriculum.length);
 
-    // C8, первопричина дефекта 1.9: ценность задана, но ни один этап не
-    // помечен носителем (quick-режим флаг не ставил) — тогда ей негде
-    // обязательно проявиться. Дефолтный носитель — первое задание, иначе
-    // рефлексия: там ценность вплетается органичнее всего.
+    // C8: ценность месяца обязана быть привязана хотя бы к одному ЗАДАНИЮ
+    // урока — индивидуальному, парному или групповому (методист, 04.10.2026;
+    // требование программы «Адал Азамат»). Флаг только на разминке или
+    // объяснении этого не выполняет: носителем назначается первое задание,
+    // при его отсутствии — квиз, и лишь в крайнем случае рефлексия.
     let valueStages = stages.filter((x) => x.linkedToValue);
-    if (valueName && !valueStages.length) {
-      const carrier = stages.find((x) => x.stageType === 'task') ?? stages.find((x) => x.stageType === 'reflection');
-      if (carrier) {
+    if (valueName && !valueStages.some((x) => x.stageType === 'task')) {
+      const carrier = stages.find((x) => x.stageType === 'task')
+        ?? stages.find((x) => x.stageType === 'quiz')
+        ?? stages.find((x) => x.stageType === 'reflection');
+      if (carrier && !carrier.linkedToValue) {
         carrier.linkedToValue = true;
         await this.stageRepo.update({ id: carrier.id }, { linkedToValue: true });
-        valueStages = [carrier];
-        this.logger.log(`Урок ${lesson.id}: носитель ценности не был выбран — назначен этап ${carrier.stageType} (C8)`);
+        valueStages = [...valueStages, carrier];
+        this.logger.log(`Урок ${lesson.id}: ценность привязана к этапу ${carrier.stageType} (C8)`);
       }
     }
     const core: LessonCoreData = {
@@ -564,7 +598,8 @@ export class LessonPlansService {
         ].join('');
         this.logger.warn(`Этап ${s.stageType} урока ${id}: ${[wrong.length ? `русские термины [${wrong.join(', ')}]` : '', gateHard.length ? `шлюз: ${gateHard.map((v) => v.word).join(', ')}` : '', valueMissing ? 'ценность не раскрыта (C8)' : '', factProblems.length ? `факты: ${factProblems.map((x) => x.rule).join(',')}` : ''].filter(Boolean).join('; ')}, повтор`);
       }
-      s.stageName = c.stageName ?? s.stageName ?? s.stageType;
+      // Первый этап — «Организация урока» / «Ұйымдастыру»: название задаёт методика, не модель.
+      s.stageName = fixedStageName(s.stageType, lesson.language) ?? c.stageName ?? s.stageName ?? s.stageType;
       s.teacherActions = c.teacherActions ?? '';
       s.studentActions = c.studentActions ?? '';
       s.method = c.method ?? '';
@@ -678,7 +713,7 @@ export class LessonPlansService {
     await this.cost.log(lesson.id, 'plan', res);
     const c = this.parseJson<any>(res.content) ?? {};
     Object.assign(s, {
-      stageName: c.stageName ?? s.stageName,
+      stageName: fixedStageName(s.stageType, lesson.language) ?? c.stageName ?? s.stageName,
       teacherActions: c.teacherActions ?? s.teacherActions,
       studentActions: c.studentActions ?? s.studentActions,
       method: c.method ?? s.method,
@@ -723,7 +758,9 @@ export class LessonPlansService {
       grade: lesson.grade,
       lessonTitle: lesson.lessonTitle,
       languageFocus: lesson.languageFocus,
-      learningObjectives: lesson.learningObjectives ?? [],
+      // «код — формулировка учителя», по одной на цель: промптам нужны цели
+      // целиком, а не обрывки строк (objectives-input.ts).
+      learningObjectives: givenForPrompt(lesson.learningObjectives),
       lessonObjectives: lesson.lessonObjectives ?? [],
       language: lesson.language ?? 'kz',
     };

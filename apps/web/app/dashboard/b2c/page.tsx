@@ -7,7 +7,7 @@ import { getValidAccessToken, logout } from "../../../lib/auth";
 import { useLang, LT } from "../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../components/lang-switcher";
 import { Icon, type IconName } from "../../../components/ui/icon";
-import { useIsMobileApp } from "../../../lib/platform";
+import { useIsIosApp, useIsMobileApp } from "../../../lib/platform";
 
 // Знак Aqyl — три штриха собираются в одну вершину (буква A).
 function AqylMark({ size = 40 }: { size?: number }) {
@@ -25,6 +25,7 @@ function AqylMark({ size = 40 }: { size?: number }) {
 export default function B2CDashboardPage() {
   const router = useRouter();
   const mobileApp = useIsMobileApp();
+  const iosApp = useIsIosApp();
   const [lang, setLang] = useLang();
   const t = LT[lang];
   const [profile, setProfile] = useState<B2CProfile | null>(null);
@@ -108,13 +109,14 @@ export default function B2CDashboardPage() {
     // Живой квиз (ТЗ 3.0). Страница существовала без входа из кабинета —
     // учитель не мог до неё добраться иначе как по прямому адресу.
     { key: "quiz", icon: "bolt", label: t.liveQuiz, href: "/dashboard/b2c/quiz" },
-    // Приглашение коллег скрыто в обёртке приложения вместе с подпиской: уроки —
-    // цифровой товар, и награды за действия магазины приложений проверяют строго.
+    // Подписка скрыта в любой обёртке приложения (оплата только на сайте).
+    // Приглашение коллег — только в iOS: в браузере и Android оно на виду
+    // (lib/platform.ts, useIsIosApp).
     ...(mobileApp === false
-      ? [
-          { key: "subscribe", icon: "card" as IconName, label: t.subscription, href: "/dashboard/b2c/subscribe" },
-          { key: "invite", icon: "users" as IconName, label: `${t.invite} +5`, href: "/dashboard/b2c/invite" },
-        ]
+      ? [{ key: "subscribe", icon: "card" as IconName, label: t.subscription, href: "/dashboard/b2c/subscribe" }]
+      : []),
+    ...(iosApp === false
+      ? [{ key: "invite", icon: "users" as IconName, label: `${t.invite} +5`, href: "/dashboard/b2c/invite" }]
       : []),
     { key: "help", icon: "help", label: t.help, href: "/dashboard/b2c/help" },
   ];
@@ -189,7 +191,7 @@ export default function B2CDashboardPage() {
               </div>
             )}
             {/* Уроки кончились — второй путь, кроме покупки: пригласить коллегу. */}
-            {mobileApp === false && (
+            {iosApp === false && (
               <button onClick={() => router.push("/dashboard/b2c/invite")} style={{ ...linkBtn, fontSize: 14, marginTop: 18 }}>
                 {t.inviteHint.replace("{n}", "5")} →
               </button>

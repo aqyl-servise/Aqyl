@@ -10,6 +10,8 @@ import { LessonPlansService, UserCtx } from '../lesson-plans/lesson-plans.servic
 import { LessonExample } from './lesson-example.entity';
 import { LIBRARY_PRESETS } from './library-presets';
 import { exampleSlug } from './library-utils';
+import { cleanCurriculum, finalCurriculum, parseGivenObjectives } from '../lesson-plans/engine/objectives-input';
+import { stageDisplayName } from '../lesson-plans/engine/stage-names';
 
 /** Служебный аккаунт, от имени которого генерируются примеры. Войти в него нельзя. */
 const SYSTEM_EMAIL = 'library@aqyl-service.kz';
@@ -257,9 +259,11 @@ export class LibraryService implements OnModuleInit {
  * моделью, может оказаться выдуманным.
  */
 export function planOf(l: Lesson, givenCodes: string[]): NonNullable<PublicPlan['plan']> {
-  const given = new Set(givenCodes.map((c) => c.trim()).filter(Boolean));
-  const curriculum = given.size
-    ? (l.core?.objectives?.curriculum ?? []).filter((c) => given.has(String(c.code).trim()))
+  const given = parseGivenObjectives(givenCodes);
+  const title = l.lessonTitle ?? '';
+  // Чистка паспорта (objectives-input.ts): без повторов и без кода в тексте.
+  const curriculum = given.length
+    ? finalCurriculum(given, cleanCurriculum(l.core?.objectives?.curriculum, title), title)
     : [];
   return {
     durationMinutes: l.durationMinutes ?? null,
@@ -268,7 +272,7 @@ export function planOf(l: Lesson, givenCodes: string[]): NonNullable<PublicPlan[
     valueLink: l.valueLink ?? null,
     homework: l.homework ?? null,
     stages: (l.stages ?? []).map((s) => ({
-      stageName: s.stageName ?? '', timeMinutes: s.timeMinutes ?? 0,
+      stageName: stageDisplayName(s, l.language), timeMinutes: s.timeMinutes ?? 0,
       teacherActions: s.teacherActions ?? '', studentActions: s.studentActions ?? '',
       assessmentCriteria: s.assessmentCriteria ?? '', method: s.method ?? '', resources: s.resources ?? '',
       points: s.isAssessed ? (s.points ?? null) : null,

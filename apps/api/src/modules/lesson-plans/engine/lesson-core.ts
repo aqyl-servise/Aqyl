@@ -108,6 +108,10 @@ export function coreObjectivesProblems(o: CoreObjectives | null | undefined): st
     }
   }
   if (!o.lesson?.length) out.push('цели урока пусты («Сабақ мақсаттары»)');
+  // Связь 1 к 1 (методист, 04.10.2026): одна цель урока на одну цель обучения.
+  if (o.curriculum?.length && o.lesson?.length && o.lesson.length !== o.curriculum.length) {
+    out.push(`целей урока ${o.lesson.length}, а целей обучения ${o.curriculum.length} — нужно ровно ${o.curriculum.length}, по одной на каждую`);
+  }
   return out;
 }
 

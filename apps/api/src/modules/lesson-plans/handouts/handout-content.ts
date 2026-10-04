@@ -195,7 +195,7 @@ const RESOURCES: Record<HandoutType, Record<string, string>> = {
   pair: { kz: 'Жұптық жұмыс карточкалары (басып шығару)', ru: 'Карточки для парной работы (на печать)', en: 'Pair-work cards (printed)' },
   group: { kz: 'Топтық кейс-парақтар (басып шығару)', ru: 'Кейс-листы для групповой работы (на печать)', en: 'Group case sheets (printed)' },
   quiz: { kz: 'Квиз парағы (басып шығару)', ru: 'Лист-квиз (на печать)', en: 'Quiz sheet (printed)' },
-  warmup: { kz: 'Қыздыру парағы (басып шығару)', ru: 'Лист разминки (на печать)', en: 'Warm-up sheet (printed)' },
+  warmup: { kz: 'Ұйымдастыру кезеңінің парағы (басып шығару)', ru: 'Лист к этапу «Организация урока» (на печать)', en: 'Lesson organisation sheet (printed)' },
   explanation: { kz: 'Тірек-конспект парағы (басып шығару)', ru: 'Опорный лист (на печать)', en: 'Reference sheet (printed)' },
   reflection: { kz: 'Рефлексия парағы: белгі қою (басып шығару)', ru: 'Лист рефлексии с отметками (на печать)', en: 'Reflection sheet with checkboxes (printed)' },
 };

@@ -29,6 +29,21 @@ interface HeaderForm {
   presentCount: string; absentCount: string; subject: string; lessonTitle: string; languageFocus: string;
   learningObjectives: string; valueMonth: string; durationMinutes: string; language: string;
 }
+/**
+ * Цели обучения — по одной на строку. Запятая внутри строки — часть
+ * формулировки, не разделитель: до 04.10.2026 поле резалось и по запятым,
+ * обрывки целей становились отдельными «кодами» и дублировались в документе.
+ */
+function splitObjectives(s: string): string[] {
+  return s.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
+}
+
+/** Текущий месяц по Алматы для ценности; летом ценностей нет — сентябрь. */
+function currentValueMonth(): string {
+  const m = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Almaty", month: "2-digit" }).format(new Date());
+  return ["06", "07", "08"].includes(m) ? "09" : m;
+}
+
 const EMPTY: HeaderForm = {
   unit: "", teacherName: "", date: "", lessonNumber: "", grade: "", presentCount: "", absentCount: "",
   subject: "", lessonTitle: "", languageFocus: "", learningObjectives: "", valueMonth: "", durationMinutes: "45",
@@ -107,7 +122,10 @@ export default function LessonGeneratorPage() {
       }
     })();
     // Тема, переданная с дашборда (/dashboard/b2c/lesson?topic=…), сразу подставляется в «Тему урока».
-    setForm((f) => ({ ...f, language: lang }));
+    // Ценность месяца обязательна (программа «Адал Азамат»): по умолчанию —
+    // текущий месяц; учитель может выбрать другой. Для открытого урока ниже
+    // подставится его собственный месяц.
+    setForm((f) => ({ ...f, language: lang, valueMonth: f.valueMonth || currentValueMonth() }));
     const qs = new URLSearchParams(window.location.search);
     const topic = qs.get("topic");
     if (topic) setForm((f) => ({ ...f, lessonTitle: topic }));
@@ -153,7 +171,7 @@ export default function LessonGeneratorPage() {
   function set<K extends keyof HeaderForm>(k: K, v: string) { setForm((f) => ({ ...f, [k]: v })); }
 
   function headerPayload(): LpHeader {
-    const codes = form.learningObjectives.split(/[\n,]/).map((s) => s.trim()).filter(Boolean);
+    const codes = splitObjectives(form.learningObjectives);
     return {
       unit: form.unit || undefined, teacherName: form.teacherName || undefined, date: form.date || undefined,
       lessonNumber: form.lessonNumber || undefined, grade: form.grade ? Number(form.grade) : undefined,
@@ -177,7 +195,7 @@ export default function LessonGeneratorPage() {
   async function genObjectives() {
     if (!token) return;
     setError(null);
-    const codes = form.learningObjectives.split(/[\n,]/).map((s) => s.trim()).filter(Boolean);
+    const codes = splitObjectives(form.learningObjectives);
     if (!codes.length) { setError(t.reqCodes); return; }
     setGenObjLoading(true);
     try {
@@ -606,7 +624,7 @@ function LessonView({ lesson, onRegen, regenId, onExport, onRetry, retryBusy, pr
               return (
               <tr key={s.id} style={regenerating ? { opacity: 0.55 } : undefined}>
                 <td style={td}>
-                  <b>{s.stageName || t[`st_${s.stageType}`] || s.stageType}</b><br />({s.timeMinutes} {t.min})
+                  <b>{s.stageType === "warmup" ? t.st_warmup : s.stageName || t[`st_${s.stageType}`] || s.stageType}</b><br />({s.timeMinutes} {t.min})
                   <br />
                   <button
                     onClick={() => onRegen(s.id)}

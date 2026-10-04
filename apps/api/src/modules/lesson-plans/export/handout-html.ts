@@ -84,9 +84,9 @@ const L: Record<string, Record<string, string>> = {
   en: { student: 'Student', date: 'Date', answers: 'Answer key', criteria: 'Assessment criteria', descriptor: 'Descriptor', points: 'points', appendix: 'Appendix', levelA: 'Level A', levelB: 'Level B', levelC: 'Level C' },
 };
 const TYPE_NAME: Record<string, Record<HandoutType, string>> = {
-  kz: { warmup: 'Қыздыру', explanation: 'Түсіндіру', individual: 'Жеке тапсырма', pair: 'Жұптық жұмыс', group: 'Топтық жұмыс', text: 'Мәтінмен жұмыс', quiz: 'Квиз', reflection: 'Рефлексия' },
-  ru: { warmup: 'Разминка', explanation: 'Объяснение', individual: 'Индивидуальное задание', pair: 'Парная работа', group: 'Групповая работа', text: 'Работа с текстом', quiz: 'Квиз', reflection: 'Рефлексия' },
-  en: { warmup: 'Warm-up', explanation: 'Explanation', individual: 'Individual task', pair: 'Pair work', group: 'Group work', text: 'Text work', quiz: 'Quiz', reflection: 'Reflection' },
+  kz: { warmup: 'Ұйымдастыру', explanation: 'Түсіндіру', individual: 'Жеке тапсырма', pair: 'Жұптық жұмыс', group: 'Топтық жұмыс', text: 'Мәтінмен жұмыс', quiz: 'Квиз', reflection: 'Рефлексия' },
+  ru: { warmup: 'Организация урока', explanation: 'Объяснение', individual: 'Индивидуальное задание', pair: 'Парная работа', group: 'Групповая работа', text: 'Работа с текстом', quiz: 'Квиз', reflection: 'Рефлексия' },
+  en: { warmup: 'Lesson organisation', explanation: 'Explanation', individual: 'Individual task', pair: 'Pair work', group: 'Group work', text: 'Text work', quiz: 'Quiz', reflection: 'Reflection' },
 };
 const lang = (m?: string | null) => (m && L[m] ? m : 'kz');
 

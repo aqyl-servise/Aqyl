@@ -4,6 +4,8 @@ import {
 import { Lesson } from '../entities/lesson.entity';
 import { Handout } from '../entities/handout.entity';
 import { DocLabels } from './doc-labels';
+import { cleanCurriculum, finalCurriculum, parseGivenObjectives } from '../engine/objectives-input';
+import { stageDisplayName } from '../engine/stage-names';
 
 // Общие примитивы вёрстки .docx для плана и раздаточных материалов.
 // Ширины таблиц — в твипах, а не в процентах: docx 9.6.x сериализует PERCENTAGE
@@ -47,8 +49,14 @@ export function planChildren(lesson: Lesson, lbl: DocLabels, appendixByStageId?:
 
   // Цели обучения — из LessonCore (ТЗ 1.6): «код — полная формулировка»,
   // не голый код. Для уроков без паспорта (старые) — как раньше.
-  const curriculum = lesson.core?.objectives?.curriculum;
-  const learnObjLines = curriculum?.length
+  // Чистка при выводе (objectives-input.ts): у уроков до 04.10.2026 в
+  // паспорте лежали повторы — обрывки строк, введённых учителем, с темой
+  // вместо формулировки. Документ показывает каждую цель один раз.
+  const given = parseGivenObjectives(lesson.learningObjectives);
+  const curriculum = finalCurriculum(
+    given, cleanCurriculum(lesson.core?.objectives?.curriculum, lesson.lessonTitle ?? ''), lesson.lessonTitle ?? '',
+  );
+  const learnObjLines = curriculum.length
     ? curriculum.map((c) => para(c.text && c.text !== c.code ? `${c.code} — ${c.text}` : c.code))
     : (lesson.learningObjectives ?? []).map((o) => para(o));
   const lessonObjLines = (lesson.lessonObjectives ?? []).map((o, i) => para(`${i + 1}. ${o}`));
@@ -92,7 +100,7 @@ export function planChildren(lesson: Lesson, lbl: DocLabels, appendixByStageId?:
 
     return new TableRow({
       children: [
-        cell([para(`${s.stageName || s.stageType}`, true), para(`(${s.timeMinutes} ${lbl.min})`)]),
+        cell([para(stageDisplayName(s, lesson.language), true), para(`(${s.timeMinutes} ${lbl.min})`)]),
         cell([para(s.teacherActions ?? '')]),
         cell(studentChildren),
         cell(critChildren),
