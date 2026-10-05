@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AiClientService } from '../../services/ai-client.service';
 import { CostLoggerService } from './handouts/cost-logger.service';
-import { KzFix, PROOFREAD_TOOL, chunkTexts, kazakhWords, parseFixes, proofreadPrompt, unknownKazakhWords } from './engine/kz-proofread';
+import { KzFix, PROOFREAD_TOOL, anchorFixes, chunkTexts, kazakhWords, parseFixes, proofreadPrompt, unknownKazakhWords } from './engine/kz-proofread';
 
 /**
  * Корректор казахского текста: план урока и пакет раздатки вычитываются
@@ -56,7 +56,7 @@ export class KzProofreadService {
         cacheWriteTokens: res.cacheWriteTokens, cacheReadTokens: res.cacheReadTokens,
       });
       // Фрагмент, которого в тексте нет, — галлюцинация корректора: не применяем.
-      return parseFixes(res.data).filter((f) => items.some((t) => t.includes(f.wrong)));
+      return anchorFixes(items, parseFixes(res.data));
     } catch (err) {
       this.logger.warn(`Урок ${opts.lessonId} (${opts.label}): вычитка не удалась: ${(err as Error).message}`);
       return [];

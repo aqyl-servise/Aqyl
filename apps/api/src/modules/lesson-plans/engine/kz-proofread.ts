@@ -145,6 +145,34 @@ export function parseFixes(raw: unknown): KzFix[] {
   return out;
 }
 
+/**
+ * Привязать исправления к тексту. Корректор возвращает фрагмент не всегда
+ * буква в букву: «Сәлемдесіп шаңырақтастырады» при строчной в тексте — такое
+ * исправление терялось. Ищем без учёта регистра и берём фрагмент из текста;
+ * регистр первой буквы исправления подгоняем. Чего в тексте нет — отбрасываем.
+ */
+export function anchorFixes(texts: string[], fixes: KzFix[]): KzFix[] {
+  const out: KzFix[] = [];
+  for (const f of fixes) {
+    let wrong: string | null = texts.some((t) => t.includes(f.wrong)) ? f.wrong : null;
+    if (!wrong) {
+      const needle = f.wrong.toLowerCase();
+      for (const t of texts) {
+        const i = t.toLowerCase().indexOf(needle);
+        // Длина строки при смене регистра у кириллицы не меняется — индекс годен.
+        if (i >= 0 && t.length === t.toLowerCase().length) { wrong = t.slice(i, i + f.wrong.length); break; }
+      }
+    }
+    if (!wrong) continue;
+    let right = f.right;
+    const w0 = wrong[0];
+    if (w0 && w0 !== w0.toUpperCase() && right[0] === right[0].toUpperCase()) right = right[0].toLowerCase() + right.slice(1);
+    else if (w0 && w0 !== w0.toLowerCase() && right[0] === right[0].toLowerCase()) right = right[0].toUpperCase() + right.slice(1);
+    if (wrong !== right && !out.some((o) => o.wrong === wrong)) out.push({ wrong, right });
+  }
+  return out;
+}
+
 /** Применить исправления к строке: точные вхождения фрагмента. */
 export function applyFixes(text: string, fixes: KzFix[]): string {
   let s = text;
