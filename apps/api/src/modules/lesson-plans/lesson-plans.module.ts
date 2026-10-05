@@ -17,6 +17,7 @@ import { CostLoggerService } from './handouts/cost-logger.service';
 import { PdfService } from './export/pdf.service';
 import { LanguageGateService } from './language-gate.service';
 import { PresentationService } from './presentation/presentation.service';
+import { KzProofreadService } from './kz-proofread.service';
 import { AiClientModule } from '../../services/ai-client.module';
 import { BillingModule } from '../billing/billing.module';
 import { FunnelModule } from '../funnel/funnel.module';
@@ -41,7 +42,7 @@ import { FunnelModule } from '../funnel/funnel.module';
     FunnelModule,
   ],
   controllers: [LessonPlansController],
-  providers: [LessonsSeedService, LessonPlansService, HandoutsService, CostLoggerService, PdfService, PresentationService, LanguageGateService],
+  providers: [LessonsSeedService, LessonPlansService, HandoutsService, CostLoggerService, PdfService, PresentationService, LanguageGateService, KzProofreadService],
   exports: [LessonPlansService, HandoutsService],
 })
 export class LessonPlansModule {}

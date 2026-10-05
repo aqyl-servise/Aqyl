@@ -1,6 +1,8 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
+import { applyFixesDeep, stringsDeep } from '../engine/kz-proofread';
+import { KzProofreadService } from '../kz-proofread.service';
 import { Lesson } from '../entities/lesson.entity';
 import { LessonStage } from '../entities/lesson-stage.entity';
 import { Descriptor } from '../entities/descriptor.entity';
@@ -54,6 +56,7 @@ export class HandoutsService {
     private readonly ai: AiClientService,
     private readonly cost: CostLoggerService,
     private readonly gate: LanguageGateService,
+    private readonly kz: KzProofreadService,
     private readonly pdf: PdfService,
   ) {}
 
@@ -145,6 +148,36 @@ export class HandoutsService {
     return this.pdf.render(singleHandoutHtml(handout, this.meta(lesson), mode));
   }
 
+  /**
+   * Вычитка казахского текста всего пакета одним вызовом: выдуманные слова
+   * («қостарыстырмалау»), слова не по смыслу («түлектері» вместо
+   * «тұлғалары»), ошибки в формах. Исправления применяются ко всем строкам
+   * листов и к дескрипторам плана — снапшот в раздатке и таблица КМЖ обязаны
+   * совпадать (verifyDescriptorSync).
+   */
+  private async proofreadPackage(lesson: Lesson): Promise<void> {
+    const sheets = await this.handoutRepo.find({ where: { lessonId: lesson.id } });
+    const texts = sheets.flatMap((h) => stringsDeep([h.studentContent, h.teacherContent, h.levels]));
+    const fixes = await this.kz.proofread(texts, {
+      lessonId: lesson.id, userId: lesson.userId, schoolId: lesson.schoolId, subject: lesson.subject,
+      operation: 'handouts', label: 'раздатка',
+    });
+    if (!fixes.length) return;
+    for (const h of sheets) {
+      const before = JSON.stringify([h.studentContent, h.teacherContent, h.levels]);
+      h.studentContent = applyFixesDeep(h.studentContent, fixes);
+      h.teacherContent = applyFixesDeep(h.teacherContent, fixes);
+      h.levels = applyFixesDeep(h.levels, fixes);
+      if (JSON.stringify([h.studentContent, h.teacherContent, h.levels]) !== before) await this.handoutRepo.save(h);
+    }
+    const stageIds = (await this.stageRepo.find({ where: { lessonId: lesson.id } })).map((s) => s.id);
+    const descs = stageIds.length ? await this.descRepo.find({ where: { stageId: In(stageIds) } }) : [];
+    for (const d of descs) {
+      const nv = applyFixesDeep(d.text, fixes);
+      if (nv !== d.text) await this.descRepo.update({ id: d.id }, { text: nv });
+    }
+  }
+
   // ── Generation pipeline ─────────────────────────────────────────
   private async runHandouts(lesson: Lesson): Promise<void> {
     const lessonId = lesson.id;
@@ -175,6 +208,10 @@ export class HandoutsService {
     // цели 8.6.17.1 терялись и не попадали ни в одно задание.
     await this.ensureObjectiveCoverage(lesson);
     await this.checkPackageTheme(lesson);
+
+    // Вычитка казахского (методист, 05.10.2026) — до сверки дескрипторов:
+    // исправление попадает и в листы, и в таблицу плана, синхронность цела.
+    if (lesson.language === 'kz') await this.proofreadPackage(lesson);
 
     // Проверка синхронизации КМЖ↔приложение (ТЗ №2, задача 1): дескрипторы в
     // таблице (их читает КМЖ) должны посимвольно совпадать со снапшотом в

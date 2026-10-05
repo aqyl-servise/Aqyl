@@ -37,6 +37,9 @@ export const ACTION_MODEL_MAP: Record<string, keyof typeof AI_MODELS> = {
   // шкалы/дескрипторов по списку конкретных нарушений. Sonnet: Haiku эти же
   // числа и перепутал при генерации листа.
   lesson_scoring_fix: 'SONNET',
+  // Вычитка казахского текста (выдуманные слова, слова не по смыслу) — Sonnet:
+  // Haiku пишет по-казахски заметно слабее и сам допускает такие ошибки.
+  kz_proofread: 'SONNET',
   literacy_stimulus: 'SONNET',
   literacy_analyze: 'HAIKU',
   literacy_questions: 'SONNET',
@@ -77,6 +80,7 @@ export const MAX_TOKENS_MAP: Record<string, number> = {
   lesson_handout: 5000,
   lesson_handout_light: 2600,
   lesson_scoring_fix: 1200, // только criteria + scoring, без текста задания
+  kz_proofread: 1500, // только список исправлений, не текст целиком
 
   literacy_stimulus: 900, // было 1500 — стимул ограничен 250 словами
   literacy_analyze: 400,

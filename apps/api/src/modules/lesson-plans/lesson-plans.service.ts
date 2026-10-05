@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Lesson } from './entities/lesson.entity';
 import { LessonStage, StageType } from './entities/lesson-stage.entity';
 import { Descriptor } from './entities/descriptor.entity';
@@ -37,6 +37,8 @@ import { LessonCoreData, CoreFact, CoreFactSheet, CoreWorkInterpretation, canoni
 import { planChildren } from './export/docx-kit';
 import { cleanCurriculum, finalCurriculum, givenForPrompt, parseGivenObjectives } from './engine/objectives-input';
 import { fixedStageName } from './engine/stage-names';
+import { applyFixes } from './engine/kz-proofread';
+import { KzProofreadService } from './kz-proofread.service';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Document, Packer } = require('docx') as typeof import('docx');
 
@@ -71,6 +73,7 @@ export class LessonPlansService {
     private readonly cost: CostLoggerService,
     private readonly subscription: SubscriptionService,
     private readonly gate: LanguageGateService,
+    private readonly kz: KzProofreadService,
   ) {}
 
   // ── Reference data ──────────────────────────────────────────────
@@ -632,7 +635,63 @@ export class LessonPlansService {
       await this.expandValueLink(lesson);
     }
 
+    // 5) Вычитка казахского (методист, 05.10.2026): выдуманные слова и слова
+    // не по смыслу — один проход корректора по всему тексту плана.
+    if (lesson.language === 'kz') await this.proofreadPlan(id, lesson, stages);
+
     await this.lessonRepo.update(id, { status: 'ready', totalPoints: 10, homework: lesson.homework ?? null });
+  }
+
+  /**
+   * Вычитка плана: этапы, дескрипторы, цели урока, формулировки целей
+   * обучения и раскрытие ценности — одним вызовом; исправления применяются
+   * точечно к каждому полю.
+   */
+  private async proofreadPlan(id: string, lesson: Lesson, stages: LessonStage[]): Promise<void> {
+    const fresh = await this.lessonRepo.findOne({ where: { id } });
+    if (!fresh) return;
+    const descs = await this.descRepo.find({ where: { stageId: In(stages.map((s) => s.id)) } });
+    const STAGE_FIELDS = ['stageName', 'teacherActions', 'studentActions', 'method', 'assessmentCriteria', 'resources'] as const;
+    const curriculum = fresh.core?.objectives?.curriculum ?? [];
+    const texts = [
+      ...stages.flatMap((s) => STAGE_FIELDS.map((f) => s[f] ?? '')),
+      ...descs.map((d) => d.text),
+      ...(fresh.lessonObjectives ?? []),
+      ...curriculum.map((c) => c.text),
+      fresh.valueLink ?? '',
+    ];
+    const fixes = await this.kz.proofread(texts, {
+      lessonId: id, userId: lesson.userId, schoolId: lesson.schoolId, subject: lesson.subject, operation: 'plan', label: 'план',
+    });
+    if (!fixes.length) return;
+
+    for (const s of stages) {
+      let changed = false;
+      for (const f of STAGE_FIELDS) {
+        const v = s[f];
+        if (typeof v === 'string' && v) {
+          const nv = applyFixes(v, fixes);
+          if (nv !== v) { (s as unknown as Record<string, string>)[f] = nv; changed = true; }
+        }
+      }
+      // Название первого этапа задаёт методика — вычитка его не трогает.
+      const fixed = fixedStageName(s.stageType, lesson.language);
+      if (fixed) s.stageName = fixed;
+      if (changed) await this.stageRepo.save(s);
+    }
+    for (const d of descs) {
+      const nv = applyFixes(d.text, fixes);
+      if (nv !== d.text) await this.descRepo.update({ id: d.id }, { text: nv });
+    }
+    const lessonObjectives = (fresh.lessonObjectives ?? []).map((t) => applyFixes(t, fixes));
+    const core = fresh.core
+      ? { ...fresh.core, objectives: { ...fresh.core.objectives, lesson: lessonObjectives, curriculum: curriculum.map((c) => ({ ...c, text: applyFixes(c.text, fixes) })) } }
+      : fresh.core;
+    await this.lessonRepo.update({ id }, {
+      lessonObjectives,
+      valueLink: fresh.valueLink ? applyFixes(fresh.valueLink, fixes) : fresh.valueLink,
+      core: core as never,
+    });
   }
 
   /**
