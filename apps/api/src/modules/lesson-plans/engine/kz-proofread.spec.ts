@@ -1,7 +1,7 @@
 /** Вычитка казахского: разбор ответа корректора и применение исправлений. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { applyFixes, applyFixesDeep, kazakhWords, parseFixes, proofreadPrompt, stringsDeep } from './kz-proofread';
+import { applyFixes, applyFixesDeep, chunkTexts, kazakhWords, parseFixes, proofreadPrompt, stringsDeep } from './kz-proofread';
 
 test('слова: кириллица от 3 букв, казахские буквы входят, повторы схлопываются', () => {
   const w = kazakhWords(['Оқушыларды сәлемдесіп шаңырақтастырады.', 'Fe және H₂O, оқушыларды']);
@@ -50,6 +50,12 @@ test('промпт: подсказка словаря помечена как н
   const p = proofreadPrompt(['бір', 'екі'], ['шаңырақтастырады'], 'Қазақстан тарихы');
   assert.ok(p.user.includes('словарь неполный'));
   assert.ok(p.user.includes('[1] бір') && p.user.includes('[2] екі'));
-  assert.ok(p.system.includes('{"fixes"'));
+  assert.ok(p.system.includes('report_fixes'));
   assert.ok(!proofreadPrompt(['бір'], []).user.includes('словарь неполный'));
+});
+
+test('части: повторы убраны, длина части ограничена, длинная строка — отдельной частью', () => {
+  const c = chunkTexts(['аааа', 'бббб', 'аааа', '  ', 'в'.repeat(20), 'гггг'], 10);
+  assert.deepEqual(c, [['аааа', 'бббб'], ['в'.repeat(20)], ['гггг']]);
+  assert.deepEqual(chunkTexts([]), []);
 });

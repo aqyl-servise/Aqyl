@@ -80,7 +80,7 @@ export const MAX_TOKENS_MAP: Record<string, number> = {
   lesson_handout: 5000,
   lesson_handout_light: 2600,
   lesson_scoring_fix: 1200, // только criteria + scoring, без текста задания
-  kz_proofread: 1500, // только список исправлений, не текст целиком
+  kz_proofread: 4000, // список исправлений по части текста; в плохом пакете их десятки
 
   literacy_stimulus: 900, // было 1500 — стимул ограничен 250 словами
   literacy_analyze: 400,

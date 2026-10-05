@@ -74,8 +74,8 @@ export function proofreadPrompt(
     '3) явные ошибки в формах слов (пример: «шыға басталған» → «шыға бастаған»).\n' +
     'НЕ трогай: имена собственные, предметные термины, формулы, числа, правильные слова, стиль и ' +
     'порядок слов. Если фраза бессмысленна целиком — замени её короткой правильной фразой с тем же смыслом.\n' +
-    'Ответ СТРОГО валидным JSON без пояснений: {"fixes":[{"wrong":"точный фрагмент из текста, 1–6 слов",' +
-    '"right":"исправленный фрагмент"}]}. Нет ошибок — {"fixes":[]}.';
+    'Верни исправления инструментом report_fixes: wrong — точный фрагмент из текста (1–6 слов), ' +
+    'right — исправленный фрагмент. Нет ошибок — пустой список.';
   const hint = suspicious.length
     ? `Слова, которых нет в нашем орфографическом словаре (словарь неполный: многие из них правильные — ` +
       `проверь каждое по смыслу и не исправляй правильные): ${suspicious.slice(0, 150).join(', ')}.\n\n`
@@ -85,6 +85,49 @@ export function proofreadPrompt(
     hint +
     'Текст:\n' + texts.map((t, i) => `[${i + 1}] ${t}`).join('\n');
   return { system, user };
+}
+
+/**
+ * Ответ инструментом, а не текстом: текстом модель сначала писала разбор
+ * ошибок и обрывалась на лимите токенов, не дойдя до JSON (05.10.2026,
+ * раздатка про Алаш — 0 исправлений при десятках ошибок).
+ */
+export const PROOFREAD_TOOL = {
+  name: 'report_fixes',
+  description: 'Список исправлений казахского текста.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      fixes: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: { wrong: { type: 'string' }, right: { type: 'string' } },
+          required: ['wrong', 'right'],
+        },
+      },
+    },
+    required: ['fixes'],
+  },
+};
+
+/**
+ * Части для вычитки: повторы убраны (studentContent и teacherContent
+ * раздатки во многом совпадают), каждая часть не длиннее maxChars — на
+ * большом пакете модель пропускает ошибки и упирается в лимит ответа.
+ */
+export function chunkTexts(texts: string[], maxChars = 6000): string[][] {
+  const uniq = [...new Set(texts.map((t) => String(t ?? '').trim()).filter(Boolean))];
+  const out: string[][] = [];
+  let cur: string[] = [];
+  let len = 0;
+  for (const t of uniq) {
+    if (cur.length && len + t.length > maxChars) { out.push(cur); cur = []; len = 0; }
+    cur.push(t);
+    len += t.length;
+  }
+  if (cur.length) out.push(cur);
+  return out;
 }
 
 /** Разбор ответа корректора: только непустые пары, где есть что менять. */

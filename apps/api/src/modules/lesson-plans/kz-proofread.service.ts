@@ -1,11 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AiClientService } from '../../services/ai-client.service';
 import { CostLoggerService } from './handouts/cost-logger.service';
-import { KzFix, kazakhWords, parseFixes, proofreadPrompt, unknownKazakhWords } from './engine/kz-proofread';
+import { KzFix, PROOFREAD_TOOL, chunkTexts, kazakhWords, parseFixes, proofreadPrompt, unknownKazakhWords } from './engine/kz-proofread';
 
 /**
- * Корректор казахского текста: один вызов модели на урок (план) и один на
- * пакет раздатки. Подробности и причины — engine/kz-proofread.ts.
+ * Корректор казахского текста: план урока и пакет раздатки вычитываются
+ * частями (по ~6000 знаков, части параллельно). Подробности и причины —
+ * engine/kz-proofread.ts.
  *
  * Сбой вычитки не роняет генерацию: текст остаётся как есть.
  */
@@ -24,38 +25,41 @@ export class KzProofreadService {
   ): Promise<KzFix[]> {
     // Выключатель на случай, если корректор начнёт портить текст: KZ_PROOFREAD=off в .env.
     if (String(process.env.KZ_PROOFREAD ?? '').toLowerCase() === 'off') return [];
-    const items = texts.map((t) => String(t ?? '').trim()).filter(Boolean);
-    if (!items.length) return [];
+    const chunks = chunkTexts(texts);
+    if (!chunks.length) return [];
+    const parts = await Promise.all(chunks.map((c) => this.proofreadChunk(c, opts)));
+    const real: KzFix[] = [];
+    for (const f of parts.flat()) if (!real.some((r) => r.wrong === f.wrong)) real.push(f);
+    if (real.length) {
+      this.logger.log(
+        `Урок ${opts.lessonId} (${opts.label}): казахский, исправлено ${real.length} — ` +
+        real.map((f) => `«${f.wrong}» → «${f.right}»`).join('; '),
+      );
+    }
+    return real;
+  }
+
+  private async proofreadChunk(
+    items: string[],
+    opts: { lessonId: string; userId?: string | null; schoolId?: string | null; subject?: string | null; operation: string; label: string },
+  ): Promise<KzFix[]> {
     try {
       const suspicious = await unknownKazakhWords(kazakhWords(items));
       const p = proofreadPrompt(items, suspicious, opts.subject);
-      const res = await this.ai.request({
+      const res = await this.ai.requestTool<{ fixes?: unknown }>({
         action: 'kz_proofread', systemPrompt: p.system,
         messages: [{ role: 'user', content: p.user }],
         userId: opts.userId ?? null, schoolId: opts.schoolId ?? null,
+      }, PROOFREAD_TOOL);
+      await this.cost.log(opts.lessonId, opts.operation, {
+        content: '', model: res.model, tokensIn: res.tokensIn, tokensOut: res.tokensOut,
+        cacheWriteTokens: res.cacheWriteTokens, cacheReadTokens: res.cacheReadTokens,
       });
-      await this.cost.log(opts.lessonId, opts.operation, res);
-      const fixes = parseFixes(this.parseJson(res.content));
       // Фрагмент, которого в тексте нет, — галлюцинация корректора: не применяем.
-      const real = fixes.filter((f) => items.some((t) => t.includes(f.wrong)));
-      if (real.length) {
-        this.logger.log(
-          `Урок ${opts.lessonId} (${opts.label}): казахский, исправлено ${real.length} — ` +
-          real.map((f) => `«${f.wrong}» → «${f.right}»`).join('; '),
-        );
-      }
-      return real;
+      return parseFixes(res.data).filter((f) => items.some((t) => t.includes(f.wrong)));
     } catch (err) {
       this.logger.warn(`Урок ${opts.lessonId} (${opts.label}): вычитка не удалась: ${(err as Error).message}`);
       return [];
     }
-  }
-
-  private parseJson(content: string): unknown {
-    const s = String(content ?? '').replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
-    const start = s.indexOf('{');
-    const end = s.lastIndexOf('}');
-    if (start < 0 || end <= start) return null;
-    try { return JSON.parse(s.slice(start, end + 1)); } catch { return null; }
   }
 }
