@@ -107,8 +107,11 @@ export class LessonPlansService {
 
   // ── CRUD ────────────────────────────────────────────────────────
   async createDraft(ctx: UserCtx, header: Partial<Lesson>): Promise<Lesson> {
+    const picked = this.pickHeader(header);
+    // Предмет — одно название из справочника на языке урока (engine/subjects.ts).
+    if (picked.subject) picked.subject = canonicalSubject(picked.subject, picked.language ?? 'kz');
     const lesson = this.lessonRepo.create({
-      ...this.pickHeader(header),
+      ...picked,
       userId: ctx.userId,
       schoolId: ctx.schoolId,
       status: 'draft',
@@ -119,6 +122,7 @@ export class LessonPlansService {
   async updateHeader(id: string, ctx: UserCtx, patch: Partial<Lesson>): Promise<Lesson> {
     const lesson = await this.own(id, ctx);
     const data = this.pickHeader(patch);
+    if (data.subject) data.subject = canonicalSubject(data.subject, data.language ?? lesson.language);
     // Ценность в шапке — только НАЗВАНИЕ и только при реальной смене месяца.
     // Раньше здесь безусловно проставлялось `v.valueRu`, и раскрытый текст,
     // полученный от ИИ, затирался одним русским словом при каждом сохранении
@@ -420,7 +424,7 @@ export class LessonPlansService {
     }
     const core: LessonCoreData = {
       meta: {
-        subject: canonicalSubject(lesson.subject),
+        subject: canonicalSubject(lesson.subject, lesson.language),
         grade: lesson.grade ?? null,
         topic: lesson.lessonTitle ?? '',
         durationMin: lesson.durationMinutes ?? 45,
@@ -507,7 +511,7 @@ export class LessonPlansService {
 
     // LessonCore (ТЗ 1.6, этап 2): паспорт урока — ОДИН раз, до всех модулей.
     // C12 — каноническое название предмета попадает и в мету, и в промпты.
-    lesson.subject = canonicalSubject(lesson.subject);
+    lesson.subject = canonicalSubject(lesson.subject, lesson.language);
     const core = await this.ensureCore(lesson, stages);
     lesson.lessonObjectives = core.objectives.lesson;
     lesson.core = core;

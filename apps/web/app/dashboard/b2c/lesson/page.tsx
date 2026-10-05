@@ -6,6 +6,7 @@ import { getValidAccessToken } from "../../../../lib/auth";
 import { api, API_URL, ApiError, type LpLesson, type LpToolsResponse, type LpStageInput, type LpHeader, type LpHandout, type LpHandoutPackage } from "../../../../lib/api";
 import { useLang, LT, VALUE_MONTHS, SUBJECT_OPTIONS, type Lang } from "../../../../lib/lesson-translations";
 import { useIsMobileApp } from "../../../../lib/platform";
+import { subjectLabel } from "../../../../lib/subjects";
 import { LangSwitcher } from "../../../../components/lang-switcher";
 import { Icon } from "../../../../components/ui/icon";
 import { PhoneVerifyModal } from "../../../../components/phone-verify-modal";
@@ -607,9 +608,12 @@ function LessonView({ lesson, onRegen, regenId, onExport, onRetry, retryBusy, pr
       <div style={card}>
         <h2 style={{ marginTop: 0, color: DARK }}>{lesson.lessonTitle || t.st_task}</h2>
         <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.7 }}>
-          <div><b>{t.vUnit}:</b> {lesson.unit || "—"} · <b>{t.vGrade}:</b> {lesson.grade ?? "—"} · <b>{t.vSubject}:</b> {lesson.subject || "—"}</div>
-          <div><b>{t.vTeacher}:</b> {lesson.teacherName || "—"} · <b>{t.vDate}:</b> {lesson.date || "—"} · <b>{t.vNo}:</b> {lesson.lessonNumber || "—"}</div>
-          <div><b>{t.vValue}:</b> {lesson.valueLink || "—"}</div>
+          {/* Пустые поля шапки — пустыми, без «—» (методист, 05.10.2026): их
+              впишут от руки или в Word, где они и так пустые. Предмет — на
+              языке интерфейса (lib/subjects.ts). */}
+          <div><b>{t.vUnit}:</b> {lesson.unit ?? ""} · <b>{t.vGrade}:</b> {lesson.grade ?? ""} · <b>{t.vSubject}:</b> {subjectLabel(lesson.subject, lang)}</div>
+          <div><b>{t.vTeacher}:</b> {lesson.teacherName ?? ""} · <b>{t.vDate}:</b> {lesson.date ?? ""} · <b>{t.vNo}:</b> {lesson.lessonNumber ?? ""}</div>
+          <div><b>{t.vValue}:</b> {lesson.valueLink ?? ""}</div>
           {!!lesson.lessonObjectives?.length && <div style={{ marginTop: 6 }}><b>{t.lessonObjectives}:</b><ul style={{ margin: "4px 0", paddingLeft: 18 }}>{lesson.lessonObjectives.map((o, i) => <li key={i}>{o}</li>)}</ul></div>}
           <div><b>{t.vTotalPoints}:</b> {lesson.totalPoints}/10</div>
         </div>

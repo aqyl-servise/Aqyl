@@ -1,3 +1,4 @@
+import { subjectInLanguage } from './subjects';
 /**
  * LessonCore — единый паспорт урока (ТЗ 1.6, этап 2: мета, цели, ценность).
  *
@@ -89,11 +90,15 @@ const CANONICAL_SUBJECTS: Record<string, string> = {
 };
 
 /** Полная каноническая форма названия предмета (C12). Незнакомое — как есть. */
-export function canonicalSubject(raw: string | null | undefined): string {
+export function canonicalSubject(raw: string | null | undefined, language?: string | null): string {
   const s = (raw ?? '').trim();
   if (!s) return s;
   const key = s.toLowerCase().replace(/\s+/g, ' ');
-  return CANONICAL_SUBJECTS[key] ?? s;
+  const legacy = CANONICAL_SUBJECTS[key] ?? s;
+  // С языком урока — одно название из справочника на этом языке (subjects.ts):
+  // «english» / «Английский язык» в казахском уроке → «Ағылшын тілі».
+  if (!language) return legacy;
+  return subjectInLanguage(legacy, language) ?? subjectInLanguage(s, language) ?? legacy;
 }
 
 /** C7: цели непусты — и формулировки curriculum, и цели урока. */

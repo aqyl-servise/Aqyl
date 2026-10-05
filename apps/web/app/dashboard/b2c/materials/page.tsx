@@ -7,6 +7,7 @@ import { api, API_URL, type LpLesson } from "../../../../lib/api";
 import { useLang, LT } from "../../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../../components/lang-switcher";
 import { Icon } from "../../../../components/ui/icon";
+import { subjectLabel } from "../../../../lib/subjects";
 
 // Бренд-токены применяются через класс .aqyl-b2c на корне (см. globals.css).
 const BRAND = "var(--amber)";
@@ -78,7 +79,7 @@ export default function MaterialsPage() {
               >
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700, color: "var(--white)" }}>{l.lessonTitle || t.noTopic}</div>
-                  <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2 }}>{l.subject || "—"} · {l.grade ? `${l.grade} ${t.gradeWord}` : "—"} · {l.date || new Date(l.updatedAt).toLocaleDateString()}</div>
+                  <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2 }}>{subjectLabel(l.subject, lang) || "—"} · {l.grade ? `${l.grade} ${t.gradeWord}` : "—"} · {l.date || new Date(l.updatedAt).toLocaleDateString()}</div>
                 </div>
                 <span style={{ fontSize: 12, fontWeight: 700, color: STATUS_COLOR[l.status] ?? "var(--muted)" }}>{statusText(l.status)}</span>
                 {l.status === "ready" && <button onClick={(e) => { e.stopPropagation(); download(l); }} style={{ background: "rgba(139,127,232,.12)", border: "1px solid var(--line)", color: "var(--lavender)", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>{t.download}</button>}

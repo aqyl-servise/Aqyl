@@ -2,7 +2,7 @@ import Link from "next/link";
 import { PublicHeader } from "../public-header";
 import { PublicFooter } from "../public-footer";
 import { Icon, type IconName } from "../ui/icon";
-import { LANDING_PACKAGES, formatTenge } from "../../lib/product";
+import { LANDING_PACKAGES, SHOW_LIVE_QUIZ, formatTenge } from "../../lib/product";
 import type { LandingCopy } from "../../lib/landing-copy";
 import "./landing.css";
 
@@ -159,8 +159,8 @@ export function Landing({ c }: { c: LandingCopy }) {
         </div>
       </section>
 
-      {/* ── Живой квиз ── */}
-      <section className="pub-section pub-section-subtle">
+      {/* ── Живой квиз (скрыт до готовности: SHOW_LIVE_QUIZ в lib/product.ts) ── */}
+      {SHOW_LIVE_QUIZ && (<section className="pub-section pub-section-subtle">
         <div className="pub-container lp-quiz">
           <div>
             <span className="pub-badge pub-badge-green" style={{ marginBottom: 16 }}>{c.quiz.badge}</span>
@@ -189,7 +189,7 @@ export function Landing({ c }: { c: LandingCopy }) {
             </div>
           </div>
         </div>
-      </section>
+      </section>)}
 
       {/* ── Как это работает ── */}
       <section className="pub-section">

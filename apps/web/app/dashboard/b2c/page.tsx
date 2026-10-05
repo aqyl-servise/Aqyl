@@ -8,6 +8,8 @@ import { useLang, LT } from "../../../lib/lesson-translations";
 import { LangSwitcher } from "../../../components/lang-switcher";
 import { Icon, type IconName } from "../../../components/ui/icon";
 import { useIsIosApp, useIsMobileApp } from "../../../lib/platform";
+import { SHOW_LIVE_QUIZ } from "../../../lib/product";
+import { subjectLabel } from "../../../lib/subjects";
 
 // Знак Aqyl — три штриха собираются в одну вершину (буква A).
 function AqylMark({ size = 40 }: { size?: number }) {
@@ -101,14 +103,15 @@ export default function B2CDashboardPage() {
     } catch { setTopupBusy(false); }
   }
 
-  const pipeline = [t.pipeTopic, t.pipePlan, t.pipeWarmup, t.pipeExplain, t.pipeTask, t.pipeQuiz, t.pipeReflect];
+  // Квиз в цепочке и в инструментах скрыт до готовности (SHOW_LIVE_QUIZ).
+  const pipeline = [t.pipeTopic, t.pipePlan, t.pipeWarmup, t.pipeExplain, t.pipeTask, ...(SHOW_LIVE_QUIZ ? [t.pipeQuiz] : []), t.pipeReflect];
   // Пункт подписки скрыт в iOS-обёртке: см. lib/platform.ts.
   const tools: { key: string; icon: IconName; label: string; href: string }[] = [
     { key: "materials", icon: "books", label: t.materials, href: "/dashboard/b2c/materials" },
     { key: "fl", icon: "chart", label: t.fl, href: "/dashboard/b2c/literacy" },
     // Живой квиз (ТЗ 3.0). Страница существовала без входа из кабинета —
     // учитель не мог до неё добраться иначе как по прямому адресу.
-    { key: "quiz", icon: "bolt", label: t.liveQuiz, href: "/dashboard/b2c/quiz" },
+    ...(SHOW_LIVE_QUIZ ? [{ key: "quiz", icon: "bolt" as IconName, label: t.liveQuiz, href: "/dashboard/b2c/quiz" }] : []),
     // Подписка скрыта в любой обёртке приложения (оплата только на сайте).
     // Приглашение коллег — только в iOS: в браузере и Android оно на виду
     // (lib/platform.ts, useIsIosApp).
@@ -257,7 +260,7 @@ export default function B2CDashboardPage() {
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(250px,1fr))", gap: 16 }}>
                   {lessons.slice(0, 6).map((l) => {
                     const st = STT[l.status] ?? STT.draft;
-                    const subj = [l.subject, l.grade ? `${l.grade} ${t.gradeWord}` : null].filter(Boolean).join(" · ");
+                    const subj = [subjectLabel(l.subject, lang), l.grade ? `${l.grade} ${t.gradeWord}` : null].filter(Boolean).join(" · ");
                     return (
                       <button key={l.id} onClick={() => router.push("/dashboard/b2c/materials")} className="b2c-lcard" style={{ ...card, textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 0 }}>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--mint)" }}>

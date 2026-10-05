@@ -49,3 +49,11 @@ export const FINGERPRINT_RETENTION_YEARS = 3;
 export function formatTenge(amount: number): string {
   return `${amount.toLocaleString("ru-RU")} ₸`;
 }
+
+/**
+ * Живой квиз (Тірі квиз) скрыт до готовности: витрина, цепочка этапов в
+ * кабинете и кнопка в «Тағы құралдар» (решение команды 05.10.2026, перед
+ * показом в районо 07.10). Страница /dashboard/b2c/quiz остаётся доступной по
+ * прямому адресу. Вернуть — поставить true.
+ */
+export const SHOW_LIVE_QUIZ = false;

@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { cleanCurriculum, finalCurriculum, givenForPrompt, leadingCode, parseGivenObjectives } from './objectives-input';
-import { coreObjectivesProblems } from './lesson-core';
+import { canonicalSubject, coreObjectivesProblems } from './lesson-core';
 import { fixedStageName, stageDisplayName } from './stage-names';
 
 // Реальный ввод учителя из базы (урок технологии, 7 класс): цели целиком,
@@ -76,4 +76,16 @@ test('первый этап — «Организация урока» / «Ұйы
   assert.equal(fixedStageName('task', 'ru'), null);
   assert.equal(stageDisplayName({ stageType: 'warmup', stageName: 'Білімді жаңғырту' }, 'kz'), 'Ұйымдастыру');
   assert.equal(stageDisplayName({ stageType: 'task', stageName: 'Работа в парах' }, 'ru'), 'Работа в парах');
+});
+
+test('справочник предметов: варианты написания → одно название на языке урока', () => {
+  for (const v of ['English', 'english', 'Английский язык', 'английский язык', 'Ағылшын тілі', 'ағылшын тілі']) {
+    assert.equal(canonicalSubject(v, 'kz'), 'Ағылшын тілі', v);
+    assert.equal(canonicalSubject(v, 'ru'), 'Английский язык', v);
+  }
+  assert.equal(canonicalSubject('История казахстан', 'kz'), 'Қазақстан тарихы');
+  assert.equal(canonicalSubject('Денешыныктыру', 'kz'), 'Дене шынықтыру');
+  assert.equal(canonicalSubject('  химия ', 'ru'), 'Химия');
+  assert.equal(canonicalSubject('Робототехника', 'kz'), 'Робототехника', 'нет в справочнике — как ввёл учитель');
+  assert.equal(canonicalSubject('Әдебиеті'), 'Қазақ әдебиеті', 'без языка — прежнее поведение');
 });
